@@ -1,0 +1,84 @@
+# ============================================================
+#  FOREMAN — .gitignore
+#  WICHTIG: Dieses Repo ist ÖFFENTLICH. Niemals Secrets oder
+#  die Anbindung an das Gedächtnis-Substrat committen.
+# ============================================================
+
+# --- Secrets & Environment (höchste Priorität) ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+secret*.json
+credentials*.json
+
+# --- Gedächtnis-Substrat: Zugangsdaten & lokale Dumps NIE ins Repo ---
+nexus.config.json
+nexus_*.json
+*.nexus
+.nexus/
+nexus_dump/
+nexus_export/
+*_memory_dump.*
+memory_export/
+
+# --- Modell-Gateway: API-Keys / lokale Modell-Configs ---
+litellm.config.local.*
+model_keys*.json
+ollama_models/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+build/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Datenbank / Daten / Docker-Volumes ---
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+timescale_data/
+postgres_data/
+*.dump
+
+# --- Logs & temporäre Dateien ---
+*.log
+logs/
+tmp/
+.cache/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
