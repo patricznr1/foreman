@@ -160,7 +160,7 @@ See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
 ## Author
 
-**Patric Zeller** — AI architect · [patric-zeller.de](https://patric-zeller.de) · [GitHub](https://github.com/patricznr1)
+**Patric Zeller** — AI architect · [patric-zeller.de](https://patric-zeller.de) · [GitHub](https://github.com/patricznr1) · [LinkedIn](https://www.linkedin.com/in/patric-zeller-71781b17b)
 
 ---
 
