@@ -134,6 +134,24 @@ Both are updated **in the same commit as the code** — so they cannot drift fro
 
 ---
 
+## Engineering standards
+
+This platform is built to defendable, reviewable standards — not vibe-coded.
+Every change passes defined gates before it reaches `main`:
+
+- **Type safety** — `mypy --strict` / `tsc --noEmit`, zero errors
+- **Lint & complexity** — `ruff` / `eslint`, clean; cyclomatic-complexity gate
+- **Tests** — `pytest`, ≥ 85 % coverage, a mandatory test block per feature
+- **Security** — OWASP Web & LLM Top 10 (2025), secrets scan, dependency audit
+- **Privacy by design** — GDPR Art. 25: worker data anonymized at the adapter layer
+- **EU AI Act** — risk classification documented before code is written (Phase 0)
+- **Living docs** — GROUND_TRUTH + WALKTHROUGH updated in the same commit, so
+  documentation cannot drift from the code
+
+See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
+
+---
+
 ## Status
 
 🚧 **Active development.** Foundation phase: skeleton, data ingestion, first end-to-end reasoner (drift). Roadmap and detailed state live in the GROUND_TRUTH.

@@ -148,3 +148,54 @@ Das Substrat wird ausschließlich über einen dünnen HTTP-Wrapper `SubstrateCli
 - **Smoke-Test:** beim App-Start und über `GET /api/v1/substrate/smoke` ein `remember` → `recall`-Round-Trip mit einer Test-Erinnerung. Assertion, dass die Erinnerung zurückkommt. Ergebnis als `{ok, latency_ms}`, Log mit Emoji-Prefix.
 - **Zweck:** validiert die Substrat-Anbindung, bevor ein Reasoner draufgeht (ersetzt das separate Trainer-Repo in der Fundament-Phase).
 - **Fallback:** Datenaufnahme (`readings`, `alarms`) läuft unabhängig vom Substrat weiter, auch wenn der Smoke fehlschlägt — nur das Reasoning ist dann eingeschränkt.
+
+---
+
+## 10. Quality Gates & Pflicht-Checks
+
+Diese Plattform wird nach definierten, überprüfbaren Standards gebaut — nicht „vibe-coded". Jede Änderung durchläuft die folgenden Gates, bevor sie nach `main` gelangt. Rot an einem Pflicht-Gate = kein Merge, kein Deploy.
+
+### 10.1 Definition of Done (pro Implementation-Commit)
+
+Ein Commit gilt erst als fertig, wenn **alle** zutreffen:
+- Code + zugehörige Tests im selben Commit.
+- `docs/WALKTHROUGH.md` im selben Commit aktualisiert (siehe §7).
+- Alle automatischen Gates (§10.2) grün.
+- Bei Schema-/Routen-/Type-Änderung: GROUND_TRUTH in diesem Commit nachgezogen.
+
+### 10.2 Automatische Gates (lokal vor Commit/Push)
+
+| Gate | Werkzeug | Schwelle | Ab Phase |
+|---|---|---|---|
+| Typsicherheit (Py) | `mypy --strict` | 0 Fehler | F2 |
+| Typsicherheit (TS) | `tsc --noEmit` | 0 Fehler | F5 |
+| Lint (Py) | `ruff check` | clean | F2 |
+| Lint (TS) | `eslint` | clean | F5 |
+| Tests | `pytest -x` | grün, **Coverage ≥ 85 %** | F2 |
+| Komplexität | clean-code-gate | unter Schwelle, keine neuen Smells | F2 |
+| Smoke-E2E | `playwright --grep @smoke` | grün | ab F5 (Dashboard) |
+
+Vergleich gegen `.claude-quality-baseline.json` — nur **neu eingeführte** Regressionen blockieren, Alt-Schulden nicht.
+
+### 10.3 Pflicht-Test-Block (jedes Feature)
+
+Jeder Endpoint/Service/Reasoner bringt mindestens mit:
+- Happy-Path, Fehlerfall, Auth-/Permission-Fall, Eingabe-/Edge-Validierung.
+- Async-Routen via `httpx.AsyncClient` gegen die FastAPI-App.
+
+### 10.4 Security & Privacy (vor Merge nach `main`)
+
+- **Security-Baseline:** OWASP Web Top 10 (2025) + OWASP LLM Top 10 (2025) für Reasoner-/LLM-Pfade + BSI-Zero-Trust-LLM-Prinzipien.
+- **Secrets-Scan:** keine Tokens/Keys im Diff (Repo ist öffentlich).
+- **Privacy-by-Design (Art. 25 DSGVO):** Werker-bezogene Daten werden im Adapter-Layer anonymisiert; Datensparsamkeit; keine PII in Logs.
+- **Dependency-Audit:** `pip-audit` / `npm audit`; kritische & hohe CVEs adressiert.
+
+### 10.5 Compliance — EU AI Act (Phase 0, vor Code)
+
+- Risiko-Klassifizierung dokumentiert (inkl. Art.-6(3)-Begründung).
+- FOREMAN-Voreinschätzung: vermutlich *Minimal/Limited Risk*. **Aber:** Werker-Sicherheitsempfehlungen werden gegen Anhang III (Hochrisiko) geprüft.
+- Transparenz: KI-generierte Empfehlungen werden als solche gekennzeichnet.
+
+### 10.6 Deploy-Gate
+
+Vor jedem Deploy die Pre-Deploy-Checkliste komplett grün: `pytest -x` · `mypy --strict` · `ruff check` · (ab F5: `tsc --noEmit` · `npm run lint` · Playwright `@smoke`). Rot → kein Deploy.
