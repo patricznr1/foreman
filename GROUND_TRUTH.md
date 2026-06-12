@@ -136,6 +136,7 @@ Jeder Implementation-Commit, der Code ändert, **muss** `docs/WALKTHROUGH.md` im
 - Secrets ausschließlich in `.env` (gitignored). Repo ist öffentlich.
 - Anbindung an das Gedächtnis-Substrat nur über Umgebungsvariablen.
 - Werker-bezogene Daten werden im Adapter-Layer anonymisiert (Strategie offen, siehe Roadmap).
+- **Human-in-the-Loop (BSI):** FOREMAN gibt Empfehlungen, aktoriert nie selbst. Safety-kritische Alarme (`category=safety`) erfordern eine Operator-Quittierung (`alarms.acknowledged_at`/`acknowledged_by`), bevor sie als erledigt gelten.
 
 ---
 
@@ -189,13 +190,44 @@ Jeder Endpoint/Service/Reasoner bringt mindestens mit:
 - **Secrets-Scan:** keine Tokens/Keys im Diff (Repo ist öffentlich).
 - **Privacy-by-Design (Art. 25 DSGVO):** Werker-bezogene Daten werden im Adapter-Layer anonymisiert; Datensparsamkeit; keine PII in Logs.
 - **Dependency-Audit:** `pip-audit` / `npm audit`; kritische & hohe CVEs adressiert.
+- **Red-Teaming (LLM01):** fester Test-Satz gegen Prompt-Injection über den `worker_notes`-Freitext-Pfad + Grounding-/Halluzinations-Check der Reasoner-Erklärungen. Teil der Test-Suite ab F4.
+- **Rate-Limiting / Unbounded Consumption (LLM10):** Rate-Limit-Middleware auf der API + Token-/Timeout-/Kosten-Guard im `LLMGateway`.
+- **Modell-Integrität / Supply-Chain (LLM03/04):** Modell-Versionen/Digests gepinnt (Ollama-Digest, Anthropic-Model-ID); keine ungepinnte Modell-Auflösung zur Laufzeit. FOREMAN trainiert keine Modelle — daher kein Trainingsdaten-Signatur-Apparat.
 
 ### 10.5 Compliance — EU AI Act (Phase 0, vor Code)
 
 - Risiko-Klassifizierung dokumentiert (inkl. Art.-6(3)-Begründung).
 - FOREMAN-Voreinschätzung: vermutlich *Minimal/Limited Risk*. **Aber:** Werker-Sicherheitsempfehlungen werden gegen Anhang III (Hochrisiko) geprüft.
 - Transparenz: KI-generierte Empfehlungen werden als solche gekennzeichnet.
+- **Human-in-the-Loop:** keine automatische Aktorik bei safety-relevanten Empfehlungen — der Operator bestätigt (siehe §8).
 
 ### 10.6 Deploy-Gate
 
 Vor jedem Deploy die Pre-Deploy-Checkliste komplett grün: `pytest -x` · `mypy --strict` · `ruff check` · (ab F5: `tsc --noEmit` · `npm run lint` · Playwright `@smoke`). Rot → kein Deploy.
+
+---
+
+## 11. Runtime Safety & Observability
+
+Wie sich die Plattform zur Laufzeit verhält — was im Betrieb sichtbar und kontrolliert ist.
+
+### 11.1 Observability (OWASP A09)
+
+- **Strukturierte Logs** pro Reasoner-Aufruf: Latenz, Token-Verbrauch, Kosten, Modell-Backend, Erfolg/Fehler. Emoji-Prefix, keine PII.
+- **`/metrics`-Endpoint** im Prometheus-Format: Request-Zähler, Latenz-Histogramme, Token-/Kosten-Counter pro Reasoner & Backend.
+- **Grafana-Dashboard** optional (Härtungsphase): Reasoner-Last, Latenz-Verteilung, Modell-Kosten.
+
+### 11.2 Phasen-Zuordnung (pro Phase gebaut, nicht alles vorab)
+
+| Maßnahme | Ab Phase |
+|---|---|
+| Strukturierte Logs (Latenz/Token/Kosten je Call) | F2 |
+| Human-in-the-Loop-Quittierung — Schema | F2 |
+| Rate-Limiting + `LLMGateway`-Guards (Token/Timeout/Kosten) | F-LLM |
+| Modell-Digest-Pinning | F-LLM |
+| `/metrics`-Endpoint (Prometheus) | F4 |
+| Red-Team-Test-Satz (Injection/Halluzination) | F4 |
+| Human-in-the-Loop-Quittierung — Flow im Reasoner | F4 |
+| Grafana-Dashboard | Härtung |
+
+> **Bau-Disziplin:** Diese Maßnahmen sind als verbindliche Gates/Prinzipien dokumentiert, werden aber **pro Phase** gebaut — kein Ops-Vorbau vor dem ersten laufenden Reasoner.

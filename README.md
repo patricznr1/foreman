@@ -145,6 +145,9 @@ Every change passes defined gates before it reaches `main`:
 - **Security** — OWASP Web & LLM Top 10 (2025), secrets scan, dependency audit
 - **Privacy by design** — GDPR Art. 25: worker data anonymized at the adapter layer
 - **EU AI Act** — risk classification documented before code is written (Phase 0)
+- **Observability** — structured per-reasoner logs + Prometheus metrics (OWASP A09)
+- **Human-in-the-loop** — safety-critical recommendations require operator acknowledgment (BSI)
+- **Bounded consumption** — rate-limiting + pinned model versions (LLM10 / LLM03)
 - **Living docs** — GROUND_TRUTH + WALKTHROUGH updated in the same commit, so
   documentation cannot drift from the code
 
