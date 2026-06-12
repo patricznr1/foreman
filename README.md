@@ -128,7 +128,7 @@ foreman/
 This project deliberately maintains **two** documents in parallel:
 
 - **`GROUND_TRUTH.md`** — *the truth.* What holds: schema, routes, stack, conventions. Machine-near and concise.
-- **`docs/WALKTHROUGH.md`** — *the explanation.* Why and how, in plain language. Per building block: what it does, where it sits in the architecture. *(Written in German — it is the author's defense companion for the code review.)*
+- **`docs/WALKTHROUGH.md`** — *the explanation.* Why and how, in plain language. Per building block: what it does and where it sits in the architecture. *(Written in German.)*
 
 Both are updated **in the same commit as the code** — so they cannot drift from reality.
 
@@ -136,7 +136,7 @@ Both are updated **in the same commit as the code** — so they cannot drift fro
 
 ## Engineering standards
 
-This platform is built to defendable, reviewable standards — not vibe-coded.
+This platform is built to rigorous, reviewable standards — not vibe-coded.
 Every change passes defined gates before it reaches `main`:
 
 - **Type safety** — `mypy --strict` / `tsc --noEmit`, zero errors

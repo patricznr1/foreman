@@ -1,8 +1,8 @@
 # WALKTHROUGH — FOREMAN in Klartext
 
-> **Wozu dieses Dokument?** Die `GROUND_TRUTH.md` sagt, *was gilt*. Dieses Dokument erklärt, *warum und wie* — in verständlichem Deutsch, auch für Nicht-Coder. Ziel: Ich (und jeder Prüfer) kann zu jedem Baustein sagen, was er tut, warum er existiert und wie er sich verteidigen lässt.
+> **Wozu dieses Dokument?** Die `GROUND_TRUTH.md` sagt, *was gilt*. Dieses Dokument erklärt, *warum und wie* — in verständlichem Deutsch, auch für Nicht-Coder. Pro Baustein ein Abschnitt.
 >
-> **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit.
+> **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
 **Stand:** 2026-06-12 · Fundament-Phase, noch kein Anwendungscode.
 
@@ -10,11 +10,10 @@
 
 ## Wie man dieses Dokument liest
 
-Jeder Baustein bekommt denselben Dreiklang:
+Jeder Baustein bekommt dieselben zwei Punkte:
 
 - **Was tut es?** — in einem Satz, ohne Fachjargon.
 - **Warum existiert es / wo sitzt es?** — die Rolle in der Gesamtarchitektur.
-- **Prüfer-Frage & Antwort** — eine wahrscheinliche Nachfrage und wie ich sie beantworte.
 
 ---
 
@@ -28,7 +27,7 @@ Jeder Baustein bekommt denselben Dreiklang:
 
 ## Bausteine
 
-*(Wird befüllt, sobald die ersten Module stehen — Skeleton, Datenbank, Ingestion, Drift-Reasoner, Dashboard. Pro Modul ein Abschnitt nach dem Dreiklang oben.)*
+*(Wird befüllt, sobald die ersten Module stehen — Skeleton, Datenbank, Ingestion, Drift-Reasoner, Dashboard. Pro Modul ein Abschnitt nach dem Schema oben.)*
 
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
@@ -40,8 +39,4 @@ Jeder Baustein bekommt denselben Dreiklang:
 
 **Warum existiert es / wo sitzt es?**
 …
-
-**Prüfer-Frage & Antwort**
-> Frage: …
-> Antwort: …
 ```
