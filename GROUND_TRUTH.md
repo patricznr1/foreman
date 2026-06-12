@@ -27,7 +27,7 @@ Drei Schichten:
 
 ### Die fünf Reasoner
 
-| # | Reasoner | NEXUS-Fähigkeit (angebunden) |
+| # | Reasoner | Substrat-Fähigkeit (angebunden) |
 |---|---|---|
 | 1 | Ereignisketten-Rekonstruktion | zeitgefilterter Recall + Reasoning |
 | 2 | Drift-Erkennung | Drift-/Stabilitäts-Überwachung |
@@ -56,14 +56,62 @@ Drei Schichten:
 - Health-Check: `GET /health`
 - Auth-Middleware auf allem **außer** `/auth/login`, `/auth/register`, `/health`.
 
-*(Konkrete Routen werden hier ergänzt, sobald implementiert.)*
+### Routen (F2-Skeleton)
+
+- `GET /health`
+- `POST /auth/register`, `POST /auth/login` (JWT-Ausgabe)
+- CRUD: `/api/v1/lines`, `/api/v1/machines`, `/api/v1/components`, `/api/v1/data_points`, `/api/v1/production_runs`, `/api/v1/maintenance_events`, `/api/v1/worker_notes`, `/api/v1/alarms`
+- `POST /api/v1/readings` — Batch-Aufnahme von Messwerten (in F3 vom Simulation-/Protokoll-Adapter befüllt)
+- `GET /api/v1/substrate/smoke` — Substrat-Round-Trip (siehe §9)
+
+*(Reasoner-Routen werden in F4/F6 ergänzt, sobald implementiert.)*
 
 ---
 
 ## 5. Datenbank-Schema
 
-- Tabellen: `snake_case`.
-- *(Schema wird pro Migration hier dokumentiert.)*
+Tabellen: `snake_case`. Hierarchie: **Linie → Maschine → Komponente → Datenpunkt**. Ein Datenpunkt hängt immer an einer Maschine und optional zusätzlich an einer Komponente. Produktionskontext liegt auf **Linien-Ebene** (Welt A: ein Auftrag läuft als Ganzes über die Straße).
+
+Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digitale I/O als Zeitreihe (`readings`), Fehlermeldungen/Nothalt als Ereignisse (`alarms`), Produktionskontext über Zeit (`production_runs`).
+
+**`lines`** — Fertigungsstraßen
+- `id` PK · `label` · `location` · `created_at`
+
+**`machines`** — Maschinen
+- `id` PK · `line_id` FK→lines (nullable, für Einzelmaschinen) · `external_id` (anonymisiert) · `label` · `machine_class` · `manufacturer` · `location` · `created_at`
+
+**`components`** — Komponenten einer Maschine
+- `id` PK · `machine_id` FK→machines · `label` · `component_type` (spindle/drive/bearing/motor/axis/…) · `created_at`
+
+**`data_points`** — Datenpunkte / Tags (ersetzt „sensors")
+- `id` PK · `machine_id` FK→machines (immer) · `component_id` FK→components (nullable) · `name` · `kind` (analog/digital/setpoint/counter) · `measurement_type` (voltage/current/dc_bus/temperature/speed/frequency/torque/force/signal/null) · `unit` (V/A/°C/rpm/Hz/Nm/N/kN/bool/…) · `source` (opcua/modbus/mqtt/s7) · `address` (Node-ID/Register) · `normal_min` · `normal_max` · `created_at`
+
+**`readings`** — TimescaleDB-Hypertable (analoge Messwerte + digitale I/O als 0/1)
+- `time` timestamptz · `data_point_id` FK→data_points · `value` double · `quality` smallint (nullable) · PK (`data_point_id`, `time`) · Hypertable auf `time`
+
+**`alarms`** — Fehlermeldungen + Nothalt
+- `id` PK · `machine_id` FK→machines · `component_id` FK (nullable) · `data_point_id` FK (nullable) · `code` · `message` · `severity` (info/warning/alarm/critical/emergency) · `category` (process/safety/hardware/electrical/…) · `raised_at` · `cleared_at` (nullable) · `acknowledged_at` (nullable) · `acknowledged_by` (anonymisiert, nullable) · `created_at`
+- Nothalt = `category=safety`, `severity=emergency`.
+
+**`production_runs`** — Produktionskontext (Linien-Ebene)
+- `id` PK · `line_id` FK→lines · `product_code` · `order_id` (nullable) · `batch` (nullable) · `started_at` · `ended_at` (nullable) · `created_at`
+
+**`maintenance_events`**
+- `id` PK · `machine_id` FK · `component_id` FK (nullable) · `type` · `performed_at` · `description` · `performed_by` (anonymisiert) · `created_at`
+
+**`worker_notes`** — Schichtberichte (KI-Felder in F2 leer/nullable)
+- `id` PK · `machine_id` FK (nullable) · `shift` · `text` · `classification` (nullable, später vom Encoder) · `embedding` (Vektor, nullable, später für semantische Suche) · `author` (anonymisiert) · `created_at`
+
+**`users`** — Auth
+- `id` PK · `email` (unique) · `password_hash` · `role` · `created_at`
+
+**`audit_logs`**
+- `id` PK · `user_id` FK (nullable) · `action` · `target` · `created_at`
+
+**`semantic_events`** — Spiegel der Dual-Writes ans Substrat
+- `id` PK · `machine_id` FK (nullable) · `event_type` · `payload` jsonb · `substrate_ref` (nullable) · `created_at`
+
+*(Migrationen via Alembic. Jede Migration hier kurz vermerken.)*
 
 ---
 
@@ -88,3 +136,15 @@ Jeder Implementation-Commit, der Code ändert, **muss** `docs/WALKTHROUGH.md` im
 - Secrets ausschließlich in `.env` (gitignored). Repo ist öffentlich.
 - Anbindung an das Gedächtnis-Substrat nur über Umgebungsvariablen.
 - Werker-bezogene Daten werden im Adapter-Layer anonymisiert (Strategie offen, siehe Roadmap).
+
+---
+
+## 9. Gedächtnis-Substrat — Client-Vertrag & Smoke-Test
+
+Das Substrat wird ausschließlich über einen dünnen HTTP-Wrapper `SubstrateClient` angesprochen. Kein direkter Aufruf aus der Geschäftslogik.
+
+- **Konfiguration:** Base-URL + Token aus `.env` (`SUBSTRATE_BASE_URL`, `SUBSTRATE_TOKEN`). Test-Instanz für Entwicklung.
+- **Methoden (HTTP-Operationen des Dienstes):** `remember`, `recall`, `reason`, `drift_status`, `reflect`.
+- **Smoke-Test:** beim App-Start und über `GET /api/v1/substrate/smoke` ein `remember` → `recall`-Round-Trip mit einer Test-Erinnerung. Assertion, dass die Erinnerung zurückkommt. Ergebnis als `{ok, latency_ms}`, Log mit Emoji-Prefix.
+- **Zweck:** validiert die Substrat-Anbindung, bevor ein Reasoner draufgeht (ersetzt das separate Trainer-Repo in der Fundament-Phase).
+- **Fallback:** Datenaufnahme (`readings`, `alarms`) läuft unabhängig vom Substrat weiter, auch wenn der Smoke fehlschlägt — nur das Reasoning ist dann eingeschränkt.
