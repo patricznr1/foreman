@@ -1,8 +1,6 @@
 <div align="center">
 
-# FOREMAN
-
-### Production Intelligence with Memory
+<img src="docs/assets/foreman-hero.svg" alt="FOREMAN — Production Intelligence with Memory" width="100%">
 
 *An AI platform that doesn't just monitor industrial production environments — it remembers them.*
 
