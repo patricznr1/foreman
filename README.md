@@ -4,7 +4,7 @@
 
 ### Production Intelligence with Memory
 
-*Eine KI-Plattform, die industrielle Produktionsumgebungen nicht nur überwacht, sondern sich an sie erinnert.*
+*An AI platform that doesn't just monitor industrial production environments — it remembers them.*
 
 ![Status](https://img.shields.io/badge/status-active%20development-orange)
 ![Python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)
@@ -18,57 +18,57 @@
 
 ---
 
-## Worum es geht
+## What it is
 
-Produktionsanlagen erzeugen pausenlos Daten — Sensorwerte, SPS-Zustände, Wartungseinträge, Werkernotizen. Klassische Monitoring-Systeme zeigen den **aktuellen** Zustand und schlagen bei Schwellwerten Alarm. Was ihnen fehlt: **Gedächtnis**. Sie wissen nicht, dass dieselbe Lagertemperatur vor drei Wochen einem Ausfall vorausging, oder dass eine schleichende Drift seit Tagen läuft.
+Production lines generate data non-stop — sensor readings, PLC states, maintenance records, operator notes. Classic monitoring systems show the **current** state and raise an alarm when a threshold is crossed. What they lack is **memory**. They don't know that the same bearing temperature preceded a failure three weeks ago, or that a slow drift has been building for days.
 
-**FOREMAN** schließt diese Lücke. Die Plattform legt über die Produktionsumgebung eine Reasoning-Schicht mit Langzeitgedächtnis und beantwortet Fragen, die Momentaufnahmen nicht beantworten können:
+**FOREMAN** closes that gap. It lays a reasoning layer with long-term memory over the production environment and answers questions that snapshots can't:
 
-- *Welche Ereigniskette führte zu diesem Ausfall?*
-- *Verschiebt sich ein Prozess langsam aus dem Normalbereich?*
-- *Wann fällt diese Komponente voraussichtlich aus?*
-- *Hält die Anlage diese geplante Mehrlast aus?*
+- *Which chain of events led to this failure?*
+- *Is a process slowly drifting out of its normal range?*
+- *When is this component likely to fail?*
+- *Can the plant handle this planned extra load?*
 
-Der Name ist Programm: Ein *Foreman* (Werkmeister) ist der erfahrene Vorarbeiter, der die Halle über Jahre kennt — und genau diese institutionelle Erfahrung gibt FOREMAN als System ab.
+The name says it all: a *foreman* is the experienced supervisor who has known the shop floor for years — and that institutional experience is exactly what FOREMAN provides as a system.
 
-> **Kontext:** FOREMAN ist das Capstone-Projekt des MSIT AI-Tracks. Es verbindet 17 Jahre Industriehintergrund (Werkstattleitung, Servicetechnik, SPS-Programmierung) mit angewandter KI-Architektur.
+> **Context:** FOREMAN is the capstone project of the MSIT AI track. It combines 17 years of industrial background (workshop management, field service, PLC programming) with applied AI architecture.
 
 ---
 
-## Architektur
+## Architecture
 
-Drei sauber entkoppelte Schichten. Die Industrie liefert Daten, FOREMAN denkt, die Werker handeln.
+Three cleanly decoupled layers. Industry delivers the data, FOREMAN reasons, operators act.
 
 ```mermaid
 flowchart TB
-    subgraph L1["① Industrieumgebung"]
+    subgraph L1["① Industrial Environment"]
         direction LR
-        SPS[SPS / OPC UA] 
+        SPS[PLC / OPC UA] 
         MQTT[MQTT / Modbus]
-        LOGS[Logs & Wartungshistorie]
+        LOGS[Logs & Maintenance History]
     end
 
-    subgraph L2["② FOREMAN Reasoning-Plattform"]
+    subgraph L2["② FOREMAN Reasoning Platform"]
         direction TB
-        ING[Ingestion-Service]
-        subgraph R["Fünf Reasoner"]
+        ING[Ingestion Service]
+        subgraph R["Five Reasoners"]
             direction LR
-            R1[Ereignisketten-\nRekonstruktion]
-            R2[Drift-\nErkennung]
-            R3[Ausfall-\nvorhersage]
-            R4[Wartungs-\nzyklen]
-            R5[Belastungs-\nSimulation]
+            R1[Event-Chain\nReconstruction]
+            R2[Drift\nDetection]
+            R3[Failure\nPrediction]
+            R4[Maintenance\nCycle Analysis]
+            R5[Load\nSimulation]
         end
-        GW[Modell-Gateway\nlokal + Cloud]
+        GW[Model Gateway\nlocal + cloud]
     end
 
-    subgraph L3["③ Output-Kanäle"]
+    subgraph L3["③ Output Channels"]
         direction LR
-        DASH[Werker-Dashboard]
-        MCP[MCP-Schnittstelle\nfür Drittsysteme]
+        DASH[Operator Dashboard]
+        MCP[MCP Interface\nfor third-party systems]
     end
 
-    MEM[(Gedächtnis-Substrat\nexterner Dienst)]
+    MEM[(Memory Substrate\nexternal service)]
 
     L1 --> ING --> R
     R <--> GW
@@ -77,75 +77,75 @@ flowchart TB
     R --> MCP
 ```
 
-### Die fünf Reasoner
+### The five reasoners
 
-| Reasoner | Frage, die er beantwortet | Methodik (grob) |
+| Reasoner | The question it answers | Method (high level) |
 |---|---|---|
-| **Ereignisketten-Rekonstruktion** | Was führte zu diesem Zustand? | Zeitlich gefilterter Recall + LLM-Synthese |
-| **Drift-Erkennung** | Verschiebt sich etwas schleichend? | Statistische Abweichungs-Überwachung |
-| **Ausfallvorhersage** | Wann fällt das aus? | Gradient Boosting + LLM-Erklärung |
-| **Wartungszyklen-Analyse** | Welche Wartung wirkt wirklich? | Kausale Bewertung historischer Eingriffe |
-| **Belastungs-Simulation** | Hält die Anlage diese Last? | Numerische Simulation + Monte-Carlo |
+| **Event-Chain Reconstruction** | What led to this state? | Time-filtered recall + LLM synthesis |
+| **Drift Detection** | Is something drifting slowly? | Statistical deviation monitoring |
+| **Failure Prediction** | When will it fail? | Gradient boosting + LLM explanation |
+| **Maintenance-Cycle Analysis** | Which maintenance actually helps? | Causal evaluation of past interventions |
+| **Load Simulation** | Can the plant take this load? | Numerical simulation + Monte Carlo |
 
-### Das Gedächtnis-Substrat
+### The memory substrate
 
-FOREMAN setzt auf ein **externes, biologisch inspiriertes Gedächtnis-Substrat**, das wie eine Datenbank konsumiert wird. Es verwaltet semantische Ereignisse über die Zeit, konsolidiert wiederkehrende Muster und überwacht Stabilität automatisch. Für FOREMAN ist es eine Black-Box-Abhängigkeit hinter einer HTTP-API — der Substrat-Code ist **nicht** Teil dieses Repositories.
+FOREMAN builds on an **external, biologically inspired memory substrate** that it consumes like a database. The substrate manages semantic events over time, consolidates recurring patterns, and monitors stability automatically. For FOREMAN it is a black-box dependency behind an HTTP API — the substrate code is **not** part of this repository.
 
 ---
 
-## Tech-Stack
+## Tech stack
 
-| Schicht | Technologie |
+| Layer | Technology |
 |---|---|
 | **Backend** | Python 3.12, FastAPI, async SQLAlchemy 2.0, Pydantic v2 |
-| **Datenhaltung** | PostgreSQL + TimescaleDB (Zeitreihen) + Vektor-Suche |
-| **Modell-Gateway** | LiteLLM — lokales Modell (Qwen3 via Ollama) + Cloud-Fallback (Anthropic) |
+| **Storage** | PostgreSQL + TimescaleDB (time series) + vector search |
+| **Model gateway** | LiteLLM — local model (Qwen3 via Ollama) + cloud fallback (Anthropic) |
 | **Frontend** | Next.js 15, Tailwind CSS, shadcn/ui, Recharts |
-| **Industrie-Anbindung** | asyncua (OPC UA), paho-mqtt, pymodbus |
+| **Industrial connectivity** | asyncua (OPC UA), paho-mqtt, pymodbus |
 | **Integration** | Model Context Protocol (MCP) SDK |
-| **Betrieb** | Docker Compose |
+| **Operations** | Docker Compose |
 
 ---
 
-## Projektstruktur
+## Project structure
 
 ```
 foreman/
-├── README.md            ← du bist hier
-├── GROUND_TRUTH.md      ← die Spezifikation (Single Source of Truth)
+├── README.md            ← you are here
+├── GROUND_TRUTH.md      ← the specification (single source of truth)
 ├── docs/
-│   └── WALKTHROUGH.md   ← Klartext-Erklärung jedes Bausteins (Deutsch)
-├── .env.example         ← Konfigurations-Vertrag (ohne Secrets)
-└── .gitignore           ← schützt Secrets & Gedächtnis-Anbindung
+│   └── WALKTHROUGH.md   ← plain-language explanation of every building block (German)
+├── .env.example         ← configuration contract (no secrets)
+└── .gitignore           ← protects secrets & the memory connection
 ```
 
-> Der Code wird modulweise ergänzt. Siehe **[GROUND_TRUTH.md](GROUND_TRUTH.md)** für den verbindlichen Stand und **[docs/WALKTHROUGH.md](docs/WALKTHROUGH.md)** für die Erklärung in Klartext.
+> Code is added module by module. See **[GROUND_TRUTH.md](GROUND_TRUTH.md)** for the binding state and **[docs/WALKTHROUGH.md](docs/WALKTHROUGH.md)** for the plain-language explanation.
 
 ---
 
-## Dokumentations-Prinzip
+## Documentation principle
 
-Dieses Projekt führt **zwei** Dokumente parallel, und das mit Absicht:
+This project deliberately maintains **two** documents in parallel:
 
-- **`GROUND_TRUTH.md`** — *die Wahrheit.* Was gilt: Schema, Routen, Stack, Konventionen. Maschinennah und knapp.
-- **`docs/WALKTHROUGH.md`** — *die Erklärung.* Warum und wie, in verständlichem Deutsch. Pro Baustein: Was tut er, wo sitzt er in der Architektur, und welche Frage könnte ein Prüfer dazu stellen.
+- **`GROUND_TRUTH.md`** — *the truth.* What holds: schema, routes, stack, conventions. Machine-near and concise.
+- **`docs/WALKTHROUGH.md`** — *the explanation.* Why and how, in plain language. Per building block: what it does, where it sits in the architecture, and what a reviewer might ask about it. *(Written in German — it is the author's defense companion for the code review.)*
 
-Beide werden **im selben Commit wie der Code** aktualisiert — sie können also nicht von der Realität abdriften.
+Both are updated **in the same commit as the code** — so they cannot drift from reality.
 
 ---
 
 ## Status
 
-🚧 **Aktive Entwicklung.** Fundament-Phase: Skeleton, Datenanbindung, erster End-to-End-Reasoner (Drift). Roadmap und Detailstand in der GROUND_TRUTH.
+🚧 **Active development.** Foundation phase: skeleton, data ingestion, first end-to-end reasoner (drift). Roadmap and detailed state live in the GROUND_TRUTH.
 
 ---
 
-## Autor
+## Author
 
-**Patric Zeller** — KI-Architekt · [patric-zeller.de](https://patric-zeller.de) · [GitHub](https://github.com/patricznr1)
+**Patric Zeller** — AI architect · [patric-zeller.de](https://patric-zeller.de) · [GitHub](https://github.com/patricznr1)
 
 ---
 
 <div align="center">
-<sub>© 2026 Patric Zeller · All Rights Reserved · Showcase- und Lehr-Repository, keine Lizenz zur Wiederverwendung.</sub>
+<sub>© 2026 Patric Zeller · All Rights Reserved · Showcase and educational repository, not licensed for reuse.</sub>
 </div>
