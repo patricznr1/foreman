@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="docs/assets/foreman-hero.svg" alt="FOREMAN — Production Intelligence with Memory" width="100%">
+<a href="https://patricznr1.github.io/foreman/"><img src="docs/assets/foreman-hero.svg" alt="FOREMAN — Production Intelligence with Memory" width="100%"></a>
+
+**[▶ Live project page with the embedded deck →](https://patricznr1.github.io/foreman/)**
 
 *An AI platform that doesn't just monitor industrial production environments — it remembers them.*
 
