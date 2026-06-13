@@ -200,9 +200,14 @@ def test_wochenende_reduced_laeuft_mit_reduzierter_last() -> None:
 # --------------------------------------------------------------------------- #
 def test_gleicher_seed_erzeugt_identische_folge() -> None:
     profile = _ungated()
-    a = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, random.Random(99)) for _ in range(50)]
-    b = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, random.Random(99)) for _ in range(50)]
-    assert a == b
+    # Persistenter RNG je Liste: ein in jeder Iteration neu geseedeter RNG würde
+    # immer denselben Startwert ziehen — der Test prüfte dann keine echte Folge.
+    rng_a = random.Random(99)
+    rng_b = random.Random(99)
+    a = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, rng_a) for _ in range(50)]
+    b = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, rng_b) for _ in range(50)]
+    assert a == b  # gleicher Seed → identische Folge (Determinismus)
+    assert len(set(a)) > 1  # echte fortschreitende Folge, nicht 50-mal derselbe Wert
 
 
 def test_quality_default_ist_none() -> None:

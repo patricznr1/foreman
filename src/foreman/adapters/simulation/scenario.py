@@ -96,6 +96,16 @@ class ScenarioMeta(_Strict):
             raise ValueError("scenario.start muss tz-aware sein (mit Zeitzonen-Offset).")
         return value
 
+    @model_validator(mode="after")
+    def _positive_zeitachse(self) -> ScenarioMeta:
+        # '0d' ist Format-valide, ergäbe aber eine stehende Zeitachse (kein Tick) —
+        # daher strikt positiv erzwingen, statt später eine leere Simulation zu fahren.
+        if parse_duration(self.duration).total_seconds() <= 0:
+            raise ValueError("scenario.duration muss > 0 sein.")
+        if parse_duration(self.sample_interval).total_seconds() <= 0:
+            raise ValueError("scenario.sample_interval muss > 0 sein.")
+        return self
+
 
 class LineSpec(_Strict):
     label: str = Field(min_length=1)
@@ -264,10 +274,15 @@ class GroundTruth(BaseModel):
     expected_false_alarms: int = 0
 
 
+# Aktuell einzige unterstützte Szenario-Schema-Version. Unbekannte Versionen
+# werden hart abgelehnt, statt Schema-Inkompatibilität stillschweigend zu tragen.
+SUPPORTED_SCHEMA_VERSION = 1
+
+
 class Scenario(_Strict):
     """Vollständiges Simulations-Szenario (eine Linie, eine Maschine)."""
 
-    schema_version: int = 1
+    schema_version: int = SUPPORTED_SCHEMA_VERSION
     scenario: ScenarioMeta
     line: LineSpec
     machine: MachineSpec
@@ -279,6 +294,16 @@ class Scenario(_Strict):
     worker_notes: list[WorkerNoteSpec] = Field(default_factory=list)
     alarms: list[AlarmSpec] = Field(default_factory=list)
     ground_truth: GroundTruth | None = None
+
+    @field_validator("schema_version")
+    @classmethod
+    def _bekannte_schema_version(cls, value: int) -> int:
+        if value != SUPPORTED_SCHEMA_VERSION:
+            raise ValueError(
+                f"Nicht unterstützte schema_version: {value} "
+                f"(unterstützt: {SUPPORTED_SCHEMA_VERSION})."
+            )
+        return value
 
     @model_validator(mode="after")
     def _referential_integrity(self) -> Scenario:

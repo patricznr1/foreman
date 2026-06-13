@@ -28,7 +28,7 @@ Alle vier Dateien sind YAML-valide und gegen die Enums aus GROUND_TRUTH §5 gepr
 
 ## 1. `bearing_drift` — Spindellager-Schaden
 
-**Story.** Eine CNC-Spindel läuft eine Woche gesund, dann beginnt eine Außenring-Schädigung am vorderen Spindellager. Der Schwingungs-RMS steigt über rund zwei Wochen graduell an; die Lagertemperatur folgt erst Tage später. Zwei Schichten vor dem Temperaturalarm dokumentiert ein Werker ein „mahlendes Geräusch" — die Notiz, die FOREMANs „hatten wir das schon mal" trägt.
+**Story.** Eine CNC-Spindel läuft eine Woche gesund, dann beginnt eine Außenring-Schädigung am vorderen Spindellager. Der Schwingungs-RMS steigt über rund zwei Wochen graduell an; die Lagertemperatur folgt erst Tage später. Zwei Schichten vor dem Temperaturalarm dokumentiert ein Werker ein „mahlendes Geräusch“ — die Notiz, die FOREMANs „hatten wir das schon mal“ trägt.
 
 **Fachliche Begründung der Signatur.**
 
@@ -39,13 +39,13 @@ Alle vier Dateien sind YAML-valide und gegen die Enums aus GROUND_TRUTH §5 gepr
 
 **Drift-Parameter.** Primär `vib_rms`: `ramp`, t\*=7 d, +5,2 mm/s, leicht progressiv (Verschleiß beschleunigt). Bezug zu §5 des Ausfallvorhersage-Docs: Roll-RMS/-Mittel und Trend/Slope sind genau die Features, die diesen Verlauf greifbar machen.
 
-**F4-Validierungs-Erwartung.** Der Drift-Reasoner soll die Vibrations-Drift im **Erkennungsfenster 7–10 d** melden — also Tage **vor** der Werker-Notiz (~16 d) und **vor** dem Temperaturalarm (~17 d). `expected_false_alarms: 0`. Erfolgskriterium ist nicht nur „erkannt", sondern „**früh** erkannt".
+**F4-Validierungs-Erwartung.** Der Drift-Reasoner soll die Vibrations-Drift im **Erkennungsfenster 7–10 d** melden — also Tage **vor** der Werker-Notiz (~16 d) und **vor** dem Temperaturalarm (~17 d). `expected_false_alarms: 0`. Erfolgskriterium ist nicht nur „erkannt“, sondern „**früh** erkannt“.
 
 ---
 
 ## 2. `tool_wear` — Werkzeugverschleiß (CNC-Spindel)
 
-**Story.** Ein frisch eingewechselter Schaftfräser altert über mehrere Tage Zwei-Schicht-Betrieb. Spindel-Drehmoment und Motorstrom steigen monoton mit dem Flankenverschleiß; gegen Standzeitende beschleunigt der Anstieg, und die Ist-Drehzahl beginnt unter Last zu „zittern". Der Werker bemerkt den Verschleiß erst spät an Oberfläche und Spanfarbe.
+**Story.** Ein frisch eingewechselter Schaftfräser altert über mehrere Tage Zwei-Schicht-Betrieb. Spindel-Drehmoment und Motorstrom steigen monoton mit dem Flankenverschleiß; gegen Standzeitende beschleunigt der Anstieg, und die Ist-Drehzahl beginnt unter Last zu „zittern“. Der Werker bemerkt den Verschleiß erst spät an Oberfläche und Spanfarbe.
 
 **Fachliche Begründung der Signatur.**
 
@@ -60,7 +60,7 @@ Alle vier Dateien sind YAML-valide und gegen die Enums aus GROUND_TRUTH §5 gepr
 
 ## 3. `lubrication_correlation` — Schmierstoff-Wahl & Folge-Degradation
 
-**Story.** Zwei baugleiche Lager derselben Maschine werden am selben Tag nachgeschmiert — Lager A spezifikationskonform (Schmierstoff X), Lager B mit ungeeignetem Ersatzfett (Y). In den Wochen danach bleibt Lager A stabil, Lager B degradiert deutlich schneller. Eine Werker-Notiz hält die Ersatz-Schmierung fest; eine spätere Notiz bemerkt, dass die Abtriebsseite wärmer/lauter läuft. Das ist die kausale Story für die spätere **Wartungszyklen-Analyse**: nicht „ob geschmiert", sondern „**womit**".
+**Story.** Zwei baugleiche Lager derselben Maschine werden am selben Tag nachgeschmiert — Lager A spezifikationskonform (Schmierstoff X), Lager B mit ungeeignetem Ersatzfett (Y). In den Wochen danach bleibt Lager A stabil, Lager B degradiert deutlich schneller. Eine Werker-Notiz hält die Ersatz-Schmierung fest; eine spätere Notiz bemerkt, dass die Abtriebsseite wärmer/lauter läuft. Das ist die kausale Story für die spätere **Wartungszyklen-Analyse**: nicht „ob geschmiert“, sondern „**womit**“.
 
 **Fachliche Begründung der Signatur.**
 
@@ -77,7 +77,7 @@ Alle vier Dateien sind YAML-valide und gegen die Enums aus GROUND_TRUTH §5 gepr
 
 **Story.** Dieselbe Maschinen-/Sensorstruktur wie `bearing_drift`, aber zehn Tage völlig gesund: ausgeprägte Schicht-Saisonalität und ein Wochenende mit Stillstand. Keine Degradation.
 
-**Fachliche Begründung.** Industrielle Sensordaten sind **aus betrieblichen Gründen** nicht-stationär: Last-, Temperatur- und Stromprofile unterscheiden sich systematisch zwischen Früh-/Spät-/Nachtschicht, und am Wochenende steht die Maschine. Ein Drift-Detektor, der **auf dem Rohsignal** läuft, würde jeden Schichtwechsel und jeden Anlauf als „Drift" melden (siehe [`drift-erkennung-verfahren.md`](../research/drift-erkennung-verfahren.md) §3). Dieses Szenario prüft daher genau die vorgelagerte **Deseasonalisierung + State-Gating**: Nur wenn der Reasoner das Saison-Muster herausrechnet und Stillstände ausblendet, bleibt er hier still.
+**Fachliche Begründung.** Industrielle Sensordaten sind **aus betrieblichen Gründen** nicht-stationär: Last-, Temperatur- und Stromprofile unterscheiden sich systematisch zwischen Früh-/Spät-/Nachtschicht, und am Wochenende steht die Maschine. Ein Drift-Detektor, der **auf dem Rohsignal** läuft, würde jeden Schichtwechsel und jeden Anlauf als „Drift“ melden (siehe [`drift-erkennung-verfahren.md`](../research/drift-erkennung-verfahren.md) §3). Dieses Szenario prüft daher genau die vorgelagerte **Deseasonalisierung + State-Gating**: Nur wenn der Reasoner das Saison-Muster herausrechnet und Stillstände ausblendet, bleibt er hier still.
 
 **F4-Validierungs-Erwartung.** `drift_present: false`, `expected_drift_detections: 0`, `expected_false_alarms: 0`. Konkrete Negativtests: Schichtwechsel (Last-/Temperatursprünge) und Wochenend-Stillstand dürfen **nicht** als Drift/Anomalie gemeldet werden. **Jede** Meldung auf diesem Szenario ist ein Fehlalarm und ein F4-Abnahme-Fehlschlag. Damit ist `healthy_baseline` die unverzichtbare Negativkontrolle zu den drei Positiv-Szenarien.
 

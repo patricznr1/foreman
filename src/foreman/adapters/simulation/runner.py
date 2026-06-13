@@ -80,6 +80,19 @@ def _build_substrate(settings: Settings) -> SubstrateClient | None:
     return SubstrateClient.from_settings(settings)
 
 
+def _resolve_pace(mode: str, speed: float) -> WallClockPacer | None:
+    """Wählt den Pacer für den Modus. Reine, seedbare Funktion (ohne DB testbar).
+
+    Unbekannte Modi scheitern hart — ein stiller Backfill-Fallback würde das
+    Verhalten implizit ändern statt früh zu melden.
+    """
+    if mode == "live":
+        return WallClockPacer(speed)
+    if mode == "backfill":
+        return None
+    raise ValueError(f"Unbekannter mode: '{mode}' (erlaubt: 'backfill', 'live').")
+
+
 async def run_ingestion(
     session: object,
     adapter: SimulationAdapter,
@@ -95,6 +108,7 @@ async def run_ingestion(
 
     `session` ist eine AsyncSession (lose typisiert, um Test-Doubles zuzulassen).
     """
+    pace = _resolve_pace(mode, speed)  # fail-fast: ungültiger Modus scheitert vor jeder Arbeit
     from sqlalchemy.ext.asyncio import AsyncSession
 
     assert isinstance(session, AsyncSession)
@@ -105,7 +119,6 @@ async def run_ingestion(
         substrate=substrate,
         batch_size=batch_size,
     )
-    pace = WallClockPacer(speed) if mode == "live" else None
     return await service.ingest(adapter, pace=pace)
 
 

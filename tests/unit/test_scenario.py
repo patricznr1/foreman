@@ -184,3 +184,26 @@ def test_doppelte_datenpunkt_keys_werden_abgelehnt() -> None:
     data["data_points"][1]["key"] = "state"  # Duplikat
     with pytest.raises(ValidationError):
         Scenario.model_validate(data)
+
+
+def test_null_sample_interval_wird_abgelehnt() -> None:
+    # '0d' ist Format-valide, ergäbe aber eine nicht fortschreitende Zeitachse.
+    data = _minimal_dict()
+    data["scenario"]["sample_interval"] = "0d"
+    with pytest.raises(ValidationError):
+        Scenario.model_validate(data)
+
+
+def test_null_duration_wird_abgelehnt() -> None:
+    data = _minimal_dict()
+    data["scenario"]["duration"] = "0d"
+    with pytest.raises(ValidationError):
+        Scenario.model_validate(data)
+
+
+def test_unbekannte_schema_version_wird_abgelehnt() -> None:
+    # Unbekannte Versionen müssen früh scheitern, statt Inkompatibilität zu verschleiern.
+    data = _minimal_dict()
+    data["schema_version"] = 2
+    with pytest.raises(ValidationError):
+        Scenario.model_validate(data)
