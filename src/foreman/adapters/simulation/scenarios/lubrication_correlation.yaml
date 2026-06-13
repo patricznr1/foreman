@@ -1,0 +1,187 @@
+# =============================================================================
+# FOREMAN Simulations-Szenario: lubrication_correlation
+# (Schmierstoff-Wahl -> unterschiedliche Folge-Degradation; Story für die
+#  spätere Wartungszyklen-Analyse)
+# -----------------------------------------------------------------------------
+# Fachliche Begruendung, Quellen und F4-Validierungserwartung:
+#   docs/simulation/szenarien.md  (Abschnitt "lubrication_correlation")
+# Schema-Konvention: siehe Kopf von bearing_drift.yaml.
+# Hinweis: nutzt maintenance_events (Schmierung X vs. Y). Setzt voraus, dass die
+#   F3-Szenario-Engine maintenance_events unterstützt (im F3-Prompt nachzuziehen).
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: lubrication_correlation
+  title: "Schmierstoff-Korrelation – gleiche Wartung, zwei Schmierstoffe, divergente Lagerdegradation"
+  description: >
+    Zwei baugleiche Lager derselben Maschine werden am selben Tag nachgeschmiert –
+    Lager A spezifikationskonform (Schmierstoff X), Lager B mit einem ungeeigneten
+    Schmierstoff (Y, zu niedrige Grundölviskosität). In den Wochen danach bleibt
+    Lager A stabil, während Lager B eine deutlich schnellere Vibrations- und
+    Temperatur-Degradation zeigt. Das ist die kausale Story für die spätere
+    Wartungszyklen-Analyse: nicht "ob geschmiert", sondern "womit".
+  start: "2026-05-04T06:00:00+02:00"
+  duration: "28d"
+  sample_interval: "10m"
+
+line:
+  label: "Antriebstechnik Linie 2"
+  location: "Halle Ost"
+
+machine:
+  external_id: "SIM-PUMP-003"
+  label: "Pumpenaggregat PA-03"
+  machine_class: "pump_unit"
+  manufacturer: "SimWerk"
+  location: "Halle Ost / Linie 2"
+
+components:
+  - key: bearing_a
+    label: "Lager A (Antriebsseite)"
+    component_type: bearing
+  - key: bearing_b
+    label: "Lager B (Abtriebsseite)"
+    component_type: bearing
+  - key: motor
+    label: "Antriebsmotor"
+    component_type: motor
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: reduced          # Wochenende: reduzierter Dauerlauf statt Stillstand
+  weekend_load_factor: 0.6
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  # --- Lager A: spezifikationskonform geschmiert -> bleibt gesund ---
+  - key: vib_rms_a
+    name: "vibration_rms_velocity_bearing_a"
+    component: bearing_a
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 2.0, noise_std: 0.15, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "3d"                      # ab Nachschmierung
+      end: "28d"
+      target_delta: 0.6                # nur leichte, normale Alterung
+
+  - key: bearing_temp_a
+    name: "bearing_temperature_a"
+    component: bearing_a
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline: { mean: 50.0, noise_std: 1.0, gated_by: machine_state }
+
+  # --- Lager B: ungeeigneter Schmierstoff -> schnelle Degradation ---
+  - key: vib_rms_b
+    name: "vibration_rms_velocity_bearing_b"
+    component: bearing_b
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 2.0, noise_std: 0.15, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "3d"                      # t* = unmittelbar nach Fehl-Schmierung
+      end: "28d"
+      target_delta: 4.8                # -> ~6.8 mm/s (Zone D): klare Degradation
+      shape: progressive
+
+  - key: bearing_temp_b
+    name: "bearing_temperature_b"
+    component: bearing_b
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline: { mean: 50.0, noise_std: 1.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "12d"                     # Temperatur folgt der Vibration (Spätindikator)
+      end: "28d"
+      target_delta: 26.0               # -> ~76 °C, Warnschwelle
+
+maintenance_events:
+  - offset: "2d09h"
+    component: bearing_a
+    type: lubrication
+    description: >
+      Nachschmierung Lager A mit Schmierstoff X (Lithiumkomplex-Fett NLGI 2,
+      Grundölviskosität ISO VG 150) – spezifikationskonform.
+    performed_by: "PSEUDO_M01"
+  - offset: "2d09h"
+    component: bearing_b
+    type: lubrication
+    description: >
+      Nachschmierung Lager B mit Schmierstoff Y (Mehrzweckfett NLGI 2, Grundöl
+      ISO VG 46) – Grundölviskosität zu niedrig für Drehzahl/Last (nicht spezkonform).
+    performed_by: "PSEUDO_M01"
+
+worker_notes:
+  - offset: "2d10h"
+    shift: frueh
+    author: "PSEUDO_W02"
+    text: >
+      PA-03 beide Lager nachgeschmiert. Für Lager B war das vorgesehene Fett alle,
+      Ersatzfett genommen – sollte gehen. Vermerkt für später.
+  - offset: "20d22h"
+    shift: nacht
+    author: "PSEUDO_W04"
+    text: >
+      PA-03 Abtriebsseite (Lager B) wird spürbar wärmer und lauter als die
+      Antriebsseite. Antriebsseite (Lager A) ruhig. Komisch, beide gleich alt.
+
+alarms:
+  - offset: "24d06h"
+    component: bearing_b
+    data_point: bearing_temp_b
+    code: "BRG_B_TEMP_WARN"
+    message: "Lagertemperatur Abtriebsseite über Warnschwelle"
+    severity: warning
+    category: hardware
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: vib_rms_b
+    type: ramp
+    t_star: "3d"
+    expected_detection_window: ["3d", "7d"]
+  control_signal:
+    - { data_point: vib_rms_a, role: "Kontrolle: darf NICHT als Drift gemeldet werden (normale Alterung)" }
+  causal_story:
+    cause_event: "maintenance_events: Schmierstoff Y an Lager B (2d09h)"
+    effect: "beschleunigte Degradation vib_rms_b ab 3d"
+    contrast: "Lager A (Schmierstoff X) bleibt stabil"
+  expected_false_alarms: 0
+  narrative_anchor: >
+    Für die Wartungszyklen-Analyse: dieselbe Wartungsart (Nachschmierung) führt je
+    nach Schmierstoff zu unterschiedlicher Folge-Degradation. Drift nur an Lager B.

@@ -1,0 +1,173 @@
+# =============================================================================
+# FOREMAN Simulations-Szenario: bearing_drift (Lagerschaden Spindellager)
+# -----------------------------------------------------------------------------
+# Fachliche Begruendung, Quellen und F4-Validierungserwartung:
+#   docs/simulation/szenarien.md  (Abschnitt "bearing_drift")
+# Schema-Konvention (vorlaeufig, mit dem F3-Prompt abzugleichen):
+#   - Zeit-Offsets als Dauer-Strings: s/m/h/d (Sekunden/Minuten/Stunden/Tage),
+#     gemessen ab scenario.start. Beispiel: "7d", "16d3h", "5m".
+#   - data_points[].drift erzeugt die Abweichung gegen die bekannte Wahrheit (t*).
+#   - measurement_type/kind/unit/component_type/severity/category: nur Enum-Werte
+#     aus GROUND_TRUTH §5. Schwingung (RMS) hat keinen eigenen measurement_type ->
+#     auf "signal" mit unit "mm/s" gemappt (siehe szenarien.md, Schema-Hinweis).
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: bearing_drift
+  title: "Spindellager-Schaden – gradueller Vibrationsanstieg mit spätem Temperaturalarm"
+  description: >
+    Gesunde CNC-Spindel über eine Woche, danach beginnende Außenring-Schädigung
+    am Spindellager. Der Schwingungs-Effektivwert (RMS) steigt graduell über rund
+    zwei Wochen (ISO-20816-Zonen A→C), die Lagertemperatur folgt als SPÄTER
+    Indikator erst Tage danach. Eine Werker-Notiz dokumentiert ein Geräusch zwei
+    Schichten vor dem Temperaturalarm – die "hatten wir das schon mal"-Story.
+  start: "2026-03-02T06:00:00+01:00"   # Montag, Frühschicht
+  duration: "21d"
+  sample_interval: "5m"
+
+line:
+  label: "Zerspanung Linie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "SIM-CNC-001"
+  label: "Bearbeitungszentrum BAZ-01"
+  machine_class: "cnc_machining_center"
+  manufacturer: "SimWerk"
+  location: "Halle West / Linie 1"
+
+components:
+  - key: spindle
+    label: "Hauptspindel"
+    component_type: spindle
+  - key: spindle_bearing
+    label: "Spindellager vorn (DE)"
+    component_type: bearing
+
+# -----------------------------------------------------------------------------
+# Schicht-/Wochenend-Saisonalität (gilt als Default für alle data_points,
+# pro Datenpunkt überschreibbar). Liefert dem Drift-Reasoner das Saison-Muster,
+# das seine Deseasonalisierung/State-Gating bewältigen muss.
+# -----------------------------------------------------------------------------
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.05 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.90 }
+  weekend: idle           # Sa/So: Maschine steht (machine_state = 0)
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }   # 1 in Schicht, 0 bei Stillstand/WE
+
+  - key: vib_rms
+    name: "vibration_rms_velocity_spindle_bearing"
+    component: spindle_bearing
+    kind: analog
+    measurement_type: signal          # Schwingung: kein eigener Enum -> signal
+    unit: "mm/s"                       # RMS-Schwinggeschwindigkeit (ISO 20816)
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5                    # Zone B/C-Grenze (mittelgroße Maschine)
+    baseline:
+      mean: 1.8                        # Zone A/B: gesund
+      noise_std: 0.15
+      gated_by: machine_state          # nur im Lauf Signal, sonst ~0
+    drift:
+      type: ramp                       # gradueller Verschleiß (Drift-Doc §7)
+      start: "7d"                      # t* = Beginn Außenring-Schädigung
+      end: "21d"
+      target_delta: 5.2                # +5.2 mm/s -> ~7.0 mm/s Endwert (Zone D)
+      shape: progressive               # leicht beschleunigend zum Ende
+
+  - key: bearing_temp
+    name: "bearing_temperature_spindle"
+    component: spindle_bearing
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline:
+      mean: 52.0
+      noise_std: 1.2
+      gated_by: machine_state
+    drift:
+      type: ramp
+      start: "15d"                     # SPÄTER Indikator: Temperatur folgt der Vibration
+      end: "21d"
+      target_delta: 30.0               # -> ~82 °C (kritisch) am Ende
+
+  - key: spindle_current
+    name: "spindle_motor_current"
+    component: spindle
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 22.0
+    baseline:
+      mean: 12.5
+      noise_std: 0.6
+      gated_by: machine_state
+    # leichte Mitkopplung: erhöhte Reibung -> minimal höhere Stromaufnahme
+    drift:
+      type: ramp
+      start: "12d"
+      end: "21d"
+      target_delta: 1.8
+
+maintenance_events: []
+
+worker_notes:
+  - offset: "16d14h"                   # Spätschicht, ~2 Schichten vor Temp-Alarm
+    shift: spaet
+    author: "PSEUDO_W03"               # synthetisches Pseudonym (Sim)
+    text: >
+      Spindel BAZ-01 macht beim Hochlauf ein mahlendes/singendes Geräusch,
+      letzte Woche noch nicht da. Werte unauffällig, aber das Lager beobachten.
+
+alarms:
+  - offset: "17d08h"
+    component: spindle_bearing
+    data_point: bearing_temp
+    code: "BRG_TEMP_WARN"
+    message: "Lagertemperatur Spindel über Warnschwelle (>75 °C)"
+    severity: warning
+    category: hardware
+  - offset: "20d11h"
+    component: spindle_bearing
+    data_point: bearing_temp
+    code: "BRG_TEMP_CRIT"
+    message: "Lagertemperatur Spindel kritisch (>80 °C) – Inspektion erforderlich"
+    severity: critical
+    category: hardware
+
+# -----------------------------------------------------------------------------
+# GROUND TRUTH für die F4-Drift-Reasoner-Validierung
+# -----------------------------------------------------------------------------
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: vib_rms
+    type: ramp
+    t_star: "7d"                       # Injektions-Start
+    expected_detection_window: ["7d", "10d"]   # Reasoner soll hier melden
+  secondary_confirmation:
+    - { data_point: bearing_temp, onset: "15d", role: "späte Bestätigung" }
+    - { data_point: spindle_current, onset: "12d", role: "schwaches Mitsignal" }
+  expected_false_alarms: 0
+  narrative_anchor: >
+    Der Vibrations-Drift (t*=7d) muss deutlich VOR der Werker-Notiz (~16d) und
+    VOR dem Temperaturalarm (~17d) erkannt werden – das ist der Frühwarn-Mehrwert.

@@ -25,6 +25,7 @@ from sqlalchemy.pool import NullPool
 
 from foreman.api.deps import get_redactor
 from foreman.config import Settings, get_settings
+from foreman.core.pseudonymize import Pseudonymizer, build_pseudonymizer
 from foreman.db.session import get_session
 from foreman.main import create_app
 
@@ -159,6 +160,40 @@ async def raw_conn(_migrated_db: None) -> AsyncIterator[asyncpg.Connection]:
         yield conn
     finally:
         await conn.close()
+
+
+@pytest_asyncio.fixture
+async def clean_db(test_settings: Settings, _migrated_db: None) -> AsyncIterator[None]:
+    """Leert die Test-DB vor dem Test (für direkte Service-/Ingestion-Tests)."""
+    engine = create_async_engine(test_settings.database_url, poolclass=NullPool)
+    async with engine.begin() as conn:
+        await conn.execute(_TRUNCATE_SQL)
+    await engine.dispose()
+    yield
+
+
+@pytest_asyncio.fixture
+async def db_session(
+    test_settings: Settings, clean_db: None
+) -> AsyncIterator[object]:
+    """Eine AsyncSession gegen die (geleerte) Test-DB — für IngestionService-Tests."""
+    engine = create_async_engine(test_settings.database_url, poolclass=NullPool)
+    maker = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
+    async with maker() as session:
+        yield session
+    await engine.dispose()
+
+
+@pytest.fixture
+def pseudonymizer(test_settings: Settings) -> Pseudonymizer:
+    """Pseudonymizer aus den Test-Schlüsseln (HMAC, §8)."""
+    return build_pseudonymizer(test_settings)
+
+
+@pytest.fixture
+def fake_redactor() -> FakeRedactor:
+    """NER-Stub (maskiert bekannte Namen) — kein 560-MB-spaCy-Modell in der Suite."""
+    return FakeRedactor()
 
 
 @pytest_asyncio.fixture

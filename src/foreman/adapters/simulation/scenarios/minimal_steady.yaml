@@ -1,0 +1,67 @@
+# =============================================================================
+# FOREMAN Simulations-Szenario: minimal_steady (driftfrei)
+# -----------------------------------------------------------------------------
+# Schlankes, garantiert driftfreies Szenario (F3) für den F4-Fehlalarm-Test:
+# gleiche Struktur wie minimal_bearing_drift, aber KEIN drift-Block. Jede
+# Drift-Meldung des Reasoners auf diesem Szenario ist ein Fehlalarm.
+# Schema-Konvention: siehe Kopf von bearing_drift.yaml / scenario.py.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: minimal_steady
+  title: "Minimal-Szenario – driftfrei (F4-Fehlalarm-Test)"
+  description: >
+    Drei Tage gesunde CNC-Spindel: Schicht-Saisonalität und Rauschen, aber
+    KEINE injizierte Drift. Negativkontrolle für die Drift-Erkennung (F4).
+  start: "2026-05-04T06:00:00+02:00"
+  duration: "3d"
+  sample_interval: "30m"
+
+line:
+  label: "Test-Linie 1"
+  location: "Test-Halle"
+
+machine:
+  external_id: "MINI-CNC-002"
+  label: "Test-Bearbeitungszentrum 2"
+  machine_class: "cnc_machining_center"
+  manufacturer: "SimWerk"
+
+components:
+  - { key: spindle_bearing, label: "Spindellager vorn", component_type: bearing }
+
+seasonality:
+  shifts:
+    frueh: { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet: { from: "14:00", to: "22:00", load_factor: 1.05 }
+    nacht: { from: "22:00", to: "06:00", load_factor: 0.90 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: machine_running
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: bool
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: vib_rms
+    name: vibration_rms_velocity_spindle_bearing
+    component: spindle_bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 1.8, noise_std: 0.15, gated_by: machine_state }
+    # KEIN drift-Block -> stationär (nur Saisonalität + Rauschen)
+
+ground_truth:
+  drift_present: false
+  expected_false_alarms: 0

@@ -91,13 +91,69 @@ Stellt für jede Stammdaten- und Ereignis-Ressource Anlegen, Auflisten und Einze
 **Warum existiert es / wo sitzt es?**
 Die fachliche Oberfläche der Plattform. Bei Wartungen, Alarmen und Schichtberichten greifen die Schreibpfade automatisch die Datenschutz-Schicht: Personen-Felder werden tokenisiert, Schichtbericht-Texte maskiert.
 
-### Ingestion (`api/routers/readings.py`)
+### Ingestion-Endpunkt (`api/routers/readings.py`)
 
 **Was tut es?**
-Nimmt ganze Mess-Pakete auf einmal entgegen und schreibt sie im schnellsten Massen-Verfahren (COPY) in die Zeitreihen-Tabelle.
+Nimmt ganze Mess-Pakete per HTTP entgegen und schreibt sie im schnellsten Massen-Verfahren (COPY) in die Zeitreihen-Tabelle.
 
 **Warum existiert es / wo sitzt es?**
-Der Daten-Eingang für Sensorwerte. Einzel-Inserts wären viel zu langsam; das Befüllen aus echten Protokollen (OPC UA, MQTT …) folgt in einer späteren Phase über denselben Pfad.
+Der HTTP-Daten-Eingang für Sensorwerte. Er nutzt seit F3 denselben geteilten COPY-Schreibweg (`ingestion/service.py: copy_readings`) wie der Simulations-/Protokoll-Adapter — es gibt nur einen Reading-Schreibpfad, keine Einzel-Inserts.
+
+### Internes Normalformat (`ingestion/normalized.py`)
+
+**Was tut es?**
+Definiert das einheitliche Format, das jeder Adapter ausgibt: einen normalisierten Messwert (`NormalizedReading`) und vier diskrete Ereignis-Typen (Alarm, Produktionslauf, Wartung, Werker-Notiz). Alle Zeitstempel werden auf tz-aware UTC gezwungen.
+
+**Warum existiert es / wo sitzt es?**
+Die Sprachgrenze der Datenakquise: oberhalb des Adapters weiß niemand mehr, ob die Daten aus OPC UA, MQTT oder der Simulation stammen. Das Reasoning und die DB sehen nur dieses Format.
+
+### Adapter-Interface & Registry (`ingestion/adapter.py`, `ingestion/registry.py`)
+
+**Was tut es?**
+`SourceAdapter` ist die einzige Schnittstelle, die die Ingestion kennt — ein Adapter seedet seine Topologie und liefert (zeitlich sortiert) Readings und Events. Die Registry lädt die per Config aktiven Adapter über ihren Namen.
+
+**Warum existiert es / wo sitzt es?**
+Die Plugin-Naht der Datenakquise. Ein neuer Protokoll-Adapter wird einfach registriert, ohne dass der IngestionService geändert werden muss.
+
+### Ingestion-Service & Dual-Write (`ingestion/service.py`, `ingestion/semantic.py`)
+
+**Was tut es?**
+Der Service konsumiert den Strom eines Adapters: Messwerte werden gebatcht und per COPY geschrieben, diskrete Ereignisse landen in ihren Tabellen. Personen-Felder laufen dabei durch die Datenschutz-Schicht (Namen maskiert, Autoren/Ausführer tokenisiert). Semantische Ereignisse werden zusätzlich best-effort ans Gedächtnis-Substrat gemeldet und in `semantic_events` gespiegelt.
+
+**Warum existiert es / wo sitzt es?**
+Das Herz der Aufnahme. Der Dual-Write ist bewusst nicht-blockierend: Fällt das Substrat aus, landen Readings und Ereignisse trotzdem vollständig in der Datenbank — nur die Referenz aufs Substrat bleibt leer und der Fehlschlag wird geloggt.
+
+### Simulations-Adapter — Szenario & Signale (`adapters/simulation/scenario.py`, `adapters/simulation/signals.py`)
+
+**Was tut es?**
+Das Szenario-Modell liest und prüft eine YAML-Beschreibung der Anlage (Linie → Maschine → Komponente → Datenpunkt), ihrer Signal-Profile und der injizierten Drift; ungültige Szenarien werden abgelehnt. Die Signal-Generatoren erzeugen daraus Werte: Grundniveau, Schicht-Saisonalität, Rauschen — plus injizierbare Drift (Sprung, Rampe, Streuungs-Anstieg) ab einem bekannten Startzeitpunkt.
+
+**Warum existiert es / wo sitzt es?**
+Die Datengrundlage mit bekannter Wahrheit. Genau gegen diese bekannten Drift-Startpunkte wird später der Drift-Reasoner (F4) validiert; das driftfreie Szenario ist der Fehlalarm-Test.
+
+### Simulations-Adapter — Seeding & Generator (`adapters/simulation/seed.py`, `adapters/simulation/adapter.py`)
+
+**Was tut es?**
+Das Seeding legt die im Szenario beschriebene Anlagen-Topologie idempotent an (zweimal ausführen erzeugt keine Duplikate) und merkt sich die echten Datenbank-IDs. Der Adapter verbindet Szenario, Signale und diese IDs zur normalisierten Ausgabe.
+
+**Warum existiert es / wo sitzt es?**
+Der konkrete erste Adapter. Er erfüllt das `SourceAdapter`-Interface und ist damit für den Service austauschbar gegen echte Protokoll-Adapter.
+
+### Simulations-Runner (`adapters/simulation/runner.py`)
+
+**Was tut es?**
+Der Kommandozeilen-Einstieg mit zwei Modi: `backfill` erzeugt schnell Tage an Historie, `live` streamt im Wall-Clock-Takt für die Demo. Aufruf: `python -m foreman.adapters.simulation.runner --scenario … --mode backfill|live`.
+
+**Warum existiert es / wo sitzt es?**
+Macht die Simulation startbar — als Vordergrund-Prozess, ohne separaten Job-Worker. Backfill ist ein bewusster Sonderlauf in vergangene Zeitfenster (für F4-Validierung und Dashboard-Historie).
+
+### Simulations-Szenarien (`adapters/simulation/scenarios/*.yaml`)
+
+**Was tut es?**
+Die mitgelieferten Szenario-Beschreibungen: realistische Verschleiß-Geschichten (Lagerschaden, Werkzeugverschleiß, Schmierstoff-Korrelation), eine gesunde Maschine ohne Drift sowie zwei schlanke Minimal-Szenarien für Tests und Demo.
+
+**Warum existiert es / wo sitzt es?**
+Die fachlich begründete (ISO-20816 u. a.) Daten-Bibliothek. Jedes Szenario trägt seine eigene „bekannte Wahrheit" (Drift-Startpunkt, Erkennungsfenster) für die spätere Reasoner-Abnahme.
 
 ### Substrat-Anbindung (`substrate/client.py`, `substrate/smoke.py`, `api/routers/substrate.py`)
 

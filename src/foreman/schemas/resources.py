@@ -16,7 +16,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # Geschlossene Wertebereiche (GROUND_TRUTH §5, ohne „…"-Erweiterung).
 DataPointKind = Literal["analog", "digital", "setpoint", "counter"]
-DataPointSource = Literal["opcua", "modbus", "mqtt", "s7"]
+# `simulation`: synthetische Datenpunkte des Simulations-Adapters (F3). Bewusst
+# als eigener Wert geführt, damit Sim-Daten nie als reales Protokoll getarnt
+# werden (GROUND_TRUTH §5). Kein DB-CHECK-Constraint vorhanden → keine Migration.
+DataPointSource = Literal["opcua", "modbus", "mqtt", "s7", "simulation"]
 AlarmSeverity = Literal["info", "warning", "alarm", "critical", "emergency"]
 
 

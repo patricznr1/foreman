@@ -1,0 +1,132 @@
+# =============================================================================
+# FOREMAN Simulations-Szenario: healthy_baseline (gesunde Maschine, KEIN Drift)
+# -----------------------------------------------------------------------------
+# Zweck: Fehlalarm-Test des Drift-Reasoners (F4). Enthält volle Schicht- und
+# Wochenend-Saisonalität, aber KEINE Degradation. Der Drift-Reasoner darf hier
+# NICHT auslösen – das prüft seine Deseasonalisierung/State-Gating
+# (docs/research/drift-erkennung-verfahren.md §3 und §7).
+# Schema-Konvention: siehe Kopf von bearing_drift.yaml.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: healthy_baseline
+  title: "Gesunde Maschine über Schichten und Wochenende – Saisonalität ohne Drift"
+  description: >
+    Dieselbe Maschinen-/Sensorstruktur wie bearing_drift, aber über zehn Tage
+    völlig gesund: ausgeprägte Schicht-Saisonalität (Früh/Spät/Nacht mit
+    unterschiedlichem Lastniveau) und ein Wochenende mit Stillstand. Alle Signale
+    schwanken innerhalb des Normalbands; es wird KEINE Drift injiziert. Dieses
+    Szenario ist der Fehlalarm-Test: ein korrekt gebauter Drift-Reasoner meldet
+    hier nichts.
+  start: "2026-03-30T06:00:00+02:00"   # Montag, Frühschicht
+  duration: "10d"                       # Mo–Mi der Folgewoche, inkl. ganzem Wochenende
+  sample_interval: "5m"
+
+line:
+  label: "Zerspanung Linie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "SIM-CNC-001"
+  label: "Bearbeitungszentrum BAZ-01"
+  machine_class: "cnc_machining_center"
+  manufacturer: "SimWerk"
+  location: "Halle West / Linie 1"
+
+components:
+  - key: spindle
+    label: "Hauptspindel"
+    component_type: spindle
+  - key: spindle_bearing
+    label: "Spindellager vorn (DE)"
+    component_type: bearing
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.05 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.90 }
+  weekend: idle           # Sa/So: Stillstand -> Signale fallen auf Ruhewert
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: vib_rms
+    name: "vibration_rms_velocity_spindle_bearing"
+    component: spindle_bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline:
+      mean: 1.8
+      noise_std: 0.15
+      gated_by: machine_state
+    # KEIN drift-Block -> stationär (nur Schicht-Saisonalität + Rauschen)
+
+  - key: bearing_temp
+    name: "bearing_temperature_spindle"
+    component: spindle_bearing
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline:
+      mean: 52.0
+      noise_std: 1.2
+      gated_by: machine_state
+
+  - key: spindle_current
+    name: "spindle_motor_current"
+    component: spindle
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 22.0
+    baseline:
+      mean: 12.5
+      noise_std: 0.6
+      gated_by: machine_state
+
+maintenance_events: []
+
+worker_notes:
+  - offset: "3d07h"
+    shift: frueh
+    author: "PSEUDO_W01"
+    text: >
+      BAZ-01 läuft rund, nichts Auffälliges. Routinekontrolle Frühschicht ok.
+  - offset: "8d22h"
+    shift: nacht
+    author: "PSEUDO_W05"
+    text: >
+      Nachtschicht ruhig, Maschine unauffällig. Wochenende stand sie wie geplant.
+
+alarms: []
+
+ground_truth:
+  drift_present: false
+  expected_drift_detections: 0
+  expected_false_alarms: 0
+  tests:
+    - "Schichtwechsel (Last-/Temperatursprünge) dürfen NICHT als Drift gemeldet werden."
+    - "Wochenend-Stillstand (machine_state=0) dürfen NICHT als Drift/Anomalie gemeldet werden."
+  narrative_anchor: >
+    Negativkontrolle. Saisonalität ohne Verschleiß. Jede Meldung des Drift-Reasoners
+    auf diesem Szenario ist ein Fehlalarm und ein Abnahme-Fehlschlag (F4).

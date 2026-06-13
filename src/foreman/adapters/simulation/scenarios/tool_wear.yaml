@@ -1,0 +1,167 @@
+# =============================================================================
+# FOREMAN Simulations-Szenario: tool_wear (Werkzeugverschleiß CNC-Spindel)
+# -----------------------------------------------------------------------------
+# Fachliche Begruendung, Quellen und F4-Validierungserwartung:
+#   docs/simulation/szenarien.md  (Abschnitt "tool_wear")
+# Schema-Konvention: siehe Kopf von bearing_drift.yaml.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: tool_wear
+  title: "Werkzeugverschleiß – gradueller Anstieg von Spindellast/-strom über Betriebsstunden"
+  description: >
+    Frisch eingewechseltes Fräswerkzeug, das über mehrere Tage Zwei-Schicht-Betrieb
+    am Flankenverschleiß (VB) altert. Spindel-Drehmoment und Motorstrom steigen
+    monoton mit dem Verschleiß (Schnittkraft ∝ VB); gegen Standzeitende beschleunigt
+    der Anstieg, und die Drehzahlregelung zeigt eine kleine Regelabweichung unter
+    Last. Kein Lager-, sondern ein Werkzeugproblem – andere Signatur, anderes Bauteil.
+  start: "2026-04-06T06:00:00+02:00"   # Montag, Frühschicht
+  duration: "10d"
+  sample_interval: "2m"
+
+line:
+  label: "Zerspanung Linie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "SIM-CNC-002"
+  label: "Bearbeitungszentrum BAZ-02"
+  machine_class: "cnc_machining_center"
+  manufacturer: "SimWerk"
+  location: "Halle West / Linie 1"
+
+components:
+  - key: spindle
+    label: "Hauptspindel"
+    component_type: spindle
+  - key: feed_drive
+    label: "Vorschubantrieb X"
+    component_type: drive
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+  weekend: idle
+  note: "Zwei-Schicht-Betrieb (frueh+spaet), keine Nachtschicht."
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: spindle_torque
+    name: "spindle_cutting_torque"
+    component: spindle
+    kind: analog
+    measurement_type: torque
+    unit: "Nm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 45.0
+    baseline:
+      mean: 28.0                       # konstanter Schnittprozess, gesundes Werkzeug
+      noise_std: 1.5
+      gated_by: machine_state
+    drift:
+      type: ramp
+      start: "2d"                      # t* = nach Einlaufphase frisches Werkzeug
+      end: "10d"
+      target_delta: 12.0               # -> ~40 Nm, Flankenverschleiß steigt Schnittkraft
+      shape: progressive               # beschleunigt gegen Standzeitende (VB-Knick)
+
+  - key: spindle_current
+    name: "spindle_motor_current"
+    component: spindle
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 20.0
+    baseline:
+      mean: 11.0
+      noise_std: 0.5
+      gated_by: machine_state
+    drift:
+      type: ramp                       # Strom spiegelt das Schnittmoment (∝)
+      start: "2d"
+      end: "10d"
+      target_delta: 4.5                # -> ~15.5 A
+
+  - key: spindle_speed_set
+    name: "spindle_speed_setpoint"
+    component: spindle
+    kind: setpoint
+    measurement_type: speed
+    unit: "rpm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 12000.0
+    baseline: { mean: 8000.0, noise_std: 0.0, gated_by: machine_state }
+
+  - key: spindle_speed_act
+    name: "spindle_speed_actual"
+    component: spindle
+    kind: analog
+    measurement_type: speed
+    unit: "rpm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 12000.0
+    baseline:
+      mean: 8000.0
+      noise_std: 8.0
+      gated_by: machine_state
+    drift:
+      type: variance                   # Regelabweichung: Drehzahl "zittert" unter Last
+      start: "7d"                      # erst spät, wenn Last/Strom hoch
+      end: "10d"
+      std_multiplier: 4.0              # Streuung der Ist-Drehzahl vervierfacht sich
+
+maintenance_events:
+  - offset: "0d"
+    component: spindle
+    type: tool_change
+    description: "Werkzeugwechsel: neuer Schaftfräser Ø12 mm eingewechselt (Standzeitbeginn)."
+    performed_by: "PSEUDO_M02"
+
+worker_notes:
+  - offset: "8d09h"
+    shift: frueh
+    author: "PSEUDO_W01"
+    text: >
+      BAZ-02: Oberfläche am Teil wird rauer, Späne werden bläulich. Werkzeug läuft
+      schon ein paar Tage – riecht nach Standzeitende. Strom/Last laut Anzeige höher.
+
+alarms:
+  - offset: "9d12h"
+    component: spindle
+    data_point: spindle_torque
+    code: "TOOL_LOAD_HIGH"
+    message: "Spindellast über Erwartungswert – Werkzeugverschleiß vermutet"
+    severity: warning
+    category: process
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: spindle_torque
+    type: ramp
+    t_star: "2d"
+    expected_detection_window: ["2d", "4d"]
+  secondary_confirmation:
+    - { data_point: spindle_current, onset: "2d", role: "redundantes Lastsignal (∝ Moment)" }
+    - { data_point: spindle_speed_act, onset: "7d", role: "späte Regelabweichung (variance)" }
+  expected_false_alarms: 0
+  narrative_anchor: >
+    Last-/Stromdrift ab t*=2d erkennbar; Werker bemerkt Verschleiß erst ~8d über
+    Oberfläche/Späne. Frühwarnung über Last/Strom Tage vor dem sichtbaren Effekt.
