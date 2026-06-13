@@ -1,0 +1,108 @@
+# ============================================================
+#  FOREMAN — api/deps.py
+#  Zweck: Wiederverwendbare FastAPI-Dependencies (DB, Settings, Auth,
+#         Pseudonymizer, Redactor, Substrat-Client).
+#  Architektur-Einordnung: HTTP-Schicht (Schicht 2). Dependency Injection
+#         statt globaler Zustände (§6).
+# ============================================================
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from functools import lru_cache
+from typing import Annotated
+
+import jwt
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from foreman.config import Settings, get_settings
+from foreman.core.pseudonymize import Pseudonymizer, build_pseudonymizer
+from foreman.core.redact import PresidioRedactor, Redactor, build_redactor
+from foreman.core.security import decode_access_token
+from foreman.db.models import User
+from foreman.db.session import get_session
+from foreman.substrate.client import SubstrateClient
+
+# --- Basis-Dependencies ---
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+
+def _extract_bearer(authorization: str | None) -> str:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Nicht authentifiziert",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return authorization.split(" ", 1)[1].strip()
+
+
+async def get_current_user(
+    session: SessionDep,
+    settings: SettingsDep,
+    authorization: Annotated[str | None, Header()] = None,
+) -> User:
+    """Lädt den authentifizierten Nutzer aus dem Bearer-JWT. 401 bei Ungültigkeit."""
+    token = _extract_bearer(authorization)
+    try:
+        payload = decode_access_token(token, settings)
+    except jwt.InvalidTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültiges oder abgelaufenes Token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    subject = payload.get("sub")
+    if subject is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token ohne Subjekt"
+        )
+    user = await session.get(User, int(subject))
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Nutzer existiert nicht"
+        )
+    return user
+
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_pseudonymizer(settings: SettingsDep) -> Pseudonymizer:
+    """Baut den Pseudonymizer (HMAC) aus der Config."""
+    return build_pseudonymizer(settings)
+
+
+PseudonymizerDep = Annotated[Pseudonymizer, Depends(get_pseudonymizer)]
+
+
+@lru_cache(maxsize=1)
+def _redactor_singleton() -> PresidioRedactor:
+    # Einmalig gebaut; das schwere spaCy-Modell wird erst beim ersten Aufruf geladen.
+    return build_redactor()
+
+
+def get_redactor() -> Redactor:
+    """Liefert den (gecachten) NER-Redactor. In Tests via Override ersetzbar."""
+    return _redactor_singleton()
+
+
+RedactorDep = Annotated[Redactor, Depends(get_redactor)]
+
+
+async def get_substrate_client(
+    settings: SettingsDep,
+) -> AsyncIterator[SubstrateClient | None]:
+    """Liefert den Substrat-Client oder None (nicht konfiguriert). Schließt sauber."""
+    if not settings.substrate_base_url:
+        yield None
+        return
+    client = SubstrateClient.from_settings(settings)
+    try:
+        yield client
+    finally:
+        await client.aclose()
+
+
+SubstrateClientDep = Annotated[SubstrateClient | None, Depends(get_substrate_client)]

@@ -113,8 +113,18 @@ FOREMAN builds on an **external, biologically inspired memory substrate** that i
 foreman/
 ├── README.md            ← you are here
 ├── GROUND_TRUTH.md      ← the specification (single source of truth)
+├── pyproject.toml       ← deps + strict typing/lint/test config
+├── docker-compose.yml   ← TimescaleDB + app
+├── Dockerfile           ← runtime image (incl. NER model)
+├── postgres.conf        ← TimescaleDB tuning
+├── alembic.ini
+├── src/foreman/         ← application package (config · db · core · api · substrate)
+├── migrations/          ← Alembic migrations (schema + TimescaleDB setup)
+├── tests/               ← unit + integration tests
 ├── docs/
-│   └── WALKTHROUGH.md   ← plain-language explanation of every building block (German)
+│   ├── WALKTHROUGH.md   ← plain-language explanation of every building block (German)
+│   ├── research/        ← binding implementation references
+│   └── compliance/      ← EU AI Act + GDPR assessments
 ├── .env.example         ← configuration contract (no secrets)
 └── .gitignore           ← protects secrets & the memory connection
 ```
@@ -143,7 +153,7 @@ Every change passes defined gates before it reaches `main`:
 - **Lint & complexity** — `ruff` / `eslint`, clean; cyclomatic-complexity gate
 - **Tests** — `pytest`, ≥ 85 % coverage, a mandatory test block per feature
 - **Security** — OWASP Web & LLM Top 10 (2025), secrets scan, dependency audit
-- **Privacy by design** — GDPR Art. 25: worker data anonymized at the adapter layer
+- **Privacy by design** — GDPR Art. 25: worker data pseudonymized at the adapter layer (HMAC tokens; free-text names NER-masked)
 - **EU AI Act** — risk classification documented before code is written (Phase 0)
 - **Observability** — structured per-reasoner logs + Prometheus metrics (OWASP A09)
 - **Human-in-the-loop** — safety-critical recommendations require operator acknowledgment (BSI)
@@ -155,9 +165,37 @@ See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
 ---
 
+## Local development
+
+Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), Docker.
+
+```bash
+# 1. Dependencies (isolated environment)
+uv venv --python 3.12
+uv pip install -e ".[dev]"
+
+# 2. NER model for worker-note redaction (~560 MB)
+uv run python -m spacy download de_core_news_lg
+
+# 3. Configuration — copy and fill in (never commit real secrets)
+cp .env.example .env
+
+# 4. Database + app
+docker compose up -d timescaledb
+uv run alembic upgrade head            # schema + TimescaleDB setup
+uv run uvicorn foreman.main:app --reload
+
+# 5. Quality gates
+uv run mypy && uv run ruff check && uv run pytest
+```
+
+Integration tests run against a real TimescaleDB (`timescale/timescaledb-ha:pg16`). Point `FOREMAN_TEST_DATABASE_URL` at a test database; without a reachable database the integration tests skip automatically.
+
+---
+
 ## Status
 
-🚧 **Active development.** Foundation phase: skeleton, data ingestion, first end-to-end reasoner (drift). Roadmap and detailed state live in the GROUND_TRUTH.
+🚧 **Active development.** Foundation (F2) implemented: FastAPI skeleton, full schema + TimescaleDB migrations, JWT auth, CRUD + batch ingestion, privacy layer (pseudonymization + NER), memory-substrate smoke test. Next: data adapters and the first end-to-end reasoner (drift). Roadmap and detailed state live in the GROUND_TRUTH.
 
 ---
 

@@ -1,0 +1,57 @@
+# ============================================================
+#  FOREMAN — docker-compose.yml
+#  Zweck: lokaler Stack — TimescaleDB (Zeitreihen + Vektor) + FOREMAN-App.
+#  Architektur-Einordnung: Betrieb (Docker Compose, Single-Node).
+#  DB-Image-Wahl + Volume/Secret nach docs/research/timescaledb-tuning-readings.md §5.
+#
+#  Secrets/Passwort: NIE im Klartext hier. Werte kommen aus der gitignorten
+#  .env (Compose lädt ./.env automatisch für ${VAR}-Interpolation und reicht
+#  sie via env_file in die App). `:?`-Syntax erzwingt Setzen — kein Default-Passwort.
+#  Voraussetzung für `docker compose up`: .env existiert (siehe README).
+# ============================================================
+
+services:
+  timescaledb:
+    # Standard-Postgres hat KEIN TimescaleDB — dieses Image bringt
+    # TimescaleDB + pgvector mit (Research §5).
+    image: timescale/timescaledb-ha:pg16
+    container_name: foreman_timescaledb
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER fehlt (.env)}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt (.env)}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB fehlt (.env)}
+    volumes:
+      - tsdb_data:/var/lib/postgresql/data          # benanntes Volume, nie Container-Schreibschicht
+      - ./postgres.conf:/etc/postgresql/postgresql.conf:ro
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    ports:
+      - "5432:5432"
+    shm_size: "1g"                                   # Shared Memory für Parallel-Workers
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: foreman_app
+    env_file:
+      - .env
+    environment:
+      # Im Compose-Netz erreicht die App die DB über den Service-Namen.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@timescaledb:5432/${POSTGRES_DB}
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # Migrationen anwenden, dann App starten.
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn foreman.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  tsdb_data:
