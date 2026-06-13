@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-12 · **Status:** Fundament-Phase (Skeleton)
+**Stand:** 2026-06-13 · **Status:** Fundament-Phase (F2 implementiert — Skeleton, Schema, Migrationen, Auth, Datenschutz, Ingestion, Substrat-Smoke)
 
 ---
 
@@ -54,7 +54,7 @@ Drei Schichten:
 - Basis-Pfad: `/api/v1/`
 - Ressourcen-Stil: `/api/v1/<resource>` (Plural, snake_case in der DB)
 - Health-Check: `GET /health`
-- Auth-Middleware auf allem **außer** `/auth/login`, `/auth/register`, `/health`.
+- Auth-Middleware auf allem **außer** `/auth/login`, `/auth/register`, `/health` sowie der OpenAPI-Doku (`/`, `/docs`, `/redoc`, `/openapi.json`) und CORS-Preflight (`OPTIONS`).
 
 ### Routen (F2-Skeleton)
 
@@ -114,6 +114,9 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 
 *(Migrationen via Alembic. Jede Migration hier kurz vermerken.)*
 
+- **`0001_initial_schema`** — alle Tabellen aus §5 mit PK-/FK-Constraints + Lese-Indizes (`ix_data_points_machine`, `ix_alarms_machine_raised`, `ix_worker_notes_machine`). `readings` entsteht als gewöhnliche Tabelle (PK `(data_point_id, time)`).
+- **`0002_timescale_setup`** — aktiviert die `vector`-Extension und ergänzt `worker_notes.embedding vector(1024)` (deshalb liegt die Embedding-Spalte in 0002, nicht 0001); aktiviert `timescaledb`; macht `readings` zur Hypertable (1-Tages-Chunks); Columnstore (`segmentby=data_point_id`, `orderby=time DESC`, ab 7 Tagen); Continuous Aggregates `readings_1m`→`_1h`→`_1d` (1m real-time) mit Refresh-Policies; Retention 90 d / 1 a / 5 a / ∞. Quelle: `docs/research/timescaledb-tuning-readings.md` §3–§4.
+
 ---
 
 ## 6. Code-Konventionen
@@ -140,6 +143,7 @@ Jeder Implementation-Commit, der Code ändert, **muss** `docs/WALKTHROUGH.md` im
 - **Trennung System of Record vs. Reasoning-Schicht:** Der rechtsverbindliche, namentliche Nachweis (Prüf-/Wartungsprotokoll, QM-System, `users`, `audit_logs`) ist attributierbar unter Art. 6 Abs. 1 lit. c (z. B. BetrSichV §14/TRBS 1203, ArbSchG §6, DGUV). FOREMAN ist **nicht** dieses System of Record für die Signatur — die Nutzdatenbank speichert nur Token; Rück-Auflösung Token→Person ist kontrolliert/auditiert und nur für berechtigte Zwecke (Auskunft/Löschung Art. 15/17, HITL-/Behörden-Nachweis).
 - Klartext-Identität ausschließlich in `users`; Löschung via Crypto-Shredding (pro-Werker-Schlüssel) — Verhaltensdaten/Maschinen-Gedächtnis bleiben intakt. Löschfristen pro Feld: Nachweis-Felder (`performed_by`, `acknowledged_by`) an gesetzliche Aufbewahrungspflicht gekoppelt, `worker_notes` kürzer.
 - **Human-in-the-Loop (BSI):** FOREMAN gibt Empfehlungen, aktoriert nie selbst. Safety-kritische Alarme (`category=safety`) erfordern eine Operator-Quittierung (`alarms.acknowledged_at`/`acknowledged_by`), bevor sie als erledigt gelten.
+- **Freitext-Scope der NER-Maskierung:** NER greift in F2 nur auf `worker_notes.text` (das einzige als Werker-Freitext deklarierte Feld). `maintenance_events.description` und `alarms.message` sind als Sach-/SPS-Text gedacht und werden **nicht** maskiert — enthalten sie wider Erwarten Personennamen, bleibt das ein dokumentiertes Restrisiko (organisatorische Regel „keine vollen Namen"; bei Bedarf Redactor später auf diese Felder ausweiten).
 
 ---
 
