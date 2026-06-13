@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-13 · **Status:** Fundament-Phase (F2 implementiert — Skeleton, Schema, Migrationen, Auth, Datenschutz, Ingestion, Substrat-Smoke)
+**Stand:** 2026-06-13 · **Status:** Datenakquise-Phase (F3 implementiert — Ingestion-Service, Adapter-Interface + Registry, Simulations-Adapter mit Drift-Injektion, Dual-Write; baut auf F2-Fundament auf)
 
 ---
 
@@ -61,7 +61,7 @@ Drei Schichten:
 - `GET /health`
 - `POST /auth/register`, `POST /auth/login` (JWT-Ausgabe)
 - CRUD: `/api/v1/lines`, `/api/v1/machines`, `/api/v1/components`, `/api/v1/data_points`, `/api/v1/production_runs`, `/api/v1/maintenance_events`, `/api/v1/worker_notes`, `/api/v1/alarms`
-- `POST /api/v1/readings` — Batch-Aufnahme von Messwerten (in F3 vom Simulation-/Protokoll-Adapter befüllt)
+- `POST /api/v1/readings` — Batch-Aufnahme von Messwerten (HTTP). Nutzt seit F3 denselben geteilten COPY-Schreibweg wie der Ingestion-Service (`ingestion/service.py:copy_readings`) — siehe §12.
 - `GET /api/v1/substrate/smoke` — Substrat-Round-Trip (siehe §9)
 
 *(Reasoner-Routen werden in F4/F6 ergänzt, sobald implementiert.)*
@@ -84,7 +84,8 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - `id` PK · `machine_id` FK→machines · `label` · `component_type` (spindle/drive/bearing/motor/axis/…) · `created_at`
 
 **`data_points`** — Datenpunkte / Tags (ersetzt „sensors")
-- `id` PK · `machine_id` FK→machines (immer) · `component_id` FK→components (nullable) · `name` · `kind` (analog/digital/setpoint/counter) · `measurement_type` (voltage/current/dc_bus/temperature/speed/frequency/torque/force/signal/null) · `unit` (V/A/°C/rpm/Hz/Nm/N/kN/bool/…) · `source` (opcua/modbus/mqtt/s7) · `address` (Node-ID/Register) · `normal_min` · `normal_max` · `created_at`
+- `id` PK · `machine_id` FK→machines (immer) · `component_id` FK→components (nullable) · `name` · `kind` (analog/digital/setpoint/counter) · `measurement_type` (voltage/current/dc_bus/temperature/speed/frequency/torque/force/signal/null) · `unit` (V/A/°C/rpm/Hz/Nm/N/kN/bool/…) · `source` (opcua/modbus/mqtt/s7/**simulation**) · `address` (Node-ID/Register) · `normal_min` · `normal_max` · `created_at`
+  - `source = simulation` (F3): synthetische Datenpunkte des Simulations-Adapters — bewusst eigener Wert, damit Sim-Daten nie als reales Protokoll getarnt werden. Validierung im API-Schema (`DataPointSource`-Literal). **Kein DB-CHECK-Constraint** auf `source` vorhanden → **keine Migration** nötig (nur Type-/Doku-Nachzug).
 
 **`readings`** — TimescaleDB-Hypertable (analoge Messwerte + digitale I/O als 0/1)
 - `time` timestamptz · `data_point_id` FK→data_points · `value` double · `quality` smallint (nullable) · PK (`data_point_id`, `time`) · Hypertable auf `time`
@@ -238,3 +239,40 @@ Wie sich die Plattform zur Laufzeit verhält — was im Betrieb sichtbar und kon
 | Grafana-Dashboard | Härtung |
 
 > **Bau-Disziplin:** Diese Maßnahmen sind als verbindliche Gates/Prinzipien dokumentiert, werden aber **pro Phase** gebaut — kein Ops-Vorbau vor dem ersten laufenden Reasoner.
+
+---
+
+## 12. Datenakquise & Adapterschicht (F3)
+
+Die protokoll-agnostische Ingestion-Schicht unter `src/foreman/ingestion/` plus der erste konkrete Adapter unter `src/foreman/adapters/simulation/`.
+
+### 12.1 Internes Normalformat (`ingestion/normalized.py`)
+
+- `NormalizedReading(time [UTC, tz-aware], data_point_id, value, quality|None)` — passt 1:1 auf `readings`.
+- `NormalizedEvent` = diskriminierte Union (`kind`): `AlarmEvent`, `ProductionRunRecord`, `MaintenanceRecord`, `WorkerNoteRecord`. Alle Zeitstempel tz-aware UTC (naive → als UTC interpretiert).
+- Personen-Felder werden **roh** transportiert (`performed_by_ref`, `author_ref`, `text`) und erst im Service durch den F2-Schreibpfad geschützt — nie Klartext in der DB.
+
+### 12.2 Adapter-Interface & Registry (`ingestion/adapter.py`, `ingestion/registry.py`)
+
+- `SourceAdapter` (ABC) ist die **einzige** Schnittstelle der Ingestion: `name`, `async seed_topology(session)`, `readings()`, `events()`; `stream()` mischt beide zeitlich. Kein Protokoll-/Simulationswissen oberhalb des Adapters.
+- Registry: `register_adapter`/`create_adapter`/`load_active_adapters` lädt aktive Adapter per Name. Der Simulations-Adapter registriert sich beim Import unter `"simulation"`.
+
+### 12.3 Ingestion-Service & COPY-Einzigkeit (`ingestion/service.py`)
+
+- `IngestionService.ingest(adapter, *, pace=None)`: seedet Topologie, batcht Readings, schreibt Events.
+- **Einziger Reading-Schreibweg:** `copy_readings(session, rows)` (`asyncpg.copy_records_to_table`, Spalten `time, data_point_id, value, quality`). Genutzt von Service **und** `POST /api/v1/readings`. Keine Einzel-Inserts, kein zweiter Weg.
+- Diskrete Ereignisse → `alarms` / `production_runs` / `maintenance_events` / `worker_notes`. Personen-Felder: `worker_notes.text` NER-maskiert, `worker_notes.author` + `maintenance_events.performed_by` HMAC-tokenisiert (§8).
+
+### 12.4 Dual-Write ans Substrat (`ingestion/semantic.py`, §9-Fallback)
+
+- `record_semantic_event(...)` schreibt **immer** eine `semantic_events`-Zeile (`event_type`, `payload` jsonb, `machine_id`) und versucht best-effort `SubstrateClient.remember`. Erfolg → `substrate_ref` gesetzt; Fehlschlag/kein Substrat → `substrate_ref = NULL` + Log (Emoji). **Nicht-blockierend:** Substrat-Ausfall blockiert den DB-Schreibpfad nie. Nur diskrete Ereignisse (Alarm/Produktionslauf/Wartung) werden gespiegelt — Werker-Notizen und rohe Readings nicht.
+
+### 12.5 Simulations-Adapter (`adapters/simulation/`)
+
+- **Szenario-Format:** YAML, validiert durch `scenario.py` (Pydantic, strikt). Struktur: `scenario` (Identität + `start` absolut tz-aware, `duration`/`sample_interval` als Dauer-Strings) · `line` · `machine` · `components[]` · `seasonality` (Schichten + Wochenende) · `data_points[]` (Baseline + optional `drift` step|ramp|variance + optional `quality`) · `production_runs[]` · `maintenance_events[]` · `worker_notes[]` · `alarms[]` (Ereignis-Zeiten als Offsets ab `start`) · `ground_truth` (F4-Wahrheit: `drift_present`, `t_star`, Erkennungsfenster).
+- **Signale (`signals.py`):** Baseline × Schicht-Last + Gauss-Rauschen, State-Gating über `machine_running`; Drift step/ramp(progressiv)/variance ab bekanntem t*; optional Quality good/bad/missing (missing = Intervall ausgelassen, nicht 0).
+- **Seeding (`seed.py`):** idempotent über natürliche Schlüssel (`line.label`, `machine.external_id`, `(machine_id, component.label)`, `(machine_id, data_point.name)`).
+- **Runner (`runner.py`):** `python -m foreman.adapters.simulation.runner --scenario <name|pfad> --mode backfill|live [--speed --seed --batch-size --db-url]`. `backfill` = Historie schnell (F4/Dashboard); `live` = Wall-Clock-Takt (Demo). Kein Job-Worker (§3) — Vordergrund-Prozess.
+- **Szenarien (`adapters/simulation/scenarios/`):** `bearing_drift`, `tool_wear`, `lubrication_correlation`, `healthy_baseline` (fachlich begründet, F4-Validierungsmaterial) + `minimal_bearing_drift`/`minimal_steady` (Tests/Demo). Fachliche Begründung: `docs/simulation/szenarien.md`.
+
+> **Nicht in F3:** echte Protokoll-Adapter (OPC UA/MQTT/Modbus), Steady-State-Ableitung, Drift-Erkennung/Reasoner, `/metrics`, Dashboard.

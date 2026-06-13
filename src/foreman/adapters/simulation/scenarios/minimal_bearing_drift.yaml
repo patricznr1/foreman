@@ -1,0 +1,105 @@
+# =============================================================================
+# FOREMAN Simulations-Szenario: minimal_bearing_drift
+# -----------------------------------------------------------------------------
+# Schlankes Szenario für Tests und Demo (F3). Eine Linie, eine Maschine,
+# Spindellager mit Vibrations-Drift (ramp ab t*=1d). Demonstriert zusätzlich
+# Produktionsläufe, einen Alarm, ein Wartungsereignis (performed_by) und
+# Werker-Notizen (eine mit Personennamen für den NER-Maskierungs-Pfad).
+# Schema-Konvention: siehe Kopf von bearing_drift.yaml / scenario.py.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: minimal_bearing_drift
+  title: "Minimal-Szenario – Lager-Drift (Tests/Demo)"
+  description: >
+    Drei Tage CNC-Spindel mit beginnender Lager-Drift (Vibrations-RMS, ramp ab
+    t*=1d, progressiv). Enthält Produktionsläufe, einen Temperaturalarm, eine
+    Nachschmierung und zwei Werker-Notizen.
+  start: "2026-05-04T06:00:00+02:00"   # Montag, Frühschicht
+  duration: "3d"
+  sample_interval: "30m"
+
+line:
+  label: "Test-Linie 1"
+  location: "Test-Halle"
+
+machine:
+  external_id: "MINI-CNC-001"
+  label: "Test-Bearbeitungszentrum"
+  machine_class: "cnc_machining_center"
+  manufacturer: "SimWerk"
+
+components:
+  - { key: spindle, label: "Hauptspindel", component_type: spindle }
+  - { key: spindle_bearing, label: "Spindellager vorn", component_type: bearing }
+
+seasonality:
+  shifts:
+    frueh: { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet: { from: "14:00", to: "22:00", load_factor: 1.05 }
+    nacht: { from: "22:00", to: "06:00", load_factor: 0.90 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: machine_running
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: bool
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: vib_rms
+    name: vibration_rms_velocity_spindle_bearing
+    component: spindle_bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 1.8, noise_std: 0.15, gated_by: machine_state }
+    drift: { type: ramp, start: "1d", end: "3d", target_delta: 4.0, shape: progressive }
+
+  - key: bearing_temp
+    name: bearing_temperature_spindle
+    component: spindle_bearing
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline: { mean: 52.0, noise_std: 1.2, gated_by: machine_state }
+
+production_runs:
+  - { product_code: "P-100", order_id: "ORD-1", start: "0d", end: "1d" }
+  - { product_code: "P-200", start: "1d", end: "2d12h" }
+
+maintenance_events:
+  - { component: spindle_bearing, type: lubrication, offset: "0d12h",
+      description: "Lager nachgeschmiert, Schmierstoff Typ A.", performed_by: "U-1" }
+
+worker_notes:
+  - { offset: "1d07h", shift: frueh, author: "U-2",
+      text: "Kollege Schmidt meldet leichtes Geräusch an der Spindel." }
+  - { offset: "2d09h", shift: frueh, author: "U-3",
+      text: "Spindel läuft heiß, weiter beobachten." }
+
+alarms:
+  - { component: spindle_bearing, data_point: bearing_temp, offset: "2d11h",
+      code: "BRG_TEMP_WARN", message: "Lagertemperatur über Warnschwelle",
+      severity: warning, category: hardware }
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: vib_rms
+    type: ramp
+    t_star: "1d"
+    expected_detection_window: ["1d", "2d"]
+  expected_false_alarms: 0
