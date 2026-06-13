@@ -90,17 +90,18 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - `time` timestamptz · `data_point_id` FK→data_points · `value` double · `quality` smallint (nullable) · PK (`data_point_id`, `time`) · Hypertable auf `time`
 
 **`alarms`** — Fehlermeldungen + Nothalt
-- `id` PK · `machine_id` FK→machines · `component_id` FK (nullable) · `data_point_id` FK (nullable) · `code` · `message` · `severity` (info/warning/alarm/critical/emergency) · `category` (process/safety/hardware/electrical/…) · `raised_at` · `cleared_at` (nullable) · `acknowledged_at` (nullable) · `acknowledged_by` (anonymisiert, nullable) · `created_at`
+- `id` PK · `machine_id` FK→machines · `component_id` FK (nullable) · `data_point_id` FK (nullable) · `code` · `message` · `severity` (info/warning/alarm/critical/emergency) · `category` (process/safety/hardware/electrical/…) · `raised_at` · `cleared_at` (nullable) · `acknowledged_at` (nullable) · `acknowledged_by` (pseudonymisiert: HMAC-Token über `users.id`, nullable; **Nachweis-Bezug**, auditiert re-identifizierbar für HITL/Behörde) · `created_at`
 - Nothalt = `category=safety`, `severity=emergency`.
 
 **`production_runs`** — Produktionskontext (Linien-Ebene)
 - `id` PK · `line_id` FK→lines · `product_code` · `order_id` (nullable) · `batch` (nullable) · `started_at` · `ended_at` (nullable) · `created_at`
 
 **`maintenance_events`**
-- `id` PK · `machine_id` FK · `component_id` FK (nullable) · `type` · `performed_at` · `description` · `performed_by` (anonymisiert) · `created_at`
+- `id` PK · `machine_id` FK · `component_id` FK (nullable) · `type` · `performed_at` · `description` · `performed_by` (pseudonymisiert: HMAC-Token über `users.id`; **Nachweis-Bezug**, auditiert re-identifizierbar) · `created_at`
 
 **`worker_notes`** — Schichtberichte (KI-Felder in F2 leer/nullable)
-- `id` PK · `machine_id` FK (nullable) · `shift` · `text` · `classification` (nullable, später vom Encoder) · `embedding` (Vektor, nullable, später für semantische Suche) · `author` (anonymisiert) · `created_at`
+- `id` PK · `machine_id` FK (nullable) · `shift` · `text` · `classification` (nullable, später vom Encoder) · `embedding` (Vektor, nullable, später für semantische Suche) · `author` (pseudonymisiert: HMAC-Token über `users.id`) · `created_at`
+- `text` (Freitext): Personennamen werden **vor dem Insert** per NER maskiert (Restrisiko bleibt; nie als anonym deklariert).
 
 **`users`** — Auth
 - `id` PK · `email` (unique) · `password_hash` · `role` · `created_at`
@@ -135,7 +136,9 @@ Jeder Implementation-Commit, der Code ändert, **muss** `docs/WALKTHROUGH.md` im
 
 - Secrets ausschließlich in `.env` (gitignored). Repo ist öffentlich.
 - Anbindung an das Gedächtnis-Substrat nur über Umgebungsvariablen.
-- Werker-bezogene Daten werden im Adapter-Layer anonymisiert (Strategie offen, siehe Roadmap).
+- **Werker-bezogene Felder werden pseudonymisiert, NICHT anonymisiert** (deterministische HMAC-SHA-256-Tokenisierung über `users.id`, versionierter Schlüssel, Pepper im Secret-Store). Anonymisierung ist im Industrieumfeld weder vorgeschrieben noch das Ziel; für Nachweis-Felder wäre sie sogar rechtlich falsch. Details: `docs/research/anonymisierung-werkerdaten.md`.
+- **Trennung System of Record vs. Reasoning-Schicht:** Der rechtsverbindliche, namentliche Nachweis (Prüf-/Wartungsprotokoll, QM-System, `users`, `audit_logs`) ist attributierbar unter Art. 6 Abs. 1 lit. c (z. B. BetrSichV §14/TRBS 1203, ArbSchG §6, DGUV). FOREMAN ist **nicht** dieses System of Record für die Signatur — die Nutzdatenbank speichert nur Token; Rück-Auflösung Token→Person ist kontrolliert/auditiert und nur für berechtigte Zwecke (Auskunft/Löschung Art. 15/17, HITL-/Behörden-Nachweis).
+- Klartext-Identität ausschließlich in `users`; Löschung via Crypto-Shredding (pro-Werker-Schlüssel) — Verhaltensdaten/Maschinen-Gedächtnis bleiben intakt. Löschfristen pro Feld: Nachweis-Felder (`performed_by`, `acknowledged_by`) an gesetzliche Aufbewahrungspflicht gekoppelt, `worker_notes` kürzer.
 - **Human-in-the-Loop (BSI):** FOREMAN gibt Empfehlungen, aktoriert nie selbst. Safety-kritische Alarme (`category=safety`) erfordern eine Operator-Quittierung (`alarms.acknowledged_at`/`acknowledged_by`), bevor sie als erledigt gelten.
 
 ---
@@ -188,7 +191,7 @@ Jeder Endpoint/Service/Reasoner bringt mindestens mit:
 
 - **Security-Baseline:** OWASP Web Top 10 (2025) + OWASP LLM Top 10 (2025) für Reasoner-/LLM-Pfade + BSI-Zero-Trust-LLM-Prinzipien.
 - **Secrets-Scan:** keine Tokens/Keys im Diff (Repo ist öffentlich).
-- **Privacy-by-Design (Art. 25 DSGVO):** Werker-bezogene Daten werden im Adapter-Layer anonymisiert; Datensparsamkeit; keine PII in Logs.
+- **Privacy-by-Design (Art. 25 DSGVO):** Werker-bezogene Felder werden im Adapter-Layer **pseudonymisiert** (HMAC-Token, s. §8); Datensparsamkeit; keine PII in Logs. Nachweis-Bezug bleibt attributierbar im System of Record (nicht in FOREMAN).
 - **Dependency-Audit:** `pip-audit` / `npm audit`; kritische & hohe CVEs adressiert.
 - **Red-Teaming (LLM01):** fester Test-Satz gegen Prompt-Injection über den `worker_notes`-Freitext-Pfad + Grounding-/Halluzinations-Check der Reasoner-Erklärungen. Teil der Test-Suite ab F4.
 - **Rate-Limiting / Unbounded Consumption (LLM10):** Rate-Limit-Middleware auf der API + Token-/Timeout-/Kosten-Guard im `LLMGateway`.
