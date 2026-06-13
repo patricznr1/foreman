@@ -4,7 +4,7 @@
 >
 > **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
-**Stand:** 2026-06-13 · F2-Fundament gebaut (Skeleton, Schema, Migrationen, Auth, Datenschutz, Ingestion, Substrat-Smoke).
+**Stand:** 2026-06-13 · F3 — Datenakquise & Adapterschicht (Ingestion-COPY-Pfad, Normalformat, SourceAdapter-Interface, Simulations-Generator, best-effort Substrat-Dual-Write) auf dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
 
 ---
 

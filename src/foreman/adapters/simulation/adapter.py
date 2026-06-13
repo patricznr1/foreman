@@ -203,14 +203,17 @@ class SimulationAdapter(SourceAdapter):
         dp_ids = topology.data_point_ids
 
         for i in range(self._tick_count()):
+            # local_dt: lokale Schicht-Wandzeit (für Saisonalität/Schichtlogik).
+            # utc_dt: derselbe Instant in UTC — der Normalform-Vertrag (§12) emittiert UTC.
             local_dt = start_local + timedelta(seconds=i * interval_s)
+            utc_dt = self._scenario.start_utc + timedelta(seconds=i * interval_s)
             elapsed_s = i * interval_s
             for plan in self._plans:
                 data_point_id = dp_ids[plan.key]
                 rng = rngs[plan.key]
                 if plan.is_state:
                     yield NormalizedReading(
-                        time=local_dt,
+                        time=utc_dt,
                         data_point_id=data_point_id,
                         value=machine_state_value(self._seasonality, local_dt),
                         quality=None,
@@ -224,7 +227,7 @@ class SimulationAdapter(SourceAdapter):
                     plan.profile, self._seasonality, local_dt, elapsed_s, rng
                 )
                 yield NormalizedReading(
-                    time=local_dt,
+                    time=utc_dt,
                     data_point_id=data_point_id,
                     value=value,
                     quality=quality,

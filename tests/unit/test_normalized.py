@@ -116,3 +116,25 @@ def test_event_union_unbekanntes_kind_wird_abgelehnt() -> None:
         _EVENT_ADAPTER.validate_python(
             {"kind": "explosion", "occurred_at": "2026-05-01T00:00:00Z"}
         )
+
+
+def test_production_run_occurred_at_gleich_started_at_ist_valide() -> None:
+    run = ProductionRunRecord(
+        occurred_at=datetime(2026, 5, 1, 8, tzinfo=UTC),
+        line_id=1,
+        product_code="P-100",
+        started_at=datetime(2026, 5, 1, 8, tzinfo=UTC),
+    )
+    assert run.occurred_at == run.started_at
+
+
+def test_production_run_occurred_at_ungleich_started_at_wird_abgelehnt() -> None:
+    # occurred_at trägt die Strom-Sortierung, started_at den fachlichen Laufstart.
+    # Driften sie auseinander, wird die Zeitachse widersprüchlich → hart ablehnen.
+    with pytest.raises(ValidationError):
+        ProductionRunRecord(
+            occurred_at=datetime(2026, 5, 1, 8, tzinfo=UTC),
+            line_id=1,
+            product_code="P-100",
+            started_at=datetime(2026, 5, 1, 9, tzinfo=UTC),
+        )

@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 def ensure_utc(value: datetime) -> datetime:
@@ -105,6 +105,16 @@ class ProductionRunRecord(_EventBase):
     @classmethod
     def _utc_bounds(cls, value: datetime | None) -> datetime | None:
         return ensure_utc(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def _occurred_gleich_started(self) -> ProductionRunRecord:
+        # occurred_at (Strom-Sortierung) und started_at (fachlicher Laufstart) müssen
+        # denselben Instant tragen — sonst driften Dispatch- und Laufzeitachse auseinander.
+        if self.occurred_at != self.started_at:
+            raise ValueError(
+                "ProductionRunRecord: occurred_at muss started_at entsprechen."
+            )
+        return self
 
 
 class MaintenanceRecord(_EventBase):

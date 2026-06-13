@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import statistics
+from datetime import timedelta
 
 from foreman.adapters.simulation.adapter import SimulationAdapter
 from foreman.adapters.simulation.scenario import Scenario, load_scenario_by_name
@@ -188,3 +189,16 @@ def test_quality_missing_laesst_intervalle_aus() -> None:
     ghost_id = adapter.topology.data_point_ids["always_missing"]
     ghost_readings = [r for r in adapter.readings() if r.data_point_id == ghost_id]
     assert ghost_readings == []  # alle Intervalle ausgelassen, keine 0-Werte
+
+
+def test_readings_werden_in_utc_emittiert() -> None:
+    # Der Adapter-Ausgang muss konsistent tz-aware UTC sein (Normalform-Vertrag §12),
+    # unabhängig von der lokalen Schicht-Zeitzone des Szenarios; der erste Tick liegt
+    # exakt auf start_utc (nicht auf der lokalen Wandzeit).
+    adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"))
+    _fake_seed(adapter)
+    readings = list(adapter.readings())
+    assert readings
+    for reading in readings:
+        assert reading.time.utcoffset() == timedelta(0)
+    assert min(reading.time for reading in readings) == adapter.scenario.start_utc
