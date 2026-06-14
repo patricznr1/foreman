@@ -89,6 +89,8 @@ def map_recall_response(data: dict[str, Any], *, max_results: int) -> list[Recal
     Sucht die erste Trefferliste unter den bekannten Schlüsseln und zieht je
     Eintrag Inhalt + optionale Referenz. Unbrauchbare Einträge werden übersprungen.
     """
+    if max_results <= 0:
+        return []
     raw_list: list[Any] | None = None
     for key in _LIST_KEYS:
         value = data.get(key)
@@ -123,10 +125,13 @@ async def recall_similar_incidents(
         return []
     try:
         data = await substrate.recall(query, max_results=max_results)
+        # Mapping INNERHALB des try: ein unerwartetes Recall-Format (z. B. kein dict)
+        # darf den best-effort-Vertrag nicht brechen → wird hier mitgefangen.
+        return map_recall_response(data, max_results=max_results)
     except Exception as exc:
+        # Bewusst breit (best-effort): JEDER Recall-Fehler → kein Recall, nie Abbruch.
         logger.warning("%s NEXUS-Recall fehlgeschlagen (best-effort, ohne Recall): %s", REASON, exc)
         return []
-    return map_recall_response(data, max_results=max_results)
 
 
 def to_grounding_inputs(items: Sequence[RecallItem]) -> list[str]:

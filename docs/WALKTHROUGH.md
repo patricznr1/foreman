@@ -4,7 +4,7 @@
 >
 > **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
-**Stand:** 2026-06-14 · F4 — Drift-Reasoner (State-Gating, Deseasonalisierung, ADWIN/river, Relevanz-Filter, HITL-Quittierung, `/metrics`; gegen die F3-Szenarien validiert) auf F3 — Datenakquise & Adapterschicht (Ingestion-COPY-Pfad, Normalformat, SourceAdapter-Interface, Simulations-Generator, best-effort Substrat-Dual-Write) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
+**Stand:** 2026-06-14 · F6 — Ereignisketten-Reasoner (erster LLM-Freitext-Reasoner + erster Konsument des LLMGateway: Ketten-Konstruktion, NEXUS-Recall ähnlicher Vorfälle, Grounding-Quellen mit untrusted `worker_notes`, gegroundete Erzählung über `gateway.complete(task=synthesis)`, Output-Guard, Red-Team scharf) auf F-LLM (Modell-Gateway), F4 (Drift-Reasoner), F3 (Datenakquise & Adapterschicht) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
 
 ---
 
@@ -373,7 +373,7 @@ Fährt die Pipeline (chain → recall → sources → `gateway.complete(task=syn
 **Warum existiert es / wo sitzt es?**
 `build_explanation` ist die scharfe Abwehr: zitierte Quellen gegen die Whitelist prüfen (erfundene → `flagged_unsupported`), unbelegte Zahlen aus dem Grounding-Report flaggen, Erzählung output-sanitisieren (HTML/Markdown/URL, LLM05). Geflaggt ⇒ Hypothese + Konfidenz `low`. Keine Aktorik.
 
-### Persistenz (`alembic/0003`, `db/models.py`)
+### Persistenz (`migrations/versions/0003_reasoner_explanations.py`, `db/models.py`)
 
 **Was tut es?**
 `reasoner_explanations`-Tabelle (Migration 0003) + ORM-Model `ReasonerExplanationRecord`. Dual-Write als `semantic_event` (best-effort) macht das Reasoning-Ergebnis Teil des Gedächtnisses.

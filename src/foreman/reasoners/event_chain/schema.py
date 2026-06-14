@@ -38,12 +38,21 @@ class ChainEventType(StrEnum):
 
 
 class ChainWindow(BaseModel):
-    """Zeitfenster der Ketten-Rekonstruktion (tz-aware UTC, [start, end])."""
+    """Zeitfenster der Ketten-Rekonstruktion (tz-aware UTC, geschlossen [start, end])."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     start: datetime
     end: datetime
+
+    @model_validator(mode="after")
+    def _validate_window(self) -> ChainWindow:
+        """Erzwingt die Fenster-Invariante: beide Grenzen tz-aware (UTC) und start ≤ end."""
+        if self.start.tzinfo is None or self.end.tzinfo is None:
+            raise ValueError("ChainWindow.start/end müssen tz-aware sein (UTC).")
+        if self.start > self.end:
+            raise ValueError("ChainWindow.start darf nicht nach end liegen.")
+        return self
 
 
 class ChainEvent(BaseModel):
@@ -137,7 +146,7 @@ class ReasonerExplanationRead(BaseModel):
     referenced_source_ids: list[str]
     flagged_unsupported: list[str]
     is_hypothesis: bool
-    confidence: str
+    confidence: Confidence
     grounded: bool | None
     recall_used: bool
     created_at: datetime

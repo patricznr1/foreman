@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from foreman.db.models import Alarm, MaintenanceEvent, WorkerNote
 from foreman.reasoners.event_chain.chain import reconstruct_chain
 from foreman.reasoners.event_chain.schema import ChainEventType, ChainWindow
@@ -140,3 +142,20 @@ def test_reconstruct_chain_wartung_im_fenster_ist_trusted() -> None:
     assert maint_event.event_type is ChainEventType.MAINTENANCE
     assert maint_event.trusted is True
     assert "lubrication" in maint_event.summary
+
+
+def test_chain_window_lehnt_start_nach_end_ab() -> None:
+    with pytest.raises(ValueError, match="nicht nach end"):
+        ChainWindow(start=_ANCHOR_TIME, end=_ANCHOR_TIME - timedelta(hours=1))
+
+
+def test_chain_window_lehnt_naive_datetime_ab() -> None:
+    naive = datetime(2026, 6, 14, 12, 0)  # ohne tzinfo
+    with pytest.raises(ValueError, match="tz-aware"):
+        ChainWindow(start=naive, end=naive)
+
+
+def test_chain_window_gleiche_grenzen_erlaubt() -> None:
+    # Degeneriertes Fenster (nur der Anker-Moment) ist gültig.
+    window = ChainWindow(start=_ANCHOR_TIME, end=_ANCHOR_TIME)
+    assert window.start == window.end
