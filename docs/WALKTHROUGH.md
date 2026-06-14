@@ -231,7 +231,7 @@ Die zeitkritische Kette ist eine reine, testbare Funktion ohne Datenbank; nur da
 Spielt die vier Simulations-Szenarien durch den Reasoner und prüft gegen ihre eingebaute Wahrheit: Wird die injizierte Drift rechtzeitig erkannt, bleibt die gesunde Maschine ruhig?
 
 **Warum existiert es / wo sitzt es?**
-Das ist die eigentliche Abnahme. **Befund:** die Drifts (Lager, Werkzeug, Schmierung) werden zuverlässig und mit nützlichem Vorlauf **vor** dem ersten Alarm/der Werker-Notiz erkannt; die gesunde Maschine löst **keinen** Fehlalarm aus. Die sehr engen 3-Tage-Erkennungsfenster der Szenarien sind für die *progressiven* (anfangs flachen) Ramps optimistisch gesetzt — dort ist das Signal noch im Rauschen; die realistische Erkennung liegt etwas später, aber klar im betrieblich nützlichen Vorlauf (Research §7: „an Realdaten zu schärfen").
+Das ist die eigentliche Abnahme. **Befund:** die Drifts (Lager, Werkzeug, Schmierung) werden zuverlässig und mit nützlichem Vorlauf **vor** dem ersten Alarm/der Werker-Notiz erkannt; die gesunde Maschine löst **keinen** Fehlalarm aus. Die sehr engen 3-Tage-Erkennungsfenster der Szenarien sind für die *progressiven* (anfangs flachen) Ramps optimistisch gesetzt — dort ist das Signal noch im Rauschen; die realistische Erkennung liegt etwas später, aber klar im betrieblich nützlichen Vorlauf (Research §7: „an Realdaten zu schärfen"). Die vollständige Herleitung der Parameter (z-Score-Schwelle, Persistenz, zustandsspezifische Baseline), die Mess-Tabellen und das Validierungs-Ergebnis stehen in [`docs/research/drift-reasoner-kalibrierung.md`](research/drift-reasoner-kalibrierung.md).
 
 ### Observability & HITL (`observability/metrics.py`, `api/metrics.py`, `reasoners/drift/router.py`)
 
