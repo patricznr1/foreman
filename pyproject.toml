@@ -46,6 +46,10 @@ dependencies = [
     # --- Drift-Reasoner (F4): ADWIN über river (BSD-3); Prometheus-Metriken ---
     "river>=0.21",
     "prometheus-client>=0.20",
+    # --- Modell-Gateway (F-LLM): LiteLLM als Inferenz-Backend hinter der eigenen
+    #     LLMGateway-Abstraktion. Ausschließlich Implementierungsdetail in
+    #     src/foreman/llm/backends.py — kein reasoner-fähiger Pfad sieht LiteLLM-Typen. ---
+    "litellm>=1.40",
 ]
 
 [project.optional-dependencies]
@@ -81,9 +85,9 @@ no_implicit_reexport = true
 plugins = ["pydantic.mypy"]
 mypy_path = "src"
 packages = ["foreman"]
-# Presidio/river bringen py.typed, aber untypisierte Signaturen mit — Aufrufe in
+# Presidio/river/litellm bringen py.typed, aber untypisierte Signaturen mit — Aufrufe in
 # diese Pakete von der no-untyped-call-Prüfung ausnehmen (strict bleibt für FOREMAN-Code).
-untyped_calls_exclude = ["presidio_analyzer", "presidio_anonymizer", "river"]
+untyped_calls_exclude = ["presidio_analyzer", "presidio_anonymizer", "river", "litellm"]
 
 # Dritt-Bibliotheken ohne Type-Stubs (Presidio/spaCy) — gezielt nachsichtig,
 # damit `strict` über FOREMANs eigenen Code voll greift, ohne an Fremd-Code zu scheitern.
@@ -99,6 +103,10 @@ module = [
     "pgvector.*",
     "asyncpg",
     "asyncpg.*",
+    # LiteLLM bringt unvollständige/teils untypisierte Stubs — Imports nachsichtig,
+    # damit `strict` über FOREMANs eigenen Gateway-Code voll greift (analog river).
+    "litellm",
+    "litellm.*",
 ]
 ignore_missing_imports = true
 
@@ -135,6 +143,10 @@ ignore = [
 # Tests dürfen Fixtures/Asserts freier nutzen
 "tests/**" = ["N802", "N803"]
 "migrations/**" = ["N806", "E402"]
+# F-LLM-Fehlerhierarchie: die Namen (BackendUnavailable, RateLimited,
+# GroundingViolation, GatewayTimeout) sind der Brief-mandatierte Reasoner-Vertrag
+# (Akzeptanzkriterien) — der N818-„Error"-Suffix wird hier bewusst nicht erzwungen.
+"src/foreman/llm/errors.py" = ["N818"]
 
 # ------------------------------------------------------------
 #  pytest + coverage (Quality Gate §10.2: grün, Coverage ≥ 85 %)
@@ -142,6 +154,8 @@ ignore = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Neben test_*.py auch das Red-Team-Harness einsammeln (F-LLM, tests/llm/security).
+python_files = ["test_*.py", "*_harness.py"]
 # NER-Test (echtes spaCy-Modell) ist opt-in; Default-Gate bleibt schnell.
 # Explizit ausführen: uv run pytest -m ner
 addopts = "-x --strict-markers -m 'not ner' --cov=foreman --cov-report=term-missing --cov-fail-under=85"
