@@ -4,7 +4,7 @@
 >
 > **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
-**Stand:** 2026-06-13 · F3 — Datenakquise & Adapterschicht (Ingestion-COPY-Pfad, Normalformat, SourceAdapter-Interface, Simulations-Generator, best-effort Substrat-Dual-Write) auf dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
+**Stand:** 2026-06-14 · F4 — Drift-Reasoner (State-Gating, Deseasonalisierung, ADWIN/river, Relevanz-Filter, HITL-Quittierung, `/metrics`; gegen die F3-Szenarien validiert) auf F3 — Datenakquise & Adapterschicht (Ingestion-COPY-Pfad, Normalformat, SourceAdapter-Interface, Simulations-Generator, best-effort Substrat-Dual-Write) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
 
 ---
 
@@ -178,6 +178,68 @@ Prüft jede Funktion entlang Happy-Path, Fehlerfall, Zugriffsschutz und Eingabe-
 
 **Warum existiert es / wo sitzt es?**
 Sichert die Qualitäts-Messlatte ab (≥ 85 % Abdeckung). Schwere Abhängigkeiten (das große Namens-Erkennungsmodell, eine echte Substrat-Instanz) werden im Test durch leichte Doppel ersetzt, damit die Prüfungen schnell und ohne große Downloads laufen.
+
+---
+
+## F4 — Drift-Reasoner (erster vollständiger Reasoner)
+
+Der Drift-Reasoner erkennt, ob eine Maschine ihr eigenes, gewohntes Verhalten **schleichend verlässt** — nicht gegen feste Grenzwerte, sondern gegen ihr historisches Profil. Reine Algorithmik (river/ADWIN), kein KI-Sprachmodell. Sein Ergebnis ist ein **Frühwarnsignal**, keine Aktion: FOREMAN warnt, schaltet nie.
+
+### Steady-State-Gating (`reasoners/drift/steady_state.py`)
+
+**Was tut es?**
+Entscheidet je Zeitpunkt, ob die Maschine gerade in einem vergleichbaren, ruhigen Betriebszustand läuft (Produktionslauf aktiv, Maschine an, kein Rüsten). Direkt nach einem Wechsel (Anlauf, Rüsten, Stillstand) pausiert eine Schonfrist von fünf Minuten.
+
+**Warum existiert es / wo sitzt es?**
+Der Detektor darf nicht auf dem Rohsignal laufen: ein Schichtwechsel oder ein Werkstückwechsel würde sonst fälschlich als „Drift" gemeldet. Nur stationäre Phasen werden eingespeist — außerhalb davon wird gar nichts gefüttert.
+
+### Residuumbildung / Deseasonalisierung (`reasoners/drift/baseline.py`)
+
+**Was tut es?**
+Zieht von jedem Messwert das erwartete Profil ab — den gleitenden Median der jüngsten Werte **im selben Betriebszustand** (hier: derselben Tagesstunde) — und gibt nur die Abweichung weiter.
+
+**Warum existiert es / wo sitzt es?**
+So verschwindet die betriebliche Schwankung: Früh-, Spät- und Nachtschicht haben verschiedene mittlere Last; jede Schicht bekommt ihren eigenen Median. Ein globaler Median würde die Schichten vermengen und auf einer gesunden Maschine Fehlalarme erzeugen — der zustandsspezifische Median (Research §3) löst genau das. Übrig bleibt das eigentliche Verschleißsignal.
+
+### Drift-Detektor (`reasoners/drift/detector.py`)
+
+**Was tut es?**
+Führt je Datenpunkt einen ADWIN-Detektor (Bibliothek `river`) auf dem Abweichungsstrom. Schlägt an, wenn sich der Mittelwert statistisch belastbar verschoben hat. Die Effektgröße wird als z-Wert (Abweichung geteilt durch die normale Streuung) gemessen — damit greift eine einheitliche Schwelle über Vibration, Drehmoment, Temperatur hinweg.
+
+**Warum existiert es / wo sitzt es?**
+ADWIN braucht keine geratene Fenstergröße und reagiert schnell auf echte Änderungen. Eine Aufwärm-Phase (100 Messpunkte) verhindert, dass ein noch unsicheres Profil schon Alarm auslöst.
+
+### Relevanz-Filter (`reasoners/drift/relevance.py`)
+
+**Was tut es?**
+Lässt eine erkannte Verschiebung erst durch, wenn sie groß genug ist UND über mehrere Intervalle anhält.
+
+**Warum existiert es / wo sitzt es?**
+ADWIN meldet statistische Signifikanz schon sehr früh; betrieblich zählt erst eine spürbare, beständige Drift. Die Anhaltedauer trennt echte Drift (hält an) von kurzen Rausch-Ausschlägen (vergehen) — der Schlüssel zur Fehlalarm-Freiheit.
+
+### Orchestrierung & Replay (`reasoners/drift/service.py`, `reasoners/drift/runner.py`)
+
+**Was tut es?**
+Liest das 1-Minuten-Aggregat `readings_1m`, fährt jede Maschine durch die Kette Gating → Abweichung → Detektion → Relevanz und legt bei echter Drift ein Ereignis an: eine Spiegel-Zeile in `semantic_events` (plus best-effort-Meldung ans Gedächtnis-Substrat) und eine operatorseitige Warnung in `alarms` (`category=process`, `severity=warning`). Der Runner spielt einen Zeitraum nach; vor dem Lesen wird das Aggregat aufgefrischt.
+
+**Warum existiert es / wo sitzt es?**
+Die zeitkritische Kette ist eine reine, testbare Funktion ohne Datenbank; nur das Laden/Schreiben ist drumherum. Keine Aktorik — es entsteht nur eine Warnung, die ein Mensch quittiert.
+
+### Validierung gegen die Szenarien (`reasoners/drift/validation.py`)
+
+**Was tut es?**
+Spielt die vier Simulations-Szenarien durch den Reasoner und prüft gegen ihre eingebaute Wahrheit: Wird die injizierte Drift rechtzeitig erkannt, bleibt die gesunde Maschine ruhig?
+
+**Warum existiert es / wo sitzt es?**
+Das ist die eigentliche Abnahme. **Befund:** die Drifts (Lager, Werkzeug, Schmierung) werden zuverlässig und mit nützlichem Vorlauf **vor** dem ersten Alarm/der Werker-Notiz erkannt; die gesunde Maschine löst **keinen** Fehlalarm aus. Die sehr engen 3-Tage-Erkennungsfenster der Szenarien sind für die *progressiven* (anfangs flachen) Ramps optimistisch gesetzt — dort ist das Signal noch im Rauschen; die realistische Erkennung liegt etwas später, aber klar im betrieblich nützlichen Vorlauf (Research §7: „an Realdaten zu schärfen").
+
+### Observability & HITL (`observability/metrics.py`, `api/metrics.py`, `reasoners/drift/router.py`)
+
+**Was tut es?**
+`GET /metrics` liefert Prometheus-Kennzahlen (Aufrufe/Latenz je Reasoner, Drift-Ereignisse, Detektionsverzug, Fehlalarme). Unter `/api/v1/reasoners/drift/` lassen sich die Warnungen auflisten und **quittieren** — eine Drift-Warnung gilt erst nach Operator-Quittierung als erledigt.
+
+**Warum existiert es / wo sitzt es?**
+Human-in-the-Loop: der Mensch bestätigt; `acknowledged_by` wird als Token abgelegt (Nachweis, nie Klartext). `/metrics` ist ohne Anmeldung erreichbar (der Mess-Sammler hat kein Login), alles andere bleibt geschützt.
 
 ---
 

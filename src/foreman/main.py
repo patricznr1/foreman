@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI
 
 from foreman.api import auth, health
+from foreman.api import metrics as metrics_api
 from foreman.api.middleware import AuthMiddleware
 from foreman.api.routers import (
     alarms,
@@ -29,6 +30,7 @@ from foreman.api.routers import (
 from foreman.config import Settings, get_settings
 from foreman.db.session import dispose_engine, init_engine
 from foreman.logging_setup import ALERT, INFO, OK, get_logger, setup_logging
+from foreman.reasoners.drift import router as drift_router
 from foreman.substrate.client import SubstrateClient, SubstrateNotConfiguredError
 from foreman.substrate.smoke import run_substrate_smoke
 
@@ -46,6 +48,7 @@ _API_V1_ROUTERS = (
     alarms.router,
     readings.router,
     substrate.router,
+    drift_router.router,
 )
 
 
@@ -100,6 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(metrics_api.router)  # GET /metrics (Prometheus, §11.2)
 
     api_v1 = APIRouter(prefix="/api/v1")
     for router in _API_V1_ROUTERS:

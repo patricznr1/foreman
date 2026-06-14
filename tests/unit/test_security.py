@@ -18,7 +18,7 @@ from foreman.core.security import (
 
 _SETTINGS = Settings(
     _env_file=None,
-    jwt_secret="unit-secret-0123456789abcdef0123456789",  # ≥32 Byte (HS256)
+    jwt_secret="unit-secret-0123456789abcdef0123456789",  # >=32 Byte (HS256)
     jwt_algorithm="HS256",
 )
 

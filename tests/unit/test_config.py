@@ -36,6 +36,6 @@ def test_production_with_strong_secret_ok() -> None:
     settings = Settings(
         _env_file=None,
         environment="production",
-        jwt_secret="x" * 40,  # ≥ 32 Byte
+        jwt_secret="x" * 40,  # >= 32 Byte
     )
     settings.require_secure_secrets()  # darf nicht werfen

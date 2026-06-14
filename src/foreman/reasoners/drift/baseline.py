@@ -1,0 +1,73 @@
+# ============================================================
+#  FOREMAN — reasoners/drift/baseline.py
+#  Zweck: Residuumbildung / Deseasonalisierung für den Drift-Reasoner
+#         (Research §3 + §6.1, Baustein 2).
+#  Architektur-Einordnung: Reasoning-Schicht (F4). Statt des Rohwerts füttert
+#         der Detektor ein RESIDUUM gegen ein erwartetes Profil: den gleitenden
+#         Median der zuletzt gesehenen Werte JE BETRIEBSZUSTAND (Research §3 —
+#         "Median des gleichen Zustands"). Der Zustands-Schlüssel (z.B. die
+#         Tagesstunde) trennt die zyklische Schicht-Last: jede Schicht hat ihren
+#         eigenen Median, sodass die betriebliche Saisonalität herausfällt und nur
+#         das Verschleißsignal übrig bleibt. Ohne Zustands-Schlüssel (state_key
+#         None) verhält sich die Baseline wie ein globaler gleitender Median.
+#  Reine, seedbare Logik (ohne DB testbar).
+# ============================================================
+from __future__ import annotations
+
+from collections import deque
+from collections.abc import Hashable
+from dataclasses import dataclass, field
+from statistics import median
+from typing import Final
+
+# Gleitendes Baseline-Fenster: 1440 Min = 24 h bei 1 Sample/Minute (Research §6.1).
+BASELINE_WINDOW: Final = 1440
+
+
+@dataclass
+class RollingResidualBaseline:
+    """Gleitender Median je Betriebszustand als Deseasonalisierungs-Baseline.
+
+    `observe(value, state_key)` liefert das Residuum gegen den Median der ZUVOR im
+    selben Zustand gesehenen Werte und pflegt den Wert anschließend in das Fenster
+    dieses Zustands ein. Solange ein Zustand noch keinen Wert hat, ist das Residuum
+    0 (kein Profil -> kein Drift-Signal vertrauen).
+    """
+
+    window: int = BASELINE_WINDOW
+    _by_state: dict[Hashable, deque[float]] = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        self._by_state = {}
+
+    def _window_for(self, state_key: Hashable) -> deque[float]:
+        dq = self._by_state.get(state_key)
+        if dq is None:
+            dq = deque(maxlen=self.window)
+            self._by_state[state_key] = dq
+        return dq
+
+    def current_median(self, state_key: Hashable = None) -> float | None:
+        """Median des Fensters eines Zustands, oder None bei leerem Fenster."""
+        dq = self._by_state.get(state_key)
+        if not dq:
+            return None
+        return median(dq)
+
+    def observe(self, value: float, state_key: Hashable = None) -> float:
+        """Residuum gegen den Zustands-Median ZUVOR; danach den Wert einpflegen.
+
+        Reihenfolge ist bewusst: Das Residuum misst die Abweichung gegen das im
+        selben Zustand bis dahin etablierte Profil — der aktuelle Wert verschiebt
+        das Profil erst für die nachfolgenden Samples.
+        """
+        dq = self._window_for(state_key)
+        reference = median(dq) if dq else None
+        residual = 0.0 if reference is None else value - reference
+        dq.append(value)
+        return residual
+
+    @property
+    def count(self) -> int:
+        """Gesamtanzahl der Werte über alle Zustands-Fenster."""
+        return sum(len(dq) for dq in self._by_state.values())

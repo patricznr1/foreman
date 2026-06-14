@@ -49,7 +49,7 @@ def _frueh() -> datetime:
 
 
 def _ungated() -> SignalProfile:
-    # Nicht gegated → Saison-Gating spielt keine Rolle (immer aktiv).
+    # Nicht gegated -> Saison-Gating spielt keine Rolle (immer aktiv).
     return SignalProfile(mean=10.0, noise_std=1.0, gated=False)
 
 
@@ -66,7 +66,7 @@ def test_step_drift_springt_genau_ab_t_star() -> None:
 def test_ramp_drift_linear_zwischen_start_und_ende() -> None:
     spec = DriftSpec(kind="ramp", start_s=0.0, end_s=100.0, target_delta=10.0)
     assert drift_offset(spec, 0.0) == 0.0
-    assert drift_offset(spec, 50.0) == pytest.approx(5.0)  # Mitte → halbe Magnitude
+    assert drift_offset(spec, 50.0) == pytest.approx(5.0)  # Mitte -> halbe Magnitude
     assert drift_offset(spec, 100.0) == pytest.approx(10.0)
     assert drift_offset(spec, 200.0) == pytest.approx(10.0)  # Plateau danach
 
@@ -99,7 +99,7 @@ def test_ramp_drift_im_signal_ab_t_star_messbar() -> None:
         gated=False,
         drift=DriftSpec(kind="ramp", start_s=0.0, end_s=1000.0, target_delta=5.0),
     )
-    # Vor t* (elapsed<0 nicht möglich) → bei elapsed=0 ~ baseline.
+    # Vor t* (elapsed<0 nicht möglich) -> bei elapsed=0 ~ baseline.
     before = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, rng) for _ in range(400)]
     after = [
         sample_value(profile, _THREE_SHIFT, _frueh(), 2000.0, rng) for _ in range(400)
@@ -155,7 +155,7 @@ def test_schicht_saisonalitaet_spaet_lastiger_als_frueh() -> None:
 def test_gating_im_stillstand_faellt_auf_ruhewert() -> None:
     rng = random.Random(5)
     profile = SignalProfile(mean=12.0, noise_std=0.6, idle_value=0.0, gated=True)
-    # Samstag → weekend idle → Maschine steht.
+    # Samstag -> weekend idle -> Maschine steht.
     saturday = datetime(2026, 3, 7, 10, tzinfo=UTC)
     assert not machine_running(_THREE_SHIFT, saturday)
     idle = [sample_value(profile, _THREE_SHIFT, saturday, 0.0, rng) for _ in range(300)]
@@ -206,7 +206,7 @@ def test_gleicher_seed_erzeugt_identische_folge() -> None:
     rng_b = random.Random(99)
     a = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, rng_a) for _ in range(50)]
     b = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, rng_b) for _ in range(50)]
-    assert a == b  # gleicher Seed → identische Folge (Determinismus)
+    assert a == b  # gleicher Seed -> identische Folge (Determinismus)
     assert len(set(a)) > 1  # echte fortschreitende Folge, nicht 50-mal derselbe Wert
 
 

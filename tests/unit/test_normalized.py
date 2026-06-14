@@ -1,7 +1,7 @@
 # ============================================================
 #  FOREMAN — tests/unit/test_normalized.py
 #  Zweck: Pflicht-Test-Block für das interne Normalformat (F3).
-#  Prüft: tz-aware UTC wird erzwungen (naive → UTC, aware → konvertiert);
+#  Prüft: tz-aware UTC wird erzwungen (naive -> UTC, aware -> konvertiert);
 #  die diskriminierte Event-Union mappt korrekt auf die konkreten Typen.
 #  Architektur-Einordnung: Quality Gate §10.3.
 # ============================================================
@@ -37,7 +37,7 @@ def test_ensure_utc_aware_wird_konvertiert() -> None:
     plus_two = datetime(2026, 5, 1, 12, 0, 0, tzinfo=timezone(timedelta(hours=2)))
     result = ensure_utc(plus_two)
     assert result.utcoffset() == timedelta(0)
-    assert result.hour == 10  # 12:00+02:00 → 10:00 UTC
+    assert result.hour == 10  # 12:00+02:00 -> 10:00 UTC
 
 
 def test_normalized_reading_erzwingt_utc() -> None:
@@ -130,7 +130,7 @@ def test_production_run_occurred_at_gleich_started_at_ist_valide() -> None:
 
 def test_production_run_occurred_at_ungleich_started_at_wird_abgelehnt() -> None:
     # occurred_at trägt die Strom-Sortierung, started_at den fachlichen Laufstart.
-    # Driften sie auseinander, wird die Zeitachse widersprüchlich → hart ablehnen.
+    # Driften sie auseinander, wird die Zeitachse widersprüchlich -> hart ablehnen.
     with pytest.raises(ValidationError):
         ProductionRunRecord(
             occurred_at=datetime(2026, 5, 1, 8, tzinfo=UTC),
