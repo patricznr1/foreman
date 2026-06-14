@@ -90,6 +90,22 @@ GATEWAY_CACHE_HITS: Final = Counter(
     registry=REGISTRY,
 )
 
+# --- Ereignisketten-Reasoner (F6) — Erklär-Ergebnisse + NEXUS-Recall + die
+#     Injection-Containment-Sicht (geflaggte unbelegte Inhalte je Erklärung).
+#     Labels niedrig-kardinal (result ∈ {clean,flagged} bzw. {hit,miss}). ---
+EVENT_CHAIN_EXPLANATIONS: Final = Counter(
+    "foreman_event_chain_explanations_total",
+    "Anzahl der Ereignisketten-Erklärungen, getrennt nach geflaggt/sauber.",
+    ["result"],
+    registry=REGISTRY,
+)
+EVENT_CHAIN_RECALL: Final = Counter(
+    "foreman_event_chain_recall_total",
+    "NEXUS-Recall-Ausgänge des Ereignisketten-Reasoners (Treffer/kein Treffer).",
+    ["result"],
+    registry=REGISTRY,
+)
+
 
 def observe_reasoner_run(reasoner: str, latency_seconds: float, *, success: bool) -> None:
     """Zählt einen Reasoner-Aufruf und seine Latenz (je Reasoner, Erfolg/Fehler)."""
@@ -138,6 +154,16 @@ def observe_gateway_call(
 def record_gateway_cache_hit() -> None:
     """Zählt einen aus dem Antwort-Cache bedienten Gateway-Aufruf."""
     GATEWAY_CACHE_HITS.inc()
+
+
+def record_event_chain_explanation(*, flagged: bool) -> None:
+    """Zählt eine erzeugte Ereignisketten-Erklärung (geflaggt = unbelegte Inhalte)."""
+    EVENT_CHAIN_EXPLANATIONS.labels(result="flagged" if flagged else "clean").inc()
+
+
+def record_event_chain_recall(result: str) -> None:
+    """Zählt einen NEXUS-Recall-Ausgang des Reasoners (result ∈ {hit, miss})."""
+    EVENT_CHAIN_RECALL.labels(result=result).inc()
 
 
 def render_metrics() -> tuple[bytes, str]:

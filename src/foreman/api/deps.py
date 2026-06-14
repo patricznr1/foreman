@@ -21,6 +21,7 @@ from foreman.core.redact import PresidioRedactor, Redactor, build_redactor
 from foreman.core.security import decode_access_token
 from foreman.db.models import User
 from foreman.db.session import get_session
+from foreman.llm import LiteLLMGateway, LLMGateway, get_llm_settings
 from foreman.substrate.client import SubstrateClient
 
 # --- Basis-Dependencies ---
@@ -106,3 +107,20 @@ async def get_substrate_client(
 
 
 SubstrateClientDep = Annotated[SubstrateClient | None, Depends(get_substrate_client)]
+
+
+# --- LLM-Gateway (F-LLM) — F6 (Ereignisketten) ist der erste Konsument ---
+@lru_cache(maxsize=1)
+def _llm_gateway_singleton() -> LiteLLMGateway:
+    """Baut das Gateway einmalig aus der LLM-Config (Rate-Limit + Cache leben mit
+    über die App-Lebensdauer). In Tests via Override ersetzt."""
+    return LiteLLMGateway.from_settings(get_llm_settings())
+
+
+def get_llm_gateway() -> LLMGateway:
+    """FastAPI-Dependency: das (gecachte) LLM-Gateway als Protokoll-Typ — kein
+    LiteLLM-Typ in reasoner-fähigen Pfaden (harte Architektur-Grenze)."""
+    return _llm_gateway_singleton()
+
+
+GatewayDep = Annotated[LLMGateway, Depends(get_llm_gateway)]

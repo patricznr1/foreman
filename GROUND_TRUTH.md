@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-14 · **Status:** F-LLM — Modell-Gateway (`LLMGateway`-Abstraktion über LiteLLM: lokal-first Qwen3/Ollama + Anthropic-Cloud-Fallback, vier Priority-Modi, Grounding/Spotlighting, Token-Bucket-Rate-Limit, deterministisches Caching, Gateway-`/metrics`, Red-Team-Harness-Basis). KEIN Reasoner in dieser Phase — nur die Abstraktion, auf der die kommenden LLM-Reasoner aufsetzen. Baut auf F2 + F3 + F4 (Drift-Reasoner) auf.
+**Stand:** 2026-06-14 · **Status:** F6 — Ereignisketten-Reasoner (erster LLM-Freitext-Reasoner + erster Konsument des `LLMGateway`): Ketten-Konstruktion (rein) + NEXUS-Recall ähnlicher Vorfälle (best-effort) + Grounding-Quellen (`worker_notes` untrusted) → gegroundete deutsche Erzählung über `gateway.complete(task=synthesis)`, Output-Guard (`ReasonerExplanation`), Persistenz `reasoner_explanations` + `semantic_event`-Dual-Write, on-demand-Routen, Event-Ketten-`/metrics`. **Red-Team scharf am ersten Freitext-Reasoner ✅** (Vertrag §14). Baut auf F2 + F3 + F4 (Drift) + F-LLM (Gateway) auf.
 
 ---
 
@@ -70,7 +70,13 @@ Drei Schichten:
 - `POST /api/v1/reasoners/drift/alarms/{alarm_id}/acknowledge` — **HITL-Quittierung** einer Drift-Warnung. Auth-pflichtig; `acknowledged_by` wird als HMAC-Token über die `users.id` abgelegt (§8). **Keine Aktorik** — setzt nur den Quittierungs-Status.
 - `GET /metrics` — Prometheus-Format (§11.2), Root-Ebene, in der Auth-Whitelist (Scraper hat kein JWT). Request-/Latenz-Zähler je Reasoner + Drift-Kennzahlen (Detektionsverzug, Fehlalarm-Zähler).
 
-*(Weitere Reasoner-Routen werden in F6 ergänzt, sobald implementiert.)*
+### Reasoner-Routen (Ereignisketten, ab F6)
+
+- `POST /api/v1/reasoners/event_chain/reconstruct` — **on-demand** Rekonstruktion der Ereigniskette um einen Anker-Alarm. Body: `{ "anchor_alarm_id": int, "lookback_hours": int|null }`. Liefert die persistierte, gegroundete `ReasonerExplanation` (201). Auth-pflichtig (LLM-Kostenschutz). **Kein automatischer LLM-Call pro Drift-Alarm** — der alarm-getriebene Hook bleibt bewusst offen/unverdrahtet (kostenkontrollierter LLM-Einsatz). **Keine Aktorik** — der Reasoner erklärt, schaltet nichts. 404, wenn der Anker nicht existiert.
+- `GET /api/v1/reasoners/event_chain/explanations` — Auflistung gespeicherter Erklärungen (jüngste zuerst), optional gefiltert nach `machine_id` (`limit`/`offset`).
+- `GET /api/v1/reasoners/event_chain/explanations/{explanation_id}` — eine einzelne gespeicherte Erklärung; 404, wenn nicht vorhanden.
+
+*(Routen-Namespace `reasoners/<reasoner>/…` analog zu `reasoners/drift`. Weitere Reasoner-Routen folgen je Phase.)*
 
 ---
 
@@ -119,10 +125,15 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 **`semantic_events`** — Spiegel der Dual-Writes ans Substrat
 - `id` PK · `machine_id` FK (nullable) · `event_type` · `payload` jsonb · `substrate_ref` (nullable) · `created_at`
 
+**`reasoner_explanations`** — persistierte Reasoner-Erklärungen (ab F6, reasoner-übergreifend)
+- `id` PK · `anchor_alarm_id` FK→alarms · `machine_id` FK (nullable) · `reasoner` (Default `event_chain`) · `narrative` (Erzähltext, output-sanitisiert) · `referenced_source_ids` jsonb (whitelisted Zitate) · `flagged_unsupported` jsonb (erfundene Quellen + unbelegte Zahlen) · `is_hypothesis` · `confidence` (low/medium/high) · `grounded` (nullable, Gateway-Grounding-Befund) · `recall_used` · `created_at`
+- Die Reasoner-Erklärung ist ein **diskretes Ereignis** → wird zusätzlich als `semantic_event` (`event_type=event_chain_reconstructed`) ans Substrat gespiegelt (§12.4). Indizes: `ix_reasoner_explanations_anchor`, `ix_reasoner_explanations_machine_created`.
+
 *(Migrationen via Alembic. Jede Migration hier kurz vermerken.)*
 
 - **`0001_initial_schema`** — alle Tabellen aus §5 mit PK-/FK-Constraints + Lese-Indizes (`ix_data_points_machine`, `ix_alarms_machine_raised`, `ix_worker_notes_machine`). `readings` entsteht als gewöhnliche Tabelle (PK `(data_point_id, time)`).
 - **`0002_timescale_setup`** — aktiviert die `vector`-Extension und ergänzt `worker_notes.embedding vector(1024)` (deshalb liegt die Embedding-Spalte in 0002, nicht 0001); aktiviert `timescaledb`; macht `readings` zur Hypertable (1-Tages-Chunks); Columnstore (`segmentby=data_point_id`, `orderby=time DESC`, ab 7 Tagen); Continuous Aggregates `readings_1m`→`_1h`→`_1d` (1m real-time) mit Refresh-Policies; Retention 90 d / 1 a / 5 a / ∞. Quelle: `docs/research/timescaledb-tuning-readings.md` §3–§4.
+- **`0003_reasoner_explanations`** — legt die Tabelle `reasoner_explanations` an (F6) mit FK auf `alarms`/`machines`, JSONB-Spalten für referenzierte/geflaggte Quellen und den Lese-Indizes `ix_reasoner_explanations_anchor` + `ix_reasoner_explanations_machine_created`.
 
 ---
 
@@ -204,7 +215,7 @@ Jeder Endpoint/Service/Reasoner bringt mindestens mit:
 - **Secrets-Scan:** keine Tokens/Keys im Diff (Repo ist öffentlich).
 - **Privacy-by-Design (Art. 25 DSGVO):** Werker-bezogene Felder werden im Adapter-Layer **pseudonymisiert** (HMAC-Token, s. §8); Datensparsamkeit; keine PII in Logs. Nachweis-Bezug bleibt attributierbar im System of Record (nicht in FOREMAN).
 - **Dependency-Audit:** `pip-audit` / `npm audit`; kritische & hohe CVEs adressiert.
-- **Red-Teaming (LLM01):** fester Test-Satz gegen Prompt-Injection über den `worker_notes`-Freitext-Pfad + Grounding-/Halluzinations-Check der Reasoner-Erklärungen. Teil der Test-Suite **ab dem ersten Reasoner mit LLM-Freitext-Pfad** (Event-Ketten), NICHT ab F4 — der Drift-Reasoner (F4) ist reine Algorithmik (river/ADWIN) ohne LLM-Freitext-Pfad und damit kein Injection-Ziel (siehe §11.2).
+- **Red-Teaming (LLM01) — F6 ✅ scharf:** fester Test-Satz gegen Prompt-Injection über den `worker_notes`-Freitext-Pfad + Grounding-/Halluzinations-Check der Reasoner-Erklärungen, **aktiviert am ersten Reasoner mit LLM-Freitext-Pfad** (Ereignisketten, `tests/reasoners/event_chain/security/test_injection.py`). NICHT ab F4 — der Drift-Reasoner (F4) ist reine Algorithmik (river/ADWIN) ohne LLM-Freitext-Pfad und damit kein Injection-Ziel (siehe §11.2 + §14).
 - **Rate-Limiting / Unbounded Consumption (LLM10):** Rate-Limit-Middleware auf der API + Token-/Timeout-/Kosten-Guard im `LLMGateway`.
 - **Modell-Integrität / Supply-Chain (LLM03/04):** Modell-Versionen/Digests gepinnt (Ollama-Digest, Anthropic-Model-ID); keine ungepinnte Modell-Auflösung zur Laufzeit. FOREMAN trainiert keine Modelle — daher kein Trainingsdaten-Signatur-Apparat.
 
@@ -243,13 +254,16 @@ Wie sich die Plattform zur Laufzeit verhält — was im Betrieb sichtbar und kon
 | `/metrics`-Endpoint (Prometheus) | F4; **F-LLM ✅** um Gateway-Kennzahlen erweitert (Backend/Task/Latenz/Tokens/Kosten/Fallback/Fehler + Cache-Treffer) |
 | Grounding/Spotlighting-Mechanik (Quellenbindung + Post-Check) | **F-LLM ✅** (`llm/grounding.py`) — Mechanik im Gateway; Quellen liefert der Reasoner |
 | Red-Team-Harness — **Basis** gegen die Gateway-Mechanik | **F-LLM ✅** (`tests/llm/security/redteam_harness.py`, payload-erweiterbar, grün) |
-| Red-Team-Test-Satz — **scharfe Aktivierung** (echte Werker-Freitext-Payloads gegen LLM-Pipeline) | **erster Reasoner mit LLM-Freitext-Pfad** (Event-Ketten), NICHT F4/F-LLM |
+| Red-Team-Test-Satz — **scharfe Aktivierung** (echte Werker-Freitext-Payloads gegen LLM-Pipeline) | **F6 ✅ scharf am ersten Freitext-Reasoner** (`tests/reasoners/event_chain/security/test_injection.py`) — Harness wiederverwendet gegen die echte Ereignisketten-Pipeline |
+| Event-Ketten-Kennzahlen (Erklärungen geflaggt/sauber + NEXUS-Recall-Ausgänge) | **F6 ✅** (`foreman_event_chain_explanations_total`, `foreman_event_chain_recall_total`) |
 | Human-in-the-Loop-Quittierung — Flow im Reasoner | F4 |
 | Grafana-Dashboard | Härtung |
 
 > **Red-Team-Präzisierung (F4-Befund).** Ursprünglich war der Red-Team-Test-Satz „ab F4" vorgesehen. Der erste Reasoner (Drift, F4) ist jedoch **reine Algorithmik** (river/ADWIN auf einem aufbereiteten Signalstrom) — er hat **keinen `worker_notes`→LLM-Freitext-Pfad** und ist damit kein Ziel für Prompt-Injection (LLM01). Der Red-Team-Test-Satz (Injection/Grounding/Halluzination) gehört an den **ersten Reasoner mit LLM-Freitext-Pfad** (Event-Ketten-Reasoner, der die natürlichsprachliche Erzählung erzeugt), nicht hierher. In F4 wird kein Red-Team-Set gebaut.
 
 > **Red-Team-Stand (F-LLM).** Mit dem Modell-Gateway steht das **Harness-Gerüst** (`tests/llm/security/redteam_harness.py`): ein wiederverwendbarer, payload-erweiterbarer Satz (Injection-Payloads DE+EN aus `docs/research/prompt-injection-schutz.md` §6) plus Smoke-Tests gegen die **Spotlighting-/Grounding-Mechanik des Gateways** (Datamarking + Delimiter; numerischer Grounding-Post-Check verwirft fabrizierte Zahlen). Das Gerüst ist grün. Die **scharfe Aktivierung** mit echten Werker-Freitext-Payloads gegen eine reale LLM-Pipeline kommt mit dem ersten Freitext-Reasoner (Event-Ketten), der das Gerüst (`INJECTION_PAYLOADS` + `build_worker_note`) konsumiert und das validierte `ReasonerExplanation`-Objekt prüft (Schutz-Doc §5.1/§6). So im Code-Header des Harness vermerkt.
+
+> **Red-Team-Stand (F6 — scharf ✅).** Mit dem Ereignisketten-Reasoner ist die scharfe Aktivierung erfolgt: `tests/reasoners/event_chain/security/test_injection.py` fährt die echten Injection-Payloads (`INJECTION_PAYLOADS`) als `worker_notes`-Freitext (`build_worker_note`) gegen die **reale** Reasoner-Pipeline. Geprüft (Defense-in-Depth, Schutz-Doc §5.1): (1) **Spotlighting hält** — jede Notiz geht datamarkiert als untrusted Quelle ins Gateway, nie als Instruktion; (2) **Output-Guard greift** — selbst ein kompromittiert antwortendes Modell kann keine erfundene Quelle in `referenced_source_ids` schmuggeln (Faktor-Whitelist), unbelegte Zahlen + erfundene `[source]`-Zitate landen in `flagged_unsupported`, die Erzählung wird output-sanitisiert (HTML/Markdown/URL, LLM05), und das `ReasonerExplanation`-Schema validiert (`extra=forbid`); (3) **Inertheit** — der Reasoner erzeugt keine Alarme/Aktorik. False-Positive-Kontrolle (benigne Notiz bleibt sauber) inklusive. Die autoritative Numerik-Abwehr liegt damit architektonisch beim Reasoner (Zahlen nie aus dem LLM als Faktenfeld + Quellen-Whitelist), nicht nur im groben Gateway-Post-Check.
 
 > **Bau-Disziplin:** Diese Maßnahmen sind als verbindliche Gates/Prinzipien dokumentiert, werden aber **pro Phase** gebaut — kein Ops-Vorbau vor dem ersten laufenden Reasoner.
 
@@ -343,3 +357,34 @@ Das Modell-Gateway unter `src/foreman/llm/` ist die **dünne Abstraktion**, auf 
 - Unit-Tests gegen ein **deterministisches Mock-Backend** (kein echter LLM-Call) decken Task-Routing, Response-Struktur, alle vier Priority-Modi, Fallback, Rate-Limit, Cache-Determinismus, Grounding und die Gateway-Metriken ab.
 - `@pytest.mark.smoke` (`tests/llm/smoke/test_ollama_roundtrip.py`): echter Round-Trip gegen lokales Ollama, **skippt sauber** ohne Ollama — nicht im CI-Pflichtlauf.
 - Red-Team-Harness-Basis: siehe §11.2-Notiz.
+
+---
+
+## 14. Ereignisketten-Reasoner-Vertrag (F6)
+
+Der **erste LLM-Freitext-Reasoner** und erste Konsument des `LLMGateway` (§13). Er verknüpft Drift-Events, Werkernotizen, Wartungen und NEXUS-Recall ähnlicher Vergangenheits-Vorfälle zu einer gegroundeten deutschen Erzählung. Modulpfad: `src/foreman/reasoners/event_chain/`.
+
+### 14.1 Pipeline (Schichtung — jede Stufe einzeln testbar)
+
+`reconstruct_chain` (rein) → `recall_similar_incidents` (best-effort) → `build_grounding_sources` → `gateway.complete(task=synthesis, sources=…)` → `build_explanation` (Output-Guard) → Persistenz + Dual-Write.
+
+- **`chain.py` — reiner Kern.** `reconstruct_chain(anchor, window, prior_alarms, worker_notes, maintenance_events) -> EventChain`. Auswahl: identische `machine_id` wie der Anker + Zeitstempel im Fenster; temporale Ordnung. DB-Zugriff injiziert (Reihen werden übergeben) → ohne Netz testbar.
+- **`recall.py` — NEXUS-Recall.** Query aus dem Anker-Muster (Maschinenklasse + Alarm-Signatur, **PII-frei**) → `SubstrateClient.recall`. **Strikt best-effort:** kein Substrat / Substrat-Ausfall → leere Recall-Liste, Kette wird ohne Recall-Anteil erzählt (blockiert nie).
+- **`grounding_sources.py` — die Sicherheits-Invariante.** Je Ketten-Ereignis + Recall-Treffer eine `GroundingSource(source_id, content, trusted)`. **`worker_notes.text` ist IMMER `trusted=False`** (Spotlighting-Quelle, nie Instruktion); NEXUS-Recall ebenfalls `trusted=False`; nur strukturierte Alarm-/Wartungsdaten sind `trusted=True`. `source_id`-Schema: `alarm:<id>`, `note:<id>`, `maint:<id>`, `recall:<n>`.
+- **`prompts.py`.** Deutsche Werker-Erzählung, nur aus den Quellen, Hypothesen markiert, Zitat als `[source_id]`. Der untrusted Notiz-Freitext geht **nur** über die (gespotlighteten) Quellen ins Gateway, nie inline in den User-Prompt.
+- **`service.py` — Output-Guard (Schutz-Doc §5.1).** Zitierte Quellen werden gegen die Whitelist geprüft: gültige → `referenced_source_ids`; erfundene → `flagged_unsupported`. Unbelegte Zahlen aus dem Gateway-`GroundingReport` ebenfalls → `flagged_unsupported`. Geflaggt ⇒ `is_hypothesis=True`, `confidence=low`. Die Erzählung wird vor Persistenz **output-sanitisiert** (HTML/Markdown/URL, LLM05). `ReasonerExplanation` ist Pydantic-validiert (`extra=forbid`; `referenced_source_ids ⊆ allowed_source_ids`).
+
+### 14.2 Persistenz & Spiegel
+
+`reasoner_explanations`-Tabelle (§5) + **Dual-Write** des Ergebnisses als `semantic_event` (`event_type=event_chain_reconstructed`, best-effort via `record_semantic_event`, §12.4) — die Reasoner-Erklärung wird Teil des Gedächtnisses. **Gespiegelt wird eine strukturierte, PII-freie Zusammenfassung, nicht der rohe Erzähltext** (defensiv gegen eingeschleusten Freitext im Substrat).
+
+### 14.3 Grenzen (verbindlich)
+
+- **Kein Auto-LLM pro Alarm** — on-demand-Kern; der alarm-getriebene Hook bleibt offen/unverdrahtet (Kostenkontrolle).
+- **`worker_notes.classification`/`embedding` werden NICHT genutzt** (leer/nullable); Notiz-Auswahl ausschließlich über `machine_id` + Zeitfenster. Semantische Notiz-Suche (embedding) ist eine spätere Querfunktion, nicht F6.
+- **Keine Aktorik** — der Reasoner erklärt, schaltet/alarmiert nichts.
+- Reasoner importiert **nur** `foreman.llm` (kein LiteLLM-Typ).
+
+### 14.4 Verifikation
+
+Unit-Tests je Stufe (Kette/Recall/Quellen/Output-Guard) ohne Netz; Pipeline-E2E gegen echte DB (Gateway über Mock-Backend des **echten** `LiteLLMGateway`, Substrat aus). **Red-Team scharf** (§11.2): `tests/reasoners/event_chain/security/test_injection.py`.
