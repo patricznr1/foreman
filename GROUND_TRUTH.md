@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-13 · **Status:** Datenakquise-Phase (F3 implementiert — Ingestion-Service, Adapter-Interface + Registry, Simulations-Adapter mit Drift-Injektion, Dual-Write; baut auf F2-Fundament auf)
+**Stand:** 2026-06-14 · **Status:** Reasoner-Phase (F4 — Drift-Reasoner: erster vollständiger Reasoner, State-Gating + Deseasonalisierung + ADWIN/river + Relevanz-Filter + HITL-Quittierung + `/metrics`; validiert gegen die F3-Szenarien. Baut auf F2-Fundament + F3-Datenakquise auf)
 
 ---
 
@@ -64,7 +64,13 @@ Drei Schichten:
 - `POST /api/v1/readings` — Batch-Aufnahme von Messwerten (HTTP). Nutzt seit F3 denselben geteilten COPY-Schreibweg wie der Ingestion-Service (`ingestion/service.py:copy_readings`) — siehe §12.
 - `GET /api/v1/substrate/smoke` — Substrat-Round-Trip (siehe §9)
 
-*(Reasoner-Routen werden in F4/F6 ergänzt, sobald implementiert.)*
+### Reasoner-Routen (Drift, ab F4)
+
+- `GET /api/v1/reasoners/drift/alarms` — Auflistung der Drift-Warnungen (`code=DRIFT`), optional gefiltert nach `machine_id` und `acknowledged`.
+- `POST /api/v1/reasoners/drift/alarms/{alarm_id}/acknowledge` — **HITL-Quittierung** einer Drift-Warnung. Auth-pflichtig; `acknowledged_by` wird als HMAC-Token über die `users.id` abgelegt (§8). **Keine Aktorik** — setzt nur den Quittierungs-Status.
+- `GET /metrics` — Prometheus-Format (§11.2), Root-Ebene, in der Auth-Whitelist (Scraper hat kein JWT). Request-/Latenz-Zähler je Reasoner + Drift-Kennzahlen (Detektionsverzug, Fehlalarm-Zähler).
+
+*(Weitere Reasoner-Routen werden in F6 ergänzt, sobald implementiert.)*
 
 ---
 
@@ -198,7 +204,7 @@ Jeder Endpoint/Service/Reasoner bringt mindestens mit:
 - **Secrets-Scan:** keine Tokens/Keys im Diff (Repo ist öffentlich).
 - **Privacy-by-Design (Art. 25 DSGVO):** Werker-bezogene Felder werden im Adapter-Layer **pseudonymisiert** (HMAC-Token, s. §8); Datensparsamkeit; keine PII in Logs. Nachweis-Bezug bleibt attributierbar im System of Record (nicht in FOREMAN).
 - **Dependency-Audit:** `pip-audit` / `npm audit`; kritische & hohe CVEs adressiert.
-- **Red-Teaming (LLM01):** fester Test-Satz gegen Prompt-Injection über den `worker_notes`-Freitext-Pfad + Grounding-/Halluzinations-Check der Reasoner-Erklärungen. Teil der Test-Suite ab F4.
+- **Red-Teaming (LLM01):** fester Test-Satz gegen Prompt-Injection über den `worker_notes`-Freitext-Pfad + Grounding-/Halluzinations-Check der Reasoner-Erklärungen. Teil der Test-Suite **ab dem ersten Reasoner mit LLM-Freitext-Pfad** (Event-Ketten), NICHT ab F4 — der Drift-Reasoner (F4) ist reine Algorithmik (river/ADWIN) ohne LLM-Freitext-Pfad und damit kein Injection-Ziel (siehe §11.2).
 - **Rate-Limiting / Unbounded Consumption (LLM10):** Rate-Limit-Middleware auf der API + Token-/Timeout-/Kosten-Guard im `LLMGateway`.
 - **Modell-Integrität / Supply-Chain (LLM03/04):** Modell-Versionen/Digests gepinnt (Ollama-Digest, Anthropic-Model-ID); keine ungepinnte Modell-Auflösung zur Laufzeit. FOREMAN trainiert keine Modelle — daher kein Trainingsdaten-Signatur-Apparat.
 
@@ -234,9 +240,11 @@ Wie sich die Plattform zur Laufzeit verhält — was im Betrieb sichtbar und kon
 | Rate-Limiting + `LLMGateway`-Guards (Token/Timeout/Kosten) | F-LLM |
 | Modell-Digest-Pinning | F-LLM |
 | `/metrics`-Endpoint (Prometheus) | F4 |
-| Red-Team-Test-Satz (Injection/Halluzination) | F4 |
+| Red-Team-Test-Satz (Injection/Halluzination) | **erster Reasoner mit LLM-Freitext-Pfad** (Event-Ketten), NICHT F4 |
 | Human-in-the-Loop-Quittierung — Flow im Reasoner | F4 |
 | Grafana-Dashboard | Härtung |
+
+> **Red-Team-Präzisierung (F4-Befund).** Ursprünglich war der Red-Team-Test-Satz „ab F4" vorgesehen. Der erste Reasoner (Drift, F4) ist jedoch **reine Algorithmik** (river/ADWIN auf einem aufbereiteten Signalstrom) — er hat **keinen `worker_notes`→LLM-Freitext-Pfad** und ist damit kein Ziel für Prompt-Injection (LLM01). Der Red-Team-Test-Satz (Injection/Grounding/Halluzination) gehört an den **ersten Reasoner mit LLM-Freitext-Pfad** (Event-Ketten-Reasoner, der die natürlichsprachliche Erzählung erzeugt), nicht hierher. In F4 wird kein Red-Team-Set gebaut.
 
 > **Bau-Disziplin:** Diese Maßnahmen sind als verbindliche Gates/Prinzipien dokumentiert, werden aber **pro Phase** gebaut — kein Ops-Vorbau vor dem ersten laufenden Reasoner.
 
@@ -275,4 +283,4 @@ Die protokoll-agnostische Ingestion-Schicht unter `src/foreman/ingestion/` plus 
 - **Runner (`runner.py`):** `python -m foreman.adapters.simulation.runner --scenario <name|pfad> --mode backfill|live [--speed --seed --batch-size --db-url]`. `backfill` = Historie schnell (F4/Dashboard); `live` = Wall-Clock-Takt (Demo). Kein Job-Worker (§3) — Vordergrund-Prozess.
 - **Szenarien (`adapters/simulation/scenarios/`):** `bearing_drift`, `tool_wear`, `lubrication_correlation`, `healthy_baseline` (fachlich begründet, F4-Validierungsmaterial) + `minimal_bearing_drift`/`minimal_steady` (Tests/Demo). Fachliche Begründung: `docs/simulation/szenarien.md`.
 
-> **Nicht in F3:** echte Protokoll-Adapter (OPC UA/MQTT/Modbus), Steady-State-Ableitung, Drift-Erkennung/Reasoner, `/metrics`, Dashboard.
+> **Nicht in F3:** echte Protokoll-Adapter (OPC UA/MQTT/Modbus), Dashboard (F5). Steady-State-Ableitung, Drift-Erkennung/Reasoner und `/metrics` sind in **F4** ergänzt (Drift-Reasoner, §4/§11.2).

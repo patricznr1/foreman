@@ -20,6 +20,7 @@ from foreman.core.security import decode_access_token
 OPEN_PATHS: frozenset[str] = frozenset(
     {
         "/health",
+        "/metrics",  # Prometheus-Scraper (kein JWT) — §11.2, ab F4
         "/auth/login",
         "/auth/register",
         "/",

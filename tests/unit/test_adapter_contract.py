@@ -147,7 +147,7 @@ def test_stream_ist_zeitlich_sortiert() -> None:
 
 
 # --------------------------------------------------------------------------- #
-#  Quality „missing" → Intervall wird ausgelassen (nicht als 0 geschrieben)
+#  Quality „missing" -> Intervall wird ausgelassen (nicht als 0 geschrieben)
 # --------------------------------------------------------------------------- #
 def test_quality_missing_laesst_intervalle_aus() -> None:
     data = {

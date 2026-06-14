@@ -1,6 +1,6 @@
 # ============================================================
 #  FOREMAN — tests/unit/test_deps.py
-#  Zweck: Auth-Dependency get_current_user (Bearer-JWT → User), §8.
+#  Zweck: Auth-Dependency get_current_user (Bearer-JWT -> User), §8.
 #  Direkt getestet mit Stub-Session — kein DB nötig.
 # ============================================================
 from __future__ import annotations
