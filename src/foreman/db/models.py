@@ -17,6 +17,7 @@ from typing import Any
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     Double,
     ForeignKey,
@@ -25,6 +26,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -252,7 +254,48 @@ class SemanticEvent(Base, TimestampMixin):
     substrate_ref: Mapped[str | None] = mapped_column(String(255))
 
 
+class ReasonerExplanationRecord(Base, TimestampMixin):
+    """`reasoner_explanations` — persistierte Reasoner-Erklärungen (F6).
+
+    Speichert das Ergebnis eines LLM-Reasoners (zuerst Ereignisketten): Anker-
+    Referenz, Erzähltext, referenzierte/geflaggte Quellen, Konfidenz-/Hypothese-
+    Markierung. Abfragbar fürs Dashboard/MCP. Die Reasoner-Erklärung ist ein
+    diskretes Ereignis und wird zusätzlich als `semantic_event` gespiegelt (§12.4).
+    """
+
+    __tablename__ = "reasoner_explanations"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    anchor_alarm_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("alarms.id"), nullable=False
+    )
+    machine_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("machines.id"))
+    # reasoner: welcher Reasoner die Erklärung erzeugt hat (Tabelle ist reasoner-übergreifend).
+    reasoner: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=text("'event_chain'")
+    )
+    narrative: Mapped[str] = mapped_column(Text, nullable=False)
+    # referenzierte (whitelisted) source_ids + geflaggte unbelegte Inhalte als JSONB-Listen.
+    referenced_source_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    flagged_unsupported: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    is_hypothesis: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    confidence: Mapped[str] = mapped_column(String(16), nullable=False)
+    # grounded: Ergebnis des Gateway-Grounding-Post-Checks (None, wenn nicht geprüft).
+    grounded: Mapped[bool | None] = mapped_column(Boolean)
+    recall_used: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+
+
 # Häufige Lese-Zugriffe absichern (keine Indizes auf der readings-Rohtabelle, §3.4).
 Index("ix_alarms_machine_raised", Alarm.machine_id, Alarm.raised_at)
 Index("ix_worker_notes_machine", WorkerNote.machine_id)
 Index("ix_data_points_machine", DataPoint.machine_id)
+Index("ix_reasoner_explanations_anchor", ReasonerExplanationRecord.anchor_alarm_id)
+Index(
+    "ix_reasoner_explanations_machine_created",
+    ReasonerExplanationRecord.machine_id,
+    ReasonerExplanationRecord.created_at,
+)

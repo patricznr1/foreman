@@ -4,7 +4,7 @@
 >
 > **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
-**Stand:** 2026-06-14 · F4 — Drift-Reasoner (State-Gating, Deseasonalisierung, ADWIN/river, Relevanz-Filter, HITL-Quittierung, `/metrics`; gegen die F3-Szenarien validiert) auf F3 — Datenakquise & Adapterschicht (Ingestion-COPY-Pfad, Normalformat, SourceAdapter-Interface, Simulations-Generator, best-effort Substrat-Dual-Write) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
+**Stand:** 2026-06-14 · F6 — Ereignisketten-Reasoner (erster LLM-Freitext-Reasoner + erster Konsument des LLMGateway: Ketten-Konstruktion, NEXUS-Recall ähnlicher Vorfälle, Grounding-Quellen mit untrusted `worker_notes`, gegroundete Erzählung über `gateway.complete(task=synthesis)`, Output-Guard, Red-Team scharf) auf F-LLM (Modell-Gateway), F4 (Drift-Reasoner), F3 (Datenakquise & Adapterschicht) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
 
 ---
 
@@ -318,6 +318,92 @@ Das Harness fährt einen erweiterbaren Satz Injection-Payloads gegen die Spotlig
 
 **Warum existiert es / wo sitzt es?**
 Beweist, dass die Abstraktion real durchläuft, ohne CI an Ollama zu koppeln — und legt das Sicherheits-Gerüst bereit. Die scharfe Aktivierung mit echten Werker-Freitext-Payloads kommt mit dem ersten Freitext-Reasoner (Ereignisketten).
+
+---
+
+## F6 — Ereignisketten-Reasoner (`src/foreman/reasoners/event_chain/`)
+
+Der erste LLM-Freitext-Reasoner und erste Konsument des `LLMGateway`. Saubere Schichtung: Sammeln → Grounden → Synthetisieren → Persistieren — jede Stufe für sich testbar. Die zentrale Frage hier ist nicht „erzählt es schön", sondern „hält das Grounding, wenn eine Werkernotiz versucht, den Reasoner zu kapern".
+
+### Output-Schema (`event_chain/schema.py`)
+
+**Was tut es?**
+Nagelt die Output-Form zuerst fest: `EventChain` (zeitlich geordnete Ereignisse) und das validierte `ReasonerExplanation` (Erzähltext, referenzierte/geflaggte Quellen, Konfidenz/Hypothese, Grounding-Report). Plus Request- und API-Read-Schema.
+
+**Warum existiert es / wo sitzt es?**
+Der `model_validator` von `ReasonerExplanation` ist der **Output-Guard**: `referenced_source_ids ⊆ allowed_source_ids` und `extra=forbid`. Eine erfundene Quelle kann so nie als „belegt" durchrutschen — Schutz-Doc §5.1.
+
+### Ketten-Konstruktion (`event_chain/chain.py`)
+
+**Was tut es?**
+`reconstruct_chain` sammelt um einen Anker-Alarm in einem Zeitfenster die relevanten Ereignisse (vorausgehende Alarme, Werkernotizen, Wartungen) — Auswahl über `machine_id` + Fenster, temporal geordnet.
+
+**Warum existiert es / wo sitzt es?**
+Reiner Kern ohne DB/Netz (Reihen werden injiziert) → isoliert testbar. Werkernotizen tragen hier schon `trusted=False` — die Invariante wandert über `ChainEvent.trusted` in die Quellen.
+
+### NEXUS-Recall (`event_chain/recall.py`)
+
+**Was tut es?**
+Bildet aus dem Anker-Muster (Maschinenklasse + Alarm-Signatur, PII-frei) eine Recall-Query und ruft ähnliche Vergangenheits-Vorfälle über den `SubstrateClient` ab.
+
+**Warum existiert es / wo sitzt es?**
+Die „hatten wir das schon mal?"-Funktion — strikt best-effort: kein Substrat / Ausfall → leere Liste, die Kette wird ohne Recall-Anteil erzählt. Blockiert nie.
+
+### Grounding-Quellen (`event_chain/grounding_sources.py`)
+
+**Was tut es?**
+Mappt Kette + Recall auf die `GroundingSource`-Liste fürs Gateway, jede mit eindeutiger `source_id`.
+
+**Warum existiert es / wo sitzt es?**
+**Die zentrale Sicherheits-Invariante:** `worker_notes` (und Recall) gehen IMMER als `trusted=False` rein (Spotlighting-Quelle, nie Instruktion); nur strukturierte Alarm-/Wartungsdaten sind `trusted=True`. Die Funktion hebt eine untrusted Quelle nie auf trusted an.
+
+### Prompts (`event_chain/prompts.py`)
+
+**Was tut es?**
+System-/User-Prompt für die deutsche Erzählung: nur aus den Quellen, Hypothesen markiert, Zitate als `[source_id]`.
+
+**Warum existiert es / wo sitzt es?**
+Der untrusted Notiz-Freitext kommt nur gespotlightet über die Quellen — der User-Prompt enthält nur strukturelle Metadaten (Zeit/ID/Typ), nie inline den Freitext.
+
+### Orchestrierung & Output-Guard (`event_chain/service.py`)
+
+**Was tut es?**
+Fährt die Pipeline (chain → recall → sources → `gateway.complete(task=synthesis)` → Output-Guard) und persistiert die Erklärung + spiegelt sie als `semantic_event`.
+
+**Warum existiert es / wo sitzt es?**
+`build_explanation` ist die scharfe Abwehr: zitierte Quellen gegen die Whitelist prüfen (erfundene → `flagged_unsupported`), unbelegte Zahlen aus dem Grounding-Report flaggen, Erzählung output-sanitisieren (HTML/Markdown/URL, LLM05). Geflaggt ⇒ Hypothese + Konfidenz `low`. Keine Aktorik.
+
+### Persistenz (`migrations/versions/0003_reasoner_explanations.py`, `db/models.py`)
+
+**Was tut es?**
+`reasoner_explanations`-Tabelle (Migration 0003) + ORM-Model `ReasonerExplanationRecord`. Dual-Write als `semantic_event` (best-effort) macht das Reasoning-Ergebnis Teil des Gedächtnisses.
+
+**Warum existiert es / wo sitzt es?**
+Abfragbar fürs Dashboard/MCP. Gespiegelt wird eine strukturierte Zusammenfassung, **nicht** der rohe Erzähltext (defensiv gegen eingeschleusten Freitext im Substrat).
+
+### Routen & Gateway-Dependency (`event_chain/router.py`, `api/deps.py`)
+
+**Was tut es?**
+`POST /reconstruct` (on-demand) + `GET /explanations(/{id})`. `api/deps.py` bekommt die erste `GatewayDep` (F6 = erster Konsument).
+
+**Warum existiert es / wo sitzt es?**
+On-demand, **kein** Auto-LLM pro Alarm — der alarm-getriebene Hook bleibt offen (Kostenkontrolle). POST ist auth-pflichtig. Die Dependency liefert das Gateway als Protokoll-Typ (kein LiteLLM in reasoner-fähigen Pfaden).
+
+### Metriken (`observability/metrics.py`, erweitert)
+
+**Was tut es?**
+`foreman_event_chain_explanations_total` (sauber/geflaggt) + `foreman_event_chain_recall_total` (Treffer/kein Treffer) unter `GET /metrics`.
+
+**Warum existiert es / wo sitzt es?**
+Die geflaggt-Quote ist die Injection-Containment-Sicht; niedrig-kardinal, keine PII.
+
+### Red-Team scharf (`tests/reasoners/event_chain/security/test_injection.py`)
+
+**Was tut es?**
+Fährt die echten `INJECTION_PAYLOADS` (aus dem F-LLM-Harness, via `build_worker_note`) als `worker_notes`-Freitext gegen die **reale** Pipeline.
+
+**Warum existiert es / wo sitzt es?**
+Die Kern-Akzeptanz von F6: Spotlighting hält, der Output-Guard flaggt erfundene Quellen/Zahlen, die Erzählung wird sanitisiert, das Schema validiert, der Reasoner bleibt inert (keine Aktorik). Plus False-Positive-Kontrolle.
 
 ---
 
