@@ -172,6 +172,10 @@ class IngestionService:
             self.embedding_provider, [note.text for note in self._pending_notes]
         )
         if vectors is not None:
+            # `strict=False` BEWUSST (anders als der ehrliche Backfill mit strict=True):
+            # der Insert-Pfad ist best-effort und darf nie werfen. Der Provider-Vertrag
+            # garantiert ohnehin einen Vektor je Text (§15.1) — bliebe wider Erwarten
+            # eine Notiz übrig, bleibt sie mit embedding=NULL und der Backfill holt sie.
             for note, vector in zip(self._pending_notes, vectors, strict=False):
                 note.embedding = vector
                 self._stats.notes_embedded += 1

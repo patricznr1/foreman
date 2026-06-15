@@ -19,8 +19,6 @@ from collections.abc import Awaitable, Callable, Sequence
 from time import perf_counter
 from typing import Protocol, runtime_checkable
 
-import httpx
-
 from foreman.embeddings.backends import (
     EmbeddingBackend,
     OllamaBackend,
@@ -99,14 +97,16 @@ class LocalEmbeddingProvider:
         cls,
         settings: EmbeddingSettings,
         *,
-        ollama_client: httpx.AsyncClient | None = None,
         st_encode_fn: EncodeFn | None = None,
     ) -> LocalEmbeddingProvider:
         """Baut den Provider aus der Embedding-Config. Nur die für den Priority-Modus
         nötigen Backends werden instanziiert.
 
-        Die Injektionspunkte (`ollama_client`, `st_encode_fn`) erlauben
-        deterministische Tests ohne echtes Ollama / Modell-Download.
+        Der `st_encode_fn`-Injektionspunkt erlaubt deterministische Tests ohne
+        Modell-Download. Das Ollama-Backend wird für isolierte Tests direkt mit
+        einem injizierten httpx-MockTransport konstruiert (in `backends.py`), damit
+        kein httpx-Typ in diese library-agnostische Schicht durchschlägt (Symmetrie
+        zum Gateway-Vorbild §13: keine Library-Typen in der Provider-Fläche).
         """
         needed = set(resolve_chain(settings.priority))
         backends: list[EmbeddingBackend] = []
@@ -115,7 +115,6 @@ class LocalEmbeddingProvider:
                 OllamaBackend(
                     base_url=settings.local_base_url,
                     model=settings.model,
-                    client=ollama_client,
                 )
             )
         if ST_BACKEND in needed:

@@ -13,10 +13,13 @@ leer/ungenutzt, §14.3). Parameter aus `docs/research/vektor-suche-pgvector.md`:
   - Bauparameter m = 16, ef_construction = 200 (Recall/Latenz-Balance, moderater Bestand).
 
 Betriebs-Hinweis: Im laufenden Betrieb mit großem Bestand wird der Index per
-`CREATE INDEX CONCURRENTLY` (außerhalb einer Transaktion) angelegt; pgvector ≥ 0.8.2
-ist Pflicht (CVE-2026-3172 bei parallelen HNSW-Builds). In der Migration läuft der
-Index transaktional (wie die übrigen FOREMAN-Migrationen) — beim MVP-Bestand
-unkritisch. `hnsw.ef_search` (Query-Zeit) bleibt Session-/Server-Default (Start 40).
+`CREATE INDEX CONCURRENTLY` (außerhalb einer Transaktion) angelegt. Pflicht ist die
+pgvector-EXTENSION ≥ 0.8.2 im Postgres-Image (CVE-2026-3172 bei parallelen HNSW-Builds)
+— das ist die DB-/Deployment-Komponente, NICHT der Python-Adapter `pgvector` im
+pyproject (der nur das SQLAlchemy-Mapping liefert und für HNSW/Cosine keine 0.8.x
+braucht). In der Migration läuft der Index transaktional (wie die übrigen
+FOREMAN-Migrationen) — beim MVP-Bestand unkritisch. `hnsw.ef_search` (Query-Zeit)
+bleibt Session-/Server-Default (Start 40).
 """
 
 from __future__ import annotations
