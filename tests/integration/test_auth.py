@@ -72,9 +72,7 @@ async def test_protected_route_without_token_401(client: AsyncClient) -> None:
 
 
 async def test_protected_route_with_invalid_token_401(client: AsyncClient) -> None:
-    response = await client.get(
-        "/api/v1/lines", headers={"Authorization": "Bearer kaputtes.token"}
-    )
+    response = await client.get("/api/v1/lines", headers={"Authorization": "Bearer kaputtes.token"})
     assert response.status_code == 401
 
 

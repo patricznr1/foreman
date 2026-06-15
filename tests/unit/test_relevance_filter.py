@@ -33,7 +33,7 @@ def test_grosse_persistente_drift_wird_durchgelassen() -> None:
     flt = RelevanceFilter(min_effect_size=2.0, persistence_intervals=3)
     # ADWIN meldet zum Zeitpunkt 0; Effektgröße bleibt über der Schwelle.
     results = []
-    results.append(flt.update(5.0, drift_signaled=True))   # armed, consec=1
+    results.append(flt.update(5.0, drift_signaled=True))  # armed, consec=1
     results.append(flt.update(5.0, drift_signaled=False))  # consec=2
     results.append(flt.update(5.0, drift_signaled=False))  # consec=3 -> relevant
     assert results == [False, False, True]

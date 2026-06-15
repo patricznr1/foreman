@@ -37,9 +37,7 @@ async def list_drift_alarms(
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[Alarm]:
     """Listet die vom Drift-Reasoner erzeugten Warnungen (code=DRIFT)."""
-    stmt = (
-        select(Alarm).where(Alarm.code == DRIFT_ALARM_CODE).order_by(Alarm.raised_at.desc())
-    )
+    stmt = select(Alarm).where(Alarm.code == DRIFT_ALARM_CODE).order_by(Alarm.raised_at.desc())
     if machine_id is not None:
         stmt = stmt.where(Alarm.machine_id == machine_id)
     if acknowledged is True:

@@ -26,13 +26,11 @@ async def test_wartungsereignis_landet_mit_tokenisiertem_performed_by(
     fake_redactor: Redactor,
 ) -> None:
     adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"), seed=1)
-    await IngestionService(
-        db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor
-    ).ingest(adapter)
-
-    rows = await raw_conn.fetch(
-        "SELECT type, description, performed_by FROM maintenance_events"
+    await IngestionService(db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor).ingest(
+        adapter
     )
+
+    rows = await raw_conn.fetch("SELECT type, description, performed_by FROM maintenance_events")
     assert len(rows) == 1
     event = rows[0]
     assert event["type"] == "lubrication"
@@ -55,9 +53,9 @@ async def test_wartungsereignis_ist_als_semantic_event_gespiegelt(
     fake_redactor: Redactor,
 ) -> None:
     adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"), seed=1)
-    await IngestionService(
-        db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor
-    ).ingest(adapter)
+    await IngestionService(db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor).ingest(
+        adapter
+    )
 
     rows = await raw_conn.fetch(
         "SELECT payload FROM semantic_events WHERE event_type = 'maintenance_performed'"

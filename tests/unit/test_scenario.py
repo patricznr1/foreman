@@ -152,7 +152,12 @@ def test_unbekanntes_feld_wird_abgelehnt() -> None:
 def test_alarm_mit_unbekanntem_datenpunkt_wird_abgelehnt() -> None:
     data = _minimal_dict()
     data["alarms"] = [
-        {"offset": "0d", "data_point": "gibt_es_nicht", "severity": "warning", "category": "hardware"}
+        {
+            "offset": "0d",
+            "data_point": "gibt_es_nicht",
+            "severity": "warning",
+            "category": "hardware",
+        }
     ]
     with pytest.raises(ValidationError):
         Scenario.model_validate(data)

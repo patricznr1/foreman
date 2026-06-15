@@ -33,9 +33,7 @@ async def refresh_readings_1m(connection: AsyncConnection) -> None:
     Aufrufer setzt `execution_options(isolation_level="AUTOCOMMIT")`. Nötig nach
     einem Backfill, bevor der Reasoner readings_1m liest.
     """
-    await connection.execute(
-        text("CALL refresh_continuous_aggregate('readings_1m', NULL, NULL)")
-    )
+    await connection.execute(text("CALL refresh_continuous_aggregate('readings_1m', NULL, NULL)"))
     logger.info("%s readings_1m aktualisiert (Continuous Aggregate refresh)", OK)
 
 

@@ -1,0 +1,8 @@
+# .git-blame-ignore-revs
+# Revisionen, die `git blame` ignorieren soll — rein mechanische, repo-weite
+# Formatierungen ohne Semantik-Change. GitHub respektiert diese Datei automatisch
+# in der Blame-Ansicht. Lokal aktivierbar via:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# chore: apply ruff format repo-wide (56 Bestandsdateien format-clean)
+f8d752da4a3fa3e3a4bc8a3acc9674f2a47c7581

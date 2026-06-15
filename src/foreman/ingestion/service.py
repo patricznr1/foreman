@@ -285,11 +285,7 @@ class IngestionService:
     async def _write_worker_note(self, event: WorkerNoteRecord) -> None:
         # Datenschutz-Schreibpfad: Freitext NER-maskiert, Autor tokenisiert (§8).
         masked_text = self.redactor.redact_person_names(event.text)
-        author = (
-            self.pseudonymizer.tokenize_worker(event.author_ref)
-            if event.author_ref
-            else None
-        )
+        author = self.pseudonymizer.tokenize_worker(event.author_ref) if event.author_ref else None
         note = WorkerNote(
             machine_id=event.machine_id,
             shift=event.shift,

@@ -64,9 +64,7 @@ async def test_drift_warnung_gilt_erst_nach_quittierung_als_erledigt(
     assert not body["acknowledged_by"].isdigit()
 
     # Nach Quittierung: nicht mehr in der offenen Liste.
-    open_after = (
-        await auth_client.get("/api/v1/reasoners/drift/alarms?acknowledged=false")
-    ).json()
+    open_after = (await auth_client.get("/api/v1/reasoners/drift/alarms?acknowledged=false")).json()
     assert not any(a["id"] == alarm_id for a in open_after)
 
 

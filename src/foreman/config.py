@@ -67,12 +67,8 @@ class Settings(BaseSettings):
     # --- Pseudonymisierung (HMAC, §8 / Research §5.3 a) ---
     # Werte aus der .env: FOREMAN_PSEUDO_KEY_VERSION, FOREMAN_PSEUDO_KEY_VERSIONS,
     # FOREMAN_PSEUDO_KEY_<version> (32-Byte-Hex je Version).
-    pseudo_key_version: str = Field(
-        default="v1", validation_alias="FOREMAN_PSEUDO_KEY_VERSION"
-    )
-    pseudo_key_versions: str = Field(
-        default="v1", validation_alias="FOREMAN_PSEUDO_KEY_VERSIONS"
-    )
+    pseudo_key_version: str = Field(default="v1", validation_alias="FOREMAN_PSEUDO_KEY_VERSION")
+    pseudo_key_versions: str = Field(default="v1", validation_alias="FOREMAN_PSEUDO_KEY_VERSIONS")
     pseudo_tenant: str = Field(default="default", validation_alias="FOREMAN_PSEUDO_TENANT")
 
     @property

@@ -20,8 +20,8 @@ from river import drift
 from foreman.reasoners.drift.baseline import RollingResidualBaseline
 
 # Startkalibrierung (Research §6.1).
-ADWIN_DELTA: Final = 0.002          # river-Default; -> 0.001 bei zu vielen Fehlalarmen
-WARMUP_MIN_SAMPLES: Final = 100     # vor diesem Stand kein Drift-Signal vertrauen
+ADWIN_DELTA: Final = 0.002  # river-Default; -> 0.001 bei zu vielen Fehlalarmen
+WARMUP_MIN_SAMPLES: Final = 100  # vor diesem Stand kein Drift-Signal vertrauen
 
 
 def _robust_sigma(residuals: list[float]) -> float:
@@ -58,9 +58,7 @@ class DataPointDriftState:
     _warmup_residuals: list[float] = field(default_factory=list, repr=False)
     _sigma: float | None = field(default=None, repr=False)
 
-    def update(
-        self, value: float, *, in_steady_state: bool, state_key: object = None
-    ) -> bool:
+    def update(self, value: float, *, in_steady_state: bool, state_key: object = None) -> bool:
         """Verarbeitet einen (aggregierten) Messwert. Gibt True NUR bei echter Drift.
 
         `in_steady_state` kommt aus production_runs + digitalen data_points. Fällt

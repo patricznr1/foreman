@@ -73,9 +73,7 @@ def test_missing_active_key_raises() -> None:
 
 def test_build_from_settings() -> None:
     # FOREMAN_PSEUDO_KEY_v1 wird in conftest gesetzt.
-    settings = Settings(
-        _env_file=None, pseudo_key_version="v1", pseudo_key_versions="v1"
-    )
+    settings = Settings(_env_file=None, pseudo_key_version="v1", pseudo_key_versions="v1")
     p = build_pseudonymizer(settings)
     token = p.tokenize_worker("7")
     assert token.startswith("v1:")

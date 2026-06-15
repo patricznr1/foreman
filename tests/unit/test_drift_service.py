@@ -56,9 +56,7 @@ def test_pipeline_meldet_nichts_wenn_maschine_steht() -> None:
     # machine_running = 0 -> nie steady -> Detektor wird nicht gefüttert.
     values = [10.0] * 100 + [50.0] * 100
     runs = [(_START, None)]
-    findings = list(
-        detect_drift_in_stream(_make_samples(values, running=0.0), runs)
-    )
+    findings = list(detect_drift_in_stream(_make_samples(values, running=0.0), runs))
     assert findings == []
 
 

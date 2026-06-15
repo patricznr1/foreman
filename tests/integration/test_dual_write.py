@@ -29,7 +29,9 @@ class _OkSubstrate:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any] | None]] = []
 
-    async def remember(self, content: str, *, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def remember(
+        self, content: str, *, metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         self.calls.append((content, metadata))
         return {"id": f"ref-{len(self.calls)}"}
 
@@ -37,21 +39,25 @@ class _OkSubstrate:
 class _FailSubstrate:
     """Nicht erreichbares Substrat — wirft bei jedem remember."""
 
-    async def remember(self, content: str, *, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def remember(
+        self, content: str, *, metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         raise SubstrateError("Substrat nicht erreichbar (Test)")
 
 
 class _NoRefSubstrate:
     """Erreichbar, aber Antwort ohne verwertbare Referenz (z. B. {})."""
 
-    async def remember(self, content: str, *, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def remember(
+        self, content: str, *, metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return {"status": "ok"}  # keine id/memory_id/result → ref bleibt None
 
 
-def _service(session: AsyncSession, pseudo: Pseudonymizer, redactor: Redactor, substrate: Any) -> IngestionService:
-    return IngestionService(
-        session, pseudonymizer=pseudo, redactor=redactor, substrate=substrate
-    )
+def _service(
+    session: AsyncSession, pseudo: Pseudonymizer, redactor: Redactor, substrate: Any
+) -> IngestionService:
+    return IngestionService(session, pseudonymizer=pseudo, redactor=redactor, substrate=substrate)
 
 
 async def test_dual_write_setzt_substrate_ref_bei_erreichbarem_substrat(
@@ -88,7 +94,9 @@ async def test_substrat_ausfall_blockiert_datenaufnahme_nicht(
     fake_redactor: Redactor,
 ) -> None:
     adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"), seed=1)
-    stats = await _service(db_session, pseudonymizer, fake_redactor, _FailSubstrate()).ingest(adapter)
+    stats = await _service(db_session, pseudonymizer, fake_redactor, _FailSubstrate()).ingest(
+        adapter
+    )
 
     # Trotz Substrat-Ausfall: Readings + Ereignisse vollständig in der DB.
     assert await raw_conn.fetchval("SELECT count(*) FROM readings") == stats.readings_written > 0

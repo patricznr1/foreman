@@ -53,7 +53,9 @@ class MockBackend:
     ) -> BackendResult:
         self.calls += 1
         if self._fail:
-            raise BackendUnavailable(f"❌ {self.name} nicht erreichbar (Mock)", attempted=(self.name,))
+            raise BackendUnavailable(
+                f"❌ {self.name} nicht erreichbar (Mock)", attempted=(self.name,)
+            )
         if self._echo:
             text = messages[-1]["content"]
         elif self._reply is not None:

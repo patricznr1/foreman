@@ -22,8 +22,12 @@ from foreman.substrate.client import SubstrateClient
 
 def _anchor() -> Alarm:
     return Alarm(
-        id=1, machine_id=1, severity="warning", category="process",
-        code="DRIFT", raised_at=datetime(2026, 6, 14, tzinfo=UTC),
+        id=1,
+        machine_id=1,
+        severity="warning",
+        category="process",
+        code="DRIFT",
+        raised_at=datetime(2026, 6, 14, tzinfo=UTC),
     )
 
 
@@ -42,8 +46,14 @@ def test_build_recall_query_enthaelt_anker_merkmale() -> None:
 
 
 def test_build_recall_query_ohne_merkmale_ist_generisch() -> None:
-    bare = Alarm(id=2, machine_id=1, severity="info", category="", code=None,
-                 raised_at=datetime(2026, 6, 14, tzinfo=UTC))
+    bare = Alarm(
+        id=2,
+        machine_id=1,
+        severity="info",
+        category="",
+        code=None,
+        raised_at=datetime(2026, 6, 14, tzinfo=UTC),
+    )
     query = build_recall_query(bare, None)
     assert "ähnlicher Vorfall" in query
 

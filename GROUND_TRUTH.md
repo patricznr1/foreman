@@ -201,6 +201,7 @@ Ein Commit gilt erst als fertig, wenn **alle** zutreffen:
 | Typsicherheit (Py) | `mypy --strict` | 0 Fehler | F2 |
 | Typsicherheit (TS) | `tsc --noEmit` | 0 Fehler | F5 |
 | Lint (Py) | `ruff check` | clean | F2 |
+| Format (Py) | `ruff format --check` | clean | F-SEM |
 | Lint (TS) | `eslint` | clean | F5 |
 | Tests | `pytest -x` | grün, **Coverage ≥ 85 %** | F2 |
 | Komplexität | clean-code-gate | unter Schwelle, keine neuen Smells | F2 |

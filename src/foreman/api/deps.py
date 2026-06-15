@@ -57,9 +57,7 @@ async def get_current_user(
         ) from exc
     subject = payload.get("sub")
     if subject is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token ohne Subjekt"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token ohne Subjekt")
     user = await session.get(User, int(subject))
     if user is None:
         raise HTTPException(

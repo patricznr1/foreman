@@ -68,9 +68,7 @@ async def test_smoke_endpoint_requires_auth(client: AsyncClient) -> None:
     assert (await client.get("/api/v1/substrate/smoke")).status_code == 401
 
 
-async def test_startup_smoke_is_non_blocking(
-    test_settings: Settings, _migrated_db: None
-) -> None:
+async def test_startup_smoke_is_non_blocking(test_settings: Settings, _migrated_db: None) -> None:
     """Ein Substrat-Fehlschlag beim Start darf die App NICHT abbrechen (§9)."""
     # Konfiguriert, aber unerreichbar → Smoke schlägt fehl, Start läuft weiter.
     settings = test_settings.model_copy(

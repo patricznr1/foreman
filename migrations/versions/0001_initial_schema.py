@@ -36,9 +36,7 @@ def upgrade() -> None:
         sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True),
         sa.Column("email", sa.String(320), nullable=False),
         sa.Column("password_hash", sa.String(255), nullable=False),
-        sa.Column(
-            "role", sa.String(32), nullable=False, server_default=sa.text("'worker'")
-        ),
+        sa.Column("role", sa.String(32), nullable=False, server_default=sa.text("'worker'")),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=_NOW, nullable=False),
         sa.UniqueConstraint("email", name="uq_users_email"),
     )
@@ -117,7 +115,9 @@ def upgrade() -> None:
     # --- readings (in 0002 → Hypertable). PK (data_point_id, time). ---
     op.create_table(
         "readings",
-        sa.Column("data_point_id", sa.BigInteger(), sa.ForeignKey("data_points.id"), nullable=False),
+        sa.Column(
+            "data_point_id", sa.BigInteger(), sa.ForeignKey("data_points.id"), nullable=False
+        ),
         sa.Column("time", sa.DateTime(timezone=True), nullable=False),
         sa.Column("value", sa.Double(), nullable=False),
         sa.Column("quality", sa.SmallInteger(), nullable=True),

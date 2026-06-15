@@ -66,5 +66,8 @@ jobs:
       - name: Lint — ruff check
         run: uv run ruff check
 
+      - name: Format — ruff format --check
+        run: uv run ruff format --check
+
       - name: Tests + coverage — pytest (integration, red-team, ≥85 %)
         run: uv run pytest

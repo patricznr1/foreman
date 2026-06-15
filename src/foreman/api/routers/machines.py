@@ -33,9 +33,7 @@ async def list_machines(
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[Machine]:
-    result = await session.scalars(
-        select(Machine).order_by(Machine.id).limit(limit).offset(offset)
-    )
+    result = await session.scalars(select(Machine).order_by(Machine.id).limit(limit).offset(offset))
     return result.all()
 
 
@@ -43,7 +41,5 @@ async def list_machines(
 async def get_machine(machine_id: int, session: SessionDep) -> Machine:
     obj = await session.get(Machine, machine_id)
     if obj is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Maschine nicht gefunden"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Maschine nicht gefunden")
     return obj

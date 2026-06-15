@@ -72,9 +72,7 @@ async def _get_or_create_component(
     )
     component = (await session.execute(stmt)).scalar_one_or_none()
     if component is None:
-        component = Component(
-            machine_id=machine_id, label=label, component_type=component_type
-        )
+        component = Component(machine_id=machine_id, label=label, component_type=component_type)
         session.add(component)
         await session.flush()
     return component

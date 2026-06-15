@@ -67,7 +67,7 @@ def test_in_any_run_ausserhalb() -> None:
 
 def test_in_any_run_grenzen_start_inklusiv_ende_exklusiv() -> None:
     runs = [(_t(0), _t(60))]
-    assert in_any_run(_t(0), runs) is True   # Start inklusiv
+    assert in_any_run(_t(0), runs) is True  # Start inklusiv
     assert in_any_run(_t(60), runs) is False  # Ende exklusiv
 
 
@@ -78,7 +78,7 @@ def test_digital_state_schwellwert() -> None:
     assert digital_state(1.0) is True
     assert digital_state(0.0) is False
     assert digital_state(None) is False
-    assert digital_state(0.5) is True   # Schwelle inklusiv
+    assert digital_state(0.5) is True  # Schwelle inklusiv
     assert digital_state(0.49) is False
 
 
@@ -98,14 +98,14 @@ def test_gate_pausiert_in_grace_period_nach_anlauf() -> None:
     # Anlauf bei Minute 0: die ersten 5 Minuten gelten NICHT als steady.
     assert gate.update(_t(0), _steady()) is False
     assert gate.update(_t(4), _steady()) is False
-    assert gate.update(_t(5), _steady()) is True   # Grace abgelaufen
+    assert gate.update(_t(5), _steady()) is True  # Grace abgelaufen
     assert gate.update(_t(10), _steady()) is True
 
 
 def test_gate_grace_period_setzt_nach_stillstand_neu_auf() -> None:
     gate = SteadyStateGate(grace_period=timedelta(minutes=5))
     gate.update(_t(0), _steady())
-    assert gate.update(_t(6), _steady()) is True   # längst steady
+    assert gate.update(_t(6), _steady()) is True  # längst steady
     # Stillstand bei Minute 7 -> nicht steady, Grace-Period wird zurückgesetzt.
     assert gate.update(_t(7), _stillstand()) is False
     # Wiederanlauf bei Minute 8: erneut Grace-Period.
