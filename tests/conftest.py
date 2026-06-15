@@ -23,7 +23,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from foreman.api.deps import get_redactor
+from foreman.api.deps import get_embedding_provider, get_redactor
 from foreman.config import Settings, get_settings
 from foreman.core.pseudonymize import Pseudonymizer, build_pseudonymizer
 from foreman.db.session import get_session
@@ -72,6 +72,17 @@ class FakeRedactor:
         for name in self._NAMES:
             text_value = text_value.replace(name, "[PERSON]")
         return text_value
+
+
+class _StubEmbeddingProvider:
+    """Schneller Embedding-Stub für die Test-App (kein echtes Ollama).
+
+    Liefert einen deterministischen Nullvektor je Text — der CRUD-Schreibpfad
+    läuft so ohne Netz/Timeout durch. Tests, die echte Such-Reihenfolge oder den
+    Backend-Ausfall prüfen, überschreiben den Provider gezielt selbst."""
+
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        return [[0.0] * 1024 for _ in texts]
 
 
 @pytest.fixture(scope="session")
@@ -137,6 +148,7 @@ async def app(test_settings: Settings, _migrated_db: None) -> AsyncIterator[Fast
     application.dependency_overrides[get_session] = _override_get_session
     application.dependency_overrides[get_settings] = lambda: test_settings
     application.dependency_overrides[get_redactor] = lambda: FakeRedactor()
+    application.dependency_overrides[get_embedding_provider] = lambda: _StubEmbeddingProvider()
 
     yield application
 

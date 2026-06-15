@@ -106,6 +106,29 @@ EVENT_CHAIN_RECALL: Final = Counter(
     registry=REGISTRY,
 )
 
+# --- Embedding-Schicht (F-SEM, §11.2) — je embed()-Call: Backend/Latenz/Ergebnis
+#     + Durchsatz (Anzahl embeddeter Texte). Labels niedrig-kardinal
+#     (backend ∈ {ollama,sentence_transformers}; result ∈ {ok,error}) — keine PII,
+#     keine Notiz-Texte, keine Vektoren (§8). ---
+EMBED_REQUESTS: Final = Counter(
+    "foreman_embed_requests_total",
+    "Anzahl der Embedding-Aufrufe je Backend und Ergebnis.",
+    ["backend", "result"],
+    registry=REGISTRY,
+)
+EMBED_LATENCY: Final = Histogram(
+    "foreman_embed_latency_seconds",
+    "Latenz der Embedding-Aufrufe je Backend (Sekunden).",
+    ["backend"],
+    registry=REGISTRY,
+)
+EMBED_TEXTS: Final = Counter(
+    "foreman_embed_texts_total",
+    "Anzahl der eingebetteten Texte je Backend (Durchsatz).",
+    ["backend"],
+    registry=REGISTRY,
+)
+
 
 def observe_reasoner_run(reasoner: str, latency_seconds: float, *, success: bool) -> None:
     """Zählt einen Reasoner-Aufruf und seine Latenz (je Reasoner, Erfolg/Fehler)."""
@@ -164,6 +187,20 @@ def record_event_chain_explanation(*, flagged: bool) -> None:
 def record_event_chain_recall(result: str) -> None:
     """Zählt einen NEXUS-Recall-Ausgang des Reasoners (result ∈ {hit, miss})."""
     EVENT_CHAIN_RECALL.labels(result=result).inc()
+
+
+def observe_embedding(
+    *, backend: str, latency_seconds: float, success: bool, n_texts: int
+) -> None:
+    """Trägt die Kennzahlen eines Embedding-Calls ein (F-SEM, §11.2).
+
+    `n_texts` ist die Anzahl der im Call eingebetteten Texte (Durchsatz); bei
+    Erfolg mitgezählt. Keine PII/keine Notiz-Texte/keine Vektoren (§8).
+    """
+    EMBED_REQUESTS.labels(backend=backend, result="ok" if success else "error").inc()
+    EMBED_LATENCY.labels(backend=backend).observe(latency_seconds)
+    if success and n_texts:
+        EMBED_TEXTS.labels(backend=backend).inc(n_texts)
 
 
 def render_metrics() -> tuple[bytes, str]:

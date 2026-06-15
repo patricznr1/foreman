@@ -407,6 +407,84 @@ Die Kern-Akzeptanz von F6: Spotlighting hält, der Output-Guard flaggt erfundene
 
 ---
 
+## F-SEM — Semantische Notiz-Suche (`src/foreman/embeddings/`, `src/foreman/notes/`)
+
+Eine Querfunktion, kein neuer Reasoner. Sie füllt das von F6 leer gelassene `worker_notes.embedding` und beantwortet die „hatten wir das schon mal?"-Frage auf der Notiz-Ebene. Tragendes Prinzip wie beim Gateway (§13): eine eigene, dünne Abstraktion, hinter der die konkrete Library verschwindet — Embeddings sind ein **anderer Pfad** als Completion und bekommen eine **parallele**, gleich geformte Schicht, kein Anbau am `LLMGateway`.
+
+### Embedding-Fehler & Config (`embeddings/errors.py`, `embeddings/config.py`)
+
+**Was tut es?**
+Typisierte, deutschsprachige Fehlerhierarchie (`EmbeddingError` → `ProviderUnavailable`/`DimensionMismatch`/`EmbeddingTimeout`) und die `EmbeddingSettings` (env-Prefix `FOREMAN_EMBED_`: Priority, `bge-m3`, Dimension 1024, L2-Normalisierung, Ollama-URL, Timeout, Batch-Größe).
+
+**Warum existiert es / wo sitzt es?**
+Vorbild ist der Gateway-Vertrag (§13.5): ein Aufrufer fängt alles mit `except EmbeddingError`, ohne je eine Backend-/Library-Ausnahme zu sehen.
+
+### Provider & Orchestrierung (`embeddings/provider.py`)
+
+**Was tut es?**
+Das `EmbeddingProvider`-Protokoll (`async embed(texts) -> list[Vector]`) + `LocalEmbeddingProvider`: Batch-Routing/Fallback → Dimension erzwingen (1024) → L2-Normalisierung → Metriken + Log. Plus `embed_best_effort` (Schreibpfad-Helfer).
+
+**Warum existiert es / wo sitzt es?**
+Die EINZIGE Fläche, die Ingestion/Suche/Reasoner berühren — kein Backend-/Library-Typ in der Signatur (harte Architektur-Grenze, analog §13.1).
+
+### Backends & Fallback (`embeddings/backends.py`)
+
+**Was tut es?**
+Ollama-Backend (`POST /api/embed`, httpx) + sentence-transformers-Alternative (lazy) hinter dem `EmbeddingBackend`-Protokoll; `resolve_chain`/`run_with_fallback` für die vier Priority-Modi.
+
+**Warum existiert es / wo sitzt es?**
+DIE einzige Datei, die die konkreten Embedding-Libraries berührt; jede Fremd-/HTTP-Ausnahme wird in einen typisierten Embedding-Fehler übersetzt — nichts Library-Spezifisches verlässt das Modul.
+
+### Backfill-Runner (`embeddings/backfill.py`)
+
+**Was tut es?**
+`backfill_embeddings` zieht `embedding IS NULL` batchweise nach; CLI `python -m foreman.embeddings.backfill`.
+
+**Warum existiert es / wo sitzt es?**
+Der „Nachhol"-Pfad zum best-effort-Insert (idempotent, Vordergrund-Prozess, §3). Anders als der Insert ist er **ehrlich** — ein Provider-Fehler propagiert.
+
+### HNSW-Index & Suche (`migrations/versions/0004_worker_notes_hnsw.py`, `notes/search.py`)
+
+**Was tut es?**
+Migration 0004 legt den HNSW-Index (`vector_cosine_ops`, `m=16`, `ef_construction=200`) an. `search_similar_notes` ist die **reine** DB-Query mit fertigem Vektor; `embed_and_search` die Komposition (embedden, dann suchen).
+
+**Warum existiert es / wo sitzt es?**
+Die reine Query ist ohne Provider/Netz testbar; die Komposition trennt das „relevant" vom „zeitnah". Cosine erwartet L2-normierte Vektoren (Provider garantiert das).
+
+### Such-Route (`notes/router.py`, `api/deps.py`)
+
+**Was tut es?**
+Read-only `GET /api/v1/worker_notes/search` (`q`/`machine_id`/`k`), auth-pflichtig. `api/deps.py` bekommt die `EmbeddingProviderDep`.
+
+**Warum existiert es / wo sitzt es?**
+**Vor** dem worker_notes-CRUD gemountet (sonst fängt `/{note_id}` den `/search`-Pfad). Ehrlich: 503 bei Backend-Ausfall (kein stilles Leer-Ergebnis) — anders als die best-effort F6-Anbindung.
+
+### Embedding beim Insert (`ingestion/service.py`, `api/routers/worker_notes.py`)
+
+**Was tut es?**
+Der Ingestion-Service bettet die Notizen als EIN Batch vor jedem Commit ein; der CRUD-POST einzeln. Beide best-effort über `embed_best_effort` (eingebettet wird der NER-maskierte Text).
+
+**Warum existiert es / wo sitzt es?**
+Provider-Ausfall → `embedding=NULL`, die Notiz wird **trotzdem** geschrieben (analog Substrat-Dual-Write §12.4); der Backfill holt es nach. Der Schreibpfad blockiert nie auf der Embedding-Verfügbarkeit.
+
+### F6-Anbindung (`reasoners/event_chain/chain.py`, `reasoners/event_chain/service.py`)
+
+**Was tut es?**
+`reconstruct_chain` bekommt `semantic_notes` (fenster-exempt, dedupliziert über `note.id`). Der Service baut die PII-freie Anker-Signatur (`build_anchor_signature`) und zieht semantisch ähnliche Notizen über `embed_and_search` — strikt best-effort.
+
+**Warum existiert es / wo sitzt es?**
+Die semantische Auswahl **ergänzt** die zeitnahe additiv; Provider/Suche-Ausfall → Zeitfenster-Fallback (blockiert nie, analog NEXUS-Recall §14.1). **Sicherheits-Invariante unverändert:** eine Notiz bleibt `trusted=False`, egal ob zeitlich oder semantisch ausgewählt — die F6-Tests inkl. Red-Team bleiben grün.
+
+### Embedding-Metriken & Smoke (`observability/metrics.py`, `tests/embeddings/smoke/`)
+
+**Was tut es?**
+`foreman_embed_requests_total` (`backend`/`result`) + `foreman_embed_latency_seconds` + `foreman_embed_texts_total` über `observe_embedding`. `@smoke`-Test gegen echtes Ollama `bge-m3`, skippt sauber ohne lokales Ollama.
+
+**Warum existiert es / wo sitzt es?**
+Beobachtbarkeit je Backend (niedrig-kardinal, keine PII/keine Vektoren); der Smoke beweist den realen Round-Trip, ohne das Pflicht-Gate an Ollama zu koppeln.
+
+---
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```

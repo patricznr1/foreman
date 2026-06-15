@@ -2,7 +2,9 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-14 · **Status:** F6 — Ereignisketten-Reasoner (erster LLM-Freitext-Reasoner + erster Konsument des `LLMGateway`): Ketten-Konstruktion (rein) + NEXUS-Recall ähnlicher Vorfälle (best-effort) + Grounding-Quellen (`worker_notes` untrusted) → gegroundete deutsche Erzählung über `gateway.complete(task=synthesis)`, Output-Guard (`ReasonerExplanation`), Persistenz `reasoner_explanations` + `semantic_event`-Dual-Write, on-demand-Routen, Event-Ketten-`/metrics`. **Red-Team scharf am ersten Freitext-Reasoner ✅** (Vertrag §14). Baut auf F2 + F3 + F4 (Drift) + F-LLM (Gateway) auf.
+**Stand:** 2026-06-14 · **Status:** F-SEM — Semantische Notiz-Suche (Querfunktion, kein neuer Reasoner): eigene dünne `EmbeddingProvider`-Abstraktion (analog `LLMGateway`, lokal-first Ollama `bge-m3` + sentence-transformers-Alternative, L2-normierte 1024-Vektoren), Embedding beim Insert (best-effort) + idempotenter Backfill, HNSW-Index (Migration `0004`) + reine DB-Suche + read-only `GET /api/v1/worker_notes/search`, und die additive, best-effort F6-Anbindung (semantisch ähnliche Notizen ergänzen die zeitnahen — fenster-exempt, dedupliziert, **`trusted=False` unverändert**). Vertrag: **§15**. Baut auf F2 + F3 + F4 (Drift) + F-LLM (Gateway) + F6 (Ereignisketten) auf.
+
+*Vorgänger-Status F6 — Ereignisketten-Reasoner (erster LLM-Freitext-Reasoner + erster Konsument des `LLMGateway`): Ketten-Konstruktion (rein) + NEXUS-Recall ähnlicher Vorfälle (best-effort) + Grounding-Quellen (`worker_notes` untrusted) → gegroundete deutsche Erzählung über `gateway.complete(task=synthesis)`, Output-Guard (`ReasonerExplanation`), Persistenz `reasoner_explanations` + `semantic_event`-Dual-Write, on-demand-Routen, Event-Ketten-`/metrics`. **Red-Team scharf am ersten Freitext-Reasoner ✅** (Vertrag §14).*
 
 ---
 
@@ -42,6 +44,7 @@ Drei Schichten:
 - **Backend:** Python 3.12, FastAPI 0.115+, async SQLAlchemy 2.0, Pydantic v2
 - **DB:** PostgreSQL + TimescaleDB + Vektor-Suche
 - **Gateway:** eigene dünne `LLMGateway`-Abstraktion (`src/foreman/llm/`, F-LLM); LiteLLM ist ausschließlich Implementierungsdetail dahinter (`backends.py`). Lokal-first Qwen3 (Ollama) + Anthropic Cloud-Fallback, vier Priority-Modi. Reasoner sehen nur `LLMGateway`/`GatewayResponse`/`Task`/Fehlerhierarchie — nie einen LiteLLM-Typ. vLLM-Production-Pfad bleibt durch die Backend-Config offen. Vertrag: **§13**.
+- **Embeddings:** eigene dünne `EmbeddingProvider`-Abstraktion (`src/foreman/embeddings/`, F-SEM) — **parallel** zum Gateway, NICHT in den `LLMGateway` gequetscht (Completion ≠ Embedding). Lokal-first über Ollama (`bge-m3`, Default) + sentence-transformers-Alternative hinter derselben Schnittstelle; L2-normierte Vektoren, Dimension 1024 erzwungen (passt auf `vector(1024)`). Aufrufer (Ingestion, Suche, Reasoner) sehen nur `EmbeddingProvider`/`Vector`/`EmbeddingSettings`/Fehlerhierarchie — nie einen Backend-/Library-Typ. Vertrag: **§15**.
 - **Frontend:** Next.js 15, Tailwind, shadcn/ui, Recharts
 - **Industrie:** asyncua, paho-mqtt, pymodbus
 - **Integration:** MCP SDK
@@ -62,6 +65,7 @@ Drei Schichten:
 - `POST /auth/register`, `POST /auth/login` (JWT-Ausgabe)
 - CRUD: `/api/v1/lines`, `/api/v1/machines`, `/api/v1/components`, `/api/v1/data_points`, `/api/v1/production_runs`, `/api/v1/maintenance_events`, `/api/v1/worker_notes`, `/api/v1/alarms`
 - `POST /api/v1/readings` — Batch-Aufnahme von Messwerten (HTTP). Nutzt seit F3 denselben geteilten COPY-Schreibweg wie der Ingestion-Service (`ingestion/service.py:copy_readings`) — siehe §12.
+- `GET /api/v1/worker_notes/search` — **semantische Notiz-Suche** (F-SEM, read-only, Auth-pflichtig). Query-Parameter `q` (Freitext, wird eingebettet), `machine_id` (optionaler Filter), `k` (1–50, Default 5). Liefert die ähnlichsten Notizen (Cosine, ohne Vektor in der Antwort). **Vor** dem `worker_notes`-CRUD-Router gemountet, damit `/search` nicht von `/{note_id}` gefangen wird. 503 bei Embedding-Backend-Ausfall (ehrlich, nicht best-effort). Vertrag: §15.
 - `GET /api/v1/substrate/smoke` — Substrat-Round-Trip (siehe §9)
 
 ### Reasoner-Routen (Drift, ab F4)
@@ -112,9 +116,9 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 **`maintenance_events`**
 - `id` PK · `machine_id` FK · `component_id` FK (nullable) · `type` · `performed_at` · `description` · `performed_by` (pseudonymisiert: HMAC-Token über `users.id`; **Nachweis-Bezug**, auditiert re-identifizierbar) · `created_at`
 
-**`worker_notes`** — Schichtberichte (KI-Felder in F2 leer/nullable)
-- `id` PK · `machine_id` FK (nullable) · `shift` · `text` · `classification` (nullable, später vom Encoder) · `embedding` (Vektor, nullable, später für semantische Suche) · `author` (pseudonymisiert: HMAC-Token über `users.id`) · `created_at`
-- `text` (Freitext): Personennamen werden **vor dem Insert** per NER maskiert (Restrisiko bleibt; nie als anonym deklariert).
+**`worker_notes`** — Schichtberichte
+- `id` PK · `machine_id` FK (nullable) · `shift` · `text` · `classification` (nullable, **weiterhin ungenutzt** — späterer Encoder, nicht F-SEM) · `embedding` (`vector(1024)`, nullable; **ab F-SEM für die semantische Notiz-Suche genutzt** — beim Insert best-effort gefüllt, Backfill für Altbestand, HNSW-Index aus Migration `0004`) · `author` (pseudonymisiert: HMAC-Token über `users.id`) · `created_at`
+- `text` (Freitext): Personennamen werden **vor dem Insert** per NER maskiert (Restrisiko bleibt; nie als anonym deklariert). **Eingebettet wird der NER-maskierte Text** (kein Rohtext; §8/§15).
 
 **`users`** — Auth
 - `id` PK · `email` (unique) · `password_hash` · `role` · `created_at`
@@ -134,6 +138,7 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - **`0001_initial_schema`** — alle Tabellen aus §5 mit PK-/FK-Constraints + Lese-Indizes (`ix_data_points_machine`, `ix_alarms_machine_raised`, `ix_worker_notes_machine`). `readings` entsteht als gewöhnliche Tabelle (PK `(data_point_id, time)`).
 - **`0002_timescale_setup`** — aktiviert die `vector`-Extension und ergänzt `worker_notes.embedding vector(1024)` (deshalb liegt die Embedding-Spalte in 0002, nicht 0001); aktiviert `timescaledb`; macht `readings` zur Hypertable (1-Tages-Chunks); Columnstore (`segmentby=data_point_id`, `orderby=time DESC`, ab 7 Tagen); Continuous Aggregates `readings_1m`→`_1h`→`_1d` (1m real-time) mit Refresh-Policies; Retention 90 d / 1 a / 5 a / ∞. Quelle: `docs/research/timescaledb-tuning-readings.md` §3–§4.
 - **`0003_reasoner_explanations`** — legt die Tabelle `reasoner_explanations` an (F6) mit FK auf `alarms`/`machines`, JSONB-Spalten für referenzierte/geflaggte Quellen und den Lese-Indizes `ix_reasoner_explanations_anchor` + `ix_reasoner_explanations_machine_created`.
+- **`0004_worker_notes_hnsw`** — HNSW-Index `ix_worker_notes_embedding_hnsw` auf `worker_notes.embedding` (F-SEM, `vector_cosine_ops`, `m=16`, `ef_construction=200`; Quelle: `docs/research/vektor-suche-pgvector.md`). Pflicht ist die pgvector-**Extension** ≥ 0.8.2 im Postgres-Image (CVE-2026-3172 bei parallelen HNSW-Builds) — eine DB-/Deployment-Anforderung, NICHT der Python-Adapter `pgvector` im `pyproject` (der nur das SQLAlchemy-Mapping liefert). Im Betrieb mit großem Bestand per `CREATE INDEX CONCURRENTLY` (Doku-Hinweis in der Migration); in der Migration transaktional (MVP-Bestand unkritisch).
 
 ---
 
@@ -256,6 +261,7 @@ Wie sich die Plattform zur Laufzeit verhält — was im Betrieb sichtbar und kon
 | Red-Team-Harness — **Basis** gegen die Gateway-Mechanik | **F-LLM ✅** (`tests/llm/security/redteam_harness.py`, payload-erweiterbar, grün) |
 | Red-Team-Test-Satz — **scharfe Aktivierung** (echte Werker-Freitext-Payloads gegen LLM-Pipeline) | **F6 ✅ scharf am ersten Freitext-Reasoner** (`tests/reasoners/event_chain/security/test_injection.py`) — Harness wiederverwendet gegen die echte Ereignisketten-Pipeline |
 | Event-Ketten-Kennzahlen (Erklärungen geflaggt/sauber + NEXUS-Recall-Ausgänge) | **F6 ✅** (`foreman_event_chain_explanations_total`, `foreman_event_chain_recall_total`) |
+| Embedding-Kennzahlen (Requests/Latenz/Durchsatz je Backend) | **F-SEM ✅** (`foreman_embed_requests_total` [`backend`/`result`], `foreman_embed_latency_seconds`, `foreman_embed_texts_total`; `observe_embedding`) |
 | Human-in-the-Loop-Quittierung — Flow im Reasoner | F4 |
 | Grafana-Dashboard | Härtung |
 
@@ -381,10 +387,57 @@ Der **erste LLM-Freitext-Reasoner** und erste Konsument des `LLMGateway` (§13).
 ### 14.3 Grenzen (verbindlich)
 
 - **Kein Auto-LLM pro Alarm** — on-demand-Kern; der alarm-getriebene Hook bleibt offen/unverdrahtet (Kostenkontrolle).
-- **`worker_notes.classification`/`embedding` werden NICHT genutzt** (leer/nullable); Notiz-Auswahl ausschließlich über `machine_id` + Zeitfenster. Semantische Notiz-Suche (embedding) ist eine spätere Querfunktion, nicht F6.
+- **`worker_notes.classification` wird NICHT genutzt** (leer/nullable; späterer Encoder, nicht in Scope). **`worker_notes.embedding` wird ab F-SEM genutzt** (§15): Im reinen F6-Stand erfolgte die Notiz-Auswahl ausschließlich über `machine_id` + Zeitfenster. Mit F-SEM **ergänzt** die semantische Auswahl (Embedding-Suche) die zeitnahen Notizen — additiv, fenster-exempt, dedupliziert, **best-effort** (Provider/Suche-Ausfall → Fallback auf die reine Zeitfenster-Auswahl, blockiert nie). Die Sicherheits-Invariante bleibt unangetastet: eine Notiz ist `trusted=False`, egal ob zeitlich oder semantisch ausgewählt (`grounding_sources.py` übernimmt das Flag unverändert).
 - **Keine Aktorik** — der Reasoner erklärt, schaltet/alarmiert nichts.
 - Reasoner importiert **nur** `foreman.llm` (kein LiteLLM-Typ).
 
 ### 14.4 Verifikation
 
 Unit-Tests je Stufe (Kette/Recall/Quellen/Output-Guard) ohne Netz; Pipeline-E2E gegen echte DB (Gateway über Mock-Backend des **echten** `LiteLLMGateway`, Substrat aus). **Red-Team scharf** (§11.2): `tests/reasoners/event_chain/security/test_injection.py`.
+
+---
+
+## 15. Embedding-Provider & semantische Notiz-Suche (F-SEM)
+
+Die Embedding-Schicht unter `src/foreman/embeddings/` ist die **dünne Abstraktion** für Vektor-Embeddings — eine **parallele, gleich geformte** Schwester des `LLMGateway` (§13), kein Teil davon. Tragendes Prinzip — **nicht verhandelbar**: Embeddings sind ein anderer Pfad als Completion und werden **nicht** in den `LLMGateway` gequetscht; die konkrete Embedding-Library ist ausschließlich Implementierungsdetail in `backends.py`. **Ein Aufrufer (Ingestion/Suche/Reasoner), der `import sentence_transformers` oder einen rohen Ollama-Client enthält, ist ein Architektur-Fehler.**
+
+F-SEM ist eine **Querfunktion**, kein neuer Reasoner: Sie füllt das von F6 bewusst leer gelassene Feld `worker_notes.embedding` und verschiebt die Notiz-Auswahl der Ketten-Rekonstruktion von „zeitnah" auf „zeitnah + relevant". `classification` bleibt draußen (§14.3).
+
+### 15.1 Schnittstelle (das Einzige, was ein Aufrufer berührt)
+
+- `EmbeddingProvider` (Protocol, `provider.py`) — eine `async embed(texts: Sequence[str]) -> list[Vector]`-Methode (Batch): ein Vektor je Text, gleiche Reihenfolge, dimensions-geprüft und (per Default) L2-normalisiert.
+- `Vector = list[float]` — ein Embedding-Vektor (Dimension = `EmbeddingSettings.dimension`, passt 1:1 auf `vector(1024)`).
+- Öffentliche Fläche = `foreman.embeddings.__init__` (`EmbeddingProvider`, `LocalEmbeddingProvider`, `Vector`, `EmbeddingSettings`, `Priority`, `get_embedding_settings`, `embed_best_effort`, Fehlerhierarchie). **Keine** Backend-/Library-Typen (Ollama/httpx, sentence-transformers) exponiert.
+
+### 15.2 Backends & Priority-Modi
+
+- Lokal-first: **Ollama** mit `bge-m3` (Default, MIT, 1024-dim, stark auf Deutsch) über `POST /api/embed` (Batch via `input`) — derselbe Inferenz-Stack wie das LLM, kein zweites Modell im API-Prozess. Alternative: **sentence-transformers** hinter derselben Schnittstelle (lazy geladen).
+- `priority` (`config.py`, env-Prefix `FOREMAN_EMBED_`): **`ollama_first`** (Default) · `st_first` · `ollama_only` · `st_only`. Auflösung in `backends.resolve_chain`; Fallback in `run_with_fallback` (analog Gateway).
+- **Architektur-Grenze hart:** die Embedding-Library wird ausschließlich in `backends.py` berührt (sentence-transformers lazy); jede Fremd-/HTTP-Ausnahme wird dort in einen typisierten Embedding-Fehler übersetzt — nichts Library-Spezifisches verlässt das Modul.
+- Der Provider **normalisiert L2** und **erzwingt die Dimension** (1024); ein Mismatch wirft `DimensionMismatch` (würde sonst Insert/Index brechen).
+
+### 15.3 Embedding beim Insert (best-effort) + Backfill
+
+- Der bestehende `worker_notes`-Schreibpfad embeddet den (NER-maskierten) `text`: der **Ingestion-Service** (§12.3) als **ein Batch-Call vor jedem Commit**, der **CRUD-`POST /api/v1/worker_notes`** einzeln. Best-effort (`embed_best_effort`, analog Substrat-Dual-Write §12.4 / NEXUS-Recall §14.1): Provider nicht erreichbar → `embedding = NULL`, die Notiz wird **trotzdem** geschrieben; das Embedding blockiert den Notiz-Schreibpfad **nie**.
+- **Backfill-Runner** (`embeddings/backfill.py`, `python -m foreman.embeddings.backfill [--batch-size --db-url]`): idempotenter Vordergrund-Prozess (kein Job-Worker, §3), holt `embedding IS NULL` batchweise nach. Anders als der Insert ist der Backfill **ehrlich** (Provider-Fehler propagiert).
+
+### 15.4 Suche (HNSW + Komposition + Route)
+
+- Migration `0004` (§5): HNSW-Index `vector_cosine_ops` (`m=16`, `ef_construction=200`).
+- `notes/search.py`: `search_similar_notes(session, query_embedding, machine_id=None, k=…)` — **reine DB-Query mit einem fertigen Vektor** (ohne Provider/Netz testbar) + `embed_and_search(provider, session, query_text, …)` (Komposition: embedden, dann suchen).
+- Read-only `GET /api/v1/worker_notes/search` (§4, Auth-pflichtig): ehrlich (503 bei Backend-Ausfall, **nicht** best-effort).
+
+### 15.5 F6-Anbindung (additiv, best-effort, Sicherheit unverändert)
+
+- `chain.reconstruct_chain(…, semantic_notes=…)`: semantisch ähnliche Notizen derselben Maschine **ergänzen** die zeitnahen — **fenster-exempt** (der Sinn der semantischen Auswahl), **dedupliziert über `note.id`**. Default leer → reines F6-Verhalten.
+- `EventChainService._load_semantic_notes` baut die **PII-freie Anker-Signatur** (`build_anchor_signature`: Maschinenklasse + Alarm-Code/-Message/-Kategorie; System-/SPS-Text, kein Werker-Freitext) und ruft `embed_and_search(machine_id=anchor.machine_id, k=…)` — **strikt best-effort** (Provider `None` / Suche-Ausfall → Zeitfenster-Fallback, blockiert nie).
+- **Sicherheits-Invariante (unverändert):** jede Notiz ist `trusted=False` (Spotlighting-Quelle, nie Instruktion), egal ob zeitlich oder semantisch ausgewählt; `grounding_sources.py` übernimmt das Flag unverändert. Die bestehenden F6-Tests inkl. `security/test_injection.py` bleiben grün.
+
+### 15.6 Fehlerhierarchie
+
+`EmbeddingError` (Basis) → `ProviderUnavailable` (`attempted`) · `DimensionMismatch` (`expected`/`actual`) · `EmbeddingTimeout`. Deutsche Meldungen (§6). Ein Aufrufer fängt alles mit `except EmbeddingError`; der best-effort-Schreibpfad und die F6-Anbindung fangen breit (jeder Fehler → kein Embedding/Fallback).
+
+### 15.7 PII & Verifikation
+
+- **PII:** Embedding-Input ist der bereits NER-maskierte `text`; die Such-Query (Anker-Signatur) ist PII-frei. **Keine** Notiz-Texte, **keine** Vektoren, **keine** Keys in Logs (§8).
+- Unit-Tests gegen ein **deterministisches Mock-Backend** (Batch, L2-Normalisierung, Dim-Check, Priority/Fallback, Metriken) ohne Netz; Backend-Tests über httpx-MockTransport (Ollama) bzw. injizierten `encode_fn` (sentence-transformers). DB-Tests gegen echte pgvector/HNSW (Ähnlichkeits-Reihenfolge, `machine_id`-Filter, `k`), Schreibpfad-Tests (best-effort → NULL), F6-Anbindung (semantisch ergänzt, Fallback, `trusted=False`). `@pytest.mark.smoke` (`tests/embeddings/smoke/test_ollama_embed.py`): echter Round-Trip gegen lokales Ollama `bge-m3`, **skippt sauber** ohne Ollama — nicht im CI-Pflichtlauf.

@@ -69,6 +69,23 @@ def _anchor_event(anchor: Alarm) -> ChainEvent:
     )
 
 
+def _note_event(note: WorkerNote) -> ChainEvent:
+    """Baut das (IMMER untrusted) Ketten-Ereignis einer Werkernotiz.
+
+    Sicherheits-Invariante (§14.1/§15): Notiz-Freitext ist `trusted=False` —
+    Spotlighting-Quelle, nie Instruktion. Gilt unverändert, egal ob die Notiz
+    zeitlich (Zeitfenster) ODER semantisch (Embedding-Suche) ausgewählt wurde.
+    """
+    return ChainEvent(
+        source_id=f"note:{note.id}",
+        event_type=ChainEventType.WORKER_NOTE,
+        occurred_at=note.created_at,
+        machine_id=note.machine_id,
+        summary=note.text,
+        trusted=False,
+    )
+
+
 def reconstruct_chain(
     *,
     anchor: Alarm,
@@ -76,6 +93,7 @@ def reconstruct_chain(
     prior_alarms: Sequence[Alarm] = (),
     worker_notes: Sequence[WorkerNote] = (),
     maintenance_events: Sequence[MaintenanceEvent] = (),
+    semantic_notes: Sequence[WorkerNote] = (),
 ) -> EventChain:
     """Rekonstruiert die zeitlich geordnete Ereigniskette um einen Anker-Alarm.
 
@@ -83,6 +101,12 @@ def reconstruct_chain(
     Zeitstempel im Fenster. Der Anker selbst ist immer enthalten (auch wenn er am
     Fensterrand liegt). Werkernotizen werden als untrusted (`trusted=False`)
     markiert — ihr Freitext ist die Angriffsfläche und nie eine Instruktion.
+
+    `semantic_notes` (F-SEM, §15): zusätzlich semantisch ähnliche Notizen derselben
+    Maschine, die ABSICHTLICH NICHT auf das Zeitfenster beschränkt sind (das ist der
+    Sinn der semantischen Auswahl — „hatten wir das schon mal?"). Sie ERGÄNZEN die
+    zeitnahen Notizen (Union, dedupliziert über `note.id`); ihre Sicherheits-Behandlung
+    ist identisch (untrusted). Default leer → reines F6-Verhalten.
 
     Reine Funktion: keine DB-/Netz-Zugriffe; die Kandidaten werden injiziert.
     """
@@ -111,21 +135,24 @@ def reconstruct_chain(
             )
         )
 
-    # Werkernotizen: Auswahl ausschließlich über machine_id + Zeitfenster (§5;
-    # classification/embedding sind leer und werden NICHT genutzt). UNTRUSTED.
+    # Werkernotizen (zeitnah): Auswahl über machine_id + Zeitfenster (§5). UNTRUSTED.
+    # `seen_note_ids` merkt sich die zeitnahen IDs, damit die semantischen Treffer
+    # (unten) nicht doppeln — die DB-Auswahl selbst ist bereits duplikatfrei (PK).
+    seen_note_ids: set[int] = set()
     for note in worker_notes:
         if note.machine_id != machine_id or not _in_window(note.created_at, window):
             continue
-        events.append(
-            ChainEvent(
-                source_id=f"note:{note.id}",
-                event_type=ChainEventType.WORKER_NOTE,
-                occurred_at=note.created_at,
-                machine_id=note.machine_id,
-                summary=note.text,
-                trusted=False,
-            )
-        )
+        seen_note_ids.add(note.id)
+        events.append(_note_event(note))
+
+    # F-SEM (§15): semantisch ähnliche Notizen ERGÄNZEN die zeitnahen — gleiche
+    # Maschine, aber FENSTER-EXEMPT (relevante Notizen auch außerhalb des engen
+    # Fensters). Union, dedupliziert über note.id; UNTRUSTED bleibt unverändert.
+    for note in semantic_notes:
+        if note.machine_id != machine_id or note.id in seen_note_ids:
+            continue
+        seen_note_ids.add(note.id)
+        events.append(_note_event(note))
 
     # Wartungsereignisse derselben Maschine im Fenster.
     for maintenance in maintenance_events:

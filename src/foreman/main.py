@@ -30,6 +30,7 @@ from foreman.api.routers import (
 from foreman.config import Settings, get_settings
 from foreman.db.session import dispose_engine, init_engine
 from foreman.logging_setup import ALERT, INFO, OK, get_logger, setup_logging
+from foreman.notes.router import router as notes_search_router
 from foreman.reasoners.drift import router as drift_router
 from foreman.reasoners.event_chain import router as event_chain_router
 from foreman.substrate.client import SubstrateClient, SubstrateNotConfiguredError
@@ -45,6 +46,9 @@ _API_V1_ROUTERS = (
     data_points.router,
     production_runs.router,
     maintenance_events.router,
+    # F-SEM: die statische Such-Route VOR dem worker_notes-CRUD-Router (sonst fängt
+    # `/worker_notes/{note_id}` den Pfad `/worker_notes/search`).
+    notes_search_router,
     worker_notes.router,
     alarms.router,
     readings.router,

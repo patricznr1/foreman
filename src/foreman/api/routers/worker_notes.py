@@ -6,6 +6,9 @@
 #         (1) `author` → HMAC-Token über die user_id (nie Klartext),
 #         (2) `text` → NER-Maskierung (Personennamen → [PERSON]) VOR dem Insert.
 #         Restrisiko bleibt; der Freitext wird nie als anonym deklariert.
+#  Embedding (F-SEM, §15): der NER-maskierte Text wird beim Insert eingebettet
+#         (best-effort) — Backend-Ausfall → embedding=NULL, Notiz wird trotzdem
+#         geschrieben; der Backfill holt es nach. Blockiert den Insert NIE.
 # ============================================================
 from __future__ import annotations
 
@@ -14,8 +17,9 @@ from collections.abc import Sequence
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import PseudonymizerDep, RedactorDep, SessionDep
+from foreman.api.deps import EmbeddingProviderDep, PseudonymizerDep, RedactorDep, SessionDep
 from foreman.db.models import WorkerNote
+from foreman.embeddings import embed_best_effort
 from foreman.schemas.resources import WorkerNoteCreate, WorkerNoteRead
 
 router = APIRouter(prefix="/worker_notes", tags=["worker_notes"])
@@ -27,16 +31,24 @@ async def create_worker_note(
     session: SessionDep,
     pseudo: PseudonymizerDep,
     redactor: RedactorDep,
+    provider: EmbeddingProviderDep,
 ) -> WorkerNote:
     data = body.model_dump()
     author = data.pop("author", None)
     raw_text = data.pop("text")
     # 1) Freitext VOR dem Insert maskieren. 2) Autor tokenisieren.
+    masked_text = redactor.redact_person_names(raw_text)
     obj = WorkerNote(
         **data,
-        text=redactor.redact_person_names(raw_text),
+        text=masked_text,
         author=pseudo.tokenize_worker(author) if author else None,
     )
+    # 3) Embedding beim Insert (best-effort, §15): den MASKIERTEN Text einbetten.
+    # `if vectors:` (nicht `is not None`) — eine leere Liste würde sonst bei vectors[0]
+    # einen IndexError werfen und den „nie blockieren"-Insert-Pfad verletzen.
+    vectors = await embed_best_effort(provider, [masked_text])
+    if vectors:
+        obj.embedding = vectors[0]
     session.add(obj)
     await session.flush()
     await session.refresh(obj)

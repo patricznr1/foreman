@@ -21,6 +21,7 @@ from foreman.core.redact import PresidioRedactor, Redactor, build_redactor
 from foreman.core.security import decode_access_token
 from foreman.db.models import User
 from foreman.db.session import get_session
+from foreman.embeddings import EmbeddingProvider, LocalEmbeddingProvider, get_embedding_settings
 from foreman.llm import LiteLLMGateway, LLMGateway, get_llm_settings
 from foreman.substrate.client import SubstrateClient
 
@@ -124,3 +125,20 @@ def get_llm_gateway() -> LLMGateway:
 
 
 GatewayDep = Annotated[LLMGateway, Depends(get_llm_gateway)]
+
+
+# --- Embedding-Provider (F-SEM) — Such-Route + semantische Notiz-Auswahl ---
+@lru_cache(maxsize=1)
+def _embedding_provider_singleton() -> LocalEmbeddingProvider:
+    """Baut den Embedding-Provider einmalig aus der Config (über die App-Lebensdauer).
+    In Tests via Override ersetzt."""
+    return LocalEmbeddingProvider.from_settings(get_embedding_settings())
+
+
+def get_embedding_provider() -> EmbeddingProvider:
+    """FastAPI-Dependency: der (gecachte) Embedding-Provider als Protokoll-Typ —
+    kein Backend-/Library-Typ in aufrufenden Pfaden (harte Architektur-Grenze)."""
+    return _embedding_provider_singleton()
+
+
+EmbeddingProviderDep = Annotated[EmbeddingProvider, Depends(get_embedding_provider)]
