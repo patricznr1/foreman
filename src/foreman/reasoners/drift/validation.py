@@ -115,11 +115,11 @@ class DriftMetrics:
     """Abnahme-Kennzahlen eines Validierungslaufs (Research §7)."""
 
     findings_count: int
-    primary_detected_in_window: bool   # im engen ground_truth-Fenster (optimistisch)
-    detected_with_useful_lead: bool    # nach t* UND vor dem narrativen Anker (Frühwarn-Nutzen)
+    primary_detected_in_window: bool  # im engen ground_truth-Fenster (optimistisch)
+    detected_with_useful_lead: bool  # nach t* UND vor dem narrativen Anker (Frühwarn-Nutzen)
     detection_delay: timedelta | None  # t* -> erste Primär-Meldung
-    false_alarms: int                  # Meldungen außerhalb der Erwartung
-    control_alarms: int                # Meldungen am Kontroll-Signal (müssen 0 sein)
+    false_alarms: int  # Meldungen außerhalb der Erwartung
+    control_alarms: int  # Meldungen am Kontroll-Signal (müssen 0 sein)
 
 
 def compute_metrics(
@@ -160,16 +160,12 @@ def compute_metrics(
     if primary_hits:
         first = primary_hits[0]
         delay = first.detected_at - truth.primary.t_star
-        in_window = (
-            truth.primary.window_start <= first.detected_at <= truth.primary.window_end
-        )
+        in_window = truth.primary.window_start <= first.detected_at <= truth.primary.window_end
         before_anchor = truth.anchor is None or first.detected_at < truth.anchor
         useful_lead = first.detected_at >= truth.primary.t_star and before_anchor
 
     # Fehlalarm: Meldungen am Kontroll-Signal + Primär-Meldungen vor t*.
-    early_primary = sum(
-        1 for f in primary_hits if f.detected_at < truth.primary.t_star
-    )
+    early_primary = sum(1 for f in primary_hits if f.detected_at < truth.primary.t_star)
     return DriftMetrics(
         findings_count=len(findings),
         primary_detected_in_window=in_window,

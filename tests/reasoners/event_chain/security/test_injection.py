@@ -48,8 +48,12 @@ _IDS = [p[1] for p in INJECTION_PAYLOADS]
 def test_spotlighting_haelt_jede_injektion(payload: str, label: str) -> None:
     note_text = build_worker_note(payload)
     anchor = Alarm(
-        id=1, machine_id=1, severity="warning", category="process",
-        code="DRIFT", raised_at=_T,
+        id=1,
+        machine_id=1,
+        severity="warning",
+        category="process",
+        code="DRIFT",
+        raised_at=_T,
     )
     note = WorkerNote(id=1, machine_id=1, text=note_text, created_at=_T - timedelta(hours=1))
     chain = reconstruct_chain(
@@ -82,8 +86,12 @@ async def _seed(session: AsyncSession, note_text: str) -> tuple[Alarm, WorkerNot
     session.add(machine)
     await session.flush()
     anchor = Alarm(
-        machine_id=machine.id, severity="warning", category="process",
-        code="DRIFT", message="Drift erkannt", raised_at=_T,
+        machine_id=machine.id,
+        severity="warning",
+        category="process",
+        code="DRIFT",
+        message="Drift erkannt",
+        raised_at=_T,
     )
     note = WorkerNote(machine_id=machine.id, text=note_text, created_at=_T - timedelta(hours=1))
     session.add_all([anchor, note])
@@ -177,7 +185,9 @@ async def test_benigne_notiz_wird_nicht_faelschlich_geflaggt(
     make_backend: Callable[..., object],
 ) -> None:
     """False-Positive-Kontrolle: eine belegte, harmlose Erklärung bleibt sauber."""
-    anchor, note = await _seed(db_session, "Frühschicht: Lager an Spindel läuft heiß, bitte beobachten")
+    anchor, note = await _seed(
+        db_session, "Frühschicht: Lager an Spindel läuft heiß, bitte beobachten"
+    )
     reply = f"Rund um [alarm:{anchor.id}] meldete [note:{note.id}] einen Hinweis auf das Lager."
     service = EventChainService(
         session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])

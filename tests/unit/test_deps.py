@@ -31,7 +31,9 @@ async def test_get_current_user_ok() -> None:
     user = User(id=5, email="a@foreman.de", password_hash="h", role="worker")
     token = create_access_token("5", _S)
     result = await get_current_user(
-        session=_StubSession(user), settings=_S, authorization=f"Bearer {token}"  # type: ignore[arg-type]
+        session=_StubSession(user),
+        settings=_S,
+        authorization=f"Bearer {token}",  # type: ignore[arg-type]
     )
     assert result is user
 
@@ -45,7 +47,9 @@ async def test_missing_header_raises_401() -> None:
 async def test_non_bearer_header_raises_401() -> None:
     with pytest.raises(HTTPException) as exc:
         await get_current_user(
-            session=_StubSession(None), settings=_S, authorization="Basic abc"  # type: ignore[arg-type]
+            session=_StubSession(None),
+            settings=_S,
+            authorization="Basic abc",  # type: ignore[arg-type]
         )
     assert exc.value.status_code == 401
 
@@ -53,7 +57,9 @@ async def test_non_bearer_header_raises_401() -> None:
 async def test_invalid_token_raises_401() -> None:
     with pytest.raises(HTTPException) as exc:
         await get_current_user(
-            session=_StubSession(None), settings=_S, authorization="Bearer kaputt"  # type: ignore[arg-type]
+            session=_StubSession(None),
+            settings=_S,
+            authorization="Bearer kaputt",  # type: ignore[arg-type]
         )
     assert exc.value.status_code == 401
 
@@ -70,7 +76,9 @@ async def test_token_without_subject_raises_401() -> None:
     )
     with pytest.raises(HTTPException) as exc:
         await get_current_user(
-            session=_StubSession(None), settings=_S, authorization=f"Bearer {token}"  # type: ignore[arg-type]
+            session=_StubSession(None),
+            settings=_S,
+            authorization=f"Bearer {token}",  # type: ignore[arg-type]
         )
     assert exc.value.status_code == 401
 
@@ -79,6 +87,8 @@ async def test_unknown_user_raises_401() -> None:
     token = create_access_token("999", _S)
     with pytest.raises(HTTPException) as exc:
         await get_current_user(
-            session=_StubSession(None), settings=_S, authorization=f"Bearer {token}"  # type: ignore[arg-type]
+            session=_StubSession(None),
+            settings=_S,
+            authorization=f"Bearer {token}",  # type: ignore[arg-type]
         )
     assert exc.value.status_code == 401

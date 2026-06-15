@@ -69,9 +69,7 @@ class Component(Base, TimestampMixin):
     __tablename__ = "components"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    machine_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("machines.id"), nullable=False
-    )
+    machine_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("machines.id"), nullable=False)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
     # component_type: spindle/drive/bearing/motor/axis/…
     component_type: Mapped[str | None] = mapped_column(String(64))
@@ -84,12 +82,8 @@ class DataPoint(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     # machine_id immer gesetzt; component_id optional.
-    machine_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("machines.id"), nullable=False
-    )
-    component_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("components.id")
-    )
+    machine_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("machines.id"), nullable=False)
+    component_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("components.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     # kind: analog/digital/setpoint/counter
     kind: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -131,15 +125,9 @@ class Alarm(Base, TimestampMixin):
     __tablename__ = "alarms"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    machine_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("machines.id"), nullable=False
-    )
-    component_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("components.id")
-    )
-    data_point_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("data_points.id")
-    )
+    machine_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("machines.id"), nullable=False)
+    component_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("components.id"))
+    data_point_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("data_points.id"))
     code: Mapped[str | None] = mapped_column(String(64))
     message: Mapped[str | None] = mapped_column(Text)
     # severity: info/warning/alarm/critical/emergency
@@ -163,9 +151,7 @@ class ProductionRun(Base, TimestampMixin):
     __tablename__ = "production_runs"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    line_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("lines.id"), nullable=False
-    )
+    line_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lines.id"), nullable=False)
     product_code: Mapped[str] = mapped_column(String(128), nullable=False)
     order_id: Mapped[str | None] = mapped_column(String(128))
     batch: Mapped[str | None] = mapped_column(String(128))
@@ -181,12 +167,8 @@ class MaintenanceEvent(Base, TimestampMixin):
     __tablename__ = "maintenance_events"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    machine_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("machines.id"), nullable=False
-    )
-    component_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("components.id")
-    )
+    machine_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("machines.id"), nullable=False)
+    component_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("components.id"))
     type: Mapped[str] = mapped_column(String(64), nullable=False)
     performed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -284,9 +266,7 @@ class ReasonerExplanationRecord(Base, TimestampMixin):
     confidence: Mapped[str] = mapped_column(String(16), nullable=False)
     # grounded: Ergebnis des Gateway-Grounding-Post-Checks (None, wenn nicht geprüft).
     grounded: Mapped[bool | None] = mapped_column(Boolean)
-    recall_used: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, server_default=text("false")
-    )
+    recall_used: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
 
 
 # Häufige Lese-Zugriffe absichern (keine Indizes auf der readings-Rohtabelle, §3.4).

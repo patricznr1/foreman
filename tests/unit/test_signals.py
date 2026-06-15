@@ -101,9 +101,7 @@ def test_ramp_drift_im_signal_ab_t_star_messbar() -> None:
     )
     # Vor t* (elapsed<0 nicht möglich) -> bei elapsed=0 ~ baseline.
     before = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, rng) for _ in range(400)]
-    after = [
-        sample_value(profile, _THREE_SHIFT, _frueh(), 2000.0, rng) for _ in range(400)
-    ]
+    after = [sample_value(profile, _THREE_SHIFT, _frueh(), 2000.0, rng) for _ in range(400)]
     assert statistics.mean(before) == pytest.approx(1.8, abs=0.1)
     # Nach end (Plateau) ~ baseline + target_delta = 6.8.
     assert statistics.mean(after) == pytest.approx(6.8, abs=0.1)
@@ -118,9 +116,7 @@ def test_variance_drift_im_signal_erhoeht_streuung() -> None:
         drift=DriftSpec(kind="variance", start_s=100.0, std_multiplier=4.0),
     )
     before = [sample_value(profile, _THREE_SHIFT, _frueh(), 0.0, rng) for _ in range(600)]
-    after = [
-        sample_value(profile, _THREE_SHIFT, _frueh(), 500.0, rng) for _ in range(600)
-    ]
+    after = [sample_value(profile, _THREE_SHIFT, _frueh(), 500.0, rng) for _ in range(600)]
     # Mittel bleibt ~gleich, Streuung vervielfacht sich (~ Faktor 4).
     assert statistics.mean(after) == pytest.approx(8000.0, abs=5.0)
     assert statistics.pstdev(after) > 2.5 * statistics.pstdev(before)
@@ -140,12 +136,10 @@ def test_schicht_saisonalitaet_spaet_lastiger_als_frueh() -> None:
     rng = random.Random(3)
     profile = SignalProfile(mean=10.0, noise_std=0.5, gated=True)
     frueh = [
-        sample_value(profile, _THREE_SHIFT, _WED.replace(hour=8), 0.0, rng)
-        for _ in range(500)
+        sample_value(profile, _THREE_SHIFT, _WED.replace(hour=8), 0.0, rng) for _ in range(500)
     ]
     spaet = [
-        sample_value(profile, _THREE_SHIFT, _WED.replace(hour=16), 0.0, rng)
-        for _ in range(500)
+        sample_value(profile, _THREE_SHIFT, _WED.replace(hour=16), 0.0, rng) for _ in range(500)
     ]
     # Spätschicht load_factor 1.20 > Frühschicht 1.00.
     assert statistics.mean(spaet) > statistics.mean(frueh)

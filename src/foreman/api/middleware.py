@@ -61,9 +61,7 @@ class AuthMiddleware:
         try:
             decode_access_token(token, self._settings)
         except jwt.InvalidTokenError:
-            await self._unauthorized(
-                scope, receive, send, "Ungültiges oder abgelaufenes Token"
-            )
+            await self._unauthorized(scope, receive, send, "Ungültiges oder abgelaufenes Token")
             return
 
         await self.app(scope, receive, send)
@@ -77,9 +75,7 @@ class AuthMiddleware:
         return None
 
     @staticmethod
-    async def _unauthorized(
-        scope: Scope, receive: Receive, send: Send, detail: str
-    ) -> None:
+    async def _unauthorized(scope: Scope, receive: Receive, send: Send, detail: str) -> None:
         response = JSONResponse(
             {"detail": detail},
             status_code=401,

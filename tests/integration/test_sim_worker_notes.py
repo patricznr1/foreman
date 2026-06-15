@@ -26,9 +26,9 @@ async def test_werker_notizen_sind_ner_maskiert_und_autor_tokenisiert(
     fake_redactor: Redactor,
 ) -> None:
     adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"), seed=1)
-    await IngestionService(
-        db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor
-    ).ingest(adapter)
+    await IngestionService(db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor).ingest(
+        adapter
+    )
 
     rows = await raw_conn.fetch("SELECT text, author, shift FROM worker_notes ORDER BY created_at")
     assert len(rows) == 2
@@ -56,9 +56,9 @@ async def test_werker_notizen_tragen_historische_zeit(
 ) -> None:
     # created_at wird auf die Szenario-Zeit gesetzt (nicht server-default now()).
     adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"), seed=1)
-    await IngestionService(
-        db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor
-    ).ingest(adapter)
+    await IngestionService(db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor).ingest(
+        adapter
+    )
 
     # Szenario-Start 2026-05-04 → Notizen liegen im Mai 2026, nicht "heute".
     years = {

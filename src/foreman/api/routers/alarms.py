@@ -22,18 +22,14 @@ router = APIRouter(prefix="/alarms", tags=["alarms"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=AlarmRead)
-async def create_alarm(
-    body: AlarmCreate, session: SessionDep, pseudo: PseudonymizerDep
-) -> Alarm:
+async def create_alarm(body: AlarmCreate, session: SessionDep, pseudo: PseudonymizerDep) -> Alarm:
     data = body.model_dump()
     if data.get("raised_at") is None:
         data.pop("raised_at", None)  # Server-Default greift
     acknowledged_by = data.pop("acknowledged_by", None)
     obj = Alarm(
         **data,
-        acknowledged_by=(
-            pseudo.tokenize_worker(acknowledged_by) if acknowledged_by else None
-        ),
+        acknowledged_by=(pseudo.tokenize_worker(acknowledged_by) if acknowledged_by else None),
     )
     session.add(obj)
     await session.flush()
@@ -62,7 +58,5 @@ async def list_alarms(
 async def get_alarm(alarm_id: int, session: SessionDep) -> Alarm:
     obj = await session.get(Alarm, alarm_id)
     if obj is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Alarm nicht gefunden"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alarm nicht gefunden")
     return obj

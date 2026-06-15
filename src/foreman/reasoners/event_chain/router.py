@@ -45,9 +45,7 @@ async def reconstruct_event_chain(
     persistiert die gegroundete Erklärung. 404, wenn der Anker nicht existiert."""
     service = EventChainService(session=session, gateway=gateway, substrate=substrate)
     lookback = (
-        timedelta(hours=payload.lookback_hours)
-        if payload.lookback_hours is not None
-        else None
+        timedelta(hours=payload.lookback_hours) if payload.lookback_hours is not None else None
     )
     try:
         return await service.reconstruct(payload.anchor_alarm_id, lookback=lookback)
@@ -65,9 +63,7 @@ async def list_explanations(
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[ReasonerExplanationRecord]:
     """Listet gespeicherte Ereignisketten-Erklärungen (jüngste zuerst)."""
-    stmt = select(ReasonerExplanationRecord).order_by(
-        ReasonerExplanationRecord.created_at.desc()
-    )
+    stmt = select(ReasonerExplanationRecord).order_by(ReasonerExplanationRecord.created_at.desc())
     if machine_id is not None:
         stmt = stmt.where(ReasonerExplanationRecord.machine_id == machine_id)
     result = await session.scalars(stmt.limit(limit).offset(offset))
@@ -75,9 +71,7 @@ async def list_explanations(
 
 
 @router.get("/explanations/{explanation_id}", response_model=ReasonerExplanationRead)
-async def get_explanation(
-    explanation_id: int, session: SessionDep
-) -> ReasonerExplanationRecord:
+async def get_explanation(explanation_id: int, session: SessionDep) -> ReasonerExplanationRecord:
     """Liefert eine einzelne gespeicherte Erklärung. 404, wenn nicht vorhanden."""
     record = await session.get(ReasonerExplanationRecord, explanation_id)
     if record is None:

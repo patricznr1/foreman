@@ -185,9 +185,7 @@ async def clean_db(test_settings: Settings, _migrated_db: None) -> AsyncIterator
 
 
 @pytest_asyncio.fixture
-async def db_session(
-    test_settings: Settings, clean_db: None
-) -> AsyncIterator[object]:
+async def db_session(test_settings: Settings, clean_db: None) -> AsyncIterator[object]:
     """Eine AsyncSession gegen die (geleerte) Test-DB — für IngestionService-Tests."""
     engine = create_async_engine(test_settings.database_url, poolclass=NullPool)
     maker = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)

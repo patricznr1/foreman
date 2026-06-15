@@ -77,9 +77,7 @@ class PresidioRedactor:
         anonymized: str = anonymizer.anonymize(
             text=text,
             analyzer_results=results,
-            operators={
-                "PERSON": OperatorConfig("replace", {"new_value": PERSON_PLACEHOLDER})
-            },
+            operators={"PERSON": OperatorConfig("replace", {"new_value": PERSON_PLACEHOLDER})},
         ).text
         return anonymized
 

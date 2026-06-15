@@ -34,7 +34,9 @@ def _anchor(machine_id: int = 1, code: str | None = "DRIFT") -> Alarm:
     )
 
 
-def _note(note_id: int, machine_id: int | None, *, hours_before: float, text: str = "Lager läuft heiß") -> WorkerNote:
+def _note(
+    note_id: int, machine_id: int | None, *, hours_before: float, text: str = "Lager läuft heiß"
+) -> WorkerNote:
     return WorkerNote(
         id=note_id,
         machine_id=machine_id,
@@ -105,16 +107,22 @@ def test_reconstruct_chain_worker_note_ist_untrusted() -> None:
 
 def test_reconstruct_chain_drift_vs_prior_alarm_typisierung() -> None:
     drift = Alarm(
-        id=200, machine_id=1, severity="warning", category="process",
-        code="DRIFT", raised_at=_ANCHOR_TIME - timedelta(hours=12),
+        id=200,
+        machine_id=1,
+        severity="warning",
+        category="process",
+        code="DRIFT",
+        raised_at=_ANCHOR_TIME - timedelta(hours=12),
     )
     other = Alarm(
-        id=201, machine_id=1, severity="alarm", category="hardware",
-        code="OVERTEMP", raised_at=_ANCHOR_TIME - timedelta(hours=6),
+        id=201,
+        machine_id=1,
+        severity="alarm",
+        category="hardware",
+        code="OVERTEMP",
+        raised_at=_ANCHOR_TIME - timedelta(hours=6),
     )
-    chain = reconstruct_chain(
-        anchor=_anchor(), window=_window(), prior_alarms=[drift, other]
-    )
+    chain = reconstruct_chain(anchor=_anchor(), window=_window(), prior_alarms=[drift, other])
     by_id = {e.source_id: e for e in chain.events}
     assert by_id["alarm:200"].event_type is ChainEventType.DRIFT_ALARM
     assert by_id["alarm:201"].event_type is ChainEventType.PRIOR_ALARM
@@ -123,21 +131,20 @@ def test_reconstruct_chain_drift_vs_prior_alarm_typisierung() -> None:
 
 def test_reconstruct_chain_anker_nicht_doppelt() -> None:
     # Anker taucht (versehentlich) auch in prior_alarms auf → darf nicht doppelt rein.
-    chain = reconstruct_chain(
-        anchor=_anchor(), window=_window(), prior_alarms=[_anchor()]
-    )
+    chain = reconstruct_chain(anchor=_anchor(), window=_window(), prior_alarms=[_anchor()])
     assert sum(1 for e in chain.events if e.source_id == "alarm:100") == 1
 
 
 def test_reconstruct_chain_wartung_im_fenster_ist_trusted() -> None:
     maintenance = MaintenanceEvent(
-        id=5, machine_id=1, component_id=3, type="lubrication",
+        id=5,
+        machine_id=1,
+        component_id=3,
+        type="lubrication",
         description="Spindel nachgeschmiert",
         performed_at=_ANCHOR_TIME - timedelta(hours=20),
     )
-    chain = reconstruct_chain(
-        anchor=_anchor(), window=_window(), maintenance_events=[maintenance]
-    )
+    chain = reconstruct_chain(anchor=_anchor(), window=_window(), maintenance_events=[maintenance])
     maint_event = next(e for e in chain.events if e.source_id == "maint:5")
     assert maint_event.event_type is ChainEventType.MAINTENANCE
     assert maint_event.trusted is True

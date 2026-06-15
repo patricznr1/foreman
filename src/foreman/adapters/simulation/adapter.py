@@ -223,9 +223,7 @@ class SimulationAdapter(SourceAdapter):
                 quality = sample_quality(plan.quality, rng)
                 if quality == "missing":
                     continue  # fehlendes Intervall: NICHT als 0 schreiben (ausgelassen)
-                value = sample_value(
-                    plan.profile, self._seasonality, local_dt, elapsed_s, rng
-                )
+                value = sample_value(plan.profile, self._seasonality, local_dt, elapsed_s, rng)
                 yield NormalizedReading(
                     time=utc_dt,
                     data_point_id=data_point_id,
@@ -259,9 +257,7 @@ class SimulationAdapter(SourceAdapter):
                     machine_id=topology.machine_id,
                     component_id=comp_ids.get(alarm.component) if alarm.component else None,
                     data_point_id=(
-                        topology.data_point_ids.get(alarm.data_point)
-                        if alarm.data_point
-                        else None
+                        topology.data_point_ids.get(alarm.data_point) if alarm.data_point else None
                     ),
                     code=alarm.code,
                     message=alarm.message,

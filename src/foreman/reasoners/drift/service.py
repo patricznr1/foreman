@@ -202,9 +202,7 @@ class DriftService:
         if machine is None:
             raise ValueError(f"Maschine {machine_id} nicht gefunden.")
         data_points = (
-            await self.session.scalars(
-                select(DataPoint).where(DataPoint.machine_id == machine_id)
-            )
+            await self.session.scalars(select(DataPoint).where(DataPoint.machine_id == machine_id))
         ).all()
 
         analog_ids: list[int] = []
@@ -231,9 +229,7 @@ class DriftService:
             setup_active_id=setup_active_id,
         )
 
-    async def _load_runs(
-        self, line_id: int | None
-    ) -> list[tuple[datetime, datetime | None]]:
+    async def _load_runs(self, line_id: int | None) -> list[tuple[datetime, datetime | None]]:
         if line_id is None:
             return []
         runs = (
@@ -259,9 +255,7 @@ class DriftService:
             "ORDER BY bucket"
         ).bindparams(bindparam("dp_ids", expanding=True))
         rows = (
-            await self.session.execute(
-                stmt, {"dp_ids": dp_ids, "start": start, "end": end}
-            )
+            await self.session.execute(stmt, {"dp_ids": dp_ids, "start": start, "end": end})
         ).all()
 
         analog_set = set(topology.analog_ids)

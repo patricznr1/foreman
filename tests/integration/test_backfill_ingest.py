@@ -42,8 +42,7 @@ async def test_backfill_schreibt_readings_und_diskrete_ereignisse(
     kinds = {
         row["kind"]
         for row in await raw_conn.fetch(
-            "SELECT DISTINCT dp.kind FROM readings r "
-            "JOIN data_points dp ON dp.id = r.data_point_id"
+            "SELECT DISTINCT dp.kind FROM readings r JOIN data_points dp ON dp.id = r.data_point_id"
         )
     }
     assert {"analog", "digital"} <= kinds
@@ -142,9 +141,7 @@ async def test_live_modus_streamt_im_wall_clock_takt(
     # Hoher speed → minimale Soll-Delays; Sleep ohnehin gestubbt.
     pacer = WallClockPacer(speed=10_000.0, sleep=_fake_sleep)
     adapter = SimulationAdapter(_tiny_live_scenario(), seed=1)
-    service = IngestionService(
-        db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor
-    )
+    service = IngestionService(db_session, pseudonymizer=pseudonymizer, redactor=fake_redactor)
 
     stats = await service.ingest(adapter, pace=pacer)
 

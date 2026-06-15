@@ -42,7 +42,9 @@ def test_extract_citations_eindeutig_und_geordnet() -> None:
 
 
 def test_sanitize_narrative_entfernt_html_url_markdown() -> None:
-    raw = "Hinweis ![x](http://evil.example/leak) <script>alert(1)</script> siehe http://evil.example"
+    raw = (
+        "Hinweis ![x](http://evil.example/leak) <script>alert(1)</script> siehe http://evil.example"
+    )
     cleaned = sanitize_narrative(raw)
     assert "<script>" not in cleaned
     assert "http://evil.example" not in cleaned
@@ -90,9 +92,12 @@ def test_build_explanation_unbelegte_zahl_wird_geflaggt() -> None:
         checked=True, grounded=False, source_ids=("alarm:1",), unbacked=("999",)
     )
     expl = build_explanation(
-        anchor_alarm_id=1, machine_id=1,
+        anchor_alarm_id=1,
+        machine_id=1,
         narrative="Die Temperatur lag bei 999 Grad laut [alarm:1].",
-        allowed=("alarm:1",), grounding=report, recall_used=False,
+        allowed=("alarm:1",),
+        grounding=report,
+        recall_used=False,
     )
     assert "999" in expl.flagged_unsupported
     assert expl.is_hypothesis is True
@@ -104,9 +109,12 @@ def test_build_explanation_benigne_hohe_konfidenz() -> None:
         checked=True, grounded=True, source_ids=("alarm:1", "note:2"), unbacked=()
     )
     expl = build_explanation(
-        anchor_alarm_id=1, machine_id=1,
+        anchor_alarm_id=1,
+        machine_id=1,
         narrative="Rund um [alarm:1] meldete [note:2] einen Hinweis.",
-        allowed=("alarm:1", "note:2"), grounding=report, recall_used=True,
+        allowed=("alarm:1", "note:2"),
+        grounding=report,
+        recall_used=True,
     )
     assert expl.flagged_unsupported == ()
     assert expl.is_hypothesis is False
@@ -117,31 +125,45 @@ def test_build_explanation_benigne_hohe_konfidenz() -> None:
 def test_reasoner_explanation_validator_lehnt_nicht_whitelisted_ab() -> None:
     with pytest.raises(ValueError, match="Whitelist"):
         ReasonerExplanation(
-            anchor_alarm_id=1, machine_id=1, narrative="x",
+            anchor_alarm_id=1,
+            machine_id=1,
+            narrative="x",
             allowed_source_ids=("alarm:1",),
             referenced_source_ids=("evt:9999",),  # nicht in Whitelist
-            flagged_unsupported=(), is_hypothesis=False, confidence="high",
-            recall_used=False, grounding=None,
+            flagged_unsupported=(),
+            is_hypothesis=False,
+            confidence="high",
+            recall_used=False,
+            grounding=None,
         )
 
 
 # ----------------------------------------------------------------
 #  E2E-Pipeline gegen echte DB
 # ----------------------------------------------------------------
-async def _seed(session: AsyncSession, *, note_text: str = "Lager läuft heiß, bitte beobachten") -> tuple[Machine, Alarm, WorkerNote]:
+async def _seed(
+    session: AsyncSession, *, note_text: str = "Lager läuft heiß, bitte beobachten"
+) -> tuple[Machine, Alarm, WorkerNote]:
     machine = Machine(label="CNC-1", machine_class="cnc")
     session.add(machine)
     await session.flush()
     anchor = Alarm(
-        machine_id=machine.id, severity="warning", category="process",
-        code="DRIFT", message="Verhaltens-Drift erkannt", raised_at=_ANCHOR_TIME,
+        machine_id=machine.id,
+        severity="warning",
+        category="process",
+        code="DRIFT",
+        message="Verhaltens-Drift erkannt",
+        raised_at=_ANCHOR_TIME,
     )
     note = WorkerNote(
-        machine_id=machine.id, shift="frueh", text=note_text,
+        machine_id=machine.id,
+        shift="frueh",
+        text=note_text,
         created_at=_ANCHOR_TIME - timedelta(hours=2),
     )
     maintenance = MaintenanceEvent(
-        machine_id=machine.id, type="inspection",
+        machine_id=machine.id,
+        type="inspection",
         performed_at=_ANCHOR_TIME - timedelta(hours=20),
     )
     session.add_all([anchor, note, maintenance])
@@ -151,7 +173,9 @@ async def _seed(session: AsyncSession, *, note_text: str = "Lager läuft heiß, 
 
 @pytest.mark.integration
 async def test_reconstruct_persistiert_erklaerung(
-    db_session: AsyncSession, make_gateway: Callable[..., LiteLLMGateway], make_backend: Callable[..., object]
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
 ) -> None:
     _, anchor, note = await _seed(db_session)
     reply = f"Vor dem Alarm [alarm:{anchor.id}] meldete die Notiz [note:{note.id}] einen Hinweis."
@@ -182,7 +206,9 @@ async def test_reconstruct_unbekannter_anker_wirft(
 
 @pytest.mark.integration
 async def test_reconstruct_spiegelt_semantic_event(
-    db_session: AsyncSession, make_gateway: Callable[..., LiteLLMGateway], make_backend: Callable[..., object]
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
 ) -> None:
     _, anchor, _ = await _seed(db_session)
     service = EventChainService(
@@ -204,12 +230,15 @@ async def test_reconstruct_spiegelt_semantic_event(
 
 @pytest.mark.integration
 async def test_reconstruct_note_ausserhalb_fenster_nicht_referenziert(
-    db_session: AsyncSession, make_gateway: Callable[..., LiteLLMGateway], make_backend: Callable[..., object]
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
 ) -> None:
     machine, anchor, _ = await _seed(db_session)
     # Eine sehr alte Notiz (außerhalb des Default-Fensters von 7 Tagen).
     old_note = WorkerNote(
-        machine_id=machine.id, text="uralt",
+        machine_id=machine.id,
+        text="uralt",
         created_at=_ANCHOR_TIME - timedelta(days=60),
     )
     db_session.add(old_note)

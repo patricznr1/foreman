@@ -32,9 +32,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     # --- (1) Vektor-Extension + embedding-Spalte (semantische Suche, ohne Index in F2) ---
     op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-    op.execute(
-        "ALTER TABLE worker_notes ADD COLUMN IF NOT EXISTS embedding vector(1024);"
-    )
+    op.execute("ALTER TABLE worker_notes ADD COLUMN IF NOT EXISTS embedding vector(1024);")
 
     # --- (2) TimescaleDB-Extension ---
     op.execute("CREATE EXTENSION IF NOT EXISTS timescaledb;")
@@ -55,9 +53,7 @@ def upgrade() -> None:
         );
         """
     )
-    op.execute(
-        "CALL add_columnstore_policy('readings', after => INTERVAL '7 days');"
-    )
+    op.execute("CALL add_columnstore_policy('readings', after => INTERVAL '7 days');")
 
     # --- (5) Continuous Aggregates, hierarchisch 1m → 1h → 1d (Research §3.3) ---
     op.execute(
@@ -111,9 +107,7 @@ def upgrade() -> None:
     )
 
     # 1-Minuten-CAGG mit Real-time an (Dashboard + Drift-Reasoner sehen jüngste Minute).
-    op.execute(
-        "ALTER MATERIALIZED VIEW readings_1m SET (timescaledb.materialized_only = false);"
-    )
+    op.execute("ALTER MATERIALIZED VIEW readings_1m SET (timescaledb.materialized_only = false);")
 
     # --- (6) Refresh-Policies (Research §3.3; end_offset > Einlauffenster) ---
     op.execute(
@@ -142,15 +136,9 @@ def upgrade() -> None:
     )
 
     # --- (7) Retention: Rohdaten kurz, Aggregate gestaffelt lang (Research §3.5) ---
-    op.execute(
-        "SELECT add_retention_policy('readings',    drop_after => INTERVAL '90 days');"
-    )
-    op.execute(
-        "SELECT add_retention_policy('readings_1m', drop_after => INTERVAL '1 year');"
-    )
-    op.execute(
-        "SELECT add_retention_policy('readings_1h', drop_after => INTERVAL '5 years');"
-    )
+    op.execute("SELECT add_retention_policy('readings',    drop_after => INTERVAL '90 days');")
+    op.execute("SELECT add_retention_policy('readings_1m', drop_after => INTERVAL '1 year');")
+    op.execute("SELECT add_retention_policy('readings_1h', drop_after => INTERVAL '5 years');")
     # readings_1d: KEINE Retention → unbegrenztes Langzeitgedächtnis.
 
 

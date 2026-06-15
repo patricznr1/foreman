@@ -33,9 +33,7 @@ async def list_lines(
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[Line]:
-    result = await session.scalars(
-        select(Line).order_by(Line.id).limit(limit).offset(offset)
-    )
+    result = await session.scalars(select(Line).order_by(Line.id).limit(limit).offset(offset))
     return result.all()
 
 

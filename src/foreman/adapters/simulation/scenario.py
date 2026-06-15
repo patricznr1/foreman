@@ -317,9 +317,7 @@ class Scenario(_Strict):
 
         for dp in self.data_points:
             if dp.component is not None and dp.component not in comp_set:
-                raise ValueError(
-                    f"data_point '{dp.key}': unbekannte Komponente '{dp.component}'."
-                )
+                raise ValueError(f"data_point '{dp.key}': unbekannte Komponente '{dp.component}'.")
             if dp.baseline and dp.baseline.gated_by and dp.baseline.gated_by not in dp_set:
                 raise ValueError(
                     f"data_point '{dp.key}': gated_by '{dp.baseline.gated_by}' "
@@ -332,9 +330,7 @@ class Scenario(_Strict):
                 raise ValueError(f"alarm: unbekannter Datenpunkt '{alarm.data_point}'.")
         for event in self.maintenance_events:
             if event.component is not None and event.component not in comp_set:
-                raise ValueError(
-                    f"maintenance_event: unbekannte Komponente '{event.component}'."
-                )
+                raise ValueError(f"maintenance_event: unbekannte Komponente '{event.component}'.")
         return self
 
     # --- abgeleitete Zeitachse (vom Adapter genutzt) ---

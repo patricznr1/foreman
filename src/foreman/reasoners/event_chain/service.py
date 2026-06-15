@@ -76,9 +76,7 @@ _MD_LINK_RE = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
 # URL-/Scheme-Neutralisierung inkl. gefährlicher Nicht-HTTP-Schemata (javascript:,
 # data:, vbscript:, ftp:, file:) — nicht nur http(s). `:(?://)?\S+` deckt sowohl
 # `scheme://host` als auch `scheme:payload` (z. B. javascript:alert(1)) ab.
-_URL_RE = re.compile(
-    r"(?:https?|ftp|file|data|javascript|vbscript):(?://)?\S+", re.IGNORECASE
-)
+_URL_RE = re.compile(r"(?:https?|ftp|file|data|javascript|vbscript):(?://)?\S+", re.IGNORECASE)
 
 
 class AnchorNotFoundError(LookupError):
@@ -273,9 +271,7 @@ class EventChainService:
         )
         return list(await self.session.scalars(stmt))
 
-    async def _load_worker_notes(
-        self, machine_id: int, window: ChainWindow
-    ) -> list[WorkerNote]:
+    async def _load_worker_notes(self, machine_id: int, window: ChainWindow) -> list[WorkerNote]:
         stmt = (
             select(WorkerNote)
             .where(
@@ -301,7 +297,9 @@ class EventChainService:
         )
         return list(await self.session.scalars(stmt))
 
-    async def _load_semantic_notes(self, anchor: Alarm, machine: Machine | None) -> list[WorkerNote]:
+    async def _load_semantic_notes(
+        self, anchor: Alarm, machine: Machine | None
+    ) -> list[WorkerNote]:
         """Zieht semantisch ähnliche Notizen derselben Maschine — STRIKT best-effort (§15).
 
         Kein Provider gesetzt / Suche oder Embedding nicht verfügbar → leere Liste

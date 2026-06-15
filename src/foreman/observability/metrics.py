@@ -163,9 +163,7 @@ def observe_gateway_call(
     fallback_used: bool,
 ) -> None:
     """Trägt die Kennzahlen eines Gateway-Calls ein (F-LLM, §11.1)."""
-    GATEWAY_REQUESTS.labels(
-        backend=backend, task=task, result="ok" if success else "error"
-    ).inc()
+    GATEWAY_REQUESTS.labels(backend=backend, task=task, result="ok" if success else "error").inc()
     GATEWAY_LATENCY.labels(backend=backend, task=task).observe(latency_seconds)
     GATEWAY_TOKENS.labels(backend=backend, task=task, kind="prompt").inc(prompt_tokens)
     GATEWAY_TOKENS.labels(backend=backend, task=task, kind="completion").inc(completion_tokens)
@@ -189,9 +187,7 @@ def record_event_chain_recall(result: str) -> None:
     EVENT_CHAIN_RECALL.labels(result=result).inc()
 
 
-def observe_embedding(
-    *, backend: str, latency_seconds: float, success: bool, n_texts: int
-) -> None:
+def observe_embedding(*, backend: str, latency_seconds: float, success: bool, n_texts: int) -> None:
     """Trägt die Kennzahlen eines Embedding-Calls ein (F-SEM, §11.2).
 
     `n_texts` ist die Anzahl der im Call eingebetteten Texte (Durchsatz); bei

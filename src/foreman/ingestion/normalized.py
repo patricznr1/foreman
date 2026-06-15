@@ -111,9 +111,7 @@ class ProductionRunRecord(_EventBase):
         # occurred_at (Strom-Sortierung) und started_at (fachlicher Laufstart) müssen
         # denselben Instant tragen — sonst driften Dispatch- und Laufzeitachse auseinander.
         if self.occurred_at != self.started_at:
-            raise ValueError(
-                "ProductionRunRecord: occurred_at muss started_at entsprechen."
-            )
+            raise ValueError("ProductionRunRecord: occurred_at muss started_at entsprechen.")
         return self
 
 

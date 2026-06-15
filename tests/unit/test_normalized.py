@@ -113,9 +113,7 @@ def test_worker_note_event_traegt_rohtext_und_autor_ref() -> None:
 
 def test_event_union_unbekanntes_kind_wird_abgelehnt() -> None:
     with pytest.raises(ValidationError):
-        _EVENT_ADAPTER.validate_python(
-            {"kind": "explosion", "occurred_at": "2026-05-01T00:00:00Z"}
-        )
+        _EVENT_ADAPTER.validate_python({"kind": "explosion", "occurred_at": "2026-05-01T00:00:00Z"})
 
 
 def test_production_run_occurred_at_gleich_started_at_ist_valide() -> None:

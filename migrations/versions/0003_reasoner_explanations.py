@@ -32,12 +32,8 @@ def upgrade() -> None:
     op.create_table(
         "reasoner_explanations",
         sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "anchor_alarm_id", sa.BigInteger(), sa.ForeignKey("alarms.id"), nullable=False
-        ),
-        sa.Column(
-            "machine_id", sa.BigInteger(), sa.ForeignKey("machines.id"), nullable=True
-        ),
+        sa.Column("anchor_alarm_id", sa.BigInteger(), sa.ForeignKey("alarms.id"), nullable=False),
+        sa.Column("machine_id", sa.BigInteger(), sa.ForeignKey("machines.id"), nullable=True),
         sa.Column(
             "reasoner",
             sa.String(64),
@@ -55,16 +51,10 @@ def upgrade() -> None:
         sa.Column("is_hypothesis", sa.Boolean(), nullable=False),
         sa.Column("confidence", sa.String(16), nullable=False),
         sa.Column("grounded", sa.Boolean(), nullable=True),
-        sa.Column(
-            "recall_used", sa.Boolean(), nullable=False, server_default=sa.text("false")
-        ),
-        sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=_NOW, nullable=False
-        ),
+        sa.Column("recall_used", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=_NOW, nullable=False),
     )
-    op.create_index(
-        "ix_reasoner_explanations_anchor", "reasoner_explanations", ["anchor_alarm_id"]
-    )
+    op.create_index("ix_reasoner_explanations_anchor", "reasoner_explanations", ["anchor_alarm_id"])
     op.create_index(
         "ix_reasoner_explanations_machine_created",
         "reasoner_explanations",
@@ -73,8 +63,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_reasoner_explanations_machine_created", table_name="reasoner_explanations"
-    )
+    op.drop_index("ix_reasoner_explanations_machine_created", table_name="reasoner_explanations")
     op.drop_index("ix_reasoner_explanations_anchor", table_name="reasoner_explanations")
     op.drop_table("reasoner_explanations")

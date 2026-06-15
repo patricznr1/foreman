@@ -19,9 +19,7 @@ router = APIRouter(prefix="/production_runs", tags=["production_runs"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=ProductionRunRead)
-async def create_production_run(
-    body: ProductionRunCreate, session: SessionDep
-) -> ProductionRun:
+async def create_production_run(body: ProductionRunCreate, session: SessionDep) -> ProductionRun:
     data = body.model_dump()
     # started_at hat einen Server-Default — bei None weglassen, damit der greift.
     if data.get("started_at") is None:

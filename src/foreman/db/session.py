@@ -36,9 +36,7 @@ def init_engine(settings: Settings | None = None) -> AsyncEngine:
             max_overflow=cfg.db_max_overflow,
             pool_pre_ping=True,
         )
-        _sessionmaker = async_sessionmaker(
-            bind=_engine, expire_on_commit=False, autoflush=False
-        )
+        _sessionmaker = async_sessionmaker(bind=_engine, expire_on_commit=False, autoflush=False)
     return _engine
 
 

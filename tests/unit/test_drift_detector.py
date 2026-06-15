@@ -65,8 +65,8 @@ def test_varianz_drift_unter_last_wird_erkannt() -> None:
     t_star = 150
     values = [10.0 + _noise(rng, 0.05) for _ in range(t_star)]
     for i in range(300):
-        sigma = 0.05 + 0.02 * i   # wachsende Streuung (Regelabweichung)
-        dip = -0.01 * i           # leichter Lasteinbruch im Mittel
+        sigma = 0.05 + 0.02 * i  # wachsende Streuung (Regelabweichung)
+        dip = -0.01 * i  # leichter Lasteinbruch im Mittel
         values.append(10.0 + dip + _noise(rng, sigma))
     detected = _first_detection(values)
     assert detected is not None
@@ -137,10 +137,10 @@ def test_effect_size_ist_messgroessen_invariant() -> None:
     large = DataPointDriftState()
     for _ in range(WARMUP_MIN_SAMPLES + 5):
         n = rng.gauss(0.0, 1.0)
-        small.update(10.0 + 0.1 * n, in_steady_state=True)      # Skala 0.1
-        large.update(1000.0 + 50.0 * n, in_steady_state=True)   # Skala 50
-    small.update(10.0 + 0.1 * 5, in_steady_state=True)          # +5sigma
-    large.update(1000.0 + 50.0 * 5, in_steady_state=True)       # +5sigma
+        small.update(10.0 + 0.1 * n, in_steady_state=True)  # Skala 0.1
+        large.update(1000.0 + 50.0 * n, in_steady_state=True)  # Skala 50
+    small.update(10.0 + 0.1 * 5, in_steady_state=True)  # +5sigma
+    large.update(1000.0 + 50.0 * 5, in_steady_state=True)  # +5sigma
     assert abs(small.effect_size - large.effect_size) < 2.0
 
 

@@ -56,9 +56,7 @@ class SubstrateClient:
             self._owns_client = False
         else:
             headers = {"Authorization": f"Bearer {token}"} if token else {}
-            self._client = httpx.AsyncClient(
-                base_url=base_url, headers=headers, timeout=timeout_s
-            )
+            self._client = httpx.AsyncClient(base_url=base_url, headers=headers, timeout=timeout_s)
             self._owns_client = True
 
     @classmethod
@@ -126,9 +124,7 @@ class SubstrateClient:
 
     async def reflect(self, **kwargs: Any) -> dict[str, Any]:
         """Fragt Profil/Statistiken (Reflexion) des Substrats ab."""
-        return await self._post(
-            self._paths["reflect"], {"namespace": self._namespace, **kwargs}
-        )
+        return await self._post(self._paths["reflect"], {"namespace": self._namespace, **kwargs})
 
     async def aclose(self) -> None:
         """Schließt den HTTP-Client, falls dieser Client ihn besitzt."""
