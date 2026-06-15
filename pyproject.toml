@@ -107,6 +107,11 @@ module = [
     # damit `strict` über FOREMANs eigenen Gateway-Code voll greift (analog river).
     "litellm",
     "litellm.*",
+    # sentence-transformers (F-SEM, optionales Alternativ-Backend) ist NICHT in den
+    # Laufzeit-Deps und bringt keine Stubs — Import nachsichtig (lazy in backends.py),
+    # `strict` greift über FOREMANs eigenen Embedding-Code voll.
+    "sentence_transformers",
+    "sentence_transformers.*",
 ]
 ignore_missing_imports = true
 
@@ -147,6 +152,9 @@ ignore = [
 # GroundingViolation, GatewayTimeout) sind der Brief-mandatierte Reasoner-Vertrag
 # (Akzeptanzkriterien) — der N818-„Error"-Suffix wird hier bewusst nicht erzwungen.
 "src/foreman/llm/errors.py" = ["N818"]
+# F-SEM-Fehlerhierarchie: analog — die Namen (ProviderUnavailable, DimensionMismatch,
+# EmbeddingTimeout) sind der Brief-mandatierte Embedding-Vertrag (§15/Akzeptanzkriterien).
+"src/foreman/embeddings/errors.py" = ["N818"]
 
 # ------------------------------------------------------------
 #  pytest + coverage (Quality Gate §10.2: grün, Coverage ≥ 85 %)

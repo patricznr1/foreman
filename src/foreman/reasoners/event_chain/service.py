@@ -31,9 +31,11 @@ from foreman.db.models import (
     ReasonerExplanationRecord,
     WorkerNote,
 )
+from foreman.embeddings import EmbeddingProvider
 from foreman.ingestion.semantic import record_semantic_event
 from foreman.llm import GroundingReport, LLMGateway, Task
 from foreman.logging_setup import ERROR, REASON, get_logger
+from foreman.notes import embed_and_search
 from foreman.observability.metrics import (
     observe_reasoner_run,
     record_event_chain_explanation,
@@ -170,8 +172,12 @@ class EventChainService:
     session: AsyncSession
     gateway: LLMGateway
     substrate: SubstrateClient | None = None
+    # F-SEM (§15): optionaler Embedding-Provider für die semantische Notiz-Auswahl.
+    # None → reines F6-Verhalten (nur Zeitfenster-Notizen).
+    embedding_provider: EmbeddingProvider | None = None
     lookback: timedelta = DEFAULT_LOOKBACK
     recall_max_results: int = 5
+    semantic_max_results: int = 5
     _last: ReasonerExplanation | None = field(default=None, init=False, repr=False)
 
     async def reconstruct(
@@ -201,16 +207,19 @@ class EventChainService:
 
         machine_id = anchor.machine_id  # alarms.machine_id ist NOT NULL → immer gesetzt
         window = time_window(anchor.raised_at, lookback)
+        machine = await self.session.get(Machine, machine_id)
+        # F-SEM (§15): semantisch ähnliche Notizen ERGÄNZEN die zeitnahen (Union,
+        # dedupliziert in reconstruct_chain). best-effort → Fallback auf Zeitfenster.
         chain = reconstruct_chain(
             anchor=anchor,
             window=window,
             prior_alarms=await self._load_alarms(machine_id, window),
             worker_notes=await self._load_worker_notes(machine_id, window),
             maintenance_events=await self._load_maintenance(machine_id, window),
+            semantic_notes=await self._load_semantic_notes(anchor, machine),
         )
 
         # NEXUS-Recall ähnlicher Vorfälle (best-effort, blockiert nie).
-        machine = await self.session.get(Machine, machine_id)
         recall_items = await recall_similar_incidents(
             self.substrate, build_recall_query(anchor, machine), max_results=self.recall_max_results
         )
@@ -292,6 +301,35 @@ class EventChainService:
         )
         return list(await self.session.scalars(stmt))
 
+    async def _load_semantic_notes(self, anchor: Alarm, machine: Machine | None) -> list[WorkerNote]:
+        """Zieht semantisch ähnliche Notizen derselben Maschine — STRIKT best-effort (§15).
+
+        Kein Provider gesetzt / Suche oder Embedding nicht verfügbar → leere Liste
+        (Fallback auf die reine Zeitfenster-Auswahl), exakt wie der NEXUS-Recall in
+        §14.1. Es wird NIE eine Exception nach oben gereicht. Die Query ist die
+        PII-freie Anker-Signatur; die Treffer sind FENSTER-EXEMPT (das ist der Sinn
+        der semantischen Auswahl) und werden in `reconstruct_chain` dedupliziert."""
+        if self.embedding_provider is None:
+            return []
+        query = build_anchor_signature(anchor, machine)
+        try:
+            return await embed_and_search(
+                self.embedding_provider,
+                self.session,
+                query,
+                machine_id=anchor.machine_id,
+                k=self.semantic_max_results,
+            )
+        except Exception as exc:
+            # Bewusst breit (best-effort): JEDER Such-/Embedding-Fehler → kein
+            # semantischer Anteil, nie Abbruch (Zeitfenster-Notizen tragen).
+            logger.warning(
+                "%s Semantische Notiz-Suche fehlgeschlagen (best-effort, Zeitfenster-Fallback): %s",
+                REASON,
+                exc,
+            )
+            return []
+
     async def _persist(self, explanation: ReasonerExplanation) -> ReasonerExplanationRecord:
         record = ReasonerExplanationRecord(
             anchor_alarm_id=explanation.anchor_alarm_id,
@@ -348,3 +386,23 @@ class EventChainService:
 def time_window(anchor_raised_at: datetime, lookback: timedelta) -> ChainWindow:
     """Reines Helfer-Mapping: Anker-Zeitpunkt + Rückblick → [start, end]-Fenster."""
     return ChainWindow(start=anchor_raised_at - lookback, end=anchor_raised_at)
+
+
+def build_anchor_signature(anchor: Alarm, machine: Machine | None) -> str:
+    """Baut die PII-freie Anker-Signatur für die semantische Notiz-Suche (§15).
+
+    Kombiniert Maschinenkontext (Klasse) mit Alarm-Code/-Message/-Kategorie. Code
+    und Message sind System-/SPS-Text (kein Werker-Freitext; §8-Restrisiko bewusst),
+    nie ein Personen-Bezug. Die Signatur wird eingebettet und gegen
+    `worker_notes.embedding` gesucht — sie wird NIE geloggt oder persistiert.
+    """
+    parts: list[str] = []
+    if machine is not None and machine.machine_class:
+        parts.append(f"Maschine {machine.machine_class}")
+    if anchor.code:
+        parts.append(anchor.code)
+    if anchor.message:
+        parts.append(anchor.message)
+    if anchor.category:
+        parts.append(anchor.category)
+    return " ".join(parts) if parts else "Vorfall"

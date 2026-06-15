@@ -12,6 +12,10 @@
 #         maintenance_events.performed_by tokenisiert (HMAC). Kein Klartext.
 #  COPY-Pfad: `copy_readings` ist der EINZIGE Reading-Schreibweg (Research §3.4)
 #         und wird auch vom POST /api/v1/readings-Router genutzt — kein zweiter Weg.
+#  Embedding (F-SEM, §15): Werker-Notizen werden vor jedem Commit als EIN Batch
+#         eingebettet (best-effort) — Provider-Ausfall → embedding=NULL, der
+#         Backfill holt es nach; der Notiz-Schreibpfad blockiert NIE auf dem
+#         Embedding.
 # ============================================================
 from __future__ import annotations
 
@@ -25,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from foreman.core.pseudonymize import Pseudonymizer
 from foreman.core.redact import Redactor
 from foreman.db.models import Alarm, MaintenanceEvent, ProductionRun, WorkerNote
+from foreman.embeddings import EmbeddingProvider, embed_best_effort
 from foreman.ingestion.adapter import SourceAdapter, stream_item_time
 from foreman.ingestion.normalized import (
     AlarmEvent,
@@ -80,6 +85,7 @@ class IngestStats:
     worker_notes: int = 0
     semantic_events: int = 0
     substrate_refs: int = 0
+    notes_embedded: int = 0
 
 
 @dataclass
@@ -90,8 +96,14 @@ class IngestionService:
     pseudonymizer: Pseudonymizer
     redactor: Redactor
     substrate: SubstrateClient | None = None
+    # F-SEM: optionaler Embedding-Provider. None → keine Einbettung beim Insert
+    # (embedding bleibt NULL; der Backfill holt es nach).
+    embedding_provider: EmbeddingProvider | None = None
     batch_size: int = 5000
     _stats: IngestStats = field(default_factory=IngestStats, init=False)
+    # Noch nicht committete Notizen dieses Abschnitts — vor dem Commit als EIN
+    # Batch eingebettet (F-SEM, best-effort).
+    _pending_notes: list[WorkerNote] = field(default_factory=list, init=False)
 
     async def ingest(self, adapter: SourceAdapter, *, pace: Pacer | None = None) -> IngestStats:
         """Seedet die Topologie, konsumiert den Strom und persistiert alles.
@@ -101,6 +113,7 @@ class IngestionService:
         sind. Im backfill-Modus (`pace=None`) wird nur nach Batch-Größe geflusht.
         """
         self._stats = IngestStats()
+        self._pending_notes = []
         await adapter.seed_topology(self.session)
         await self.session.flush()  # Topologie-IDs in dieser Transaktion verfügbar
 
@@ -113,6 +126,7 @@ class IngestionService:
                 # Tick-Wechsel im live-Modus: Readings sichtbar machen, dann warten.
                 await self._flush(batch)
                 batch.clear()
+                await self._embed_pending_notes()
                 await self.session.commit()
                 await pace(item_time)
             last_time = item_time
@@ -126,16 +140,18 @@ class IngestionService:
                 await self._write_event(item)
 
         await self._flush(batch)
+        await self._embed_pending_notes()
         await self.session.commit()
         logger.info(
             "✅ Ingestion '%s' fertig: %d readings, %d alarms, %d runs, "
-            "%d maintenance, %d notes, %d semantic (%d mit substrate_ref).",
+            "%d maintenance, %d notes (%d embedded), %d semantic (%d mit substrate_ref).",
             adapter.name,
             self._stats.readings_written,
             self._stats.alarms,
             self._stats.production_runs,
             self._stats.maintenance_events,
             self._stats.worker_notes,
+            self._stats.notes_embedded,
             self._stats.semantic_events,
             self._stats.substrate_refs,
         )
@@ -143,6 +159,23 @@ class IngestionService:
 
     async def _flush(self, batch: Sequence[ReadingRow]) -> None:
         self._stats.readings_written += await copy_readings(self.session, batch)
+
+    async def _embed_pending_notes(self) -> None:
+        """Bettet die gesammelten Notizen vor dem Commit als EINEN Batch ein (best-effort).
+
+        Provider nicht gesetzt / nicht erreichbar → die Notizen bleiben mit
+        `embedding=NULL` (der Backfill holt es nach); der Schreibpfad blockiert nie.
+        """
+        if not self._pending_notes:
+            return
+        vectors = await embed_best_effort(
+            self.embedding_provider, [note.text for note in self._pending_notes]
+        )
+        if vectors is not None:
+            for note, vector in zip(self._pending_notes, vectors, strict=False):
+                note.embedding = vector
+                self._stats.notes_embedded += 1
+        self._pending_notes.clear()
 
     async def _write_event(self, event: NormalizedEvent) -> None:
         if isinstance(event, AlarmEvent):
@@ -262,9 +295,12 @@ class IngestionService:
         # Historische Notiz-Zeit übernehmen (created_at sonst server-default now()).
         note.created_at = event.occurred_at
         self.session.add(note)
+        # F-SEM: für das Batch-Embedding vor dem nächsten Commit vormerken (best-effort).
+        # Eingebettet wird der NER-maskierte Text (kein Rohtext, §8).
+        self._pending_notes.append(note)
         self._stats.worker_notes += 1
         # Werker-Notizen werden NICHT ans Substrat gespiegelt (kein diskretes
-        # semantisches Ereignis i. S. v. §9; später für die semantische Suche).
+        # semantisches Ereignis i. S. v. §9; die semantische Suche läuft über das embedding).
 
     async def _mirror(
         self, *, machine_id: int | None, event_type: str, payload: dict[str, object], content: str
