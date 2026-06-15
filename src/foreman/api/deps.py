@@ -7,6 +7,7 @@
 # ============================================================
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from functools import lru_cache
 from typing import Annotated
@@ -23,6 +24,7 @@ from foreman.db.models import User
 from foreman.db.session import get_session
 from foreman.embeddings import EmbeddingProvider, LocalEmbeddingProvider, get_embedding_settings
 from foreman.llm import LiteLLMGateway, LLMGateway, get_llm_settings
+from foreman.reasoners.failure.model import DEFAULT_ARTIFACT_PATH, FailureModel, load_model
 from foreman.substrate.client import SubstrateClient
 
 # --- Basis-Dependencies ---
@@ -140,3 +142,23 @@ def get_embedding_provider() -> EmbeddingProvider:
 
 
 EmbeddingProviderDep = Annotated[EmbeddingProvider, Depends(get_embedding_provider)]
+
+
+# --- Ausfallvorhersage-Modell (F-PRED) — gebündeltes Demonstrator-Artefakt ---
+@lru_cache(maxsize=1)
+def _failure_model_singleton() -> FailureModel:
+    """Lädt das F-PRED-Artefakt einmalig (über die App-Lebensdauer; SHAP-Explainer
+    lebt mit). Override via FOREMAN_FAILURE_MODEL_PATH. In Tests via Override ersetzt.
+
+    Demonstrator auf Simulationsdaten (§16): validation_status=simulation_only ist
+    in den Artefakt-Metadaten verankert und wird durchgereicht."""
+    override = os.environ.get("FOREMAN_FAILURE_MODEL_PATH")
+    return load_model(override if override else DEFAULT_ARTIFACT_PATH)
+
+
+def get_failure_model() -> FailureModel:
+    """FastAPI-Dependency: das (gecachte) F-PRED-Modell."""
+    return _failure_model_singleton()
+
+
+FailureModelDep = Annotated[FailureModel, Depends(get_failure_model)]

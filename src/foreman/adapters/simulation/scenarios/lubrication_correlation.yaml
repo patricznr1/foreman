@@ -182,6 +182,12 @@ ground_truth:
     effect: "beschleunigte Degradation vib_rms_b ab 3d"
     contrast: "Lager A (Schmierstoff X) bleibt stabil"
   expected_false_alarms: 0
+  # Ausfall-Anker (F-PRED): Lager B erreicht Zone D / Temperatur-Warnschwelle
+  # (BRG_B_TEMP_WARN, ~24d06h) — Schmierstoff-Fehlwahl führt zum Lagerschaden.
+  # Lager A (Kontrolle) bleibt gesund; dieser Ausfall hängt allein an Lager B.
+  failure:
+    offset: "24d06h"
+    type: bearing_failure
   narrative_anchor: >
     Für die Wartungszyklen-Analyse: dieselbe Wartungsart (Nachschmierung) führt je
     nach Schmierstoff zu unterschiedlicher Folge-Degradation. Drift nur an Lager B.

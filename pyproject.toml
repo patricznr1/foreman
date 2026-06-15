@@ -50,6 +50,13 @@ dependencies = [
     #     LLMGateway-Abstraktion. Ausschließlich Implementierungsdetail in
     #     src/foreman/llm/backends.py — kein reasoner-fähiger Pfad sieht LiteLLM-Typen. ---
     "litellm>=1.40",
+    # --- Ausfallvorhersage-Reasoner (F-PRED): klassisches ML (LightGBM) + SHAP-
+    #     Faktor-Attribution. Training ist ein reproduzierbarer Offline-Schritt
+    #     (train.py); die Inferenz lädt nur das Artefakt. scikit-learn ausschließlich
+    #     für die Eval-Metriken (PR-AUC/ROC-AUC/Brier) — kein Laufzeit-Training (§10.4). ---
+    "lightgbm>=4.5",
+    "shap>=0.46",
+    "scikit-learn>=1.5",
 ]
 
 [project.optional-dependencies]
@@ -87,7 +94,16 @@ mypy_path = "src"
 packages = ["foreman"]
 # Presidio/river/litellm bringen py.typed, aber untypisierte Signaturen mit — Aufrufe in
 # diese Pakete von der no-untyped-call-Prüfung ausnehmen (strict bleibt für FOREMAN-Code).
-untyped_calls_exclude = ["presidio_analyzer", "presidio_anonymizer", "river", "litellm"]
+# lightgbm/shap/sklearn (F-PRED) analog: teils untypisierte Signaturen → Aufrufe ausnehmen.
+untyped_calls_exclude = [
+    "presidio_analyzer",
+    "presidio_anonymizer",
+    "river",
+    "litellm",
+    "lightgbm",
+    "shap",
+    "sklearn",
+]
 
 # Dritt-Bibliotheken ohne Type-Stubs (Presidio/spaCy) — gezielt nachsichtig,
 # damit `strict` über FOREMANs eigenen Code voll greift, ohne an Fremd-Code zu scheitern.
@@ -112,6 +128,14 @@ module = [
     # `strict` greift über FOREMANs eigenen Embedding-Code voll.
     "sentence_transformers",
     "sentence_transformers.*",
+    # F-PRED: lightgbm/sklearn bringen teils py.typed, shap gar nicht — Imports
+    # nachsichtig, `strict` greift über FOREMANs eigenen Reasoner-/Feature-Code voll.
+    "lightgbm",
+    "lightgbm.*",
+    "shap",
+    "shap.*",
+    "sklearn",
+    "sklearn.*",
 ]
 ignore_missing_imports = true
 

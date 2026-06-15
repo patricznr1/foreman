@@ -18,10 +18,12 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     Double,
     ForeignKey,
     Index,
+    Integer,
     SmallInteger,
     String,
     Text,
@@ -269,6 +271,48 @@ class ReasonerExplanationRecord(Base, TimestampMixin):
     recall_used: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
 
 
+class FailurePredictionRecord(Base, TimestampMixin):
+    """`failure_predictions` — persistierte Ausfallvorhersagen (F-PRED).
+
+    Speichert das Ergebnis des Ausfallvorhersage-Reasoners: Wahrscheinlichkeit +
+    kostensensitive Entscheidung + SHAP-Top-Faktoren (JSONB). STRUKTURELLE
+    EHRLICHKEIT (§16): `validation_status` (= 'simulation_only'), `data_regime`
+    (= 'simulation') und `model_version` werden mitgeführt — der Sim-Vorbehalt ist
+    auch in der Persistenz nicht abstreifbar. On-demand erzeugt; FOREMAN aktoriert
+    nie (Empfehlung, keine Schaltung).
+    """
+
+    __tablename__ = "failure_predictions"
+    # Defense-in-Depth (§16.1): der Sim-Vorbehalt + die Entscheidung sind auch an der
+    # PERSISTENZGRENZE erzwungen — nicht nur app-seitig (Pydantic). Ein Fremdwert
+    # (z. B. validation_status='production') wird von der DB abgewiesen.
+    __table_args__ = (
+        CheckConstraint(
+            "validation_status = 'simulation_only'",
+            name="ck_failure_predictions_validation_status",
+        ),
+        CheckConstraint("data_regime = 'simulation'", name="ck_failure_predictions_data_regime"),
+        CheckConstraint(
+            "decision IN ('elevated_risk', 'normal')", name="ck_failure_predictions_decision"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    machine_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("machines.id"), nullable=False)
+    reference_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    horizon_h: Mapped[int] = mapped_column(Integer, nullable=False)
+    probability: Mapped[float] = mapped_column(Double, nullable=False)
+    decision_threshold: Mapped[float] = mapped_column(Double, nullable=False)
+    # decision: elevated_risk/normal (relativ zum kostensensitiven Schwellwert).
+    decision: Mapped[str] = mapped_column(String(32), nullable=False)
+    # Pflicht-Vorbehalt: einziger Wert 'simulation_only' (§16).
+    validation_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    data_regime: Mapped[str] = mapped_column(String(32), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    # SHAP-Top-Faktoren als JSONB-Liste ({feature, value, shap, direction}).
+    top_factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
+
+
 # Häufige Lese-Zugriffe absichern (keine Indizes auf der readings-Rohtabelle, §3.4).
 Index("ix_alarms_machine_raised", Alarm.machine_id, Alarm.raised_at)
 Index("ix_worker_notes_machine", WorkerNote.machine_id)
@@ -278,4 +322,9 @@ Index(
     "ix_reasoner_explanations_machine_created",
     ReasonerExplanationRecord.machine_id,
     ReasonerExplanationRecord.created_at,
+)
+Index(
+    "ix_failure_predictions_machine_created",
+    FailurePredictionRecord.machine_id,
+    FailurePredictionRecord.created_at,
 )
