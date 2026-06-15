@@ -170,7 +170,7 @@ See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
 ## Testing
 
-Every push and pull request runs the full quality gate in CI (see the **CI badge** at the top) — `mypy --strict`, `ruff check`, and `pytest` **against a real TimescaleDB/pgvector service**, not mocks. The suite is layered:
+Every push and pull request runs the full quality gate in CI (see the **CI badge** at the top) — `mypy --strict`, `ruff check`, `ruff format --check`, and `pytest` **against a real TimescaleDB/pgvector service**, not mocks. The suite is layered:
 
 | Layer | What it exercises | How |
 |---|---|---|
@@ -182,7 +182,7 @@ Every push and pull request runs the full quality gate in CI (see the **CI badge
 **Current state (`main`, F2–F6):** ~370 tests green, **≈ 95 % branch coverage**, `mypy --strict` 0 errors across the package, `ruff` clean. The coverage gate **fails the build under 85 %** — enforced in `pyproject.toml`, not just claimed. Each feature ships a mandatory test block (happy path · error · auth · edge), and docs (`GROUND_TRUTH` + `WALKTHROUGH`) move in the same commit as the code.
 
 ```bash
-uv run mypy && uv run ruff check && uv run pytest      # the same gate CI runs
+uv run mypy && uv run ruff check && uv run ruff format --check && uv run pytest   # the same gate CI runs
 ```
 
 ---
@@ -208,7 +208,7 @@ uv run alembic upgrade head            # schema + TimescaleDB setup
 uv run uvicorn foreman.main:app --reload
 
 # 5. Quality gates
-uv run mypy && uv run ruff check && uv run pytest
+uv run mypy && uv run ruff check && uv run ruff format --check && uv run pytest
 ```
 
 Integration tests run against a real TimescaleDB (`timescale/timescaledb-ha:pg16`). Point `FOREMAN_TEST_DATABASE_URL` at a test database; without a reachable database the integration tests skip automatically.
