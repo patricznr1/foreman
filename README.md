@@ -6,6 +6,9 @@
 
 *An AI platform that doesn't just monitor industrial production environments — it remembers them.*
 
+[![CI](https://github.com/patricznr1/foreman/actions/workflows/ci.yml/badge.svg)](https://github.com/patricznr1/foreman/actions/workflows/ci.yml)
+![mypy](https://img.shields.io/badge/mypy-strict-blue)
+![coverage](https://img.shields.io/badge/coverage-%E2%89%A585%25%20enforced-brightgreen)
 ![Status](https://img.shields.io/badge/status-active%20development-orange)
 ![Python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)
@@ -165,6 +168,25 @@ See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
 ---
 
+## Testing
+
+Every push and pull request runs the full quality gate in CI (see the **CI badge** at the top) — `mypy --strict`, `ruff check`, and `pytest` **against a real TimescaleDB/pgvector service**, not mocks. The suite is layered:
+
+| Layer | What it exercises | How |
+|---|---|---|
+| **Unit** | pure logic — schema validation, drift math, grounding/output-guard, embedding L2-norm/dim-check/fallback | in-memory, no I/O |
+| **Integration** | the real write/read paths against **TimescaleDB + pgvector** (HNSW similarity, ingestion, reasoner pipeline) | `@pytest.mark.integration`, real DB |
+| **Red-team** | prompt-injection payloads driven through the **live LLM-reasoner pipeline** — spotlighting holds, output-guard flags invented sources/numbers, reasoner stays inert | `tests/reasoners/event_chain/security/` |
+| **Smoke** | real round-trips against local Ollama (LLM completion + `bge-m3` embeddings) | `@pytest.mark.smoke`, skips cleanly if absent |
+
+**Current state (`main`, F2–F6):** ~370 tests green, **≈ 95 % branch coverage**, `mypy --strict` 0 errors across the package, `ruff` clean. The coverage gate **fails the build under 85 %** — enforced in `pyproject.toml`, not just claimed. Each feature ships a mandatory test block (happy path · error · auth · edge), and docs (`GROUND_TRUTH` + `WALKTHROUGH`) move in the same commit as the code.
+
+```bash
+uv run mypy && uv run ruff check && uv run pytest      # the same gate CI runs
+```
+
+---
+
 ## Local development
 
 Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), Docker.
@@ -195,7 +217,7 @@ Integration tests run against a real TimescaleDB (`timescale/timescaledb-ha:pg16
 
 ## Status
 
-🚧 **Active development.** Foundation (F2) implemented: FastAPI skeleton, full schema + TimescaleDB migrations, JWT auth, CRUD + batch ingestion, privacy layer (pseudonymization + NER), memory-substrate smoke test. Next: data adapters and the first end-to-end reasoner (drift). Roadmap and detailed state live in the GROUND_TRUTH.
+🚧 **Active development.** In `main`: the foundation (F2 — schema, TimescaleDB migrations, JWT auth, CRUD + batch ingestion, pseudonymization + NER), data adapters with a synthetic simulation (F3), the **drift reasoner** (F4 — ADWIN over `river`), the **model gateway** (F-LLM — own `LLMGateway` abstraction over LiteLLM, local-first), and the **event-chain reasoner** (F6 — the first LLM free-text reasoner, with a sharp prompt-injection red-team). In review: **semantic note search** (F-SEM — embeddings + HNSW vector search). Next: operator dashboard or failure prediction. Roadmap and binding state live in the [GROUND_TRUTH](GROUND_TRUTH.md).
 
 ---
 

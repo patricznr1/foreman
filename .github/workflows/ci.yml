@@ -1,0 +1,70 @@
+# ============================================================
+#  FOREMAN — CI (Quality Gates, GROUND_TRUTH §10.2)
+#  Läuft bei jedem Push auf main und bei jedem Pull Request:
+#  mypy --strict · ruff (lint + format) · pytest gegen eine ECHTE
+#  TimescaleDB/pgvector (Service-Container) — inklusive Integrationstests,
+#  Red-Team-Injection und Coverage-Gate (≥ 85 %, in pyproject erzwungen).
+#  Die @smoke-Tests (echtes Ollama) skippen sauber, die @ner-Tests
+#  (560-MB-spaCy-Modell) sind opt-in und im Pflichtlauf deselektiert.
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gates:
+    name: mypy · ruff · pytest (real TimescaleDB)
+    runs-on: ubuntu-latest
+
+    services:
+      timescaledb:
+        image: timescale/timescaledb-ha:pg16
+        env:
+          POSTGRES_USER: foreman
+          POSTGRES_PASSWORD: foreman
+          POSTGRES_DB: foreman_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U foreman -d foreman_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 15
+
+    env:
+      # Integrationstests laufen gegen den Service-Container (conftest liest diese Var).
+      FOREMAN_TEST_DATABASE_URL: postgresql+asyncpg://foreman:foreman@localhost:5433/foreman_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Sync dependencies (incl. dev)
+        run: uv sync --extra dev
+
+      - name: Type check — mypy --strict
+        run: uv run mypy
+
+      - name: Lint — ruff check
+        run: uv run ruff check
+
+      - name: Tests + coverage — pytest (integration, red-team, ≥85 %)
+        run: uv run pytest
