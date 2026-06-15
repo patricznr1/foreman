@@ -31,8 +31,11 @@ def _has_embed_model(name: str) -> bool:
     try:
         resp = httpx.get(f"http://{OLLAMA_HOST}:{OLLAMA_PORT}/api/tags", timeout=2.0)
         resp.raise_for_status()
-        models = [m["name"] for m in resp.json().get("models", []) if "name" in m]
-        return any(name in model for model in models)
+        # Ollama /api/tags liefert je nach Version "name" und/oder "model"
+        # (z. B. "bge-m3:latest") — beide defensiv berücksichtigen.
+        entries = resp.json().get("models", [])
+        tags = [m.get("name") or m.get("model") for m in entries if isinstance(m, dict)]
+        return any(tag and name in tag for tag in tags)
     except Exception:
         return False
 

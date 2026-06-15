@@ -168,3 +168,13 @@ def test_from_settings_baut_provider_je_modus(priority: str) -> None:
     settings = EmbeddingSettings(_env_file=None, priority=priority)  # type: ignore[arg-type]
     provider = LocalEmbeddingProvider.from_settings(settings)
     assert isinstance(provider, EmbeddingProvider)
+
+
+async def test_embed_falsche_anzahl_vektoren_wirft(
+    make_provider: MakeProvider, make_embed_backend: MakeBackend
+) -> None:
+    # Backend liefert 2 Vektoren für 1 Text → Cardinality-Vertrag (§15.1) verletzt.
+    backend = make_embed_backend("ollama", vectors=[[0.1] * 1024, [0.2] * 1024])
+    provider = make_provider(backends=[backend], priority="ollama_only", dimension=1024)
+    with pytest.raises(ProviderUnavailable):
+        await provider.embed(["nur ein text"])

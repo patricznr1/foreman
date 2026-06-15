@@ -84,3 +84,16 @@ async def test_backfill_verarbeitet_in_batches(
     assert written == 5
     # 5 Notizen / Batch 2 → 3 Batch-Calls (2 + 2 + 1).
     assert backend.calls == 3  # type: ignore[attr-defined]
+
+
+@pytest.mark.integration
+async def test_backfill_lehnt_batch_size_kleiner_eins_ab(
+    db_session: AsyncSession,
+    make_provider: MakeProvider,
+    make_embed_backend: MakeBackend,
+) -> None:
+    provider = make_provider(
+        backends=[make_embed_backend("ollama", dim=1024)], priority="ollama_only"
+    )
+    with pytest.raises(ValueError, match="batch_size"):
+        await backfill_embeddings(db_session, provider, batch_size=0)

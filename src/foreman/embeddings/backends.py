@@ -100,7 +100,14 @@ def _coerce_vectors(raw: Any, *, expected_count: int) -> list[RawVector]:
     for row in raw:
         if not isinstance(row, list):
             raise ProviderUnavailable("❌ Embedding-Backend lieferte einen unverwertbaren Vektor.")
-        vectors.append([float(value) for value in row])
+        try:
+            vectors.append([float(value) for value in row])
+        except (TypeError, ValueError) as exc:
+            # Architektur-Grenze: nicht-numerische Werte dürfen nicht als rohe
+            # ValueError/TypeError aus der Embedding-Schicht lecken.
+            raise ProviderUnavailable(
+                "❌ Embedding-Backend lieferte nicht-numerische Vektor-Werte."
+            ) from exc
     return vectors
 
 

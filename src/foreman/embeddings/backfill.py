@@ -40,6 +40,10 @@ async def backfill_embeddings(
     Insert-Schreibpfad ist der Backfill NICHT best-effort: ein Provider-Fehler
     propagiert (der Operator soll ihn sehen) — bereits committete Batches bleiben.
     """
+    if batch_size < 1:
+        # batch_size=0 liefe still als No-Op (LIMIT 0 → keine Zeilen → sofortiger
+        # break) trotz vorhandener NULL-Zeilen; negative Werte scheitern DB-seitig.
+        raise ValueError(f"batch_size muss >= 1 sein (erhalten: {batch_size}).")
     total = 0
     while True:
         stmt = (

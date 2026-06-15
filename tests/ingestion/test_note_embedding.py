@@ -136,13 +136,18 @@ async def test_crud_post_provider_ausfall_schreibt_notiz_mit_null_embedding(
     app: FastAPI, auth_client: AsyncClient, raw_conn: asyncpg.Connection
 ) -> None:
     app.dependency_overrides[get_embedding_provider] = lambda: _FailProvider()
-    resp = await auth_client.post(
-        "/api/v1/worker_notes", json={"text": "Lager läuft heiß", "shift": "frueh"}
-    )
-    # Notiz wurde geschrieben (best-effort) — nur ohne Embedding.
-    assert resp.status_code == 201, resp.text
-    note_id = resp.json()["id"]
-    has_embedding = await raw_conn.fetchval(
-        "SELECT embedding IS NOT NULL FROM worker_notes WHERE id = $1", note_id
-    )
-    assert has_embedding is False
+    try:
+        resp = await auth_client.post(
+            "/api/v1/worker_notes", json={"text": "Lager läuft heiß", "shift": "frueh"}
+        )
+        # Notiz wurde geschrieben (best-effort) — nur ohne Embedding.
+        assert resp.status_code == 201, resp.text
+        note_id = resp.json()["id"]
+        has_embedding = await raw_conn.fetchval(
+            "SELECT embedding IS NOT NULL FROM worker_notes WHERE id = $1", note_id
+        )
+        assert has_embedding is False
+    finally:
+        # Override wieder entfernen (die app-Fixture ist zwar function-scoped, aber
+        # ein explizites Cleanup hält den Test robust gegen Scope-Änderungen).
+        app.dependency_overrides.pop(get_embedding_provider, None)

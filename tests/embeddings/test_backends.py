@@ -147,3 +147,13 @@ async def test_run_with_fallback_erschoepft_wirft_provider_unavailable() -> None
     with pytest.raises(ProviderUnavailable) as exc:
         await run_with_fallback([only], ["x"], timeout_s=5.0)
     assert "ollama" in exc.value.attempted
+
+
+async def test_ollama_nicht_numerische_werte_wird_provider_unavailable() -> None:
+    # Nicht-numerische Vektor-Werte dürfen nicht als rohe ValueError lecken.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"embeddings": [["abc", "def"]]})
+
+    backend = _ollama(handler)
+    with pytest.raises(ProviderUnavailable):
+        await backend.embed_batch(["x"], timeout_s=5.0)

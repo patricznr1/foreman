@@ -44,8 +44,10 @@ async def create_worker_note(
         author=pseudo.tokenize_worker(author) if author else None,
     )
     # 3) Embedding beim Insert (best-effort, §15): den MASKIERTEN Text einbetten.
+    # `if vectors:` (nicht `is not None`) — eine leere Liste würde sonst bei vectors[0]
+    # einen IndexError werfen und den „nie blockieren"-Insert-Pfad verletzen.
     vectors = await embed_best_effort(provider, [masked_text])
-    if vectors is not None:
+    if vectors:
         obj.embedding = vectors[0]
     session.add(obj)
     await session.flush()

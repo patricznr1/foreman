@@ -478,7 +478,7 @@ Die semantische Auswahl **ergänzt** die zeitnahe additiv; Provider/Suche-Ausfal
 ### Embedding-Metriken & Smoke (`observability/metrics.py`, `tests/embeddings/smoke/`)
 
 **Was tut es?**
-`foreman_embed_requests_total` (`backend`/`result`) + `foreman_embed_latency_seconds` + `foreman_embed_texts_total` über `observe_embedding`. `@smoke`-Test gegen echtes Ollama `bge-m3`, skippt sauber ohne.
+`foreman_embed_requests_total` (`backend`/`result`) + `foreman_embed_latency_seconds` + `foreman_embed_texts_total` über `observe_embedding`. `@smoke`-Test gegen echtes Ollama `bge-m3`, skippt sauber ohne lokales Ollama.
 
 **Warum existiert es / wo sitzt es?**
 Beobachtbarkeit je Backend (niedrig-kardinal, keine PII/keine Vektoren); der Smoke beweist den realen Round-Trip, ohne das Pflicht-Gate an Ollama zu koppeln.

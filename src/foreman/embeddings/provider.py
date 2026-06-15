@@ -28,7 +28,7 @@ from foreman.embeddings.backends import (
     run_with_fallback,
 )
 from foreman.embeddings.config import OLLAMA_BACKEND, ST_BACKEND, EmbeddingSettings, Priority
-from foreman.embeddings.errors import DimensionMismatch, EmbeddingError
+from foreman.embeddings.errors import DimensionMismatch, EmbeddingError, ProviderUnavailable
 from foreman.logging_setup import REASON, get_logger
 from foreman.observability.metrics import observe_embedding
 
@@ -154,6 +154,17 @@ class LocalEmbeddingProvider:
                 n_texts=0,
             )
             raise
+
+        # Cardinality-Vertrag (§15.1): genau EIN Vektor je Text. Ein Backend, das das
+        # verletzt (fehlerhaftes/künftiges), bricht hier sauber ab — statt nachgelagert
+        # (Schreibpfad/Suche) still inkonsistente Daten zu liefern.
+        if len(raw_vectors) != len(items):
+            observe_embedding(
+                backend=used.name, latency_seconds=perf_counter() - t0, success=False, n_texts=0
+            )
+            raise ProviderUnavailable(
+                f"❌ Backend '{used.name}' lieferte {len(raw_vectors)} Vektoren für {len(items)} Texte."
+            )
 
         # Dimension hart erzwingen: ein vector(1024)-Mismatch würde Insert/Index brechen.
         for vector in raw_vectors:
