@@ -82,6 +82,68 @@ def test_by_name_unbekannt_wirft() -> None:
 
 
 # --------------------------------------------------------------------------- #
+#  ground_truth.failure — additive Ausfall-Verankerung (F-PRED)
+# --------------------------------------------------------------------------- #
+def _dict_with_ground_truth(ground_truth: dict[str, Any]) -> dict[str, Any]:
+    """Minimal-Szenario mit gesetztem ground_truth-Block."""
+    data = _minimal_dict()
+    data["ground_truth"] = ground_truth
+    return data
+
+
+def test_ground_truth_failure_block_parst() -> None:
+    # F-PRED: der optionale failure-Block ist strikt typisiert (offset + type).
+    data = _dict_with_ground_truth(
+        {"drift_present": True, "failure": {"offset": "20d11h", "type": "bearing_failure"}}
+    )
+    scenario = Scenario.model_validate(data)
+    assert scenario.ground_truth is not None
+    assert scenario.ground_truth.failure is not None
+    assert scenario.ground_truth.failure.offset == "20d11h"
+    assert scenario.ground_truth.failure.type == "bearing_failure"
+
+
+def test_ground_truth_ohne_failure_bleibt_none() -> None:
+    # F4-Abwärtskompatibilität: ground_truth ohne failure-Block ist weiterhin gültig.
+    scenario = Scenario.model_validate(_dict_with_ground_truth({"drift_present": False}))
+    assert scenario.ground_truth is not None
+    assert scenario.ground_truth.failure is None
+
+
+def test_failure_mit_ungueltigem_offset_wird_abgelehnt() -> None:
+    data = _dict_with_ground_truth(
+        {"drift_present": True, "failure": {"offset": "20x", "type": "bearing_failure"}}
+    )
+    with pytest.raises(ValidationError):
+        Scenario.model_validate(data)
+
+
+def test_failure_mit_leerem_type_wird_abgelehnt() -> None:
+    data = _dict_with_ground_truth(
+        {"drift_present": True, "failure": {"offset": "20d", "type": ""}}
+    )
+    with pytest.raises(ValidationError):
+        Scenario.model_validate(data)
+
+
+def test_failure_mit_unbekanntem_feld_wird_abgelehnt() -> None:
+    # Der failure-Block selbst ist strikt (extra=forbid) — kein Schmuggel.
+    data = _dict_with_ground_truth(
+        {"drift_present": True, "failure": {"offset": "20d", "type": "x", "severity": "hoch"}}
+    )
+    with pytest.raises(ValidationError):
+        Scenario.model_validate(data)
+
+
+def test_bearing_drift_traegt_failure_event() -> None:
+    # Mindestens ein mitgeliefertes Szenario läuft auf einen Ausfall zu (F-PRED-Material).
+    scenario = load_scenario_by_name("bearing_drift")
+    assert scenario.ground_truth is not None
+    assert scenario.ground_truth.failure is not None
+    assert scenario.ground_truth.failure.type == "bearing_failure"
+
+
+# --------------------------------------------------------------------------- #
 #  Ungültige Szenarien werden abgelehnt
 # --------------------------------------------------------------------------- #
 def _minimal_dict() -> dict[str, Any]:

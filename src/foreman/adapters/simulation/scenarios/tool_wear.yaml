@@ -162,6 +162,11 @@ ground_truth:
     - { data_point: spindle_current, onset: "2d", role: "redundantes Lastsignal (∝ Moment)" }
     - { data_point: spindle_speed_act, onset: "7d", role: "späte Regelabweichung (variance)" }
   expected_false_alarms: 0
+  # Ausfall-Anker (F-PRED): Standzeitende des Werkzeugs — Last/Strom über Erwartung
+  # (TOOL_LOAD_HIGH, ~9d12h), Werkzeug verschlissen = Ende des nutzbaren Betriebs.
+  failure:
+    offset: "9d12h"
+    type: tool_failure
   narrative_anchor: >
     Last-/Stromdrift ab t*=2d erkennbar; Werker bemerkt Verschleiß erst ~8d über
     Oberfläche/Späne. Frühwarnung über Last/Strom Tage vor dem sichtbaren Effekt.

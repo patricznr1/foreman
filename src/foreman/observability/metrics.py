@@ -130,6 +130,35 @@ EMBED_TEXTS: Final = Counter(
 )
 
 
+# --- Ausfallvorhersage-Reasoner (F-PRED, §11.2) — je Vorhersage: Datenregime +
+#     Entscheidung + Wahrscheinlichkeits-Verteilung. Das Label `data_regime`
+#     (= 'simulation') ist auf ALLEN foreman_failure_*-Kennzahlen Pflicht — der
+#     Sim-Vorbehalt ist auch in den Metriken sichtbar (§16). Labels niedrig-kardinal
+#     (data_regime ∈ {simulation}; decision ∈ {elevated_risk,normal}) — keine PII. ---
+FAILURE_PREDICTIONS: Final = Counter(
+    "foreman_failure_predictions_total",
+    "Anzahl der Ausfallvorhersagen je Datenregime und Entscheidung.",
+    ["data_regime", "decision"],
+    registry=REGISTRY,
+)
+FAILURE_PROBABILITY: Final = Histogram(
+    "foreman_failure_probability",
+    "Verteilung der vorhergesagten Ausfallwahrscheinlichkeiten je Datenregime.",
+    ["data_regime"],
+    buckets=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0),
+    registry=REGISTRY,
+)
+
+
+def observe_failure_prediction(*, data_regime: str, decision: str, probability: float) -> None:
+    """Zählt eine Ausfallvorhersage + ihre Wahrscheinlichkeit (F-PRED, §11.2).
+
+    `data_regime` ist Pflicht-Label (Sim-Vorbehalt sichtbar in den Metriken, §16).
+    """
+    FAILURE_PREDICTIONS.labels(data_regime=data_regime, decision=decision).inc()
+    FAILURE_PROBABILITY.labels(data_regime=data_regime).observe(probability)
+
+
 def observe_reasoner_run(reasoner: str, latency_seconds: float, *, success: bool) -> None:
     """Zählt einen Reasoner-Aufruf und seine Latenz (je Reasoner, Erfolg/Fehler)."""
     REASONER_REQUESTS.labels(reasoner=reasoner, result="ok" if success else "error").inc()

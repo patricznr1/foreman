@@ -2,7 +2,9 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-14 · **Status:** F-SEM — Semantische Notiz-Suche (Querfunktion, kein neuer Reasoner): eigene dünne `EmbeddingProvider`-Abstraktion (analog `LLMGateway`, lokal-first Ollama `bge-m3` + sentence-transformers-Alternative, L2-normierte 1024-Vektoren), Embedding beim Insert (best-effort) + idempotenter Backfill, HNSW-Index (Migration `0004`) + reine DB-Suche + read-only `GET /api/v1/worker_notes/search`, und die additive, best-effort F6-Anbindung (semantisch ähnliche Notizen ergänzen die zeitnahen — fenster-exempt, dedupliziert, **`trusted=False` unverändert**). Vertrag: **§15**. Baut auf F2 + F3 + F4 (Drift) + F-LLM (Gateway) + F6 (Ereignisketten) auf.
+**Stand:** 2026-06-15 · **Status:** F-PRED — Ausfallvorhersage-Reasoner (Reasoner #3), **ehrlich deklarierter Methoden-Demonstrator**: klassisches ML (LightGBM `LGBMClassifier`, binär) + SHAP-`TreeExplainer`-Faktor-Attribution, reine/netzfreie Feature-Extraktion ohne Zeit-Leakage (`readings_1m`-Aggregate + Drift-Output als Feature + Wartung/Alarm), Trainingsdatensatz aus den Szenarien (Label aus `ground_truth.failure` + Horizont, **lauf-disjunkter** Split), reproduzierbares Offline-Training (CLI, Seed), Inferenz lädt das Artefakt → persistierte `FailurePrediction`, on-demand-Routen, `foreman_failure_*`-Metriken. **Strukturelle Ehrlichkeit (Kern):** `validation_status=simulation_only` ist Pflichtfeld an jeder Vorhersage, `data_regime=simulation` Label auf allen Kennzahlen — der prädiktive Wert setzt reale Run-to-failure-Daten voraus (über den SPS-Programm-Kanal grundsätzlich nicht verfügbar). Vertrag: **§16** + Model Card `docs/models/failure_prediction_model_card.md`. Baut auf F2 + F3 + F4 (Drift-Output als Feature) + F-LLM (Gateway, Zahlen nie aus dem LLM) auf.
+
+*Vorgänger-Status F-SEM — Semantische Notiz-Suche (Querfunktion, kein neuer Reasoner): eigene dünne `EmbeddingProvider`-Abstraktion (analog `LLMGateway`, lokal-first Ollama `bge-m3` + sentence-transformers-Alternative, L2-normierte 1024-Vektoren), Embedding beim Insert (best-effort) + idempotenter Backfill, HNSW-Index (Migration `0004`) + reine DB-Suche + read-only `GET /api/v1/worker_notes/search`, und die additive, best-effort F6-Anbindung. Vertrag: **§15**.*
 
 *Vorgänger-Status F6 — Ereignisketten-Reasoner (erster LLM-Freitext-Reasoner + erster Konsument des `LLMGateway`): Ketten-Konstruktion (rein) + NEXUS-Recall ähnlicher Vorfälle (best-effort) + Grounding-Quellen (`worker_notes` untrusted) → gegroundete deutsche Erzählung über `gateway.complete(task=synthesis)`, Output-Guard (`ReasonerExplanation`), Persistenz `reasoner_explanations` + `semantic_event`-Dual-Write, on-demand-Routen, Event-Ketten-`/metrics`. **Red-Team scharf am ersten Freitext-Reasoner ✅** (Vertrag §14).*
 
@@ -36,6 +38,8 @@ Drei Schichten:
 | 3 | Ausfallvorhersage | Mustererkennung über konsolidiertem Speicher |
 | 4 | Wartungszyklen-Analyse | kausale Auswertung (read-only) |
 | 5 | Belastungs-Simulation | historische Grenzwerte + Hypothesen |
+
+**Bau-Status:** Reasoner #1 (Ereignisketten, F6 ✅), #2 (Drift, F4 ✅), **#3 (Ausfallvorhersage, F-PRED ✅** — ehrlich deklarierter Methoden-Demonstrator auf Simulationsdaten, §16). #4/#5 folgen.
 
 ---
 
@@ -79,6 +83,12 @@ Drei Schichten:
 - `POST /api/v1/reasoners/event_chain/reconstruct` — **on-demand** Rekonstruktion der Ereigniskette um einen Anker-Alarm. Body: `{ "anchor_alarm_id": int, "lookback_hours": int|null }`. Liefert die persistierte, gegroundete `ReasonerExplanation` (201). Auth-pflichtig (LLM-Kostenschutz). **Kein automatischer LLM-Call pro Drift-Alarm** — der alarm-getriebene Hook bleibt bewusst offen/unverdrahtet (kostenkontrollierter LLM-Einsatz). **Keine Aktorik** — der Reasoner erklärt, schaltet nichts. 404, wenn der Anker nicht existiert.
 - `GET /api/v1/reasoners/event_chain/explanations` — Auflistung gespeicherter Erklärungen (jüngste zuerst), optional gefiltert nach `machine_id` (`limit`/`offset`).
 - `GET /api/v1/reasoners/event_chain/explanations/{explanation_id}` — eine einzelne gespeicherte Erklärung; 404, wenn nicht vorhanden.
+
+### Reasoner-Routen (Ausfallvorhersage, ab F-PRED)
+
+- `POST /api/v1/reasoners/failure/predict` — **on-demand** Ausfallvorhersage für eine Maschine. Body: `{ "machine_id": int, "reference_time": datetime|null, "lookback_hours": int|null }` (`reference_time` null → jetzt/UTC; `lookback_hours` null → Artefakt-Default). Liefert die persistierte `FailurePrediction` (201) **inkl. Sim-Vorbehalt** (`validation_status=simulation_only`, `data_regime`, `model_version`). Auth-pflichtig. **Kein Auto-Predict** (on-demand, Konsistenz mit F6). **Keine Aktorik.** 404, wenn die Maschine nicht existiert. Der Horizont kommt aus dem Artefakt, nicht aus dem Request.
+- `GET /api/v1/reasoners/failure/predictions` — Auflistung persistierter Vorhersagen (jüngste zuerst), optional gefiltert nach `machine_id` (`limit`/`offset`).
+- `GET /api/v1/reasoners/failure/predictions/{prediction_id}` — eine einzelne Vorhersage; 404, wenn nicht vorhanden.
 
 *(Routen-Namespace `reasoners/<reasoner>/…` analog zu `reasoners/drift`. Weitere Reasoner-Routen folgen je Phase.)*
 
@@ -133,12 +143,17 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - `id` PK · `anchor_alarm_id` FK→alarms · `machine_id` FK (nullable) · `reasoner` (Default `event_chain`) · `narrative` (Erzähltext, output-sanitisiert) · `referenced_source_ids` jsonb (whitelisted Zitate) · `flagged_unsupported` jsonb (erfundene Quellen + unbelegte Zahlen) · `is_hypothesis` · `confidence` (low/medium/high) · `grounded` (nullable, Gateway-Grounding-Befund) · `recall_used` · `created_at`
 - Die Reasoner-Erklärung ist ein **diskretes Ereignis** → wird zusätzlich als `semantic_event` (`event_type=event_chain_reconstructed`) ans Substrat gespiegelt (§12.4). Indizes: `ix_reasoner_explanations_anchor`, `ix_reasoner_explanations_machine_created`.
 
+**`failure_predictions`** — persistierte Ausfallvorhersagen (ab F-PRED)
+- `id` PK · `machine_id` FK→machines · `reference_time` (Bezugszeitpunkt, tz-aware) · `horizon_h` (Vorhersagehorizont in Stunden) · `probability` (Ausfallwahrscheinlichkeit) · `decision_threshold` (kostensensitiv) · `decision` (`elevated_risk`/`normal`) · `validation_status` (**Pflicht, einziger Wert `simulation_only`** — §16) · `data_regime` (`simulation`) · `model_version` · `top_factors` jsonb (SHAP-Faktoren `{feature, value, shap, direction}`) · `created_at`
+- **Strukturelle Ehrlichkeit (§16):** `validation_status`/`data_regime`/`model_version` werden mitgeführt — der Sim-Vorbehalt überlebt die Persistenz und ist nicht abstreifbar. On-demand erzeugt; **keine Aktorik.** Index: `ix_failure_predictions_machine_created`.
+
 *(Migrationen via Alembic. Jede Migration hier kurz vermerken.)*
 
 - **`0001_initial_schema`** — alle Tabellen aus §5 mit PK-/FK-Constraints + Lese-Indizes (`ix_data_points_machine`, `ix_alarms_machine_raised`, `ix_worker_notes_machine`). `readings` entsteht als gewöhnliche Tabelle (PK `(data_point_id, time)`).
 - **`0002_timescale_setup`** — aktiviert die `vector`-Extension und ergänzt `worker_notes.embedding vector(1024)` (deshalb liegt die Embedding-Spalte in 0002, nicht 0001); aktiviert `timescaledb`; macht `readings` zur Hypertable (1-Tages-Chunks); Columnstore (`segmentby=data_point_id`, `orderby=time DESC`, ab 7 Tagen); Continuous Aggregates `readings_1m`→`_1h`→`_1d` (1m real-time) mit Refresh-Policies; Retention 90 d / 1 a / 5 a / ∞. Quelle: `docs/research/timescaledb-tuning-readings.md` §3–§4.
 - **`0003_reasoner_explanations`** — legt die Tabelle `reasoner_explanations` an (F6) mit FK auf `alarms`/`machines`, JSONB-Spalten für referenzierte/geflaggte Quellen und den Lese-Indizes `ix_reasoner_explanations_anchor` + `ix_reasoner_explanations_machine_created`.
 - **`0004_worker_notes_hnsw`** — HNSW-Index `ix_worker_notes_embedding_hnsw` auf `worker_notes.embedding` (F-SEM, `vector_cosine_ops`, `m=16`, `ef_construction=200`; Quelle: `docs/research/vektor-suche-pgvector.md`). Pflicht ist die pgvector-**Extension** ≥ 0.8.2 im Postgres-Image (CVE-2026-3172 bei parallelen HNSW-Builds) — eine DB-/Deployment-Anforderung, NICHT der Python-Adapter `pgvector` im `pyproject` (der nur das SQLAlchemy-Mapping liefert). Im Betrieb mit großem Bestand per `CREATE INDEX CONCURRENTLY` (Doku-Hinweis in der Migration); in der Migration transaktional (MVP-Bestand unkritisch).
+- **`0005_failure_predictions`** — legt die Tabelle `failure_predictions` an (F-PRED) mit FK auf `machines`, JSONB-Spalte für die SHAP-Top-Faktoren, den Pflicht-Vorbehalt-Spalten (`validation_status`/`data_regime`/`model_version`) und dem Lese-Index `ix_failure_predictions_machine_created`.
 
 ---
 
@@ -263,6 +278,7 @@ Wie sich die Plattform zur Laufzeit verhält — was im Betrieb sichtbar und kon
 | Red-Team-Test-Satz — **scharfe Aktivierung** (echte Werker-Freitext-Payloads gegen LLM-Pipeline) | **F6 ✅ scharf am ersten Freitext-Reasoner** (`tests/reasoners/event_chain/security/test_injection.py`) — Harness wiederverwendet gegen die echte Ereignisketten-Pipeline |
 | Event-Ketten-Kennzahlen (Erklärungen geflaggt/sauber + NEXUS-Recall-Ausgänge) | **F6 ✅** (`foreman_event_chain_explanations_total`, `foreman_event_chain_recall_total`) |
 | Embedding-Kennzahlen (Requests/Latenz/Durchsatz je Backend) | **F-SEM ✅** (`foreman_embed_requests_total` [`backend`/`result`], `foreman_embed_latency_seconds`, `foreman_embed_texts_total`; `observe_embedding`) |
+| Ausfallvorhersage-Kennzahlen (Vorhersagen je Datenregime/Entscheidung + Wahrscheinlichkeits-Verteilung) | **F-PRED ✅** (`foreman_failure_predictions_total` [`data_regime`/`decision`], `foreman_failure_probability` [`data_regime`]; `observe_failure_prediction`). **`data_regime=simulation` ist Pflicht-Label auf allen `foreman_failure_*`** — der Sim-Vorbehalt ist im Monitoring sichtbar (§16). |
 | Human-in-the-Loop-Quittierung — Flow im Reasoner | F4 |
 | Grafana-Dashboard | Härtung |
 
@@ -303,7 +319,8 @@ Die protokoll-agnostische Ingestion-Schicht unter `src/foreman/ingestion/` plus 
 
 ### 12.5 Simulations-Adapter (`adapters/simulation/`)
 
-- **Szenario-Format:** YAML, validiert durch `scenario.py` (Pydantic, strikt). Struktur: `scenario` (Identität + `start` absolut tz-aware, `duration`/`sample_interval` als Dauer-Strings) · `line` · `machine` · `components[]` · `seasonality` (Schichten + Wochenende) · `data_points[]` (Baseline + optional `drift` step|ramp|variance + optional `quality`) · `production_runs[]` · `maintenance_events[]` · `worker_notes[]` · `alarms[]` (Ereignis-Zeiten als Offsets ab `start`) · `ground_truth` (F4-Wahrheit: `drift_present`, `t_star`, Erkennungsfenster).
+- **Szenario-Format:** YAML, validiert durch `scenario.py` (Pydantic, strikt). Struktur: `scenario` (Identität + `start` absolut tz-aware, `duration`/`sample_interval` als Dauer-Strings) · `line` · `machine` · `components[]` · `seasonality` (Schichten + Wochenende) · `data_points[]` (Baseline + optional `drift` step|ramp|variance + optional `quality`) · `production_runs[]` · `maintenance_events[]` · `worker_notes[]` · `alarms[]` (Ereignis-Zeiten als Offsets ab `start`) · `ground_truth`.
+- **`ground_truth`-Block:** F4-Wahrheit (`drift_present`, `expected_false_alarms`; `primary_drift.t_star`/`expected_detection_window` etc. als Extra-Felder, `extra='allow'`). **Additiv ab F-PRED:** optionales `failure` (strikt, `extra=forbid`): `offset` (Dauer-Offset ab `start`) + `type` (z. B. `bearing_failure`/`tool_failure`). Markiert den Ausfallzeitpunkt eines Degradations-Szenarios; aus ihm leitet `dataset.py` das Positiv-Label im Vorhersagehorizont ab (§16). Die F4-Felder bleiben unverändert gültig (F4-Tests grün). Mit `failure` versehen: `bearing_drift`, `tool_wear`, `lubrication_correlation`; `healthy_baseline` bleibt failure-frei (Negativmaterial).
 - **Signale (`signals.py`):** Baseline × Schicht-Last + Gauss-Rauschen, State-Gating über `machine_running`; Drift step/ramp(progressiv)/variance ab bekanntem t*; optional Quality good/bad/missing (missing = Intervall ausgelassen, nicht 0).
 - **Seeding (`seed.py`):** idempotent über natürliche Schlüssel (`line.label`, `machine.external_id`, `(machine_id, component.label)`, `(machine_id, data_point.name)`).
 - **Runner (`runner.py`):** `python -m foreman.adapters.simulation.runner --scenario <name|pfad> --mode backfill|live [--speed --seed --batch-size --db-url]`. `backfill` = Historie schnell (F4/Dashboard); `live` = Wall-Clock-Takt (Demo). Kein Job-Worker (§3) — Vordergrund-Prozess.
@@ -442,3 +459,38 @@ F-SEM ist eine **Querfunktion**, kein neuer Reasoner: Sie füllt das von F6 bewu
 
 - **PII:** Embedding-Input ist der bereits NER-maskierte `text`; die Such-Query (Anker-Signatur) ist PII-frei. **Keine** Notiz-Texte, **keine** Vektoren, **keine** Keys in Logs (§8).
 - Unit-Tests gegen ein **deterministisches Mock-Backend** (Batch, L2-Normalisierung, Dim-Check, Priority/Fallback, Metriken) ohne Netz; Backend-Tests über httpx-MockTransport (Ollama) bzw. injizierten `encode_fn` (sentence-transformers). DB-Tests gegen echte pgvector/HNSW (Ähnlichkeits-Reihenfolge, `machine_id`-Filter, `k`), Schreibpfad-Tests (best-effort → NULL), F6-Anbindung (semantisch ergänzt, Fallback, `trusted=False`). `@pytest.mark.smoke` (`tests/embeddings/smoke/test_ollama_embed.py`): echter Round-Trip gegen lokales Ollama `bge-m3`, **skippt sauber** ohne Ollama — nicht im CI-Pflichtlauf.
+
+---
+
+## 16. Ausfallvorhersage-Reasoner-Vertrag (F-PRED)
+
+Reasoner #3 unter `src/foreman/reasoners/failure/`. **Bewusst ein ehrlich deklarierter Methoden-Demonstrator:** die Datenlage erlaubt keine echte Ausfallvorhersage (SPS-**Programme** beschreiben, *wie* eine Maschine funktioniert, nicht *was* ihr passiert ist — Ausfälle stehen in **Logs**, die über diesen Kanal grundsätzlich nicht verfügbar sind). Das Modul wird trotzdem vollständig und methodisch korrekt gebaut; sein prädiktiver Wert setzt reale Run-to-failure-Daten voraus. **Ausführliche fachliche Begründung: `docs/models/failure_prediction_model_card.md` (Kern: „Warum Sim-Daten nicht genügen", Verifikation ≠ Validierung).**
+
+### 16.1 Strukturelle Ehrlichkeit (Kern-Deliverable, nicht umgehbar)
+
+- **`FailurePrediction`** (Pydantic, `extra=forbid`) trägt **`validation_status` als PFLICHTFELD ohne Default**, einziger Wert `simulation_only` — es gibt **keinen Konstruktionsweg** ohne den Vorbehalt. Plus `data_regime` (`simulation`) und `model_version` aus den Artefakt-Metadaten. Jeder Konsument (Persistenz, Dashboard, MCP, späterer Erklär-Layer) führt ihn mit.
+- **Metrik-Label `data_regime=simulation`** auf allen `foreman_failure_*`-Kennzahlen (§11.2).
+- **Persistenz** (`failure_predictions`, §5) führt `validation_status`/`data_regime`/`model_version` als Spalten — der Vorbehalt überlebt die Speicherung.
+- **Eval-Metriken sind Funktionsnachweis, kein Realitätsnachweis** — so benannt in Model Card, Code-Header (`train.py`) und Trainings-Log (`train_summary`). Keine Metrik wird als „Genauigkeit der Ausfallvorhersage" verkauft.
+
+### 16.2 Pipeline (Schichtung — jede Stufe einzeln testbar)
+
+`features.extract_features` (rein, netzfrei, **kein Zeit-Leakage**) → `model.predict` (Artefakt laden + Wahrscheinlichkeit + SHAP-`TreeExplainer`-Attribution) → `service` (DB-IO → `FailurePrediction` → Persistenz) → on-demand-Routen (§4).
+
+- **`features.py` — reiner Kern.** Aus einem Vorlauf-Fenster VOR dem Bezugszeitpunkt ein Feature-Vektor: `readings_1m`-Aggregate je Datenpunkt (Mittel/Std/Min/Max/Range/RMS/Trend/RoC/Last), **Drift-Output als Feature** (Anzahl/Stärke/Zeit-seit, Kopplung an F4), Wartung (Zeit seit letzter Wartung), Alarm-Historie. **Strikt `< reference_time`** (getestet); DB injiziert; **PII-frei** (Zahlen über `data_points.name`).
+- **`dataset.py` — Trainingsdaten aus Szenarien** (rein/netzfrei über `signals.py`). Label aus `ground_truth.failure` + Horizont *H*; **lauf-disjunkter Split** (Szenario/Seed; kein zeilenweises Mischen); Klassenbalance dokumentiert.
+- **`train.py` — Offline-CLI.** `python -m foreman.reasoners.failure.train --scenarios … --seeds 1,2,3,4 --holdout-seeds 4 --horizon-days … --lookback-hours … --step-hours … --seed … --out <artefakt>`. Die Flags `--seeds`/`--holdout-seeds` steuern den **lauf-disjunkten Split** (Läufe mit Holdout-Seed → Eval). LightGBM (binär, `scale_pos_weight = #neg/#pos`, **kein** SMOTE), reproduzierbar (`--seed`), Eval mit **PR-AUC (primär) / ROC-AUC / Brier** (Eval-Holdout muss beide Klassen tragen — sonst Fail-fast), Artefakt + Metadaten (Quelle=`simulation`, Feature-Schema, Horizont, Vorlauf-Fenster, Szenario-Hashes, Seed, Metriken).
+- **`model.py` — Inferenz.** Artefakt-Verzeichnis (`model.txt` + `metadata.json`) laden; `predict` (Wahrscheinlichkeit autoritativ vom Modell) + SHAP-Top-Faktoren (`{feature, value, shap, direction}`); fehlende Features → NaN → nicht als Faktor. Gebündeltes Demonstrator-Artefakt: `src/foreman/reasoners/failure/artifacts/failure_lgbm` (Override `FOREMAN_FAILURE_MODEL_PATH`).
+- **`service.py` — Orchestrierung.** Lädt `readings_1m`-Reihen, Drift-Events (aus `drift_detected`-`semantic_events`, mit `detected_at`/`effect_size`), Wartung, Nicht-Drift-Alarme; baut die `FailurePrediction` (Vorbehalt erzwungen) und persistiert sie. **Kein Auto-Predict, keine Aktorik.**
+
+### 16.3 Grenzen (verbindlich)
+
+- **Zahlen kommen nie aus einem LLM** (gilt schon hier, damit der spätere Erklär-Layer es erbt; §13.3).
+- **Kein Laufzeit-Training** (§10.4) — Training ist ein reproduzierbarer Offline-Schritt, Inferenz lädt nur.
+- **On-demand, keine Aktorik** (Konsistenz mit F6, §14.3).
+- **SHAP ist assoziativ, nicht kausal** — ein Faktor „erhöht das Risikomodell-Signal", er „verursacht" nichts.
+- **Migrationspfad** (Model Card §8): gleiche Feature-Definition, gleiche Trainings-CLI, gleiches Artefakt-Format — nur ein reales, gelabeltes Trainingsset macht aus dem Demonstrator einen validierbaren Prädiktor.
+
+### 16.4 Verifikation
+
+Reine Stufen (Schema/Features/Dataset/Model/Train) ohne Netz; Pipeline-E2E gegen echte DB. **Kern-Akzeptanz:** eine `FailurePrediction` ohne `validation_status` ist nicht konstruierbar, und die E2E-Pipeline trägt `simulation_only` IMMER (`tests/reasoners/failure/`). Kein-Leakage und lauf-disjunkter Split sind getestet.

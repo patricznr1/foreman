@@ -264,14 +264,39 @@ class AlarmSpec(_Strict):
     _v_offset = field_validator("offset")(_validate_duration_str)
 
 
+class FailureSpec(_Strict):
+    """Ausfall-Ereignis eines Szenarios (additiv, F-PRED).
+
+    Markiert den Zeitpunkt (Offset ab `scenario.start`) und die Art eines
+    Ausfalls, auf den ein Degradations-Szenario zuläuft (z. B. `bearing_drift`
+    → Lagerschaden). Die F4-Felder (`drift_present`, `t_star` als Extra) bleiben
+    davon unberührt — `failure` ist die F-PRED-Wahrheit, aus der `dataset.py`
+    das Positiv-Label im Vorhersagehorizont ableitet. Strikt validiert
+    (extra=forbid): kein Schmuggel zusätzlicher Felder.
+    """
+
+    offset: str
+    type: str = Field(min_length=1)
+
+    _v_offset = field_validator("offset")(_validate_duration_str)
+
+
 class GroundTruth(BaseModel):
     """F4-Validierungs-Wahrheit. F3 parst/validiert sie nur grob (drift_present);
-    die präzise Struktur ist F4-Domäne — daher extra='allow'."""
+    die präzise Struktur ist F4-Domäne — daher extra='allow'.
+
+    `failure` (additiv, F-PRED) ist als einziges Sub-Feld strikt typisiert; alle
+    F4-Detailfelder (`primary_drift`, `t_star`, `expected_detection_window` …)
+    bleiben Extra-Felder und unverändert gültig.
+    """
 
     model_config = ConfigDict(extra="allow")
 
     drift_present: bool
     expected_false_alarms: int = 0
+    # Optionaler Ausfall-Anker (F-PRED). None → Szenario läuft nicht auf einen
+    # Ausfall zu (z. B. healthy_baseline); reines Negativmaterial.
+    failure: FailureSpec | None = None
 
 
 # Aktuell einzige unterstützte Szenario-Schema-Version. Unbekannte Versionen

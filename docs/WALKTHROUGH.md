@@ -485,6 +485,84 @@ Beobachtbarkeit je Backend (niedrig-kardinal, keine PII/keine Vektoren); der Smo
 
 ---
 
+## F-PRED — Ausfallvorhersage-Reasoner (`src/foreman/reasoners/failure/`)
+
+> **Ehrlich deklarierter Methoden-Demonstrator.** Auf Simulationsdaten trainiert — die Pipeline ist verifizierbar, ohne reale Run-to-failure-Daten aber nicht validierbar. Der Vorbehalt ist strukturell erzwungen (`validation_status=simulation_only` Pflichtfeld, `data_regime=simulation` Metrik-Label). Ausführliche Begründung: `docs/models/failure_prediction_model_card.md`.
+
+### Output-Schema (`failure/schema.py`)
+
+**Was tut es?**
+`FailurePrediction` (Pydantic, `extra=forbid`): Wahrscheinlichkeit, Horizont, Entscheidung, SHAP-`top_factors` — und **`validation_status` als Pflichtfeld ohne Default** (einziger Wert `simulation_only`), `data_regime`, `model_version`. Plus `PredictRequest` und `FailurePredictionRead` (API-Out).
+
+**Warum existiert es / wo sitzt es?**
+Die Ehrlichkeit zuerst festgenagelt: eine Vorhersage kann nicht ohne ihren Vorbehalt existieren. Konsistenz-Invarianten (decision↔Schwellwert, tz-aware) per `model_validator`.
+
+### Feature-Extraktion (`failure/features.py`)
+
+**Was tut es?**
+Reine, netzfreie Funktion: aus einem Vorlauf-Fenster VOR dem Bezugszeitpunkt ein Feature-Vektor — `readings_1m`-Aggregate je Datenpunkt (Mittel/Std/Min/Max/Range/RMS/Trend/RoC/Last), Drift-Output als Feature (Anzahl/Stärke/Zeit-seit), Wartung (Zeit seit letzter Wartung), Alarm-Historie. `to_vector` füllt fehlende Features mit NaN.
+
+**Warum existiert es / wo sitzt es?**
+Der reine Kern (DB injiziert, ohne Netz testbar). **Strikt kein Zeit-Leakage** (nur Daten `< reference_time`); **PII-frei** (Zahlen über `data_points.name`, der Training und Inferenz konsistent verbindet).
+
+### Trainingsdatensatz (`failure/dataset.py`)
+
+**Was tut es?**
+Baut je Lauf (Szenario/Seed) die Mess-Reihen in-memory über `signals.py`, leitet Drift-Events über `detect_drift_in_stream` ab, tastet Bezugszeitpunkte ab und labelt aus `ground_truth.failure` + Horizont. `split_by_seed` trennt **disjunkte Läufe**; `class_balance`/`matrix` für das Training.
+
+**Warum existiert es / wo sitzt es?**
+Offline-Trainingspfad, rein/netzfrei. Der lauf-disjunkte Split ist die Anti-Leakage-Garantie (kein zeilenweises Mischen von Fenstern desselben Laufs).
+
+### Offline-Training (`failure/train.py`)
+
+**Was tut es?**
+CLI (`python -m foreman.reasoners.failure.train`): LightGBM (binär, `scale_pos_weight`, kein SMOTE), reproduzierbar (Seed), Eval mit PR-AUC/ROC-AUC/Brier auf dem lauf-disjunkten Split, kostensensitiver Schwellwert auf der PR-Kurve. Speichert Artefakt + Metadaten; druckt das Ehrlichkeits-Banner (`train_summary`).
+
+**Warum existiert es / wo sitzt es?**
+FOREMAN trainiert nicht zur Laufzeit (§10.4) — ein reproduzierbarer Vordergrund-Schritt. Die Eval-Metriken sind **Funktionsnachweis, kein Realitätsnachweis** (so im Log benannt).
+
+### Inferenz (`failure/model.py`)
+
+**Was tut es?**
+Lädt das Artefakt-Verzeichnis (`model.txt` + `metadata.json`); `predict` liefert die Wahrscheinlichkeit (autoritativ vom Modell) + SHAP-Top-Faktoren via `TreeExplainer`. Fehlende Features (NaN) tauchen nicht als Faktor auf. Gebündeltes Demonstrator-Artefakt unter `artifacts/failure_lgbm`.
+
+**Warum existiert es / wo sitzt es?**
+Die Inferenz-Schale; `validation_status`/`data_regime`/`model_version` stammen aus den Metadaten und werden durchgereicht.
+
+### Persistenz & Orchestrierung (`migrations/versions/0005_failure_predictions.py`, `db/models.py`, `failure/service.py`)
+
+**Was tut es?**
+Migration `0005` legt `failure_predictions` an (inkl. Vorbehalt-Spalten + Lese-Index). `FailureService` lädt die DB-Daten (readings_1m, Drift-Events aus `drift_detected`-`semantic_events`, Wartung, Nicht-Drift-Alarme), baut die `FailurePrediction` und persistiert sie.
+
+**Warum existiert es / wo sitzt es?**
+Die dünne IO-Schale um die reinen Kerne. **Kein Auto-Predict, keine Aktorik.** Der Vorbehalt überlebt die Speicherung.
+
+### Routen & Modell-Dependency (`failure/router.py`, `api/deps.py`)
+
+**Was tut es?**
+On-demand `POST /api/v1/reasoners/failure/predict` (201) + `GET …/predictions(+{id})`. `FailureModelDep` lädt das Artefakt einmalig (lru_cache; Override `FOREMAN_FAILURE_MODEL_PATH`).
+
+**Warum existiert es / wo sitzt es?**
+Auth-pflichtig, on-demand (Konsistenz mit F6); jede Antwort führt den Sim-Vorbehalt mit.
+
+### Metriken & Szenario-Erweiterung (`observability/metrics.py`, `adapters/simulation/scenario.py`)
+
+**Was tut es?**
+`foreman_failure_predictions_total` (`data_regime`/`decision`) + `foreman_failure_probability` (`data_regime`) über `observe_failure_prediction`. Szenario-Format additiv um `ground_truth.failure` (strikt) erweitert; `bearing_drift`/`tool_wear`/`lubrication_correlation` mit Ausfall versehen.
+
+**Warum existiert es / wo sitzt es?**
+`data_regime=simulation` ist Pflicht-Label — der Vorbehalt ist im Monitoring sichtbar. Die Szenario-Erweiterung ist additiv (F4-Tests grün).
+
+### Tests & Kern-Akzeptanz (`tests/reasoners/failure/`)
+
+**Was tut es?**
+Reine Stufen ohne Netz (Schema/Features/Dataset/Model/Train) + E2E gegen echte DB (Service/Router). **Kern-Akzeptanz:** eine `FailurePrediction` ohne `validation_status` ist nicht konstruierbar; die E2E-Pipeline trägt `simulation_only` IMMER. Kein-Leakage und lauf-disjunkter Split sind getestet.
+
+**Warum existiert es / wo sitzt es?**
+Verifikation der Pipeline (nicht Validierung der Vorhersage — diese Grenze ist der Kern der Model Card).
+
+---
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```

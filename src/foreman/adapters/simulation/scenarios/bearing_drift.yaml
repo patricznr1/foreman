@@ -168,6 +168,12 @@ ground_truth:
     - { data_point: bearing_temp, onset: "15d", role: "späte Bestätigung" }
     - { data_point: spindle_current, onset: "12d", role: "schwaches Mitsignal" }
   expected_false_alarms: 0
+  # Ausfall-Anker (F-PRED): der kritische Lageralarm (~20d11h, >80 °C, Inspektion
+  # erforderlich) markiert das Ende des nutzbaren Betriebs = Lagerschaden. Aus
+  # diesem Zeitpunkt leitet dataset.py das Positiv-Label im Vorhersagehorizont ab.
+  failure:
+    offset: "20d11h"
+    type: bearing_failure
   narrative_anchor: >
     Der Vibrations-Drift (t*=7d) muss deutlich VOR der Werker-Notiz (~16d) und
     VOR dem Temperaturalarm (~17d) erkannt werden – das ist der Frühwarn-Mehrwert.

@@ -33,6 +33,7 @@ from foreman.logging_setup import ALERT, INFO, OK, get_logger, setup_logging
 from foreman.notes.router import router as notes_search_router
 from foreman.reasoners.drift import router as drift_router
 from foreman.reasoners.event_chain import router as event_chain_router
+from foreman.reasoners.failure import router as failure_router
 from foreman.substrate.client import SubstrateClient, SubstrateNotConfiguredError
 from foreman.substrate.smoke import run_substrate_smoke
 
@@ -55,6 +56,7 @@ _API_V1_ROUTERS = (
     substrate.router,
     drift_router.router,
     event_chain_router.router,
+    failure_router.router,
 )
 
 
