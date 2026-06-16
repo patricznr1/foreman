@@ -102,7 +102,7 @@ async def get_prediction(prediction_id: int, session: SessionDep) -> FailurePred
 
 
 @router.post(
-    "/{prediction_id}/recommendation",
+    "/predictions/{prediction_id}/recommendation",
     response_model=WorkerRecommendationRead,
     status_code=status.HTTP_201_CREATED,
 )
@@ -133,7 +133,7 @@ async def create_recommendation(
         ) from exc
 
 
-@router.get("/{prediction_id}/recommendation", response_model=WorkerRecommendationRead)
+@router.get("/predictions/{prediction_id}/recommendation", response_model=WorkerRecommendationRead)
 async def get_recommendation(
     prediction_id: int, session: SessionDep
 ) -> FailureRecommendationRecord:

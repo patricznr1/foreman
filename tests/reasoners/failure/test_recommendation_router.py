@@ -67,7 +67,7 @@ async def _seed_prediction(test_settings: Settings) -> int:
 
 
 def _rec_url(prediction_id: int) -> str:
-    return f"{_BASE}/{prediction_id}/recommendation"
+    return f"{_BASE}/predictions/{prediction_id}/recommendation"
 
 
 def _good_reply(prediction_id: int) -> str:

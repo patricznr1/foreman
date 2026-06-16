@@ -618,7 +618,7 @@ Defense-in-Depth: der Sim-Vorbehalt + die Entscheidung sind auch an der DB-Grenz
 ### Routen (`failure/router.py`, erweitert)
 
 **Was tut es?**
-On-demand `POST /api/v1/reasoners/failure/{prediction_id}/recommendation` (201) + `GET …/recommendation` (jüngste). 404 bei fehlender Vorhersage, 422 wenn der Grounding-/Vorbehalts-Guard die Empfehlung verwirft.
+On-demand `POST /api/v1/reasoners/failure/predictions/{prediction_id}/recommendation` (201) + `GET …/recommendation` (jüngste). 404 bei fehlender Vorhersage, 422 wenn der Grounding-/Vorbehalts-Guard die Empfehlung verwirft. Pfad unter dem `predictions/{id}`-Präfix (konsistent mit F-PRED + F6).
 
 **Warum existiert es / wo sitzt es?**
 Auth-pflichtig, on-demand (Kostenkontrolle, Konsistenz mit F6); jede Antwort führt den deterministischen Vorbehalt mit.
