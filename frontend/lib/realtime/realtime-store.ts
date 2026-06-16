@@ -173,6 +173,14 @@ export class RealtimeStore {
     if (state === undefined) {
       return;
     }
+    // Geplanten Flush abbrechen, sonst überschreibt er den Fehlerzustand wieder
+    // mit Daten (error: null) — Review-Fix.
+    if (state.flushHandle !== null) {
+      this.clearTimeoutFn(state.flushHandle);
+      state.flushHandle = null;
+    }
+    state.pending = undefined;
+    state.hasPending = false;
     // Letzte Daten als Cache behalten (Degradation friert ein, leert nicht).
     state.view = { data: state.view.data, error: reason, loaded: state.view.loaded };
     this.notify(state);

@@ -6,6 +6,8 @@
 //         Der Vorbehalt nutzt die eigene Signalfarbe (note-caveat), NICHT Rot.
 //  Architektur-Einordnung: Atom (Schicht 2). Rein präsentational.
 // ============================================================
+import { cx } from "@/lib/ui/cx";
+
 export type Freshness = "live" | "cached";
 
 export interface ProvenanceStampProps {
@@ -17,10 +19,6 @@ export interface ProvenanceStampProps {
   /** Simulations-/Unsicherheits-Vorbehalt sichtbar machen (ruhige Signalfarbe). */
   caveat?: boolean;
   className?: string;
-}
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
 }
 
 function formatStamp(value: Date | string | null | undefined): string | null {

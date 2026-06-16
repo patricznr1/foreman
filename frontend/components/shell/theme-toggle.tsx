@@ -23,7 +23,11 @@ export function ThemeToggle() {
     const next: ThemeName = theme === "dark" ? "hc-light" : "dark";
     setTheme(next);
     applyTheme(next);
-    localStorage.setItem(THEME_STORAGE_KEY, next);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch {
+      // Persistenz blockiert (Privacy-Modus) — Theme gilt für die Sitzung.
+    }
   }
 
   return (

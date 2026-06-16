@@ -76,6 +76,12 @@ export class WebSocketTransport implements Transport {
     if (this.socket !== null || this.status === "connecting") {
       return;
     }
+    // Geplanten Reconnect-Timer verwerfen — sonst läuft neben diesem open() später
+    // noch der Timer-open() und erzeugt einen zweiten Socket (Review-Fix).
+    if (this.reconnectHandle !== null) {
+      this.options.clearTimeoutFn?.(this.reconnectHandle);
+      this.reconnectHandle = null;
+    }
     this.intentionalClose = false;
     this.setStatus("connecting");
     void this.open();
@@ -140,6 +146,10 @@ export class WebSocketTransport implements Transport {
   // — intern —
 
   private async open(): Promise<void> {
+    // Härtung: nie öffnen, wenn bereits ein Socket existiert (kein Doppel-Socket).
+    if (this.socket !== null) {
+      return;
+    }
     let token: string | null;
     try {
       token = await this.options.getToken();

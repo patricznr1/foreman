@@ -10,11 +10,16 @@ import { contrastRatio } from "./contrast";
 import { type SemanticColorToken, THEME_NAMES, themes } from "./themes";
 
 // Farben, die als Status-/Grafik-/Bedienelement getragen werden → ≥ 3:1 (WCAG 1.4.11).
+// Status-/Bedien-Farben → ≥ 3:1 (WCAG 1.4.11). NICHT enthalten: die Daten-/
+// Heatmap-/Differenz-Palette (data-series-*, heatmap-*, diff-*, data-normalband) —
+// das sind sequenzielle Daten-Skalen bzw. schraffur-gestützte Differenzflächen,
+// die nach Ordnung/Mehrkanaligkeit bewertet werden, nicht über die 3:1-Schwelle.
 const GRAPHIC_TOKENS: readonly SemanticColorToken[] = [
   "alarm-critical",
   "alarm-high",
   "alarm-medium",
   "alarm-low",
+  "alarm-journal",
   "state-failure",
   "state-check",
   "state-outofspec",
@@ -27,7 +32,6 @@ const GRAPHIC_TOKENS: readonly SemanticColorToken[] = [
 describe("Design-Tokens: Kontrast-Schwellen (Studie §5.2/§5.8)", () => {
   for (const theme of THEME_NAMES) {
     const t = themes[theme];
-    const canvas = t["surface-canvas"];
 
     // Text wird auf ALLEN Flächen getragen (canvas/raised/overlay) — gegen alle prüfen,
     // nicht nur gegen canvas (Review-Fix: schließt die verschleierte Test-Lücke).
@@ -51,8 +55,10 @@ describe("Design-Tokens: Kontrast-Schwellen (Studie §5.2/§5.8)", () => {
     });
 
     for (const token of GRAPHIC_TOKENS) {
-      it(`${theme}: ${token} ≥ 3:1 auf canvas (Grafik/Bedienelement)`, () => {
-        expect(contrastRatio(t[token], canvas)).toBeGreaterThanOrEqual(3);
+      it(`${theme}: ${token} ≥ 3:1 auf allen Flächen (Grafik/Bedienelement)`, () => {
+        for (const surface of surfaces) {
+          expect(contrastRatio(t[token], t[surface])).toBeGreaterThanOrEqual(3);
+        }
       });
     }
   }

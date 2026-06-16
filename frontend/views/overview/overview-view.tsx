@@ -47,7 +47,9 @@ function OverviewContent({
   freshness: "live" | "cached";
 }) {
   const healthy = overview.by_status.healthy ?? 0;
-  const drift = overview.by_status.drift_active ?? 0;
+  // „Abweichung" = nicht im Normalbetrieb: Drift UND offene Warnungen (sonst fiele
+  // eine open_warning-Maschine aus dem Statusbild — Review-Fix).
+  const deviating = (overview.by_status.drift_active ?? 0) + (overview.by_status.open_warning ?? 0);
   const openAlarms = overview.open_alarm_total;
 
   return (
@@ -60,8 +62,8 @@ function OverviewContent({
         <KpiTile label="Maschinen im Normalbetrieb" value={healthy} status="ok" />
         <KpiTile
           label="Maschinen mit Abweichung"
-          value={drift}
-          status={drift > 0 ? "outofspec" : "ok"}
+          value={deviating}
+          status={deviating > 0 ? "outofspec" : "ok"}
         />
         <KpiTile
           label="Offene Alarme"

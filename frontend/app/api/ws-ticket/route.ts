@@ -20,5 +20,9 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ detail: "Nicht angemeldet" }, { status: 401 });
   }
   // TODO(§21.8): durch ein backend-geprägtes, kurzlebiges WS-Ticket ersetzen.
-  return NextResponse.json({ token });
+  // no-store: das Secret darf nicht in Browser-/Proxy-Caches landen.
+  return NextResponse.json(
+    { token },
+    { headers: { "cache-control": "no-store, private, max-age=0" } },
+  );
 }

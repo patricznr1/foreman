@@ -6,6 +6,7 @@
 //         ausschließlich für unquittiert-kritische Zustände (§5.6).
 //  Architektur-Einordnung: Atom (Schicht 2). Rein präsentational, transport-frei.
 // ============================================================
+import { cx } from "@/lib/ui/cx";
 import { FCSM_LABEL, FCSM_LETTER, type Fcsm } from "@/lib/ui/wording";
 
 export type StatusIndicatorSize = "s" | "m" | "l";
@@ -41,10 +42,6 @@ const LABEL: Record<StatusIndicatorSize, string> = {
   m: "text-body",
   l: "text-body-l",
 };
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
 
 export function StatusIndicator({
   status,

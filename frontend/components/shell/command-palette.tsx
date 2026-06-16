@@ -114,7 +114,6 @@ export function CommandPalette() {
               className="w-full bg-transparent px-4 py-3 text-body text-fg-primary outline-none"
             />
             <ul
-              role="listbox"
               aria-label="Sprungziele"
               className="max-h-72 overflow-auto border-t border-line-subtle"
             >
@@ -122,7 +121,7 @@ export function CommandPalette() {
                 <li className="px-4 py-3 text-caption text-fg-muted">Kein Treffer</li>
               ) : (
                 filtered.map((item, index) => (
-                  <li key={item.id} role="option" aria-selected={index === activeIndex}>
+                  <li key={item.id}>
                     <button
                       type="button"
                       onClick={() => go(item)}

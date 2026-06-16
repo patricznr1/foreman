@@ -85,6 +85,11 @@ describe("Durchstich: OverviewView", () => {
 
     expect(screen.getByText("3")).toBeInTheDocument(); // offene Alarme aktualisiert
     expect(screen.getByText(/Live/)).toBeInTheDocument(); // Herkunft jetzt live
+    // open_warning-Maschine fällt NICHT aus dem Statusbild (Review-Fix): die
+    // Kachel „Maschinen mit Abweichung" zählt drift_active + open_warning = 1.
+    const deviationTile = screen.getByText("Maschinen mit Abweichung").closest("div");
+    expect(deviationTile).not.toBeNull();
+    expect(deviationTile).toHaveTextContent("1");
   });
 
   it("ohne Snapshot und ohne Daten: Lade-Zustand (kein weißer Screen)", () => {

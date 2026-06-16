@@ -19,15 +19,19 @@ import {
 
 export function ThemeController() {
   useEffect(() => {
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    if (isThemeName(storedTheme)) {
-      applyTheme(storedTheme);
-    } else if (window.matchMedia("(prefers-contrast: more)").matches) {
-      applyTheme("hc-light");
-    }
-    const storedDensity = localStorage.getItem(DENSITY_STORAGE_KEY);
-    if (isDensity(storedDensity)) {
-      applyDensity(storedDensity);
+    try {
+      const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+      if (isThemeName(storedTheme)) {
+        applyTheme(storedTheme);
+      } else if (window.matchMedia?.("(prefers-contrast: more)").matches) {
+        applyTheme("hc-light");
+      }
+      const storedDensity = localStorage.getItem(DENSITY_STORAGE_KEY);
+      if (isDensity(storedDensity)) {
+        applyDensity(storedDensity);
+      }
+    } catch {
+      // localStorage/matchMedia blockiert (Privacy-Modus) → Defaults behalten.
     }
   }, []);
 

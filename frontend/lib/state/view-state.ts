@@ -45,6 +45,10 @@ export function deriveDataState<T>(
   }
 
   const typed = data as T;
+  // Defensiv: geladen, aber kein Inhalt (Upstream lieferte null/undefined) → leer.
+  if (typed === undefined || typed === null) {
+    return { kind: "empty" };
+  }
   const empty = options.isEmpty ? options.isEmpty(typed) : false;
   if (empty) {
     return { kind: "empty" };

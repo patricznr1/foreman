@@ -95,4 +95,22 @@ describe("RealtimeStore — Stream-Ebene", () => {
     expect(stored.error).toBe("forbidden");
     expect((stored.data as { n: number }).n).toBe(1); // Cache bleibt erhalten
   });
+
+  it("ein Fehler bricht einen geplanten Flush ab (kein Overwrite des Fehlerzustands)", () => {
+    const transport = new FakeTransport();
+    const store = new RealtimeStore(transport, { throttleMs: 100 });
+    store.connect();
+    store.subscribeTopic("machine:1", () => {});
+
+    transport.emit("machine:1", { n: 1 });
+    vi.advanceTimersByTime(100); // erster Wert geflusht → Cache {n:1}
+
+    transport.emit("machine:1", { n: 2 }); // plant einen Flush in 100 ms
+    transport.emitError("machine:1", "offline"); // muss den geplanten Flush abbrechen
+    vi.advanceTimersByTime(100); // der abgebrochene Flush darf NICHT überschreiben
+
+    const stored = store.getTopicView("machine:1");
+    expect(stored.error).toBe("offline");
+    expect((stored.data as { n: number }).n).toBe(1); // Cache bleibt, kein n:2, kein null
+  });
 });

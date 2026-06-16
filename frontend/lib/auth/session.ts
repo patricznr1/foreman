@@ -34,6 +34,8 @@ export async function fetchCurrentUser(token: string): Promise<CurrentUser | nul
     const response = await fetch(`${backendUrl()}/api/v1/me`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
+      // Timeout: ein hängendes Backend darf den Auth-/Guard-Pfad nicht blockieren.
+      signal: AbortSignal.timeout(5_000),
     });
     if (!response.ok) {
       return null;

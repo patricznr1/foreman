@@ -46,9 +46,14 @@ export const LANDING_ROUTE: Record<Role, string> = {
   technician: "/machines",
 };
 
-/** Landing-Route mit Fallback für unbekannte Rollen (offener Backend-String). */
+/**
+ * Landing-Route mit sicherem Fallback für unbekannte Rollen (offener Backend-String).
+ * Fallback ist `/login` (ungeschützt) — NICHT eine sektionsgebundene Route: eine
+ * unbekannte Rolle hat default-deny auf jede Sektion, ein Section-Landing würde
+ * über den Guard sonst eine Redirect-Schleife auslösen (Review-Fix).
+ */
 export function landingRoute(role: Role): string {
-  return LANDING_ROUTE[role] ?? "/machines";
+  return LANDING_ROUTE[role] ?? "/login";
 }
 
 export interface NavItem {

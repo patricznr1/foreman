@@ -5,6 +5,7 @@
 //         Live-Werte beim Update nicht springen (§5.3).
 //  Architektur-Einordnung: Atom (Schicht 2). Rein präsentational.
 // ============================================================
+import { cx } from "@/lib/ui/cx";
 import type { Fcsm } from "@/lib/ui/wording";
 import { StatusIndicator } from "./status-indicator";
 
@@ -28,10 +29,6 @@ const TREND_LABEL: Record<Trend, string> = {
   down: "fallend",
   flat: "gleichbleibend",
 };
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
 
 function Sparkline({ values }: { values: number[] }) {
   const width = 72;

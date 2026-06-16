@@ -6,7 +6,7 @@
 // ============================================================
 import { describe, expect, it } from "vitest";
 import type { Role } from "../api/contracts";
-import { ACCESS_MATRIX, LANDING_ROUTE, canAccessSection, visibleNav } from "./roles";
+import { ACCESS_MATRIX, canAccessSection, landingRoute, visibleNav } from "./roles";
 
 const ROLES: readonly Role[] = ["worker", "shift_lead", "technician", "manager"];
 
@@ -50,10 +50,14 @@ describe("Rollenmatrix 3.1", () => {
     expect(ids).toContain("platform");
   });
 
-  it("Landing: Manager/Schichtleiter → Cockpit, Werker/Techniker → Maschinen", () => {
-    expect(LANDING_ROUTE.manager).toBe("/overview");
-    expect(LANDING_ROUTE.shift_lead).toBe("/overview");
-    expect(LANDING_ROUTE.worker).toBe("/machines");
-    expect(LANDING_ROUTE.technician).toBe("/machines");
+  it("landingRoute(): Manager/Schichtleiter → Cockpit, Werker/Techniker → Maschinen", () => {
+    expect(landingRoute("manager")).toBe("/overview");
+    expect(landingRoute("shift_lead")).toBe("/overview");
+    expect(landingRoute("worker")).toBe("/machines");
+    expect(landingRoute("technician")).toBe("/machines");
+  });
+
+  it("landingRoute(): unbekannte Rolle → sicherer /login-Fallback (keine Redirect-Schleife)", () => {
+    expect(landingRoute("ghost" as Role)).toBe("/login");
   });
 });

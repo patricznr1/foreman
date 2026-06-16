@@ -26,17 +26,39 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ detail: "E-Mail und Passwort erforderlich" }, { status: 400 });
   }
 
-  const loginResponse = await fetch(`${backendUrl()}/auth/login`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email: body.email, password: body.password }),
-    cache: "no-store",
-  });
-  if (!loginResponse.ok) {
-    return NextResponse.json({ detail: "Ungültige Anmeldedaten" }, { status: 401 });
+  let accessToken: string;
+  try {
+    const loginResponse = await fetch(`${backendUrl()}/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: body.email, password: body.password }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (loginResponse.status === 401) {
+      return NextResponse.json({ detail: "Ungültige Anmeldedaten" }, { status: 401 });
+    }
+    if (!loginResponse.ok) {
+      return NextResponse.json(
+        { detail: "Authentifizierungsdienst nicht erreichbar" },
+        { status: 502 },
+      );
+    }
+    const data = (await loginResponse.json().catch(() => null)) as { access_token?: string } | null;
+    if (!data?.access_token) {
+      return NextResponse.json(
+        { detail: "Authentifizierungsdienst nicht erreichbar" },
+        { status: 502 },
+      );
+    }
+    accessToken = data.access_token;
+  } catch {
+    return NextResponse.json(
+      { detail: "Authentifizierungsdienst nicht erreichbar" },
+      { status: 502 },
+    );
   }
 
-  const { access_token: accessToken } = (await loginResponse.json()) as { access_token: string };
   const user = await fetchCurrentUser(accessToken);
   if (user === null) {
     return NextResponse.json({ detail: "Profil nicht abrufbar" }, { status: 502 });

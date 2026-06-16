@@ -11,27 +11,32 @@
 
 import { ProvenanceStamp } from "@/components/atoms/provenance-stamp";
 import { StatusIndicator } from "@/components/atoms/status-indicator";
-import type { FleetOverviewOut } from "@/lib/api/contracts";
+import type { FleetOverviewOut, MachineStatus } from "@/lib/api/contracts";
 import { canAccessSection } from "@/lib/auth/roles";
 import { useSession } from "@/lib/auth/use-session";
 import { useRealtimeStore } from "@/lib/realtime/realtime-context";
 import { useTopicState } from "@/lib/state/use-topic";
-import type { Fcsm } from "@/lib/ui/wording";
+import { MACHINE_STATUS_LABEL, MACHINE_STATUS_TO_FCSM } from "@/lib/ui/wording";
 import { CommandPalette } from "./command-palette";
 import { type ScopeCrumb, ScopeBreadcrumb } from "./scope-breadcrumb";
 import { ThemeToggle } from "./theme-toggle";
 
 const DEFAULT_SCOPE: ScopeCrumb[] = [{ label: "Flotte", href: "/overview" }];
 
-/** Schlimmster Zustand der Flotte als ruhige Severity-Rampe (ok → S → C). */
-function worstStatus(overview: FleetOverviewOut): Fcsm {
+/**
+ * Dringlichster Flottenzustand. Reihenfolge nach Studie 4C: offene Alarme sind
+ * dringlicher als die (weicheren) Drift-Warnungen. Rückgabe ist der komponierte
+ * MachineStatus — Farbe UND Label leiten sich daraus konsistent ab (kein
+ * irreführendes FCSM-Wording, Review-Fix).
+ */
+function worstMachineStatus(overview: FleetOverviewOut): MachineStatus {
   if ((overview.by_status.open_warning ?? 0) > 0) {
-    return "check";
+    return "open_warning";
   }
   if ((overview.by_status.drift_active ?? 0) > 0) {
-    return "outofspec";
+    return "drift_active";
   }
-  return "ok";
+  return "healthy";
 }
 
 /** Live-Aggregat — nur für Rollen mit Cockpit-Zugriff (sonst kein overview-Abo). */
@@ -41,9 +46,14 @@ function FleetLiveBadge() {
 
   if (state.kind === "live" || state.kind === "cached") {
     const overview = state.data;
+    const worst = worstMachineStatus(overview);
     return (
       <div className="flex items-center gap-3" aria-live="polite">
-        <StatusIndicator status={worstStatus(overview)} size="s" />
+        <StatusIndicator
+          status={MACHINE_STATUS_TO_FCSM[worst]}
+          label={MACHINE_STATUS_LABEL[worst]}
+          size="s"
+        />
         <span className="text-caption tabular-nums text-fg-secondary">
           {overview.open_alarm_total} offene Alarme
         </span>

@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=20 <25"
+  },
   "description": "FOREMAN Frontend — industrielle Production-Intelligence-Oberfläche (ISA-101-ruhig, Echtzeit, rollenbasiert). Designgrundlage: docs/research/FOREMAN_Designstudie_Frontend.md.",
   "scripts": {
     "dev": "next dev",

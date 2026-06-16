@@ -99,8 +99,11 @@ function main(): void {
       console.error("❌ tokens.generated.css fehlt — `npm run tokens:build` ausführen.");
       process.exit(1);
     }
+    // Zeilenende-agnostisch vergleichen: git kann beim Checkout LF→CRLF wandeln
+    // (Windows). Der inhaltliche Abgleich darf daran nicht scheitern.
+    const normalize = (value: string): string => value.replace(/\r\n/g, "\n");
     const current = readFileSync(OUT_PATH, "utf8");
-    if (current !== css) {
+    if (normalize(current) !== normalize(css)) {
       console.error(
         "❌ tokens.generated.css weicht von der Token-Quelle ab — `npm run tokens:build` ausführen und committen.",
       );
