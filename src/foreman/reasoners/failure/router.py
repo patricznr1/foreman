@@ -1,15 +1,17 @@
 # ============================================================
 #  FOREMAN — reasoners/failure/router.py
-#  Zweck: HTTP-Routen des Ausfallvorhersage-Reasoners (F-PRED) unter
-#         /api/v1/reasoners/failure/: on-demand Vorhersage (POST) + Abruf
-#         persistierter Vorhersagen (GET).
+#  Zweck: HTTP-Routen des Ausfallvorhersage-Reasoners (F-PRED) + des Erklär-Layers
+#         (F-REC) unter /api/v1/reasoners/failure/: on-demand Vorhersage (POST) +
+#         Abruf persistierter Vorhersagen (GET); on-demand LLM-Werker-Empfehlung
+#         zu einer Vorhersage (POST) + Abruf (GET).
 #  Architektur-Einordnung: HTTP-Schicht (Schicht 2). BEWUSST on-demand: KEIN
-#         Auto-Predict (Konsistenz mit F6, §14.3). KEINE Aktorik — der Reasoner
-#         empfiehlt, schaltet nichts.
+#         Auto-Predict / KEIN Auto-LLM (Konsistenz mit F6, §14.3). KEINE Aktorik —
+#         der Reasoner empfiehlt, schaltet nichts.
 #  Auth: alle /api/v1-Routen liegen hinter der AuthMiddleware; POST verlangt
-#         zusätzlich einen authentifizierten Operator.
-#  Ehrlichkeit (§16): Jede Antwort (FailurePredictionRead) führt den Sim-Vorbehalt
-#         (validation_status/data_regime/model_version) mit.
+#         zusätzlich einen authentifizierten Operator (LLM-Kostenschutz).
+#  Ehrlichkeit (§16): Jede Antwort führt den Sim-Vorbehalt mit
+#         (validation_status/data_regime/model_version; bei F-REC zusätzlich der
+#         deterministische validation_caveat).
 # ============================================================
 from __future__ import annotations
 
@@ -19,9 +21,25 @@ from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, FailureModelDep, SessionDep
-from foreman.db.models import FailurePredictionRecord
-from foreman.reasoners.failure.schema import FailurePredictionRead, PredictRequest
+from foreman.api.deps import (
+    CurrentUser,
+    FailureModelDep,
+    GatewayDep,
+    SessionDep,
+    SubstrateClientDep,
+)
+from foreman.db.models import FailurePredictionRecord, FailureRecommendationRecord
+from foreman.reasoners.failure.recommendation import (
+    NumericGroundingError,
+    PredictionNotFoundError,
+    RecommendationOverclaimError,
+    RecommendationService,
+)
+from foreman.reasoners.failure.schema import (
+    FailurePredictionRead,
+    PredictRequest,
+    WorkerRecommendationRead,
+)
 from foreman.reasoners.failure.service import FailureService, MachineNotFoundError
 
 router = APIRouter(prefix="/reasoners/failure", tags=["failure"])
@@ -76,5 +94,59 @@ async def get_prediction(prediction_id: int, session: SessionDep) -> FailurePred
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Vorhersage nicht gefunden"
+        )
+    return record
+
+
+# --- F-REC: LLM-Werker-Empfehlung (Erklär-Layer über der Vorhersage) ---
+
+
+@router.post(
+    "/{prediction_id}/recommendation",
+    response_model=WorkerRecommendationRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_recommendation(
+    prediction_id: int,
+    session: SessionDep,
+    gateway: GatewayDep,
+    substrate: SubstrateClientDep,
+    current_user: CurrentUser,
+) -> FailureRecommendationRecord:
+    """Erzeugt on-demand eine LLM-Werker-Empfehlung zu einer Vorhersage und persistiert sie.
+
+    404, wenn die Vorhersage nicht existiert. 422, wenn die erzeugte Empfehlung den
+    Grounding-/Vorbehalts-Guard nicht besteht (unbelegte Zahl — Invariante I — bzw.
+    Umdeutung des Sim-Vorbehalts — Invariante II); in dem Fall wird NICHTS persistiert.
+    KEIN Auto-LLM (on-demand, Kostenkontrolle). KEINE Aktorik."""
+    service = RecommendationService(session=session, gateway=gateway, substrate=substrate)
+    try:
+        return await service.recommend(prediction_id)
+    except PredictionNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Vorhersage nicht gefunden"
+        ) from exc
+    except (NumericGroundingError, RecommendationOverclaimError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Empfehlung verworfen: Grounding-/Vorbehalts-Guard nicht bestanden",
+        ) from exc
+
+
+@router.get("/{prediction_id}/recommendation", response_model=WorkerRecommendationRead)
+async def get_recommendation(
+    prediction_id: int, session: SessionDep
+) -> FailureRecommendationRecord:
+    """Liefert die jüngste persistierte Empfehlung zu einer Vorhersage. 404, wenn keine."""
+    stmt = (
+        select(FailureRecommendationRecord)
+        .where(FailureRecommendationRecord.prediction_id == prediction_id)
+        .order_by(FailureRecommendationRecord.created_at.desc())
+        .limit(1)
+    )
+    record = (await session.scalars(stmt)).first()
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Empfehlung nicht gefunden"
         )
     return record

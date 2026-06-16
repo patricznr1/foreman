@@ -563,6 +563,76 @@ Verifikation der Pipeline (nicht Validierung der Vorhersage — diese Grenze ist
 
 ---
 
+## F-REC — LLM-Werker-Empfehlung (`src/foreman/reasoners/failure/`, Erklär-Layer)
+
+> **Die Ehrlichkeit in die Sprache getragen.** Der Erklär-Layer über F-PRED und **zweiter Konsument des `LLMGateway`** nach F6. Aus einer bestehenden `FailurePrediction` macht das LLM eine deutsche, handlungsleitende Werker-Empfehlung. Zwei Invarianten sind strukturell erzwungen: **(I)** Zahlen autoritativ vom Modell (numerischer Post-Check *rejectet* unbelegte Zahlen — anders als F6, das *flaggt*), **(II)** deterministischer Sim-Vorbehalt (`validation_caveat`, nie LLM-generiert).
+
+### Output-Schema (`failure/schema.py`, erweitert)
+
+**Was tut es?**
+`WorkerRecommendation` (Pydantic, `extra=forbid`, frozen): `recommendation_text` (geguardeter LLM-Output), `validation_caveat` (deterministisch), `validation_status`/`data_regime`/`model_version` (mitgeführt), `referenced_source_ids` ⊆ `allowed_source_ids`, und die aus der Vorhersage geerbten autoritativen Zahlen (`probability`/`horizon_h`/`decision`). Plus `validation_caveat_for(...)` (das deterministische Vorbehalts-Mapping) und `WorkerRecommendationRead` (API-Out).
+
+**Warum existiert es / wo sitzt es?**
+Die Ehrlichkeit zuerst festgenagelt: ein `model_validator` erzwingt `validation_caveat == validation_caveat_for(validation_status)` (Invariante II — der Vorbehalt ist nicht durch LLM-Text ersetzbar) **und** `referenced ⊆ allowed` (Output-Guard).
+
+### NEXUS-Recall ähnlicher Vorlauf-Muster (`failure/recall.py`)
+
+**Was tut es?**
+`build_runup_query` bildet aus Maschinenklasse + Top-Faktor-Signatur + Entscheidung eine **PII-freie** Query; `recall_similar_runups` ruft über den `SubstrateClient` ähnliche frühere Vorläufe ab. Die defensive Mapping-Mechanik (`RecallItem`/`map_recall_response`) wird aus dem F6-Recall wiederverwendet.
+
+**Warum existiert es / wo sitzt es?**
+**Strikt best-effort:** kein Substrat / Ausfall → leere Liste (die Empfehlung wird ohne historischen Kontext erzeugt, blockiert nie). Recall-Inhalte sind externer Freitext → in den Grounding-Quellen untrusted.
+
+### Grounding-Quellen (`failure/grounding.py`)
+
+**Was tut es?**
+`build_recommendation_sources`: die Vorhersage (`pred:<id>`) + je SHAP-Faktor (`factor:<name>`) als `trusted=True` (ihr Content trägt die autoritativen Zahlen — inkl. `machine_id`, damit sie belegt ist); je Recall-Treffer (`recall:<n>`) als `trusted=False`.
+
+**Warum existiert es / wo sitzt es?**
+Die Sicherheits-Invariante: nur was im trusted-Content steht, ist eine belegte Zahl (Beleg-Basis für den numerischen Post-Check). Recall-Freitext belegt nie eine Zahl.
+
+### Prompts (`failure/prompts.py`)
+
+**Was tut es?**
+`RECOMMENDATION_SYSTEM_PROMPT` (Erklär-Layer, kein Akteur): nur aus den Quellen, **keine eigenen Zahlen einführen / nichts umrechnen**, den Sim-Charakter benennen, GENAU EINE Handlungsempfehlung mit Begründung über die Faktoren, keine Aktorik. `build_recommendation_user_prompt` liefert nur das strukturelle Faktor-Gerüst (Inhalt kommt gespotlightet über die Quellen).
+
+**Warum existiert es / wo sitzt es?**
+Reine, testbare Funktionen. Der untrusted Recall-Freitext geht nur über die (gespotlighteten) Quellen ins Gateway, nie inline.
+
+### Orchestrierung & Guards (`failure/recommendation.py`)
+
+**Was tut es?**
+`RecommendationService.recommend`: lädt die `FailurePrediction` (404 wenn fehlt) → Recall → Grounding-Quellen → `gateway.complete(task=explanation)` → **(I) numerischer Post-Check** (`GroundingReport.unbacked` nicht leer → `NumericGroundingError`, harter Reject) → **(II) Negativ-Guard** (`detect_overclaim` → `RecommendationOverclaimError`) → `build_recommendation` (Output-Guard: Zitate gegen Whitelist, Sanitisierung LLM05, deterministischer Vorbehalt) → Persistenz + Dual-Write.
+
+**Warum existiert es / wo sitzt es?**
+Die zwei Invarianten als scharfe Gates: keine Empfehlung mit erfundener Zahl oder umgedeutetem Vorbehalt wird je persistiert. **Kein Auto-LLM, keine Aktorik.** Reasoner importiert nur `foreman.llm`.
+
+### Persistenz & Dual-Write (`migrations/versions/0007_failure_recommendations.py`, `db/models.py`)
+
+**Was tut es?**
+Migration `0007` legt `failure_recommendations` an (FK auf `failure_predictions`, Caveat-/Vorbehalt-/Zahl-Spalten, CHECK-Constraints, Indizes). `_persist` schreibt den `FailureRecommendationRecord`; `_mirror` spiegelt eine PII-freie Zusammenfassung als `semantic_event` (`event_type=failure_recommendation`, **`data_regime=simulation`** im Payload).
+
+**Warum existiert es / wo sitzt es?**
+Defense-in-Depth: der Sim-Vorbehalt + die Entscheidung sind auch an der DB-Grenze erzwungen. Das Gedächtnis legt die Sim-Empfehlung nie als reale Prognose ab.
+
+### Routen (`failure/router.py`, erweitert)
+
+**Was tut es?**
+On-demand `POST /api/v1/reasoners/failure/{prediction_id}/recommendation` (201) + `GET …/recommendation` (jüngste). 404 bei fehlender Vorhersage, 422 wenn der Grounding-/Vorbehalts-Guard die Empfehlung verwirft.
+
+**Warum existiert es / wo sitzt es?**
+Auth-pflichtig, on-demand (Kostenkontrolle, Konsistenz mit F6); jede Antwort führt den deterministischen Vorbehalt mit.
+
+### Metriken & Red-Team (`observability/metrics.py`, `tests/reasoners/failure/security/test_recommendation_injection.py`)
+
+**Was tut es?**
+`foreman_failure_recommendation_total` (`data_regime`/`result`) + `foreman_failure_recommendation_recall_total` (`result`). Red-Team scharf über den **Recall-Pfad**: vergifteter Substrat-Inhalt kapert die Empfehlung nicht (Spotlighting hält, Output-Guard greift, numerischer Reject bei fabrizierter Zahl, Vorbehalt nicht umdeutbar, Inertheit).
+
+**Warum existiert es / wo sitzt es?**
+`data_regime=simulation` Pflicht-Label. Der Recall-Pfad ist die Angriffsfläche von F-REC (leichter als F6 — keine Werkernotizen — aber scharf geprüft).
+
+---
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```

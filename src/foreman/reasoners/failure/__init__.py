@@ -15,5 +15,11 @@
 #         `validation_status=simulation_only` als Pflichtfeld (schema.py), jede
 #         Metrik das Label `data_regime=simulation`. Begründung im Detail:
 #         docs/models/failure_prediction_model_card.md.
+#
+#  F-REC (Erklär-Layer, zweiter Modul-Teil): die LLM-Werker-Empfehlung über einer
+#         FailurePrediction (recommendation.py + recall.py + grounding.py + prompts.py).
+#         Zweiter Konsument des LLM-Gateways nach F6. Zwei Invarianten: (I) Zahlen
+#         autoritativ vom Modell (numerischer Post-Check rejectet erfundene Zahlen),
+#         (II) deterministischer Sim-Vorbehalt (validation_caveat, nie LLM-generiert).
 # ============================================================
 from __future__ import annotations

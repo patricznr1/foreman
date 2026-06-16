@@ -21,10 +21,13 @@ from foreman.llm.errors import (
     RateLimited,
 )
 from foreman.llm.gateway import GatewayResponse, LiteLLMGateway, LLMGateway, Task
-from foreman.llm.grounding import GroundingReport, GroundingSource
+from foreman.llm.grounding import GroundingReport, GroundingSource, check_grounding
 
 # Öffentliche Reasoner-Schnittstelle (sortiert; Gruppen: Gateway, Grounding,
-# Config, Fehlerhierarchie — Details im Modul-Header).
+# Config, Fehlerhierarchie — Details im Modul-Header). `check_grounding` ist die
+# autoritative Numerik-Abwehr auf Reasoner-Ebene (§13.3): ein Reasoner mit
+# Hart-Reject-Vertrag (F-REC) wertet sie SELBST aus, unabhängig von der global
+# abschaltbaren Gateway-Option `grounding_enabled` (fail-closed).
 __all__ = [
     "BackendUnavailable",
     "GatewayConfigError",
@@ -40,5 +43,6 @@ __all__ = [
     "Priority",
     "RateLimited",
     "Task",
+    "check_grounding",
     "get_llm_settings",
 ]
