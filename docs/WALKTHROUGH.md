@@ -4,7 +4,7 @@
 >
 > **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
-**Stand:** 2026-06-14 · F6 — Ereignisketten-Reasoner (erster LLM-Freitext-Reasoner + erster Konsument des LLMGateway: Ketten-Konstruktion, NEXUS-Recall ähnlicher Vorfälle, Grounding-Quellen mit untrusted `worker_notes`, gegroundete Erzählung über `gateway.complete(task=synthesis)`, Output-Guard, Red-Team scharf) auf F-LLM (Modell-Gateway), F4 (Drift-Reasoner), F3 (Datenakquise & Adapterschicht) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
+**Stand:** 2026-06-16 · F-REC — LLM-Werker-Empfehlung (Erklär-Layer über F-PRED, zweiter Konsument des LLMGateway: Vorhersage+SHAP als trusted Grounding-Quellen, NEXUS-Recall als untrusted Kontext, deutsche Handlungsempfehlung über `gateway.complete(task=explanation)`, zwei Invarianten — Zahlen autoritativ vom Modell mit fail-closed Hart-Reject + deterministischer Sim-Vorbehalt, Red-Team über den Recall-Pfad) auf F-PRED (Ausfallvorhersage), F-SEM (semantische Notiz-Suche), F6 (Ereignisketten-Reasoner), F-LLM (Modell-Gateway), F4 (Drift-Reasoner), F3 (Datenakquise & Adapterschicht) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
 
 ---
 

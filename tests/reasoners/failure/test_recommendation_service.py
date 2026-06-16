@@ -164,10 +164,13 @@ async def test_unbekannte_vorhersage_wirft(
         await service.recommend(999_999)
 
 
-async def test_db_check_erzwingt_sim_vorbehalt_im_caveat(raw_conn: asyncpg.Connection) -> None:
-    # Defense-in-Depth: der Sim-Vorbehalt ist auch im CAVEAT-TEXT an der
-    # PERSISTENZGRENZE gebunden — ein pydantic-umgehender Direkt-Insert mit
-    # umgedeutetem Vorbehalt (ohne Sim-Marker) wird vom DB-CHECK abgewiesen.
+async def test_db_check_erzwingt_exakten_sim_vorbehalt_im_caveat(
+    raw_conn: asyncpg.Connection,
+) -> None:
+    # Defense-in-Depth: der Caveat-TEXT ist an der PERSISTENZGRENZE EXAKT an den
+    # deterministischen Sim-Vorbehalt gebunden. Ein umgedeuteter Caveat, der zwar das
+    # Wort 'simulierten' enthält (ein Marker-Check hätte ihn durchgelassen), aber den
+    # Sim-Charakter umkehrt, wird vom exakten DB-CHECK abgewiesen.
     machine_id = await raw_conn.fetchval(
         "INSERT INTO machines (label, machine_class) VALUES ('M', 'cnc') RETURNING id"
     )
@@ -185,8 +188,42 @@ async def test_db_check_erzwingt_sim_vorbehalt_im_caveat(raw_conn: asyncpg.Conne
             "(prediction_id, machine_id, recommendation_text, validation_caveat, "
             "validation_status, data_regime, model_version, referenced_source_ids, "
             "horizon_h, probability, decision) "
-            "VALUES ($1, $2, 'x', 'Diese Prognose ist real validiert und gesichert.', "
+            "VALUES ($1, $2, 'x', "
+            "'Beruht auf simulierten Verläufen, ist aber real validiert.', "
             "'simulation_only', 'simulation', 'v', '[]'::jsonb, 336, 0.5, 'normal')",
             prediction_id,
             machine_id,
+        )
+
+
+async def test_db_erzwingt_machine_konsistenz(raw_conn: asyncpg.Connection) -> None:
+    # Composite-FK: die machine_id der Empfehlung MUSS die machine_id der referenzierten
+    # Vorhersage sein — ein inkonsistenter Datensatz (Vorhersage von Maschine A,
+    # machine_id B) wird abgewiesen.
+    machine_a = await raw_conn.fetchval(
+        "INSERT INTO machines (label, machine_class) VALUES ('A', 'cnc') RETURNING id"
+    )
+    machine_b = await raw_conn.fetchval(
+        "INSERT INTO machines (label, machine_class) VALUES ('B', 'cnc') RETURNING id"
+    )
+    prediction_id = await raw_conn.fetchval(
+        "INSERT INTO failure_predictions "
+        "(machine_id, reference_time, horizon_h, probability, decision_threshold, "
+        "decision, validation_status, data_regime, model_version, top_factors) "
+        "VALUES ($1, now(), 336, 0.5, 0.5, 'normal', 'simulation_only', 'simulation', "
+        "'v', '[]'::jsonb) RETURNING id",
+        machine_a,
+    )
+    canonical = validation_caveat_for("simulation_only")
+    with pytest.raises(asyncpg.exceptions.ForeignKeyViolationError):
+        await raw_conn.execute(
+            "INSERT INTO failure_recommendations "
+            "(prediction_id, machine_id, recommendation_text, validation_caveat, "
+            "validation_status, data_regime, model_version, referenced_source_ids, "
+            "horizon_h, probability, decision) "
+            "VALUES ($1, $2, 'x', $3, 'simulation_only', 'simulation', 'v', '[]'::jsonb, "
+            "336, 0.5, 'normal')",
+            prediction_id,
+            machine_b,
+            canonical,
         )

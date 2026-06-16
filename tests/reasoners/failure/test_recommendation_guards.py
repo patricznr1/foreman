@@ -37,12 +37,12 @@ def test_overclaim_deterministischer_caveat_ist_sauber() -> None:
     assert detect_overclaim(validation_caveat_for("simulation_only")) is None
 
 
-def test_overclaim_distanz_negation_ist_bekannte_grenze() -> None:
-    # DOKUMENTIERTE Grenze der 20-Zeichen-Heuristik: eine entfernte Negation kann eine
-    # Übertreibung fälschlich als negiert durchwinken. KEIN Schutzverlust — der Vorbehalt
-    # bleibt strukturell deterministisch (Schema-Validator); der Guard ist nur die
-    # Zusatz-Schicht. Hier als bewusste Grenze festgehalten.
-    assert detect_overclaim("Kein Zweifel: validierte Prognose.") is None
+def test_overclaim_entfernte_negation_negiert_nicht() -> None:
+    # Präziser Guard: nur das UNMITTELBAR vorangehende Wort zählt als Negation. Eine
+    # entfernte Negation ("ohne Zweifel ... validierte Prognose", "kein Zweifel: ...")
+    # deutet den Sim-Charakter trotzdem um → Treffer (kein False-Negative).
+    assert detect_overclaim("Kein Zweifel: validierte Prognose.") is not None
+    assert detect_overclaim("Ohne Zweifel eine validierte Prognose.") is not None
 
 
 # --- LOW #6: der Guard MUSS auf dem sanitisierten Text laufen ---

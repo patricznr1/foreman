@@ -84,14 +84,21 @@ def build_recommendation_sources(
             trusted=True,
         )
     ]
-    sources.extend(
-        GroundingSource(
-            source_id=f"factor:{factor.feature}",
-            content=_factor_content(factor),
-            trusted=True,
+    # Dedup nach Feature-Name: garantiert eindeutige factor:-source_ids (Feature-Namen
+    # sind per Feature-Schema eindeutig; dies ist die strukturelle Absicherung gegen
+    # mehrdeutige Zitat-/Whitelist-Zuordnung bei einem unerwarteten Duplikat).
+    seen_features: set[str] = set()
+    for factor in prediction.top_factors:
+        if factor.feature in seen_features:
+            continue
+        seen_features.add(factor.feature)
+        sources.append(
+            GroundingSource(
+                source_id=f"factor:{factor.feature}",
+                content=_factor_content(factor),
+                trusted=True,
+            )
         )
-        for factor in prediction.top_factors
-    )
     sources.extend(
         GroundingSource(
             source_id=f"{RECALL_SOURCE_PREFIX}:{index}", content=item.content, trusted=False

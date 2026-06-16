@@ -30,16 +30,19 @@ _NOW = sa.text("now()")
 
 
 def upgrade() -> None:
+    # Composite-FK-Ziel: (id, machine_id) in failure_predictions FK-fähig machen (id ist
+    # PK → faktisch eindeutig; der Unique-Constraint liefert die FK-Referenzierbarkeit).
+    op.create_unique_constraint(
+        "uq_failure_predictions_id_machine", "failure_predictions", ["id", "machine_id"]
+    )
     op.create_table(
         "failure_recommendations",
         sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True),
-        sa.Column(
-            "prediction_id",
-            sa.BigInteger(),
-            sa.ForeignKey("failure_predictions.id"),
-            nullable=False,
-        ),
-        sa.Column("machine_id", sa.BigInteger(), sa.ForeignKey("machines.id"), nullable=False),
+        # prediction_id + machine_id werden GEMEINSAM per Composite-FK an dieselbe
+        # Vorhersage gekoppelt (ForeignKeyConstraint unten) — kein inkonsistenter
+        # Datensatz (machine_id != prediction.machine_id) ist persistierbar.
+        sa.Column("prediction_id", sa.BigInteger(), nullable=False),
+        sa.Column("machine_id", sa.BigInteger(), nullable=False),
         sa.Column("recommendation_text", sa.Text(), nullable=False),
         # validation_caveat: deterministischer Sim-Vorbehalt (Invariante II, nicht LLM).
         sa.Column("validation_caveat", sa.Text(), nullable=False),
@@ -64,14 +67,22 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "decision IN ('elevated_risk', 'normal')", name="ck_failure_recommendations_decision"
         ),
-        # Der Vorbehalts-TEXT (das beim Werker ankommende Feld) muss den Sim-Marker
-        # tragen — ein umgedeuteter Caveat (ohne 'simuliert') wird abgewiesen. Bewusst
-        # marker-basiert statt exakter Text-Bindung: robust gegen Satz-Pflege, fängt aber
-        # die Umdeutung (Invariante II an der Persistenzgrenze). Die App-Garantie bleibt
-        # der Schema-Validator (validation_caveat_for); dies ist die zweite Linie.
+        # Der Vorbehalts-TEXT (das beim Werker ankommende Feld) muss EXAKT der
+        # deterministische Sim-Vorbehalt sein — jede Umdeutung wird an der
+        # Persistenzgrenze abgewiesen (Invariante II, zweite Linie zum Schema-Validator
+        # validation_caveat_for). Bei Satz-Pflege: schema._VALIDATION_CAVEATS +
+        # db/models + diese Migration synchron halten.
         sa.CheckConstraint(
-            "validation_caveat LIKE '%simuliert%'",
+            "validation_caveat = 'Diese Einschätzung beruht auf simulierten Verläufen "
+            "und ist nicht an realen Ausfällen validiert.'",
             name="ck_failure_recommendations_validation_caveat",
+        ),
+        # Composite-FK: koppelt prediction_id UND machine_id an dieselbe Vorhersage
+        # (deckt zugleich den prediction_id-FK ab).
+        sa.ForeignKeyConstraint(
+            ["prediction_id", "machine_id"],
+            ["failure_predictions.id", "failure_predictions.machine_id"],
+            name="fk_failure_recommendations_prediction_machine",
         ),
     )
     op.create_index(
@@ -92,3 +103,4 @@ def downgrade() -> None:
     )
     op.drop_index("ix_failure_recommendations_prediction", table_name="failure_recommendations")
     op.drop_table("failure_recommendations")
+    op.drop_constraint("uq_failure_predictions_id_machine", "failure_predictions", type_="unique")

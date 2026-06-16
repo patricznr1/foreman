@@ -92,6 +92,20 @@ def test_allowed_source_ids_enthaelt_alle_quellen() -> None:
     assert any(a.startswith("factor:") for a in allowed)
 
 
+def test_doppelte_faktor_namen_kollidieren_nicht() -> None:
+    # Strukturelle Absicherung: doppelte Feature-Namen dürfen keine mehrdeutigen
+    # factor:-source_ids erzeugen (Zitat-/Whitelist-Eindeutigkeit).
+    pred = _prediction(
+        top_factors=[
+            TopFactor(feature="vib", value=1.0, shap=0.5, direction="increases_risk"),
+            TopFactor(feature="vib", value=2.0, shap=0.3, direction="increases_risk"),
+        ]
+    )
+    sources = build_recommendation_sources(pred, [])
+    factor_ids = [s.source_id for s in sources if s.source_id.startswith("factor:")]
+    assert len(factor_ids) == len(set(factor_ids))
+
+
 def test_num_nutzt_keine_wissenschaftliche_notation() -> None:
     # Der Gateway-Post-Check (§13.3) zerlegt Zahlen mit \d+(?:[.,]\d+)? und kennt kein
     # 'e' — '1e-05' würde in '1'/'05' zerfallen und eine belegte Zahl fälschlich als

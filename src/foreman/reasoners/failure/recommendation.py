@@ -132,16 +132,19 @@ def detect_overclaim(text: str) -> str | None:
     """Findet eine Phrase, die den Sim-Vorbehalt umdeutet — ohne Verneinung davor.
 
     Negativ-Guard (Invariante II): eine Übertreibungs-Phrase (z. B. „validierte
-    Prognose") gilt nur als Umdeutung, wenn ihr kein Verneinungswort unmittelbar
-    vorausgeht („nicht validierte Prognose" ist erlaubt). Die eigentliche Garantie
-    kommt strukturell aus `validation_caveat` — dieser Guard ist die Zusatz-Schicht.
+    Prognose") gilt nur dann als negiert, wenn ihr UNMITTELBAR ein Verneinungswort
+    vorausgeht („nicht validierte Prognose" / „keine validierte Prognose" sind
+    erlaubt). Eine ENTFERNTE Negation („ohne Zweifel … validierte Prognose") negiert
+    die Phrase NICHT — sie wird als Umdeutung erkannt. Die eigentliche Garantie kommt
+    strukturell aus `validation_caveat`; dieser Guard ist die Zusatz-Schicht.
     """
     lowered = text.lower()
     for phrase in _OVERCLAIM_PHRASES:
         start = lowered.find(phrase)
         while start != -1:
-            prefix = lowered[max(0, start - 20) : start]
-            if not any(negation in prefix for negation in _NEGATIONS):
+            # Nur das unmittelbar vorangehende Wort zählt (Satzzeichen ignoriert).
+            preceding = re.findall(r"[a-zäöüß]+", lowered[:start])
+            if not preceding or preceding[-1] not in _NEGATIONS:
                 return phrase
             start = lowered.find(phrase, start + 1)
     return None

@@ -22,11 +22,13 @@ from sqlalchemy import (
     DateTime,
     Double,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     SmallInteger,
     String,
     Text,
+    UniqueConstraint,
     func,
     text,
 )
@@ -295,6 +297,9 @@ class FailurePredictionRecord(Base, TimestampMixin):
         CheckConstraint(
             "decision IN ('elevated_risk', 'normal')", name="ck_failure_predictions_decision"
         ),
+        # FK-Ziel für die machine_id-Konsistenz-Kopplung in failure_recommendations
+        # (Composite-FK (prediction_id, machine_id)). id ist PK → faktisch eindeutig.
+        UniqueConstraint("id", "machine_id", name="uq_failure_predictions_id_machine"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -339,19 +344,30 @@ class FailureRecommendationRecord(Base, TimestampMixin):
         CheckConstraint(
             "decision IN ('elevated_risk', 'normal')", name="ck_failure_recommendations_decision"
         ),
-        # Der Vorbehalts-TEXT muss den Sim-Marker tragen (marker-basiert, robust gegen
-        # Satz-Pflege; fängt eine Umdeutung an der Persistenzgrenze, Invariante II).
+        # Der Vorbehalts-TEXT muss EXAKT der deterministische Sim-Vorbehalt sein — jede
+        # Umdeutung wird an der Persistenzgrenze abgewiesen (Invariante II, zweite Linie
+        # zum Schema-Validator). Bei Satz-Pflege: schema._VALIDATION_CAVEATS + Migration
+        # 0007 synchron halten.
         CheckConstraint(
-            "validation_caveat LIKE '%simuliert%'",
+            "validation_caveat = 'Diese Einschätzung beruht auf simulierten Verläufen "
+            "und ist nicht an realen Ausfällen validiert.'",
             name="ck_failure_recommendations_validation_caveat",
+        ),
+        # Composite-FK: koppelt prediction_id UND machine_id an dieselbe Vorhersage —
+        # kein inkonsistenter Datensatz (machine_id != prediction.machine_id) (deckt
+        # zugleich den prediction_id-FK ab).
+        ForeignKeyConstraint(
+            ["prediction_id", "machine_id"],
+            ["failure_predictions.id", "failure_predictions.machine_id"],
+            name="fk_failure_recommendations_prediction_machine",
         ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    prediction_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("failure_predictions.id"), nullable=False
-    )
-    machine_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("machines.id"), nullable=False)
+    # prediction_id + machine_id: gemeinsam per Composite-FK (__table_args__) gekoppelt —
+    # kein einzelner FK (der Composite deckt beide ab).
+    prediction_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    machine_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     # recommendation_text: geguardeter, output-sanitisierter LLM-Output.
     recommendation_text: Mapped[str] = mapped_column(Text, nullable=False)
     # validation_caveat: DETERMINISTISCHER Sim-Vorbehalt (Invariante II, nicht LLM).

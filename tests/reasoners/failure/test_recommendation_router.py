@@ -23,6 +23,7 @@ from foreman.api.deps import get_llm_gateway
 from foreman.config import Settings
 from foreman.db.models import FailurePredictionRecord, Machine
 from foreman.llm import LiteLLMGateway
+from foreman.reasoners.failure.schema import validation_caveat_for
 
 pytestmark = pytest.mark.integration
 
@@ -95,7 +96,8 @@ async def test_recommendation_route_liefert_201_mit_vorbehalt(
     body = resp.json()
     assert body["validation_status"] == "simulation_only"
     assert body["data_regime"] == "simulation"
-    assert body["validation_caveat"]  # deterministisch, nicht leer
+    # Deterministischer Vorbehalt — exakt prüfen, nicht nur truthy.
+    assert body["validation_caveat"] == validation_caveat_for("simulation_only")
     assert body["prediction_id"] == pred_id
     assert f"pred:{pred_id}" in body["referenced_source_ids"]
 

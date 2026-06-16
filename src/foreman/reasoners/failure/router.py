@@ -141,7 +141,12 @@ async def get_recommendation(
     stmt = (
         select(FailureRecommendationRecord)
         .where(FailureRecommendationRecord.prediction_id == prediction_id)
-        .order_by(FailureRecommendationRecord.created_at.desc())
+        # id.desc() als Tiebreaker: bei gleichem created_at bleibt „die jüngste"
+        # deterministisch (die zuletzt eingefügte Zeile).
+        .order_by(
+            FailureRecommendationRecord.created_at.desc(),
+            FailureRecommendationRecord.id.desc(),
+        )
         .limit(1)
     )
     record = (await session.scalars(stmt)).first()
