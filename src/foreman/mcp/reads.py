@@ -234,6 +234,8 @@ async def load_readings(
     Liest die Minuten-Aggregat-Sicht (read-only). Gibt (Punkte, truncated) zurück —
     `truncated` ist True, wenn das Fenster die Punkt-Obergrenze überschritt.
     """
+    # Harte Lastgrenze: nie mehr als die Obergrenze ziehen, unabhängig vom Aufrufer.
+    limit = min(limit, MAX_READING_POINTS)
     stmt = text(
         "SELECT bucket, avg_value, min_value, max_value, last_value "
         "FROM readings_1m "

@@ -40,6 +40,7 @@ _FORBIDDEN_TERMS = (
 async def test_tool_strings_carry_no_internal_vocabulary() -> None:
     server = build_mcp_server()
     tool_list = await server.list_tools()
+    assert tool_list, "Ohne registrierte Tools wäre der Scan trivial bestanden."
 
     parts: list[str] = []
     for tool in tool_list:

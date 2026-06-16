@@ -59,7 +59,7 @@ dependencies = [
     "scikit-learn>=1.5",
     # --- MCP-Server (F7): Anthropic Model Context Protocol SDK (FastMCP). FOREMAN als
     #     offener Knoten — read-only Tools an Drittsysteme über Streamable HTTP/SSE. ---
-    "mcp>=1.9",
+    "mcp>=1.9,<2",
 ]
 
 [project.optional-dependencies]

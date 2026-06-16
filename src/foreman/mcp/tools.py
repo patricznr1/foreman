@@ -273,11 +273,12 @@ async def get_alarms(
     severity: str | None = None,
 ) -> AlarmListOut:
     """Liest Alarme (inkl. Drift-Warnungen), optional gefiltert nach Maschine/Zeit/Schwere."""
+    # Eingabe vor dem Session-Erwerb prüfen (keine unnötige Ressourcen-Allokation).
+    if severity is not None and severity not in _ALLOWED_SEVERITIES:
+        raise ValueError(
+            f"Unbekannte severity '{severity}'. Erlaubt: {sorted(_ALLOWED_SEVERITIES)}."
+        )
     async with _measured("get_alarms"), _read_session() as session:
-        if severity is not None and severity not in _ALLOWED_SEVERITIES:
-            raise ValueError(
-                f"Unbekannte severity '{severity}'. Erlaubt: {sorted(_ALLOWED_SEVERITIES)}."
-            )
         alarms = await reads.list_alarms(
             session, machine_id=machine_id, since=since, severity=severity
         )

@@ -38,9 +38,12 @@ def test_mcp_source_has_no_write_or_reasoner_trigger() -> None:
     """Kein Schreib-/Trigger-Muster im gesamten MCP-Quelltext."""
     offenders: list[str] = []
     for path in sorted(_MCP_DIR.glob("*.py")):
-        source = path.read_text(encoding="utf-8")
+        # Case-insensitiv: ein Schreib-Muster soll auch in Kleinschreibung auffallen.
+        source = path.read_text(encoding="utf-8").lower()
         offenders.extend(
-            f"{path.name}: {pattern}" for pattern in _FORBIDDEN_PATTERNS if pattern in source
+            f"{path.name}: {pattern}"
+            for pattern in _FORBIDDEN_PATTERNS
+            if pattern.lower() in source
         )
     assert not offenders, f"Schreib-/Trigger-Muster in der MCP-Schicht gefunden: {offenders}"
 
