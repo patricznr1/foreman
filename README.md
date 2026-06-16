@@ -15,7 +15,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-TimescaleDB-336791?logo=postgresql&logoColor=white)
 ![MSIT](https://img.shields.io/badge/MSIT-AI--Track%20Capstone-6E40C9)
-![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey)
+[![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey)](LICENSE)
 
 </div>
 
@@ -224,6 +224,12 @@ Integration tests run against a real TimescaleDB (`timescale/timescaledb-ha:pg16
 ## Author
 
 **Patric Zeller** — AI architect · [patric-zeller.de](https://patric-zeller.de) · [GitHub](https://github.com/patricznr1) · [LinkedIn](https://www.linkedin.com/in/patric-zeller-71781b17b)
+
+---
+
+## License
+
+© 2026 Patric Zeller. **All rights reserved.** This repository is published publicly as a showcase for evaluation only and is **not licensed for reuse**. See [`LICENSE`](LICENSE) for the full terms.
 
 ---
 
