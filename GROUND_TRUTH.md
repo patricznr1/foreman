@@ -667,7 +667,7 @@ Rollenmatrix 3.1 als durchsetzbare Daten (`lib/auth/roles.ts`, `ACCESS_MATRIX`);
 | Anmeldung | `/login` | — | ✅ |
 
 ### 21.7 Env & Gates
-Env: `FOREMAN_API_URL` (server, Default `http://localhost:8000`), `NEXT_PUBLIC_FOREMAN_WS_URL` (Client-WS, z. B. `ws://localhost:8000/api/v1/ws`). Gates: `npm run typecheck` (tsc strict 0), `npm run lint` (ESLint 0), `npm test` (Vitest), `npm run build`, `npm run tokens:check`.
+Env: `FOREMAN_API_URL` (server, Default `http://localhost:8000`), `NEXT_PUBLIC_FOREMAN_WS_URL` (Client-WS, z. B. `ws://localhost:8000/api/v1/ws`). Gates: `npm run typecheck` (tsc strict 0), `npm run lint` (ESLint 0), `npm test` (Vitest), `npm run build`, `npm run tokens:check`. CI: `.github/workflows/ci.yml` Job `frontend-gates` (Node 24) erzwingt diese Gates pro PR.
 
 ### 21.8 Bewusst verschoben (eigene Prompts/Schritte)
 Die zehn Sektionen (C/E zuerst). WebGL (A/G), Sprach-UI (J-Vision), Electron, Service-Worker-Vollausbau, Playwright-E2E (Durchstich derzeit als Vitest-Integrationstest auf Transport-Ebene), Font-Selfhosting. Erstbild Shared-JS ~102 kB (nahe Studien-Ziel <100 kB; schwere Teile sektionsweise lazy).
