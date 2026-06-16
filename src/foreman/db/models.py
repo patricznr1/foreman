@@ -32,7 +32,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from foreman.db.base import Base, TimestampMixin
@@ -214,6 +214,15 @@ class User(Base, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(
         String(32), nullable=False, default="worker", server_default="worker"
+    )
+    # F5 Abo-Autorisierung (Rollenmatrix 3.1): Scope-Quelle der beschränkten Rollen.
+    # worker → assigned_machine_ids; shift_lead → assigned_line_ids; manager/
+    # technician unrestricted (ignorieren die Felder). Leeres Array = kein Scope.
+    assigned_line_ids: Mapped[list[int]] = mapped_column(
+        ARRAY(BigInteger), nullable=False, server_default=text("'{}'::bigint[]")
+    )
+    assigned_machine_ids: Mapped[list[int]] = mapped_column(
+        ARRAY(BigInteger), nullable=False, server_default=text("'{}'::bigint[]")
     )
 
 

@@ -16,6 +16,8 @@ from fastapi import APIRouter, HTTPException, status
 
 from foreman.api.deps import SessionDep
 from foreman.ingestion.service import ReadingRow, copy_readings
+from foreman.realtime.channels import ChangeSet
+from foreman.realtime.notify import notify_changes
 from foreman.schemas.readings import ReadingBatch, ReadingBatchResult
 
 router = APIRouter(prefix="/readings", tags=["readings"])
@@ -53,4 +55,14 @@ async def ingest_readings(body: ReadingBatch, session: SessionDep) -> ReadingBat
             detail=f"Batch konnte nicht geschrieben werden: {exc}",
         ) from exc
 
+    # Live-Push (F5): ein NOTIFY pro Batch (Vorgabe 4) — transaktional auf den
+    # Commit der Request-Session; der Hub debounct und lädt nach.
+    if body.readings:
+        await notify_changes(
+            session,
+            ChangeSet(
+                data_points=frozenset(r.data_point_id for r in body.readings),
+                kinds=frozenset({"reading"}),
+            ),
+        )
     return ReadingBatchResult(written=written)

@@ -19,10 +19,11 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from foreman.mcp.transparency import AiTransparency
+from foreman.reads.status import MachineStatus
 
 # --- Geschlossene Wertebereiche (eigener, stabiler Außen-Vertrag) ---
-# Aggregierter Gesundheitszustand einer Maschine, komponiert aus offenen Warnungen.
-MachineStatus = Literal["healthy", "drift_active", "open_warning"]
+# `MachineStatus` stammt aus dem geteilten Read-Core (reads.status) und wird hier
+# nur referenziert — eine Wahrheit für MCP-, HTTP- und WS-Status (F5).
 # Operative Risiko-Entscheidung der Ausfallvorhersage relativ zum Schwellwert.
 RiskDecision = Literal["elevated_risk", "normal"]
 # Wirkrichtung eines erklärenden Faktors (assoziativ, nicht kausal).

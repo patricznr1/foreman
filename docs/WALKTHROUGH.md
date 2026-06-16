@@ -687,6 +687,58 @@ Eigenständig — berührt die Plattform-FastAPI-App nicht (eigener Token, eigen
 
 ---
 
+## F5 — Dashboard-Backend & Live-Push
+
+### Geteilter Read-Core (`reads/queries.py`, `reads/status.py`, `reads/overview.py`, `reads/trend.py`)
+
+**Was tut es?**
+Eine transport-neutrale Read-only-Schicht: die SELECT-Funktionen, die Status-Komposition (gesund / Drift aktiv / offene Warnung), das Flotten-Overview (Status + Alarme nach Severity + Rollup) und der Sensortrend (`readings_1m` + statisches Normalband). MCP, die HTTP-Routen und der Live-Push lesen alle hierüber.
+
+**Warum existiert es / wo sitzt es?**
+Eine Wahrheit statt mehrerer Kopien: die Read-Logik lag bisher teils in der MCP-Schicht. Sie ist jetzt zentral und ohne Transport (kein FastAPI, kein WebSocket) testbar; MCP ruft sie auf.
+
+### NOTIFY-Producer (`realtime/notify.py`, `realtime/channels.py`)
+
+**Was tut es?**
+Setzt genau ein `pg_notify` pro Commit/Batch auf den Kanal `foreman_dashboard` — ein dünner Payload aus reinen IDs (kein Inhalt), bei Overflow ein „breites" Refresh-Signal statt abgeschnittener IDs. Verdrahtet im Ingest-Service (ein Signal je Tick-Commit) und in der Readings-Route.
+
+**Warum existiert es / wo sitzt es?**
+Der Ingest läuft als eigener Prozess, nicht in der API — Postgres-NOTIFY ist die entkoppelte Brücke (der Stack hat bewusst kein Redis/keine Queue). Transaktional: das Signal kommt erst beim Commit, nie für nicht-geschriebene Daten.
+
+### Hub & Listener pro Worker (`realtime/hub.py`, `realtime/listener.py`, `realtime/wiring.py`)
+
+**Was tut es?**
+Jeder Worker hält eine eigene LISTEN-Verbindung und einen In-Process-Hub. Eingehende Signale werden pro Thema gebündelt (debounce), danach lädt der Endpoint frisch nach. Bricht die Verbindung ab, verbindet der Listener neu und stößt ein breites Refresh an (Snapshot-Reload).
+
+**Warum existiert es / wo sitzt es?**
+Postgres broadcastet NOTIFY an alle Worker; jeder bedient seine eigenen Clients — kein globaler Singleton. Debounce zuerst, dann laden: ein Schwall Readings erzeugt einen Lade-Vorgang, nicht hundert.
+
+### WebSocket-Endpoint (`realtime/ws.py`)
+
+**Was tut es?**
+Ein gemultiplexter Kanal (`/api/v1/ws`): authentifiziert per Query-Token, nimmt subscribe/unsubscribe entgegen, schickt bei jedem erlaubten Abo sofort einen Snapshot und danach Live-Deltas — für Flotten-Overview, Maschinen-Status und Sensortrend.
+
+**Warum existiert es / wo sitzt es?**
+Eine Verbindung für viele Sichten statt ein Socket pro Kachel. Die Auth-Middleware greift bei WebSockets nicht, daher prüft der Endpoint das Token selbst und nutzt pro Lade-Operation eine kurze Read-only-Session.
+
+### Abo-Autorisierung (`realtime/authz.py`)
+
+**Was tut es?**
+Entscheidet pro Abo (und pro HTTP-Route), ob die Rolle das Thema sehen darf: Werker nur seine Maschinen, Schichtleiter seine Linien, Manager/Techniker breit; das Cockpit nur Manager/Schichtleiter. Alles nicht ausdrücklich Erlaubte wird abgelehnt.
+
+**Warum existiert es / wo sitzt es?**
+Authentifiziert allein genügt nicht — ohne Scope-Prüfung könnte jeder eingeloggte Client jedes Maschinen-Thema mitlesen. Dieselbe Prüfung trägt WebSocket und HTTP, damit die Grenze nicht erst im Frontend entsteht.
+
+### HTTP-Read-Routen (`api/routers/dashboard.py`)
+
+**Was tut es?**
+`GET /api/v1/overview` (Flotten-Lagebild) und `GET /api/v1/machines/{id}/trend` (Sensortrend + Normalband) — das Erstbild-/Pull-Gegenstück zum Live-Push, über denselben Read-Core und dieselbe Autorisierung.
+
+**Warum existiert es / wo sitzt es?**
+Das Frontend braucht ein Erstbild beim Laden (und einen Pull-Pfad, wenn kein Stream nötig ist); die Live-Sichten kommen danach über den WebSocket.
+
+---
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```

@@ -18,6 +18,7 @@ from foreman.api.middleware import AuthMiddleware
 from foreman.api.routers import (
     alarms,
     components,
+    dashboard,
     data_points,
     lines,
     machines,
@@ -31,6 +32,8 @@ from foreman.config import Settings, get_settings
 from foreman.db.session import dispose_engine, init_engine
 from foreman.logging_setup import ALERT, INFO, OK, get_logger, setup_logging
 from foreman.notes.router import router as notes_search_router
+from foreman.realtime import ws as dashboard_ws
+from foreman.realtime.wiring import start_dashboard_push, stop_dashboard_push
 from foreman.reasoners.drift import router as drift_router
 from foreman.reasoners.event_chain import router as event_chain_router
 from foreman.reasoners.failure import router as failure_router
@@ -53,10 +56,12 @@ _API_V1_ROUTERS = (
     worker_notes.router,
     alarms.router,
     readings.router,
+    dashboard.router,
     substrate.router,
     drift_router.router,
     event_chain_router.router,
     failure_router.router,
+    dashboard_ws.router,
 )
 
 
@@ -92,11 +97,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     cfg.require_secure_secrets()
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         init_engine(cfg)
         logger.info("%s FOREMAN startet (env=%s)", INFO, cfg.environment)
         await _startup_substrate_smoke(cfg)
+        # Live-Push (F5): ein LISTEN-Listener + Hub pro Worker.
+        await start_dashboard_push(app, cfg)
         yield
+        await stop_dashboard_push(app)
         await dispose_engine()
         logger.info("%s FOREMAN heruntergefahren", INFO)
 
