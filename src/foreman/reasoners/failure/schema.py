@@ -133,3 +133,104 @@ class FailurePredictionRead(BaseModel):
     data_regime: DataRegime
     model_version: str
     created_at: datetime
+
+
+# ============================================================
+#  F-REC — LLM-Werker-Empfehlung (Erklär-Layer über der Vorhersage)
+# ============================================================
+
+# Deterministische Vorbehalts-Sätze je validation_status. NICHT vom LLM erzeugt —
+# der Sim-Vorbehalt ist strukturell garantiert (Invariante II, Brief §2.4): er
+# hängt nie am fehlbaren LLM-Text, sondern an diesem festen Mapping.
+_VALIDATION_CAVEATS: dict[str, str] = {
+    "simulation_only": (
+        "Diese Einschätzung beruht auf simulierten Verläufen und ist nicht an "
+        "realen Ausfällen validiert."
+    ),
+}
+
+
+def validation_caveat_for(validation_status: ValidationStatus) -> str:
+    """Der deterministische Vorbehalts-Satz zu einem validation_status.
+
+    Garantiert (Invariante II): der Sim-Vorbehalt wird nie vom LLM formuliert,
+    sondern hier festgelegt — jede WorkerRecommendation trägt exakt diesen Satz,
+    unabhängig davon, was das LLM schreibt.
+    """
+    return _VALIDATION_CAVEATS[validation_status]
+
+
+class WorkerRecommendation(BaseModel):
+    """Die validierte LLM-Werker-Empfehlung über einer FailurePrediction (F-REC).
+
+    Der Erklär-Layer über F-PRED: das LLM verschmilzt die statistische Vorhersage,
+    die SHAP-Faktoren und den semantischen NEXUS-Kontext zu einer handlungsleitenden
+    deutschen Empfehlung. Zwei Invarianten sind strukturell erzwungen:
+    (I) Zahlen autoritativ vom Modell — `probability`/`horizon_h`/`decision` werden
+        aus der Vorhersage mitgeführt, nicht vom LLM gesetzt (der numerische
+        Post-Check im Service rejectet erfundene Zahlen, §13.3).
+    (II) Der Sim-Vorbehalt ist deterministisch — `validation_caveat` MUSS exakt
+        `validation_caveat_for(validation_status)` sein; er hängt nie am LLM-Text.
+    `created_at`/`id` werden erst bei der Persistenz vergeben (WorkerRecommendationRead).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", protected_namespaces=())
+
+    prediction_id: int
+    machine_id: int
+    recommendation_text: str = Field(min_length=1)
+    # Deterministischer Vorbehalt (Invariante II) — nicht LLM-generiert.
+    validation_caveat: str = Field(min_length=1)
+    # --- Strukturelle Ehrlichkeit (Pflicht, aus der Vorhersage mitgeführt) ---
+    validation_status: ValidationStatus
+    data_regime: DataRegime
+    model_version: str = Field(min_length=1)
+    # --- Output-Guard: Quellen-Whitelist (Brief §2.3) ---
+    referenced_source_ids: tuple[str, ...]
+    allowed_source_ids: tuple[str, ...]
+    # --- Autoritative Zahlen aus der Vorhersage (Invariante I) ---
+    horizon_h: int = Field(gt=0)
+    probability: float = Field(ge=0.0, le=1.0)
+    decision: RiskDecision
+
+    @model_validator(mode="after")
+    def _enforce_caveat_and_whitelist(self) -> WorkerRecommendation:
+        """Erzwingt den deterministischen Vorbehalt + den Quellen-Whitelist-Guard."""
+        expected_caveat = validation_caveat_for(self.validation_status)
+        if self.validation_caveat != expected_caveat:
+            raise ValueError(
+                "❌ validation_caveat weicht vom deterministischen Sim-Vorbehalt ab "
+                "(Invariante II: der Vorbehalt darf nicht durch LLM-Text ersetzt werden)."
+            )
+        allowed = set(self.allowed_source_ids)
+        invalid = [s for s in self.referenced_source_ids if s not in allowed]
+        if invalid:
+            raise ValueError(
+                f"❌ Referenzierte source_ids außerhalb der Whitelist: {sorted(invalid)}"
+            )
+        return self
+
+
+class WorkerRecommendationRead(BaseModel):
+    """API-Out-Schema der Werker-Empfehlung: liest direkt aus dem ORM-Datensatz.
+
+    Führt den Sim-Vorbehalt (`validation_caveat`, `validation_status`,
+    `data_regime`, `model_version`) in JEDER Antwort mit — kein Konsument bekommt
+    eine Empfehlung ohne ihn.
+    """
+
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
+    id: int
+    prediction_id: int
+    machine_id: int
+    recommendation_text: str
+    validation_caveat: str
+    validation_status: ValidationStatus
+    data_regime: DataRegime
+    model_version: str
+    referenced_source_ids: list[str]
+    horizon_h: int
+    probability: float
+    decision: RiskDecision
+    created_at: datetime

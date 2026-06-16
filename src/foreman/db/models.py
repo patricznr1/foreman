@@ -22,11 +22,13 @@ from sqlalchemy import (
     DateTime,
     Double,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     SmallInteger,
     String,
     Text,
+    UniqueConstraint,
     func,
     text,
 )
@@ -295,6 +297,9 @@ class FailurePredictionRecord(Base, TimestampMixin):
         CheckConstraint(
             "decision IN ('elevated_risk', 'normal')", name="ck_failure_predictions_decision"
         ),
+        # FK-Ziel für die machine_id-Konsistenz-Kopplung in failure_recommendations
+        # (Composite-FK (prediction_id, machine_id)). id ist PK → faktisch eindeutig.
+        UniqueConstraint("id", "machine_id", name="uq_failure_predictions_id_machine"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -313,6 +318,72 @@ class FailurePredictionRecord(Base, TimestampMixin):
     top_factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
 
 
+class FailureRecommendationRecord(Base, TimestampMixin):
+    """`failure_recommendations` — persistierte LLM-Werker-Empfehlungen (F-REC).
+
+    Der Erklär-Layer über einer FailurePrediction: das LLM verschmilzt die
+    Vorhersage + SHAP-Faktoren + NEXUS-Kontext zu einer handlungsleitenden
+    deutschen Empfehlung. Zwei strukturell erzwungene Invarianten überleben die
+    Persistenz: (I) die autoritativen Zahlen (`probability`/`horizon_h`/`decision`)
+    stammen aus der Vorhersage, nie aus dem LLM; (II) `validation_caveat` ist der
+    DETERMINISTISCHE Sim-Vorbehalt (nicht LLM-generiert). On-demand erzeugt;
+    FOREMAN aktoriert nie (Empfehlung, keine Schaltung).
+    """
+
+    __tablename__ = "failure_recommendations"
+    # Defense-in-Depth: der Sim-Vorbehalt + die Entscheidung sind auch an der
+    # PERSISTENZGRENZE erzwungen (analog failure_predictions, §16.1).
+    __table_args__ = (
+        CheckConstraint(
+            "validation_status = 'simulation_only'",
+            name="ck_failure_recommendations_validation_status",
+        ),
+        CheckConstraint(
+            "data_regime = 'simulation'", name="ck_failure_recommendations_data_regime"
+        ),
+        CheckConstraint(
+            "decision IN ('elevated_risk', 'normal')", name="ck_failure_recommendations_decision"
+        ),
+        # Der Vorbehalts-TEXT muss EXAKT der deterministische Sim-Vorbehalt sein — jede
+        # Umdeutung wird an der Persistenzgrenze abgewiesen (Invariante II, zweite Linie
+        # zum Schema-Validator). Bei Satz-Pflege: schema._VALIDATION_CAVEATS + Migration
+        # 0007 synchron halten.
+        CheckConstraint(
+            "validation_caveat = 'Diese Einschätzung beruht auf simulierten Verläufen "
+            "und ist nicht an realen Ausfällen validiert.'",
+            name="ck_failure_recommendations_validation_caveat",
+        ),
+        # Composite-FK: koppelt prediction_id UND machine_id an dieselbe Vorhersage —
+        # kein inkonsistenter Datensatz (machine_id != prediction.machine_id) (deckt
+        # zugleich den prediction_id-FK ab).
+        ForeignKeyConstraint(
+            ["prediction_id", "machine_id"],
+            ["failure_predictions.id", "failure_predictions.machine_id"],
+            name="fk_failure_recommendations_prediction_machine",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    # prediction_id + machine_id: gemeinsam per Composite-FK (__table_args__) gekoppelt —
+    # kein einzelner FK (der Composite deckt beide ab).
+    prediction_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    machine_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    # recommendation_text: geguardeter, output-sanitisierter LLM-Output.
+    recommendation_text: Mapped[str] = mapped_column(Text, nullable=False)
+    # validation_caveat: DETERMINISTISCHER Sim-Vorbehalt (Invariante II, nicht LLM).
+    validation_caveat: Mapped[str] = mapped_column(Text, nullable=False)
+    # Pflicht-Vorbehalt aus der Vorhersage mitgeführt.
+    validation_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    data_regime: Mapped[str] = mapped_column(String(32), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    # referenzierte (whitelisted) source_ids als JSONB-Liste.
+    referenced_source_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
+    # Autoritative Zahlen aus der Vorhersage (Invariante I) — nie aus dem LLM.
+    horizon_h: Mapped[int] = mapped_column(Integer, nullable=False)
+    probability: Mapped[float] = mapped_column(Double, nullable=False)
+    decision: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
 # Häufige Lese-Zugriffe absichern (keine Indizes auf der readings-Rohtabelle, §3.4).
 Index("ix_alarms_machine_raised", Alarm.machine_id, Alarm.raised_at)
 Index("ix_worker_notes_machine", WorkerNote.machine_id)
@@ -327,4 +398,10 @@ Index(
     "ix_failure_predictions_machine_created",
     FailurePredictionRecord.machine_id,
     FailurePredictionRecord.created_at,
+)
+Index("ix_failure_recommendations_prediction", FailureRecommendationRecord.prediction_id)
+Index(
+    "ix_failure_recommendations_machine_created",
+    FailureRecommendationRecord.machine_id,
+    FailureRecommendationRecord.created_at,
 )

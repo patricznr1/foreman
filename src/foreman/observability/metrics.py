@@ -149,6 +149,24 @@ FAILURE_PROBABILITY: Final = Histogram(
     registry=REGISTRY,
 )
 
+# --- LLM-Werker-Empfehlung (F-REC, §11.2) — der Erklär-Layer über der Vorhersage.
+#     Auch hier ist `data_regime` (= 'simulation') Pflicht-Label — der Sim-Vorbehalt
+#     bleibt im Monitoring sichtbar (§16). `result` niedrig-kardinal: issued |
+#     rejected_numeric (unbelegte Zahl, Invariante I) | rejected_overclaim
+#     (Umdeutung des Vorbehalts, Invariante II). Keine PII. ---
+FAILURE_RECOMMENDATIONS: Final = Counter(
+    "foreman_failure_recommendation_total",
+    "Anzahl der LLM-Werker-Empfehlungen je Datenregime und Ausgang.",
+    ["data_regime", "result"],
+    registry=REGISTRY,
+)
+FAILURE_RECOMMENDATION_RECALL: Final = Counter(
+    "foreman_failure_recommendation_recall_total",
+    "NEXUS-Recall-Ausgänge des Empfehlungs-Reasoners (Treffer/kein Treffer).",
+    ["result"],
+    registry=REGISTRY,
+)
+
 
 def observe_failure_prediction(*, data_regime: str, decision: str, probability: float) -> None:
     """Zählt eine Ausfallvorhersage + ihre Wahrscheinlichkeit (F-PRED, §11.2).
@@ -157,6 +175,20 @@ def observe_failure_prediction(*, data_regime: str, decision: str, probability: 
     """
     FAILURE_PREDICTIONS.labels(data_regime=data_regime, decision=decision).inc()
     FAILURE_PROBABILITY.labels(data_regime=data_regime).observe(probability)
+
+
+def observe_failure_recommendation(*, data_regime: str, result: str) -> None:
+    """Zählt eine LLM-Werker-Empfehlung (F-REC, §11.2).
+
+    `data_regime` ist Pflicht-Label (Sim-Vorbehalt sichtbar in den Metriken, §16).
+    `result` ∈ {issued, rejected_numeric, rejected_overclaim}.
+    """
+    FAILURE_RECOMMENDATIONS.labels(data_regime=data_regime, result=result).inc()
+
+
+def record_failure_recommendation_recall(result: str) -> None:
+    """Zählt einen NEXUS-Recall-Ausgang des Empfehlungs-Reasoners (result ∈ {hit, miss})."""
+    FAILURE_RECOMMENDATION_RECALL.labels(result=result).inc()
 
 
 def observe_reasoner_run(reasoner: str, latency_seconds: float, *, success: bool) -> None:
