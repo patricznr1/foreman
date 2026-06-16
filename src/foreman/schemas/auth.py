@@ -30,6 +30,14 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class WsTicketResponse(BaseModel):
+    """`GET /api/v1/ws-ticket` — kurzlebiges, WS-scoped Ticket für den ?token=-Query
+    von /api/v1/ws (statt des vollen Session-JWT). `expires_in` in Sekunden."""
+
+    ticket: str
+    expires_in: int
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

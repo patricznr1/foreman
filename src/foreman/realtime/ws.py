@@ -33,7 +33,7 @@ from fastapi import APIRouter, FastAPI, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.api.deps import SettingsDep
-from foreman.core.security import decode_access_token
+from foreman.core.security import decode_ws_token
 from foreman.db.models import User
 from foreman.db.session import get_sessionmaker
 from foreman.logging_setup import ALERT, get_logger
@@ -98,7 +98,7 @@ async def _authenticate(
         await websocket.close(code=_WS_UNAUTHORIZED)
         return None
     try:
-        payload = decode_access_token(token, settings)
+        payload = decode_ws_token(token, settings)
     except jwt.InvalidTokenError:
         await websocket.close(code=_WS_UNAUTHORIZED)
         return None
