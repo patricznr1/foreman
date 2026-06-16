@@ -81,7 +81,7 @@ Da der LLM-Layer für Menschen bestimmte Erklärungen/Empfehlungen erzeugt, grei
 **Konkrete Umsetzung in FOREMAN:**
 
 - **Dashboard:** Jede vom LLM erzeugte Empfehlung/Erklärung trägt eine sichtbare Kennzeichnung („**KI-Empfehlung – vom Operator zu prüfen**") und, wo sinnvoll, einen Konfidenz-/Quellenhinweis (Grounding-Faktoren). Sicherheitskritische Hinweise bleiben quittierungspflichtig.
-- **MCP-Schnittstelle:** Aggregierte Erkenntnisse werden mit einem maschinenlesbaren Herkunfts-Flag ausgeliefert (z. B. `"generated_by": "foreman-ai", "ai_generated": true, "requires_human_review": true`), damit Drittsysteme die KI-Herkunft erkennen und nicht als verifizierte Wahrheit weiterverarbeiten.
+- **MCP-Schnittstelle (✅ gebaut, F7):** Aggregierte Erkenntnisse werden read-only mit einem maschinenlesbaren Herkunfts-Flag ausgeliefert (`"generated_by": "foreman-ai", "ai_generated": true, "requires_human_review": true, "model_version": …`), damit Drittsysteme die KI-Herkunft erkennen und nicht als verifizierte Wahrheit weiterverarbeiten. Ausfall-Einschätzungen und Empfehlungen führen zusätzlich ihren Validierungs-Vorbehalt mit; Stammdaten/Sensortrends/Alarme werden ehrlich **nicht** als KI gekennzeichnet. Keine Aktorik über die Schnittstelle (read-only) — die tragende Limited-Risk-Bedingung bleibt gewahrt.
 - **Logging:** Ausgaben werden mit Modell-/Versionskennung und Zeitstempel protokolliert (Nachvollziehbarkeit, Observability §11).
 
 Zusätzlich gilt die **KI-Kompetenz-Pflicht (Art. 4)**: Personen, die FOREMAN betreiben/bedienen, müssen über ausreichendes Verständnis der Möglichkeiten und Grenzen verfügen (kurze Nutzer-Einweisung / Doku).
@@ -142,7 +142,7 @@ FOREMAN nutzt ein vortrainiertes **General-Purpose-AI-Modell** (Qwen3, lokal üb
 **Maßnahmenliste (direkt in GROUND_TRUTH §10.5 + Code übernehmbar):**
 
 1. **KI-Kennzeichnung Dashboard (Art. 50(1)):** Jede LLM-Empfehlung/-Erklärung sichtbar als „KI-Empfehlung – vom Operator zu prüfen" auszeichnen.
-2. **KI-Kennzeichnung MCP (Art. 50(2)):** Maschinenlesbares Herkunfts-Flag im Output-Schema: `ai_generated: true`, `generated_by: "foreman-ai"`, `requires_human_review: true`, `model_version`.
+2. **KI-Kennzeichnung MCP (Art. 50(2)) — ✅ gebaut (F7):** Maschinenlesbares Herkunfts-Flag im Output-Schema: `ai_generated: true`, `generated_by: "foreman-ai"`, `requires_human_review: true`, `model_version`. Umgesetzt im read-only MCP-Server (`src/foreman/mcp/`): ein gemeinsamer Transparenz-Wrapper hüllt jeden KI-stämmigen Output (Vorhersage/Empfehlung zusätzlich `validation_status`/`data_regime`/`validation_caveat`); ein Validator erzwingt die Ehrlichkeit strukturell, Nicht-KI-Daten tragen keine KI-Flags. Vertrag: GROUND_TRUTH §17.
 3. **Human-in-the-Loop hart verankern:** keine automatische Aktorik; sicherheitskritische Alarme nur über Operator-Quittierung (`alarms.acknowledged_at/_by`) als erledigt — bereits in §8 GROUND_TRUTH, hier als AI-Act-Pflicht bekräftigt.
 4. **Logging/Nachvollziehbarkeit:** KI-Ausgaben mit `model_version`, Zeitstempel, Reasoner-Quelle protokollieren (Observability §11).
 5. **KI-Kompetenz (Art. 4):** kurze Nutzer-Einweisung/Doku zu Möglichkeiten und Grenzen der Reasoner (z. B. Abschnitt in WALKTHROUGH/README).

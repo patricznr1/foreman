@@ -168,6 +168,30 @@ FAILURE_RECOMMENDATION_RECALL: Final = Counter(
 )
 
 
+# --- MCP-Schnittstelle (F7, §11.2) — je Tool-Aufruf: Tool-Name + Ergebnis + Latenz.
+#     FOREMAN als offener Knoten: read-only Tools an Drittsysteme. Labels bewusst
+#     niedrig-kardinal (tool aus festem Set; result ∈ {ok,error}) — keine machine_id,
+#     keine Tool-Payloads mit Personenbezug, keine internen Vokabeln (§8). ---
+MCP_REQUESTS: Final = Counter(
+    "foreman_mcp_requests_total",
+    "Anzahl der MCP-Tool-Aufrufe je Tool und Ergebnis.",
+    ["tool", "result"],
+    registry=REGISTRY,
+)
+MCP_LATENCY: Final = Histogram(
+    "foreman_mcp_latency_seconds",
+    "Latenz der MCP-Tool-Aufrufe je Tool (Sekunden).",
+    ["tool"],
+    registry=REGISTRY,
+)
+
+
+def observe_mcp_call(*, tool: str, latency_seconds: float, success: bool) -> None:
+    """Zählt einen MCP-Tool-Aufruf und seine Latenz (je Tool, Erfolg/Fehler, F7)."""
+    MCP_REQUESTS.labels(tool=tool, result="ok" if success else "error").inc()
+    MCP_LATENCY.labels(tool=tool).observe(latency_seconds)
+
+
 def observe_failure_prediction(*, data_regime: str, decision: str, probability: float) -> None:
     """Zählt eine Ausfallvorhersage + ihre Wahrscheinlichkeit (F-PRED, §11.2).
 

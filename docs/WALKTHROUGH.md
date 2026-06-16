@@ -4,7 +4,7 @@
 >
 > **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
-**Stand:** 2026-06-16 · F-REC — LLM-Werker-Empfehlung (Erklär-Layer über F-PRED, zweiter Konsument des LLMGateway: Vorhersage+SHAP als trusted Grounding-Quellen, NEXUS-Recall als untrusted Kontext, deutsche Handlungsempfehlung über `gateway.complete(task=explanation)`, zwei Invarianten — Zahlen autoritativ vom Modell mit fail-closed Hart-Reject + deterministischer Sim-Vorbehalt, Red-Team über den Recall-Pfad) auf F-PRED (Ausfallvorhersage), F-SEM (semantische Notiz-Suche), F6 (Ereignisketten-Reasoner), F-LLM (Modell-Gateway), F4 (Drift-Reasoner), F3 (Datenakquise & Adapterschicht) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
+**Stand:** 2026-06-16 · F7 — MCP-Schnittstelle (FOREMAN als offener Knoten: read-only Model-Context-Protocol-Server über Streamable HTTP, der die Reasoner-Erkenntnisse als maschinenlesbare Tools an Drittsysteme reicht — AI-Act-Transparenz-Flags an jedem KI-Output, PII nur pseudonymisiert/maskiert, eigene Token-Auth, Hidden-Term-Scan, keine Aktorik) auf F-REC (LLM-Werker-Empfehlung), F-PRED (Ausfallvorhersage), F-SEM (semantische Notiz-Suche), F6 (Ereignisketten-Reasoner), F-LLM (Modell-Gateway), F4 (Drift-Reasoner), F3 (Datenakquise & Adapterschicht) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
 
 ---
 
@@ -630,6 +630,60 @@ Auth-pflichtig, on-demand (Kostenkontrolle, Konsistenz mit F6); jede Antwort fü
 
 **Warum existiert es / wo sitzt es?**
 `data_regime=simulation` Pflicht-Label. Der Recall-Pfad ist die Angriffsfläche von F-REC (leichter als F6 — keine Werkernotizen — aber scharf geprüft).
+
+---
+
+## F7 — MCP-Schnittstelle (`src/foreman/mcp/`, offener Knoten)
+
+> **Plattform statt App.** FOREMAN reicht die aggregierten Erkenntnisse der Reasoner als saubere, maschinenlesbare Tools an Drittsysteme (Simulation, ERP, Energiemanagement) — über das Model-Context-Protocol, **read-only**, remote über Streamable HTTP. Diese Schicht erfindet keine Logik; sie exponiert das schon Gebaute ehrlich gekennzeichnet, PII-geschützt und IP-wort-diszipliniert nach außen. Drei Invarianten tragen sie: **(I)** read-only, keine Aktorik, kein Reasoner-/LLM-Trigger über MCP; **(II)** AI-Act-Transparenz an jedem KI-Output (Art. 50(2)); **(III)** kein internes Vokabular in extern sichtbaren Strings.
+
+### Transparenz-Wrapper (`mcp/transparency.py`)
+
+**Was tut es?**
+`AiTransparency` (Pydantic, frozen) ist der gemeinsame Umschlag, der in JEDES Tool-Ausgabeschema eingebettet wird: `ai_generated`, `generated_by` (= `foreman-ai`), `requires_human_review`, `model_version` und — bei Vorhersage/Empfehlung — `validation_status`/`data_regime`/`validation_caveat`. Builder `ai_transparency(...)` / `non_ai_transparency()`.
+
+**Warum existiert es / wo sitzt es?**
+Die Ehrlichkeit ist **strukturell** erzwungen: ein `model_validator` lässt einen unehrlichen Umschlag nicht zu — KI-Output MUSS den Erzeuger-Marker + die Review-Pflicht tragen, Nicht-KI-Daten dürfen KEIN KI-Metadatum führen. Die Flags sind ehrlich pro Output-Typ, nicht pauschal.
+
+### Ausgabeschemata (`mcp/schemas.py`)
+
+**Was tut es?**
+Pydantic-Ausgabeschemata pro Tool (`MachineOut`, `AlarmOut`, `FailurePredictionOut`, `WorkerRecommendationOut`, `EventChainOut`, `NoteHitOut`, `ReadingsOut`, `DriftStatusOut`, …) — der **externe Vertrag**, bewusst entkoppelt von den internen Read-DTOs. Der Transparenz-Wrapper als gemeinsames Feld auf jedem Leaf-Output.
+
+**Warum existiert es / wo sitzt es?**
+PII-frei: nur HMAC-Token (`acknowledged_by`/`author`) und NER-maskierter Text raus, kein Embedding-Vektor, keine `users`-Felder. SHAP heißt nach außen neutral `contribution` (Invariante III).
+
+### Read-Schicht (`mcp/reads.py`)
+
+**Was tut es?**
+Dedizierte Read-only-Datenzugriffsfunktionen (injizierte Session), die die Tools aufrufen — der saubere Service-Layer der Schnittstelle. Spiegelt die bereits existierenden Read-Pfade als wiederverwendbare Funktionen; aggregierte Trends über die Minuten-Aggregat-Sicht, semantische Notiz-Suche (Query einbetten + suchen, kein LLM).
+
+**Warum existiert es / wo sitzt es?**
+Architektur-Entscheidung (Review-geklärt): die Read-Logik lag bisher inline in den HTTP-Routern, ohne wiederverwendbare Service-Methode. Statt 6 Reasoner-Router zu refactoren bekommt MCP eine eigene, testbare Read-Schicht — chirurgisch, ausschließlich SELECT (Invariante I).
+
+### Tools (`mcp/tools.py`)
+
+**Was tut es?**
+Elf read-only Tools (`list_machines`, `get_machine`, `get_drift_status`, `get_alarms`, `list_failure_predictions`, `get_failure_prediction`, `get_worker_recommendation`, `list_event_chains`, `get_event_chain`, `search_notes`, `get_readings`). Jedes öffnet eine eigene Read-only-Session (kein Commit), mappt den ORM-Datensatz auf das Ausgabeschema, hüllt KI-Output in die Transparenz-Flags und misst Latenz/Ergebnis als Metrik.
+
+**Warum existiert es / wo sitzt es?**
+Maschinen-`status` (gesund/Drift aktiv/offene Warnung) wird aus offenen Alarmen komponiert; `get_event_chain` filtert auf den Ereignisketten-Reasoner; Vorhersagen tragen den abgeleiteten, Empfehlungen den gespeicherten Vorbehalt. Kein Tool ruft je `predict`/`recommend`/`reconstruct` (das wären Compute+Write+LLM).
+
+### Auth (`mcp/auth.py`)
+
+**Was tut es?**
+`McpSettings` (eigener `FOREMAN_MCP_`-Token als `SecretStr`, getrennt vom Plattform-JWT), `verify_mcp_token` (zeitkonstant, Fail-Closed), `McpAuthMiddleware` (reine ASGI: alles außer `/health`/`/metrics` hinter dem Token, 401-Reject) + ein Token-Bucket gegen Abruf-Last (429).
+
+**Warum existiert es / wo sitzt es?**
+Read-only-Zugriff für Drittsysteme — authentifiziert, getrennter Blast-Radius. Produktions-Fail-Fast: kein remote erreichbarer Server ohne sicheren Token (Repo ist öffentlich).
+
+### Server & Metriken (`mcp/server.py`, `observability/metrics.py`)
+
+**Was tut es?**
+`build_mcp_server` registriert die Tools (alle mit `readOnlyHint=True`, IP-wort-disziplinierte Beschreibungen); `build_mcp_app` baut die eigenständige ASGI-App (Auth-Middleware + MCP-Transport + eigene `/health`/`/metrics`). `foreman_mcp_requests_total` (`tool`/`result`) + `foreman_mcp_latency_seconds` (`tool`).
+
+**Warum existiert es / wo sitzt es?**
+Eigenständig — berührt die Plattform-FastAPI-App nicht (eigener Token, eigener Port). Verifiziert durch echten SDK-Handshake, strukturellen Read-only-/No-Actuation-Beweis und den Hidden-Term-Scan über alle Tool-Strings (`tests/mcp/`).
 
 ---
 
