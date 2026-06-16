@@ -745,6 +745,14 @@ Das Frontend braucht ein Erstbild beim Laden (und einen Pull-Pfad, wenn kein Str
 **Warum existiert es / wo sitzt es?**
 Das Frontend muss seine Navigation und Sichten nach der Rollenmatrix (3.1) filtern. Dafür braucht es Rolle und Scope des angemeldeten Nutzers — das Login gibt nur ein Token (Claim `sub`). `/me` liefert genau diese Information, damit das Frontend die Server-Autorisierung *spiegelt* (nicht ersetzt): die tatsächliche Grenze bleibt `can_subscribe`/die Read-Routen (§20.4). Read-only, keine Aktorik.
 
+### WS-Ticket (`api/routers/ws_ticket.py`, `core/security.py`)
+
+**Was tut es?**
+`GET /api/v1/ws-ticket` gibt dem angemeldeten Nutzer ein kurzlebiges (60 s), WS-scoped Ticket (`aud="ws"`). Der WebSocket (`/api/v1/ws`) akzeptiert dieses Ticket *oder* ein Session-JWT; ein Ticket ist auf HTTP-Routen nicht gültig.
+
+**Warum existiert es / wo sitzt es?**
+Der WebSocket erzwingt ein Token im `?token=`-Query, das clientseitiges JS bauen muss. Würde dort das volle Session-JWT (httpOnly-Cookie) herausgegeben, wäre der Cookie-Schutz für dieses Token aufgehoben. Das kurzlebige, scope-begrenzte Ticket hält den Schaden bei einem Query-/JS-Leak klein: es läuft schnell ab und gilt nur am WebSocket. `decode_ws_token` prüft die Audience; `decode_access_token` (HTTP) lehnt audience-tragende Tokens ab.
+
 ---
 
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)

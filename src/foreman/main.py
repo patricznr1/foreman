@@ -28,6 +28,7 @@ from foreman.api.routers import (
     readings,
     substrate,
     worker_notes,
+    ws_ticket,
 )
 from foreman.config import Settings, get_settings
 from foreman.db.session import dispose_engine, init_engine
@@ -64,6 +65,7 @@ _API_V1_ROUTERS = (
     event_chain_router.router,
     failure_router.router,
     dashboard_ws.router,
+    ws_ticket.router,
 )
 
 
