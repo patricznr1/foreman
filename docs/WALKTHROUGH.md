@@ -737,6 +737,14 @@ Authentifiziert allein genügt nicht — ohne Scope-Prüfung könnte jeder einge
 **Warum existiert es / wo sitzt es?**
 Das Frontend braucht ein Erstbild beim Laden (und einen Pull-Pfad, wenn kein Stream nötig ist); die Live-Sichten kommen danach über den WebSocket.
 
+### Aktueller Nutzer (`api/routers/me.py`)
+
+**Was tut es?**
+`GET /api/v1/me` gibt Identität, Rolle und Per-User-Scope (`assigned_line_ids`/`assigned_machine_ids`) des eingeloggten Nutzers zurück — ohne Passwort-Hash. Auth-pflichtig; ohne gültiges Token 401.
+
+**Warum existiert es / wo sitzt es?**
+Das Frontend muss seine Navigation und Sichten nach der Rollenmatrix (3.1) filtern. Dafür braucht es Rolle und Scope des angemeldeten Nutzers — das Login gibt nur ein Token (Claim `sub`). `/me` liefert genau diese Information, damit das Frontend die Server-Autorisierung *spiegelt* (nicht ersetzt): die tatsächliche Grenze bleibt `can_subscribe`/die Read-Routen (§20.4). Read-only, keine Aktorik.
+
 ---
 
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)

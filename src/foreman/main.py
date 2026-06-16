@@ -23,6 +23,7 @@ from foreman.api.routers import (
     lines,
     machines,
     maintenance_events,
+    me,
     production_runs,
     readings,
     substrate,
@@ -46,6 +47,7 @@ logger = get_logger("foreman.main")
 _API_V1_ROUTERS = (
     lines.router,
     machines.router,
+    me.router,
     components.router,
     data_points.router,
     production_runs.router,

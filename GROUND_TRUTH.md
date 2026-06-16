@@ -71,6 +71,7 @@ Drei Schichten:
 
 - `GET /health`
 - `POST /auth/register`, `POST /auth/login` (JWT-Ausgabe)
+- `GET /api/v1/me` — Identität + Rolle + Per-User-Scope (`assigned_line_ids`/`assigned_machine_ids`) des eingeloggten Nutzers. Auth-pflichtig (401 ohne Token; nicht in der Open-Path-Whitelist). **Read-only** — das Frontend spiegelt damit die Server-Autorisierung (Rollenmatrix 3.1, §20.4), ersetzt sie nicht. **Keine Aktorik**; keine PII über die eigene Identität hinaus (kein `password_hash`). Frontend-Enabler für das Rollen-Routing (F5-Frontend).
 - CRUD: `/api/v1/lines`, `/api/v1/machines`, `/api/v1/components`, `/api/v1/data_points`, `/api/v1/production_runs`, `/api/v1/maintenance_events`, `/api/v1/worker_notes`, `/api/v1/alarms`
 - `POST /api/v1/readings` — Batch-Aufnahme von Messwerten (HTTP). Nutzt seit F3 denselben geteilten COPY-Schreibweg wie der Ingestion-Service (`ingestion/service.py:copy_readings`) — siehe §12.
 - `GET /api/v1/worker_notes/search` — **semantische Notiz-Suche** (F-SEM, read-only, Auth-pflichtig). Query-Parameter `q` (Freitext, wird eingebettet), `machine_id` (optionaler Filter), `k` (1–50, Default 5). Liefert die ähnlichsten Notizen (Cosine, ohne Vektor in der Antwort). **Vor** dem `worker_notes`-CRUD-Router gemountet, damit `/search` nicht von `/{note_id}` gefangen wird. 503 bei Embedding-Backend-Ausfall (ehrlich, nicht best-effort). Vertrag: §15.
