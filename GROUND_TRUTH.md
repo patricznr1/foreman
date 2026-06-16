@@ -626,3 +626,52 @@ Der Trend liest `readings_1m` (real-time aggregation, `materialized_only=false` 
 
 ### 20.6 Verifikation
 Read-Core (overview/trend inkl. CAGG-Frische ohne Refresh), NOTIFY-Producer (ein NOTIFY/Commit, transaktional), Hub (debounce/coalescing/broad/unsubscribe), Listener (NOTIFY→Hub, Reconnect-broad), Authz (default-deny + Rollenmatrix + Per-User-Scope), WS-Endpoint (Auth-Reject, Snapshot, Forbidden, **echter E2E-Push** POST→NOTIFY→Listener→Hub→WS) und beide HTTP-Routen — `tests/unit/test_realtime_*`, `tests/integration/test_realtime_*`, `tests/integration/test_dashboard_*`, `tests/unit/test_dashboard_schemas.py`. Gates wie §10 (mypy --strict, ruff, Coverage).
+
+---
+
+## 21. Frontend (F5-FE Fundament)
+
+Der Werker-Output-Kanal. **Verbindliche Designgrundlage:** `docs/research/FOREMAN_Designstudie_Frontend.md`. Monorepo-Unterordner `frontend/`. Drei bleibende Haltungen als Verfassung: Simulations-Vorbehalt sichtbar · Human-in-the-Loop ohne Aktorik · Gedächtnis nach außen paraphrasiert (Hidden-Term-Scan vor PR).
+
+### 21.1 Stack & Struktur
+Next.js 15 App Router, React 19, TypeScript **strict** (`noUncheckedIndexedAccess`, kein `any`), Tailwind CSS 4 (CSS-first, kein Standard-Theme), Vitest + Testing Library, ESLint (next) + Prettier. Mobile-first. Struktur: `frontend/tokens/` (Token-Quelle), `frontend/lib/{realtime,state,auth,ui,api}/`, `frontend/components/{atoms,shell}/`, `frontend/views/`, `frontend/app/` (App Router + BFF-Route-Handler).
+
+### 21.2 Token-Quelle (Design-System, Studie §5.7)
+Drei Ebenen: **primitive** (`tokens/primitive.ts`, Rohwerte) → **semantic** (`tokens/themes.ts`, `SEMANTIC_COLOR_TOKENS`) → **theme** (`dark` primär + `hc-light` gleichwertig). Generator `scripts/build-tokens.ts` → `app/styles/tokens.generated.css` (Tailwind `@theme` + Runtime-CSS-Variablen). `npm run tokens:check` ist das CI-Sync-Gate (committete CSS == Quelle). UI referenziert **nur** semantische Utilities (`bg-surface-canvas`, `text-fg-primary`, `bg-state-ok`, `text-note-caveat`, `border-line-subtle` …). Paletten: neutrale UI, ISA-18.2 (`alarm-*`), NE-107 FCSM (`state-*`), Vorbehalt (`note-caveat`, **kein** Rot), entsättigte Daten/Heatmap, Differenz blau↔orange. **Kontrast automatisiert** (`tokens/contrast.test.ts`): Status-Text ≥7:1, Körper ≥4.5:1, Grafik ≥3:1 — beide Themes.
+
+### 21.3 Echtzeit-/State-Schicht (Kern, Studie §5.1)
+Strikte Transport-Entkopplung: `Transport`-Interface (`lib/realtime/transport.ts`) → `WebSocketTransport` (`lib/realtime/ws-client.ts`, gegen **realen** WS-Vertrag: `{action,topic}` / `{type,topic,data|reason}`, Themen `overview`/`machine:{id}`/`trend:{data_point_id}`, `?token=`, Close 4401, Reconnect→Re-Subscribe=Snapshot-Reload) → `RealtimeStore` (`lib/realtime/realtime-store.ts`, Stream-State: gepuffert+gedrosselt, Backpressure). Abgeleitete Ebene `lib/state/view-state.ts` (fünf Pflichtzustände, Degradation friert ein). React via `useSyncExternalStore` (`lib/state/use-topic.ts`). **Visualisierung kennt den Transport nie** — transport-agnostisch testbar gegen `FakeTransport`.
+
+### 21.4 Backend-Anbindung (BFF — kein CORS-Eingriff, chirurgisch)
+Next.js-Route-Handler-Proxy `app/api/v1/[...path]/route.ts` liest das JWT aus dem **httpOnly-Cookie** `foreman_token` und injiziert es als Bearer → das Backend braucht keine CORS-Lockerung. `app/api/session/route.ts` (Login → `/auth/login` + `/api/v1/me`, setzt Cookie; Logout; GET Session). `app/api/ws-ticket/route.ts` liefert dem Client das WS-Ticket just-in-time. Rolle/Scope kommen aus **GET /api/v1/me**. WS verbindet direkt zum Backend über `NEXT_PUBLIC_FOREMAN_WS_URL` (Route-Handler proxien kein WebSocket).
+
+### 21.5 Atome & Shell (Studie §5.5/§3.3)
+Atome: `StatusIndicator` (FCSM mehrkanalig: Farbe+Kürzel+Label), `ProvenanceStamp` (Herkunft/Stand + AI-Act-Kennzeichnung), `KpiTile` (nie nackte Zahl), Fünf-Zustände-Hülle (`lib/ui/five-states.tsx`). Shell: `GlobalStatusBar` (live), `ScopeBreadcrumb`, `CommandPalette` (⌘K), `QuickCaptureFab`, `PrimaryNav` (rollengefiltert ≤7). Dark + HC-Light umschaltbar, drei Dichte-Modi, Touch-Ziele ≥56/64px, sichtbarer Fokusring, reduced-motion.
+
+### 21.6 Rollen & Routen je Sektion (wachsende Tabelle)
+Rollenmatrix 3.1 als durchsetzbare Daten (`lib/auth/roles.ts`, `ACCESS_MATRIX`); **Sichtbarkeit ≤ Server-Autorisierung** (Server-Guard `lib/auth/guard.ts`, default-deny, Direktaufruf nicht erlaubter Sektion → rollenspezifisches Landing). Reifegrade aus der Studie.
+
+| Sektion | Route | Reifegrad | Frontend-Stand |
+|---|---|---|---|
+| Übersicht (Durchstich) | `/overview` | — | ✅ live gegen `/api/v1/overview` + WS, rollengefiltert |
+| A Flotten-Cockpit | `/overview` (Ausbau) | [VISION] | Durchstich-Basis |
+| B Maschinen-Detail | `/machines` | [KERN] | Platzhalter (Landing Werker/Techniker) |
+| C Alarme | `/alarms` | [STEHT] | Platzhalter — **nächster Prompt** |
+| D Ereignisketten | `/insights` | [STEHT] | Platzhalter |
+| E Ausfallvorhersage | `/insights` | [STEHT] | Platzhalter — **nächster Prompt** |
+| F Wartung | `/insights` | [VISION] | Platzhalter |
+| G Belastungs-Simulation | `/insights` | [VISION] | Platzhalter |
+| H Gedächtnis | `/memory` | [KERN] | Platzhalter |
+| I Plattform | `/platform` | [VISION] | Platzhalter |
+| J Erfassung | `/capture` | [KERN] | Platzhalter |
+| Anmeldung | `/login` | — | ✅ |
+
+### 21.7 Env & Gates
+Env: `FOREMAN_API_URL` (server, Default `http://localhost:8000`), `NEXT_PUBLIC_FOREMAN_WS_URL` (Client-WS, z. B. `ws://localhost:8000/api/v1/ws`). Gates: `npm run typecheck` (tsc strict 0), `npm run lint` (ESLint 0), `npm test` (Vitest), `npm run build`, `npm run tokens:check`.
+
+### 21.8 Bewusst verschoben (eigene Prompts/Schritte)
+Die zehn Sektionen (C/E zuerst). WebGL (A/G), Sprach-UI (J-Vision), Electron, Service-Worker-Vollausbau, Playwright-E2E (Durchstich derzeit als Vitest-Integrationstest auf Transport-Ebene), Font-Selfhosting. Erstbild Shared-JS ~102 kB (nahe Studien-Ziel <100 kB; schwere Teile sektionsweise lazy).
+
+**Security-Follow-ups (aus dem adversarialen Review, bewusst offen):**
+- **Kurzlebiges WS-Ticket (Backend):** `/api/ws-ticket` gibt derzeit das volle Session-JWT heraus, weil der WS-Vertrag ein Token im `?token=`-Query erzwingt und das Backend kein separates Ticket prägt. Saubere Lösung: Backend-Endpoint, der ein kurzlebiges (30–60 s), WS-scoped Ticket ausgibt; das Frontend reicht dann nur dieses durch. Bis dahin: nur same-origin + nur authentifiziert abrufbar, dokumentierter Defense-in-Depth-Kompromiss.
+- **WS-Transportweg:** Live-Updates brauchen `NEXT_PUBLIC_FOREMAN_WS_URL` (direkter Backend-WS) oder einen WS-Reverse-Proxy am Frontend-Origin — der HTTP-BFF-Proxy reicht kein WebSocket-Upgrade weiter. Ohne das bleibt die Sicht auf dem HTTP-Snapshot.

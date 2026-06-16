@@ -747,6 +747,42 @@ Das Frontend muss seine Navigation und Sichten nach der Rollenmatrix (3.1) filte
 
 ---
 
+## F5-FE — Frontend-Fundament (`frontend/`)
+
+### Token-Quelle (`frontend/tokens/`, `frontend/scripts/build-tokens.ts`)
+
+**Was tut es?**
+Eine einzige Quelle in drei Ebenen (primitive → semantisch → Theme dark/hc-light) erzeugt per Generator die `app/styles/tokens.generated.css` — daraus speisen sich sowohl die Tailwind-Utilities als auch die Runtime-CSS-Variablen. Ein Test rechnet die WCAG-Kontraste beider Themes nach (Status ≥7:1, Körper ≥4.5:1, Grafik ≥3:1).
+
+**Warum existiert es / wo sitzt es?**
+ISA-101 verlangt eine ruhige, entsättigte Fläche, auf der Farbe nur Bedeutung trägt. Eine zentrale Token-Quelle hält das konsistent: ein Theme-Wechsel ändert eine Ebene, nicht hunderte Komponenten. Das UI nutzt nur semantische Namen.
+
+### Echtzeit-/State-Schicht (`frontend/lib/realtime/`, `frontend/lib/state/`)
+
+**Was tut es?**
+Ein gemultiplexter WebSocket-Client spricht den realen `/api/v1/ws`-Vertrag (Themen-Abos, Reconnect mit erneutem Abonnieren = Snapshot-Reload, Close 4401). Ein Stream-Store puffert und drosselt eingehende Daten; eine abgeleitete Ebene leitet daraus die fünf Pflichtzustände ab (live/gecacht/lädt/leer/Fehler). Komponenten lesen nur die abgeleitete Ebene.
+
+**Warum existiert es / wo sitzt es?**
+Die strikte Entkopplung von Transport und Visualisierung ist die tragende Architekturentscheidung (Designstudie §5.1): eine Sicht ist gegen WebSocket, Cache oder Testdaten austauschbar — bewiesen durch Tests gegen einen Fake-Transport. So kippt Reacts Freiheit nicht in Chaos.
+
+### BFF & Auth (`frontend/lib/auth/`, `frontend/app/api/`)
+
+**Was tut es?**
+Ein Route-Handler-Proxy reicht `/api/v1`-Aufrufe ans Backend weiter und injiziert das JWT aus einem httpOnly-Cookie als Bearer; Login/Logout/Session und ein WS-Ticket laufen über eigene Route-Handler. Rolle und Scope kommen aus `GET /api/v1/me`.
+
+**Warum existiert es / wo sitzt es?**
+Das Token bleibt vor Browser-JS geschützt und das Backend braucht keine CORS-Lockerung (chirurgisch, kein Backend-Change). Das Frontend spiegelt die Server-Autorisierung (Rollenmatrix 3.1), ersetzt sie nie — Guards leiten unerlaubte Direktaufrufe auf das rollenspezifische Landing.
+
+### Atome, Shell & Durchstich (`frontend/components/`, `frontend/views/overview/`)
+
+**Was tut es?**
+Plattform-Atome (StatusIndicator mehrkanalig, ProvenanceStamp, KpiTile, Fünf-Zustände-Hülle) und die persistente Shell (globale Statusleiste live, Breadcrumb, Befehlsleiste ⌘K, Schnellerfassung, rollengefilterte Navigation). Der vertikale Durchstich zeigt die Flotten-Übersicht: Erstbild per HTTP-Snapshot, Live-Aktualisierung per WS-Thema.
+
+**Warum existiert es / wo sitzt es?**
+Der Durchstich beweist, dass Token → Atom → State-Schicht → WS/HTTP → Backend zusammenspielen und die fünf Zustände sichtbar funktionieren — das Fundament, auf dem jede künftige Sektion ruht, ohne es anzufassen.
+
+---
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```

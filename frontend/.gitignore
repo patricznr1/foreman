@@ -1,0 +1,20 @@
+# Dependencies
+/node_modules
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Test / Coverage
+/coverage
+/test-results
+
+# Build / Cache
+*.tsbuildinfo
+
+# Logs
+*.log
+
+# OS / Editor
+.DS_Store

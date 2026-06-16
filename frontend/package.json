@@ -1,0 +1,42 @@
+{
+  "name": "foreman-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "FOREMAN Frontend — industrielle Production-Intelligence-Oberfläche (ISA-101-ruhig, Echtzeit, rollenbasiert). Designgrundlage: docs/research/FOREMAN_Designstudie_Frontend.md.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "npm run tokens:build && next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "tokens:build": "tsx scripts/build-tokens.ts",
+    "tokens:check": "tsx scripts/build-tokens.ts --check",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^15.5.0",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}
