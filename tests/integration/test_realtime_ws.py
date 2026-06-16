@@ -122,3 +122,18 @@ def test_ws_live_push_on_new_reading(test_settings: Settings, _migrated_db: None
             push = ws.receive_json()
             assert push["type"] == "update"
             assert push["topic"] == topic
+
+
+def test_ws_rejects_token_with_non_integer_subject(
+    test_settings: Settings, _migrated_db: None
+) -> None:
+    # Manipuliertes/fehlerhaftes Token (sub nicht numerisch) → sauberer 4401-Close,
+    # keine unbehandelte ValueError (CodeRabbit-Finding PR #18).
+    from foreman.core.security import create_access_token
+
+    token = create_access_token("not-an-int", test_settings)
+    with TestClient(_app(test_settings)) as client:  # type: ignore[arg-type]
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect(f"/api/v1/ws?token={token}"):
+                pass
+    assert exc_info.value.code == 4401

@@ -106,7 +106,11 @@ async def _authenticate(
     if subject is None:
         await websocket.close(code=_WS_UNAUTHORIZED)
         return None
-    user_id = int(subject)
+    try:
+        user_id = int(subject)
+    except (TypeError, ValueError):
+        await websocket.close(code=_WS_UNAUTHORIZED)
+        return None
     async with _read_session() as session:
         exists = await session.get(User, user_id) is not None
     if not exists:

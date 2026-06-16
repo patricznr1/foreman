@@ -72,6 +72,10 @@ def encode_change(change: ChangeSet) -> str:
 def decode_change(payload: str) -> ChangeSet:
     """Liest ein ChangeSet aus dem NOTIFY-Payload (Hub-Seite)."""
     data = json.loads(payload)
+    # Unbekannte/inkompatible Payload-Version (z. B. gemischter Deploy) → fail-safe
+    # auf broad: lieber alles neu laden als IDs still verlieren.
+    if data.get("v") != _PAYLOAD_VERSION:
+        return ChangeSet(broad=True)
     if data.get("broad"):
         return ChangeSet(broad=True)
     return ChangeSet(

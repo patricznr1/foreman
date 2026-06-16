@@ -48,3 +48,9 @@ def test_oversized_changeset_degrades_to_broad_within_notify_limit() -> None:
     payload = encode_change(huge)
     assert len(payload.encode("utf-8")) <= 8000
     assert decode_change(payload).broad is True
+
+
+def test_unknown_payload_version_degrades_to_broad() -> None:
+    # Inkompatible Schema-Version (z. B. gemischter Deploy) → fail-safe broad,
+    # keine still verlorenen IDs (CodeRabbit-Finding PR #18).
+    assert decode_change('{"v":999,"data_points":[5]}').broad is True
