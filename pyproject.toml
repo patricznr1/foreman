@@ -12,7 +12,7 @@ version = "0.2.0"
 description = "FOREMAN — Production Intelligence with Memory (MSIT AI-Track Capstone)"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "LicenseRef-Proprietary"
 authors = [{ name = "patricznr1" }]
 
 dependencies = [
