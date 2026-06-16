@@ -57,6 +57,9 @@ dependencies = [
     "lightgbm>=4.5",
     "shap>=0.46",
     "scikit-learn>=1.5",
+    # --- MCP-Server (F7): Anthropic Model Context Protocol SDK (FastMCP). FOREMAN als
+    #     offener Knoten — read-only Tools an Drittsysteme über Streamable HTTP/SSE. ---
+    "mcp>=1.9",
 ]
 
 [project.optional-dependencies]
@@ -103,6 +106,9 @@ untyped_calls_exclude = [
     "lightgbm",
     "shap",
     "sklearn",
+    # MCP-SDK (F7): FastMCP-Registrierung/Server-Aufrufe sind teils untypisiert —
+    # Aufrufe ausnehmen, `strict` greift über FOREMANs eigenen MCP-Code voll.
+    "mcp",
 ]
 
 # Dritt-Bibliotheken ohne Type-Stubs (Presidio/spaCy) — gezielt nachsichtig,
@@ -136,6 +142,10 @@ module = [
     "shap.*",
     "sklearn",
     "sklearn.*",
+    # MCP-SDK (F7): teils unvollständige Stubs — Imports nachsichtig, `strict` greift
+    # über FOREMANs eigenen MCP-Server-/Tool-Code voll.
+    "mcp",
+    "mcp.*",
 ]
 ignore_missing_imports = true
 

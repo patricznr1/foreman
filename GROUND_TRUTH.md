@@ -2,7 +2,9 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-16 · **Status:** F-REC — LLM-Werker-Empfehlung (Erklär-Layer über F-PRED, **zweiter Konsument des LLM-Gateways** nach F6). Pipeline wie F6 (sammeln → grounden → synthetisieren → persistieren + Dual-Write), aber die Eingänge sind die Vorhersage + ihre SHAP-Faktoren (`trusted=True`, modell-autoritativ) plus ein NEXUS-Recall ähnlicher Vorlauf-Muster (`trusted=False`, best-effort). `gateway.complete(task=explanation)` → deutsche Werker-Empfehlung. **Zwei Invarianten, strukturell erzwungen:** (I) Zahlen autoritativ vom Modell — der numerische Post-Check über `GroundingReport.unbacked` **rejectet** (nicht: flaggt) jede unbelegte Zahl, keine Persistenz; (II) der Sim-Vorbehalt ist deterministisch — `validation_caveat` kommt aus `validation_caveat_for(...)`, nie aus dem LLM, plus ein Negativ-Guard gegen Umdeutung. Persistenz `failure_recommendations` (Migration `0007`, FK auf `failure_predictions`) + Dual-Write als `semantic_event` (`data_regime=simulation`), on-demand-Routen, `foreman_failure_recommendation_*`-Metriken. Red-Team scharf über den **Recall-Pfad** ✅. Vertrag: **§16.5**. Erweitert das `reasoners/failure/`-Modul.
+**Stand:** 2026-06-16 · **Status:** F7 — MCP-Schnittstelle (FOREMAN als offener Knoten, **zweiter Differenzierungs-Pfeiler „Plattform statt App"**). Neue Schicht `src/foreman/mcp/`: ein **read-only** Model-Context-Protocol-Server (Anthropic SDK / FastMCP, Streamable HTTP), der die aggregierten Reasoner-Erkenntnisse als **11 maschinenlesbare Tools** an Drittsysteme (Simulation/ERP/Energiemanagement) reicht. Drei Invarianten, strukturell verankert: **(I) read-only** — keine Aktorik, kein Reasoner-/LLM-Trigger über MCP (MCP-eigene Read-Schicht `reads.py`, ausschließlich SELECT); **(II) AI-Act-Transparenz** an jedem KI-Output (Art. 50(2): `ai_generated`/`generated_by`/`requires_human_review`/`model_version` + bei Vorhersage/Empfehlung `validation_status`/`data_regime`/`validation_caveat`) — ein gemeinsamer Wrapper, dessen Validator einen unehrlichen Umschlag nicht zulässt; **(III) IP-Wording** — kein internes Vokabular in Tool-Namen/-Beschreibungen/-Schemata (Hidden-Term-Scan als Akzeptanzkriterium). Eigener `FOREMAN_MCP_`-Token (getrennt vom Plattform-JWT, Fail-Closed), PII nur pseudonymisiert/maskiert (Token nie aufgelöst), `foreman_mcp_*`-Metriken, eigenständige ASGI-App (eigener Port, eigene `/health`/`/metrics`). **Erfüllt zugleich AI-Act-Maßnahme §10.5(2) — Transparenz-Flag MCP: „gebaut".** Vertrag: **§17**.
+
+*Vorgänger-Status F-REC — LLM-Werker-Empfehlung (Erklär-Layer über F-PRED, **zweiter Konsument des `LLMGateway`** nach F6): aus einer `FailurePrediction` + SHAP-Faktoren (`trusted=True`) + NEXUS-Recall (`trusted=False`, best-effort) eine deutsche Werker-Empfehlung über `gateway.complete(task=explanation)`. Zwei strukturell erzwungene Invarianten: (I) Zahlen autoritativ vom Modell — der numerische Post-Check **rejectet** (nicht: flaggt) jede unbelegte Zahl, keine Persistenz; (II) deterministischer Sim-Vorbehalt — `validation_caveat` aus `validation_caveat_for(...)`, nie aus dem LLM. Persistenz `failure_recommendations` (Migration `0007`, FK auf `failure_predictions`) + Dual-Write. Red-Team scharf über den Recall-Pfad ✅. Vertrag: §16.5.*
 
 *Vorgänger-Status F-PRED — Ausfallvorhersage-Reasoner (Reasoner #3), **ehrlich deklarierter Methoden-Demonstrator**: klassisches ML (LightGBM `LGBMClassifier`, binär) + SHAP-`TreeExplainer`-Faktor-Attribution, reine/netzfreie Feature-Extraktion ohne Zeit-Leakage (`readings_1m`-Aggregate + Drift-Output als Feature + Wartung/Alarm), Trainingsdatensatz aus den Szenarien (Label aus `ground_truth.failure` + Horizont, **lauf-disjunkter** Split), reproduzierbares Offline-Training (CLI, Seed), Inferenz lädt das Artefakt → persistierte `FailurePrediction`, on-demand-Routen, `foreman_failure_*`-Metriken. **Strukturelle Ehrlichkeit (Kern):** `validation_status=simulation_only` ist Pflichtfeld an jeder Vorhersage, `data_regime=simulation` Label auf allen Kennzahlen — der prädiktive Wert setzt reale Run-to-failure-Daten voraus (über den SPS-Programm-Kanal grundsätzlich nicht verfügbar). Vertrag: **§16** + Model Card `docs/models/failure_prediction_model_card.md`. Baut auf F2 + F3 + F4 (Drift-Output als Feature) + F-LLM (Gateway, Zahlen nie aus dem LLM) auf.*
 
@@ -27,7 +29,7 @@ Drei Schichten:
 
 1. **Industrieumgebung** — Datenquellen: SPS/OPC UA, MQTT, Modbus, Logs, Wartungshistorie.
 2. **FOREMAN-Plattform** — Ingestion + fünf Reasoner + Modell-Gateway.
-3. **Output-Kanäle** — Werker-Dashboard + MCP-Schnittstelle.
+3. **Output-Kanäle** — Werker-Dashboard (F5, geplant) + **MCP-Schnittstelle (F7 ✅, read-only — FOREMAN als offener Knoten, §17)**.
 
 **Gedächtnis-Substrat:** externer Dienst hinter HTTP-API. Wird wie eine Datenbank konsumiert. **Kein Substrat-Code in diesem Repo.**
 
@@ -98,6 +100,15 @@ Drei Schichten:
 - `GET /api/v1/reasoners/failure/predictions/{prediction_id}/recommendation` — die jüngste persistierte Empfehlung zu einer Vorhersage; 404, wenn keine vorhanden (ohne POST existiert keine — kein Auto-LLM).
 
 *(Routen-Namespace `reasoners/<reasoner>/…` analog zu `reasoners/drift`. Weitere Reasoner-Routen folgen je Phase.)*
+
+### MCP-Schnittstelle (read-only, ab F7)
+
+Eigenständiger Model-Context-Protocol-Server (Anthropic SDK / FastMCP, **Streamable HTTP**, Default-Port `8081`) — **getrennt** von der Plattform-FastAPI-App (eigener Token, eigener Port). Remote erreichbar für Drittsysteme; **kein** Tool schaltet etwas, **keines** löst eine Reasoner-Berechnung aus. Vollständiger Vertrag: **§17**.
+
+- **Transport:** `POST/GET /mcp` (Streamable HTTP). Auth-pflichtig über den `FOREMAN_MCP_`-Token (Bearer); fehlendes/ungültiges Credential → 401, Abruf-Last-Bremse → 429.
+- **Offene Pfade (kein Token):** `GET /health`, `GET /metrics` (Prometheus, enthält `foreman_mcp_*`).
+- **Read-only Tools (11):** `list_machines`, `get_machine`, `get_drift_status`, `get_alarms(machine_id?, since?, severity?)`, `list_failure_predictions(machine_id?)`, `get_failure_prediction(prediction_id)`, `get_worker_recommendation(prediction_id)`, `list_event_chains(machine_id?)`, `get_event_chain(explanation_id)`, `search_notes(query, machine_id?, k?)`, `get_readings(machine_id, datapoint, hours?)`. Alle mit `readOnlyHint=True`.
+- **Transparenz:** KI-stämmige Ausgaben (Vorhersage, Empfehlung, Ereignisketten-Erklärung) tragen die Art.-50(2)-Flags + (Vorhersage/Empfehlung) den Sim-Vorbehalt; Stammdaten/Readings/Alarme **nicht** als KI gekennzeichnet.
 
 ---
 
@@ -257,7 +268,7 @@ Jeder Endpoint/Service/Reasoner bringt mindestens mit:
 
 - Risiko-Klassifizierung dokumentiert (inkl. Art.-6(3)-Begründung).
 - FOREMAN-Voreinschätzung: vermutlich *Minimal/Limited Risk*. **Aber:** Werker-Sicherheitsempfehlungen werden gegen Anhang III (Hochrisiko) geprüft.
-- Transparenz: KI-generierte Empfehlungen werden als solche gekennzeichnet.
+- Transparenz (Art. 50(2)): KI-generierte Ausgaben werden als solche gekennzeichnet. **Maßnahme 2 (MCP-Transparenz-Flag) — gebaut (F7):** jeder KI-stämmige MCP-Output trägt `ai_generated`/`generated_by="foreman-ai"`/`requires_human_review`/`model_version` (Vorhersage/Empfehlung zusätzlich `validation_status`/`data_regime`/`validation_caveat`); ein gemeinsamer Wrapper erzwingt die Ehrlichkeit strukturell (Nicht-KI-Daten tragen keine KI-Flags). Vertrag §17. Dashboard-Kennzeichnung (Maßnahme 1, Art. 50(1)) folgt mit F5.
 - **Human-in-the-Loop:** keine automatische Aktorik bei safety-relevanten Empfehlungen — der Operator bestätigt (siehe §8).
 
 ### 10.6 Deploy-Gate
@@ -524,3 +535,56 @@ Der Erklär-Layer über F-PRED unter `src/foreman/reasoners/failure/` (erweitert
 **Grenzen:** Werkernotizen bleiben draußen (Kern = Vorhersage + SHAP + Recall; keine F-SEM-Notiz-Einbindung). Recall `trusted=False`, best-effort (Ausfall blockiert nie; Inhalt ist nie Instruktion). On-demand, kein Auto-LLM. Keine Aktorik. Reasoner importiert nur `foreman.llm` (kein LiteLLM-Typ). Dual-Write spiegelt eine PII-freie Zusammenfassung mit `data_regime=simulation`, nicht den rohen Empfehlungstext.
 
 **Verifikation:** reine Stufen (Schema/Recall/Grounding) ohne Netz; Pipeline-E2E gegen echte DB (Gateway über Mock-Backend des **echten** `LiteLLMGateway`, Substrat gemockt/aus). `validation_caveat` IMMER präsent + deterministisch; numerischer Reject getestet; **Red-Team scharf über den Recall-Pfad** (`tests/reasoners/failure/security/test_recommendation_injection.py`): vergifteter Substrat-Inhalt kapert die Empfehlung nicht (Spotlighting hält, Output-Guard greift, numerischer Reject bei fabrizierter Zahl, Vorbehalt nicht umdeutbar, Inertheit).
+
+---
+
+## 17. MCP-Schnittstellen-Vertrag (F7)
+
+FOREMAN als **offener Knoten**: ein read-only Model-Context-Protocol-Server (`src/foreman/mcp/`, Anthropic SDK / FastMCP, **Streamable HTTP**), der die aggregierten Reasoner-Erkenntnisse als saubere, maschinenlesbare Tools an Drittsysteme reicht. Diese Schicht **erfindet keine Logik** — sie exponiert das schon Gebaute. Eigenständige ASGI-App, getrennt von der Plattform-FastAPI-App (eigener Port, eigener Token).
+
+### 17.1 Drei tragende Invarianten
+
+- **(I) Read-only, keine Aktorik, keine Reasoner-Trigger.** Jedes Tool ist `readOnlyHint=True` und liest ausschließlich (SELECT) über die MCP-eigene Read-Schicht `reads.py`. Kein Tool ruft je `predict`/`recommend`/`reconstruct`/`run_machine` oder das `LLMGateway` — das sind Compute+Write+LLM-Pfade und bewusst draußen. Damit behält FOREMAN die Kontrolle über Aktion **und** LLM-Kosten; zugleich ist das die tragende AI-Act-Limited-Risk-Bedingung (§10.5, keine Aktorik). Strukturell verifiziert: `tests/mcp/security/test_no_actuation.py` (kein Schreib-/Trigger-Muster im Quelltext, alle Tools nicht-destruktiv).
+- **(II) AI-Act-Transparenz an jedem KI-Output (Art. 50(2)).** Ein gemeinsamer Wrapper `AiTransparency` (`transparency.py`) hüllt jeden KI-stämmigen Output: `ai_generated`/`generated_by="foreman-ai"`/`requires_human_review`/`model_version`; bei Ausfallvorhersage und Empfehlung zusätzlich `validation_status`/`data_regime`/`validation_caveat`. Die Ehrlichkeit ist **strukturell** erzwungen (ein Validator lässt weder einen KI-Umschlag ohne Marker noch einen Nicht-KI-Umschlag mit KI-Metadaten zu). Ereignisketten persistieren keine Modell-Version → `model_version` ehrlich null. Nicht-KI-Daten (Stammdaten, Readings, Alarme) werden **nicht** als KI gekennzeichnet.
+- **(III) IP-Wording (nach außen sichtbar).** Tool-Namen/-Beschreibungen/-Schemata tragen **kein** internes Vokabular (kein Library-/Algorithmen-/Substrat-Name); das Gedächtnis nur paraphrasiert. SHAP heißt nach außen `contribution`. **Hidden-Term-Scan als Akzeptanzkriterium:** `tests/mcp/security/test_ip_wording.py` scannt alle Tool-Strings (Name + Beschreibung + Ein-/Ausgabeschema).
+
+### 17.2 Schnittstelle
+
+- **Transport/Auth:** `POST/GET /mcp` (Streamable HTTP), Bearer-`FOREMAN_MCP_`-Token (`SecretStr`, zeitkonstanter Vergleich, Fail-Closed). Fehlend/ungültig → 401; Abruf-Last über das Token-Bucket → 429. Produktions-Fail-Fast: kein remote erreichbarer Server ohne sicheren Token (`require_secure_token`). Offen (kein Token): `GET /health`, `GET /metrics`.
+- **Read-Schicht (`reads.py`) als sauberer Service-Layer:** Architektur-Entscheidung (Review-geklärt) — die Read-Logik der Reasoner lag bisher inline in den HTTP-Routern, ohne wiederverwendbare Service-Methode. Statt sechs bestehende Router zu refactoren, bekommt MCP eine eigene, injizierte (Session), testbare Read-Schicht. Die Service-Klassen der Reasoner (Compute/Write/LLM) werden **nicht** angefasst.
+- **Tools (11):** `list_machines`, `get_machine`, `get_drift_status`, `get_alarms(machine_id?, since?, severity?)`, `list_failure_predictions(machine_id?)`, `get_failure_prediction(prediction_id)`, `get_worker_recommendation(prediction_id)`, `list_event_chains(machine_id?)` (filtert auf den Ereignisketten-Reasoner), `get_event_chain(explanation_id)`, `search_notes(query, machine_id?, k?)` (bettet die Query ein + sucht — billig, kein LLM), `get_readings(machine_id, datapoint, hours?)` (aggregierter Trend über die Minuten-Aggregat-Sicht). Maschinen-`status` (gesund/Drift aktiv/offene Warnung) wird aus offenen Alarmen komponiert.
+- **PII (§8):** nur pseudonymisierte/maskierte Formen raus — `acknowledged_by`/`author` als HMAC-Token (nie aufgelöst), `worker_notes.text` NER-maskiert. Kein Embedding-Vektor, keine `users`-Felder, keine internen Re-ID-Schlüssel. Verifiziert: `tests/mcp/test_pii.py`.
+- **Vorbehalt überlebt die MCP-Grenze:** F-PRED-Outputs tragen `validation_status=simulation_only`/`data_regime`/`model_version`; F-REC-Outputs zusätzlich den gespeicherten deterministischen `validation_caveat`. Diese Felder werden vom MCP-Layer nie abgestreift.
+
+### 17.3 Grenzen & Observability
+
+- **Nicht in Scope (bewusst):** Reasoner-Trigger über MCP, Schreib-Tools, Dashboard. Reasoner-Trigger via MCP wäre eine spätere, eng abgesicherte Erweiterung (gäbe einem Drittsystem Kontrolle über LLM-Kosten/DB-Seiteneffekte und rückte an die Aktorik-Grenze).
+- **Metriken:** `foreman_mcp_requests_total` (`tool`/`result`) + `foreman_mcp_latency_seconds` (`tool`), niedrig-kardinal, keine PII — unter der eigenen `/metrics`-Route des MCP-Servers.
+- **Verifikation:** `tests/mcp/` — Transparenz-Ehrlichkeit, Tool-Korrektheit + Read-only (keine Seiteneffekte), Auth-Reject, PII-Schutz, SDK-Handshake (Tool-Registry), No-Actuation + Hidden-Term-Scan. Coverage der Schicht ≥ 85 %.
+
+---
+
+## 18. Privacy & Compliance
+
+> Pflicht-Sektion (siehe Skill `ground-truth-check`). Verdichtet die §8-Leitplanken zu den geforderten benannten Feldern; die ausführliche Herleitung liegt in `docs/compliance/`.
+
+- **AI-Act-Klassifizierung:** **Limited Risk** (Art. 50 Transparenz + Art. 4 KI-Kompetenz), Stand Juni 2026. Begründung: keine verbotene Praktik (Art. 5), kein Hochrisiko (Anhang I/III verneint — Fabrik ≠ kritische Infrastruktur, kein HR-/Personal-Scoring, kein in eine konformitätspflichtige Maschine integriertes ML-Sicherheitsbauteil). **Tragende Bedingung:** Human-in-the-Loop ohne automatische Aktorik. Quelle: `docs/compliance/eu-ai-act-assessment.md`. Re-Assessment bei Architektur-Änderung (Aktorik, neue Datenarten, Personenbezug).
+- **DSFA-Status:** vorläufige Datenschutz-Folgenabschätzung in `docs/compliance/dsfa-foreman-vorlaeufig.md`; vor echtem Produktiveinsatz (reale Werkerdaten) zu finalisieren.
+- **VVT-Eintrag:** Verarbeitungstätigkeiten in der DSGVO-Einschätzung skizziert (`docs/compliance/dsgvo-assessment.md`); formales VVT vor Produktiveinsatz pro Betreiber zu führen.
+- **AVV:** Default-Pfad ist **lokal** (Qwen3/Ollama) → keine Auftragsverarbeitung durch Dritte. **Cloud-Fallback (Anthropic):** AVV nach Art. 28 DSGVO + Werker-Freitext-Pseudonymisierung/NER **vor** Versand erforderlich, bevor der Fallback produktiv genutzt wird (Stand: offen, kein Produktiveinsatz).
+- **Drittlandtransfer:** Default **EU-only / lokal** (kein Transfer). Bei Cloud-Fallback: Transfer-Grundlage (SCC/Angemessenheit) pro Anbieter vor Nutzung zu prüfen.
+- **Speicherdauern pro Datenkategorie:** Nachweis-Felder (`performed_by`, `acknowledged_by`) an gesetzliche Aufbewahrungspflicht gekoppelt; `worker_notes` kürzer; Sensorzeitreihen über TimescaleDB-Retention gestaffelt (Roh `readings` 90 d, `readings_1m` 1 J, `readings_1h` 5 J, `readings_1d` unbegrenzt). MCP gibt nur aggregierte/maskierte Formen aus.
+- **Lösch-Konzept:** Crypto-Shredding über pro-Werker-Schlüssel (§8) — Klartext-Identität nur in `users`; Löschung trennt die Person vom Token, Verhaltens-/Maschinen-Gedächtnis bleibt intakt (Art. 17 DSGVO). MCP hält keinen Schlüssel und kann Token nicht auflösen.
+
+---
+
+## 19. Security
+
+> Pflicht-Sektion (siehe Skill `ground-truth-check`). Verdichtet §10.4 + die F6/F-REC/F7-Härtung zu den geforderten benannten Feldern.
+
+- **Threat Model:** LLM-/Reasoner-Pfade nach OWASP LLM Top 10 (2025) + OWASP Web Top 10 (2025) + BSI-Zero-Trust-LLM-Prinzipien (§10.4); Prompt-Injection-Analyse in `docs/research/prompt-injection-schutz.md`.
+- **Letzte Pen-Test / Red-Team:** scharfer Red-Team-Test-Satz an den LLM-Freitext-Pfaden — F6 (Ereignisketten, `tests/reasoners/event_chain/security/`) ✅ und F-REC (Recall-Pfad, `tests/reasoners/failure/security/`) ✅; F7-MCP strukturell (No-Actuation + Hidden-Term-Scan + PII-Test, `tests/mcp/security/` + `tests/mcp/test_pii.py`) ✅, Stand Juni 2026. Externer Pen-Test: vor Produktiveinsatz.
+- **SBOM:** Abhängigkeits-Manifest in `pyproject.toml` + `uv.lock`; SBOM/Audit über die Dependency-Audit-Routine (`pip-audit`) erzeugbar — kein persistiertes SBOM-Artefakt im Repo (Stand F7).
+- **OWASP LLM Top 10 Coverage:** LLM01 (Prompt-Injection) — Spotlighting + Output-Guard + Red-Team ✅; LLM02/05 (Output-Handling) — Sanitisierung + Datamarking ✅; LLM03/04 (Supply-Chain/Modell-Integrität) — Modell-Version/Digest gepinnt ✅; LLM10 (Unbounded Consumption) — Token-/Timeout-/Kosten-Guard im Gateway **und** Token-Bucket-Rate-Limit am MCP-Server ✅. MCP-spezifisch: read-only (keine Schreib-/Trigger-Angriffsfläche), Fail-Closed-Auth.
+- **BSI-Zero-Trust-Compliance:** Human-in-the-Loop, keine automatische Aktorik; Safety-Alarme nur über Operator-Quittierung erledigt (§8); MCP exponiert nichts Schaltbares.
+- **MCP-Server-Hardening (F7):** read-only strukturell bewiesen; dedizierter `SecretStr`-Token getrennt vom Plattform-JWT (zeitkonstanter Vergleich, Fail-Closed, Produktions-Fail-Fast); Rate-Limit (429); Hidden-Term-Scan; PII nur pseudonymisiert/maskiert (Token nie aufgelöst); eigenständige App (eigener Port). Stand: F7 ✅.
