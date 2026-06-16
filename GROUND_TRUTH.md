@@ -110,6 +110,14 @@ Eigenständiger Model-Context-Protocol-Server (Anthropic SDK / FastMCP, **Stream
 - **Read-only Tools (11):** `list_machines`, `get_machine`, `get_drift_status`, `get_alarms(machine_id?, since?, severity?)`, `list_failure_predictions(machine_id?)`, `get_failure_prediction(prediction_id)`, `get_worker_recommendation(prediction_id)`, `list_event_chains(machine_id?)`, `get_event_chain(explanation_id)`, `search_notes(query, machine_id?, k?)`, `get_readings(machine_id, datapoint, hours?)`. Alle mit `readOnlyHint=True`.
 - **Transparenz:** KI-stämmige Ausgaben (Vorhersage, Empfehlung, Ereignisketten-Erklärung) tragen die Art.-50(2)-Flags + (Vorhersage/Empfehlung) den Sim-Vorbehalt; Stammdaten/Readings/Alarme **nicht** als KI gekennzeichnet.
 
+### Dashboard- & Live-Push-Routen (F5)
+
+In die Plattform-FastAPI-App integriert (nicht der MCP-Server). Vollständiger Vertrag: **§20**.
+
+- `GET /api/v1/overview` — Flotten-Lagebild (Statusleiste/Cockpit): je Maschine komponierter FCSM-Status + offene Alarme nach Severity + jüngster offener Alarm, plus Status-Rollup. Auth-pflichtig; **scope-korrekt + autorisiert** wie das WS-`overview`-Thema — nur `manager`/`shift_lead` (sonst **403**), `shift_lead` auf seine Linien gefiltert.
+- `GET /api/v1/machines/{machine_id}/trend?datapoint=<name>&hours=<1–168>` — aggregierter `readings_1m`-Trend eines Datenpunkts + statisches Normalband (`normal_min`/`normal_max`). Auth-pflichtig; **gleiche Maschinen-Scope-Autorisierung** wie das WS-`machine`-Thema (**403** außerhalb des Scopes). **404**, wenn der Datenpunkt an der Maschine nicht existiert.
+- `WS /api/v1/ws?token=<jwt>` — **EIN** gemultiplexter WebSocket-Kanal mit Themen-Abos. Auth über Query-Token (die AuthMiddleware lässt WS-Scope durch → manuelle Auth, Close-Code 4401). Client-Nachrichten `{action: subscribe|unsubscribe, topic}`; jeder `subscribe` wird **autorisiert** (default-deny), bei Erfolg sofort ein Snapshot, danach Live-Deltas. Themen: `overview`, `machine:{id}`, `trend:{data_point_id}`.
+
 ---
 
 ## 5. Datenbank-Schema
@@ -149,7 +157,8 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - `text` (Freitext): Personennamen werden **vor dem Insert** per NER maskiert (Restrisiko bleibt; nie als anonym deklariert). **Eingebettet wird der NER-maskierte Text** (kein Rohtext; §8/§15).
 
 **`users`** — Auth
-- `id` PK · `email` (unique) · `password_hash` · `role` · `created_at`
+- `id` PK · `email` (unique) · `password_hash` · `role` · `assigned_line_ids` (`bigint[]`, Default `{}`) · `assigned_machine_ids` (`bigint[]`, Default `{}`) · `created_at`
+- **Rollen-Vokabular (F5, englische IDs):** `worker` (Default), `shift_lead`, `technician`, `manager` — UI-Labels deutsch (Werker/Schichtleiter/Techniker/Manager). `assigned_*` sind die Scope-Quelle der WS-/HTTP-Abo-Autorisierung (§20): `worker` → seine Maschinen, `shift_lead` → seine Linien; `manager`/`technician` unrestricted. Leeres Array = kein Scope (default-deny).
 
 **`audit_logs`**
 - `id` PK · `user_id` FK (nullable) · `action` · `target` · `created_at`
@@ -178,6 +187,7 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - **`0005_failure_predictions`** — legt die Tabelle `failure_predictions` an (F-PRED) mit FK auf `machines`, JSONB-Spalte für die SHAP-Top-Faktoren, den Pflicht-Vorbehalt-Spalten (`validation_status`/`data_regime`/`model_version`) und dem Lese-Index `ix_failure_predictions_machine_created`.
 - **`0006_failure_predictions_checks`** — härtet `failure_predictions` mit DB-CHECK-Constraints (Sim-Vorbehalt + gültige Entscheidung an der Persistenzgrenze, §16.1).
 - **`0007_failure_recommendations`** — legt die Tabelle `failure_recommendations` an (F-REC) mit FK auf `failure_predictions` (+ `machines`), JSONB-Spalte für die referenzierten Quellen, den Vorbehalt-/Caveat-Spalten und den geerbten autoritativen Zahlen; CHECK-Constraints (Sim-Vorbehalt + Entscheidung) und die Lese-Indizes `ix_failure_recommendations_prediction` + `ix_failure_recommendations_machine_created`.
+- **`0008_user_subscription_scope`** — ergänzt `users.assigned_line_ids` + `users.assigned_machine_ids` (`bigint[]`, Default `{}`) als Scope-Quelle der F5-WS-/HTTP-Abo-Autorisierung (§20).
 
 ---
 
@@ -588,3 +598,30 @@ FOREMAN als **offener Knoten**: ein read-only Model-Context-Protocol-Server (`sr
 - **OWASP LLM Top 10 Coverage:** LLM01 (Prompt-Injection) — Spotlighting + Output-Guard + Red-Team ✅; LLM02/05 (Output-Handling) — Sanitisierung + Datamarking ✅; LLM03/04 (Supply-Chain/Modell-Integrität) — Modell-Version/Digest gepinnt ✅; LLM10 (Unbounded Consumption) — Token-/Timeout-/Kosten-Guard im Gateway **und** Token-Bucket-Rate-Limit am MCP-Server ✅. MCP-spezifisch: read-only (keine Schreib-/Trigger-Angriffsfläche), Fail-Closed-Auth.
 - **BSI-Zero-Trust-Compliance:** Human-in-the-Loop, keine automatische Aktorik; Safety-Alarme nur über Operator-Quittierung erledigt (§8); MCP exponiert nichts Schaltbares.
 - **MCP-Server-Hardening (F7):** read-only strukturell bewiesen; dedizierter `SecretStr`-Token getrennt vom Plattform-JWT (zeitkonstanter Vergleich, Fail-Closed, Produktions-Fail-Fast); Rate-Limit (429); Hidden-Term-Scan; PII nur pseudonymisiert/maskiert (Token nie aufgelöst); eigenständige App (eigener Port). Stand: F7 ✅.
+- **Dashboard-Live-Push-Hardening (F5):** WebSocket-Scope wird von der AuthMiddleware durchgelassen → **manuelle** Token-Auth im Endpoint (Close 4401, vor `accept`); pro `subscribe` eine **Autorisierung** (default-deny, Rollenmatrix + Per-User-Scope) — ein authentifizierter Client kann nicht jedes Maschinen-Thema mithören (PII-Pfad). Dieselbe Prüfung gilt für die HTTP-Read-Routen (§4/§20.4). NOTIFY-Payload trägt nur IDs (keine Nutzlast); der Kanal ist read-only (keine Aktorik). Stand: F5 ✅.
+
+---
+
+## 20. Dashboard-Backend & Live-Push (F5)
+
+Das Backend-Fundament des Dashboards (Frontend folgt separat). Trennt **LIVE** (Push/WebSocket) von **ON-DEMAND/Erstbild** (Pull/HTTP, §4) und teilt einen transport-neutralen **Read-Core**. Designgrundlage: `docs/research/FOREMAN_Designstudie_Frontend.md` §5.1.
+
+### 20.1 Geteilter Read-Core (`foreman/reads/`)
+Transport-neutrale Read-only-Schicht, von MCP (F7), HTTP-Routen (§4) und WS-Push gemeinsam genutzt — keine Duplikation. `queries.py` (SELECT-Funktionen + `ReadingBucket`), `status.py` (`compose_status` + kanonischer `MachineStatus` healthy/drift_active/open_warning), `overview.py` (`build_fleet_overview(machine_ids?)` → FCSM-Status + Severity-Breakdown + Rollup), `trend.py` (`build_trend`/`build_trend_by_id` → `readings_1m` + statisches Normalband). Die MCP-Schicht (F7) ruft jetzt diesen Read-Core auf (vormals `mcp/reads.py` + `_compose_status` — verschoben, F7-Verhalten unverändert).
+
+### 20.2 Transport: Postgres LISTEN/NOTIFY (kein Polling, kein Redis)
+Der separate Ingest-Prozess (§12.5) ist nicht die API → entkoppelte Push-Brücke über Postgres-NOTIFY (Stack bewusst ohne Redis/Celery).
+- **Producer (`realtime/notify.py` + `channels.py`):** der geteilte Schreibpfad feuert **ein** `pg_notify` pro Commit/Batch (NICHT pro Zeile) auf Kanal `foreman_dashboard`, transaktional (Zustellung beim Commit). Dünner Payload (nur IDs: `machines`/`data_points`/`kinds`; Overflow > 7 KB → `broad`-Signal statt stiller Truncation). Verdrahtet in `ingestion/service.py` (ein NOTIFY je Tick-Commit; nur live-relevante Readings/Alarme — nicht Wartung/Läufe/Notizen) und `POST /api/v1/readings`.
+- **Consumer (`realtime/listener.py` + `hub.py`), PRO Worker:** je Uvicorn-Worker eine dedizierte asyncpg-LISTEN-Verbindung + ein In-Process-Hub (kein globaler Singleton; Postgres broadcastet an alle Worker, jeder bedient seine eigenen Clients). Der Hub mappt das ChangeSet auf Themen und **debounct pro Thema → lädt dann** konsolidiert über den Read-Core (Reihenfolge: debounce→load). (Re)Connect → breites Refresh (Snapshot-Reload, keine fire-and-forget-Lücke). Verdrahtung im Lifespan (`realtime/wiring.py`); `start()` wartet auf die erste Verbindung, damit ein unmittelbar folgendes NOTIFY nicht verloren geht.
+
+### 20.3 WebSocket-Vertrag (`/api/v1/ws`, `realtime/ws.py`)
+EIN gemultiplexter Kanal, Themen-Abos `overview` / `machine:{id}` / `trend:{data_point_id}`. Auth per Query-Token (Close 4401, vor `accept`). Pro `subscribe`: Autorisierung (default-deny, §20.4) → sofortiger Snapshot → danach Live-Deltas. State-Schichtung (Designstudie §5.1): Stream-State (NOTIFY) → debounce → abgeleiteter View-State (Read-Core, auf Anzeigeauflösung downgesampelt) → Push. Pro Lade-Operation eine kurze Read-only-Session (keine Dauer-Session je Verbindung, blockiert keine Pool-Verbindung). **Keine Aktorik** — der Kanal trägt Zustand, schreibt nie.
+
+### 20.4 Abo-Autorisierung (`realtime/authz.py`) — PII-Strich
+Beim `subscribe` und in jeder HTTP-Read-Route wird nicht nur authentifiziert, sondern **autorisiert** (`can_subscribe`, default-deny), damit kein authentifizierter Client jedes Maschinen-Thema mithört. Rollenmatrix (Designstudie 3.1): `manager`/`technician` unrestricted; `shift_lead` → Maschinen seiner Linien (`users.assigned_line_ids`); `worker` → seine Maschinen (`users.assigned_machine_ids`); `overview` nur `manager`/`shift_lead`. Trend-Themen erben den Maschinen-Scope ihres Datenpunkts. **Dieselbe** Prüfung für WS UND HTTP (§4) — der Strich hält auf beiden Transporten, nicht erst im Frontend. Scope-Quelle: §5 `users.assigned_*` (Migration `0008`), hinter einem Resolver-Seam austauschbar.
+
+### 20.5 CAGG-Aktualität & Eigenprofil
+Der Trend liest `readings_1m` (real-time aggregation, `materialized_only=false` aus `0002`) — der jüngste, noch nicht materialisierte Bucket ist ohne Refresh sichtbar, die Live-Kurve hinkt dem Puls nicht hinterher (Test verifiziert). Das **statische** Normalband (`normal_min`/`normal_max`) liegt im Trend; das **dynamische zustandsspezifische Drift-Eigenprofil** (F4) ist nicht persistiert (gegateter Replay, `reasoners/drift`) und folgt als eigener Schritt — das Transport-Feld `profile_band` (`MachineTrendOut`) ist dafür reserviert (nullable, derzeit immer null).
+
+### 20.6 Verifikation
+Read-Core (overview/trend inkl. CAGG-Frische ohne Refresh), NOTIFY-Producer (ein NOTIFY/Commit, transaktional), Hub (debounce/coalescing/broad/unsubscribe), Listener (NOTIFY→Hub, Reconnect-broad), Authz (default-deny + Rollenmatrix + Per-User-Scope), WS-Endpoint (Auth-Reject, Snapshot, Forbidden, **echter E2E-Push** POST→NOTIFY→Listener→Hub→WS) und beide HTTP-Routen — `tests/unit/test_realtime_*`, `tests/integration/test_realtime_*`, `tests/integration/test_dashboard_*`, `tests/unit/test_dashboard_schemas.py`. Gates wie §10 (mypy --strict, ruff, Coverage).

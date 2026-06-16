@@ -13,7 +13,7 @@
 # ============================================================
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from time import perf_counter
@@ -31,7 +31,6 @@ from foreman.db.models import (
     WorkerNote,
 )
 from foreman.db.session import get_sessionmaker
-from foreman.mcp import reads
 from foreman.mcp.schemas import (
     AlarmListOut,
     AlarmOut,
@@ -43,7 +42,6 @@ from foreman.mcp.schemas import (
     FailurePredictionOut,
     MachineListOut,
     MachineOut,
-    MachineStatus,
     NoteHitOut,
     NoteSearchOut,
     PredictionFactor,
@@ -54,7 +52,8 @@ from foreman.mcp.schemas import (
 )
 from foreman.mcp.transparency import ai_transparency, non_ai_transparency
 from foreman.observability.metrics import observe_mcp_call
-from foreman.reasoners.drift.service import DRIFT_ALARM_CODE
+from foreman.reads import queries as reads
+from foreman.reads.status import MachineStatus, compose_status
 from foreman.reasoners.failure.schema import ValidationStatus, validation_caveat_for
 
 # Erlaubte Schwere-Stufen für den get_alarms-Filter (eigener, stabiler Außen-Vertrag).
@@ -89,22 +88,6 @@ async def _measured(tool: str) -> AsyncIterator[None]:
 # ============================================================
 #  Mapping ORM-Datensatz → MCP-Ausgabeschema (rein, testbar)
 # ============================================================
-def _compose_status(open_alarm_list: Sequence[Alarm]) -> tuple[MachineStatus, int]:
-    """Komponiert den Maschinen-Status aus den offenen Alarmen.
-
-    `drift_active` bei einer offenen, noch nicht quittierten Drift-Warnung;
-    sonst `open_warning` bei irgendeinem offenen Alarm; sonst `healthy`.
-    """
-    if not open_alarm_list:
-        return "healthy", 0
-    unhandled_drift = any(
-        alarm.code == DRIFT_ALARM_CODE and alarm.acknowledged_at is None
-        for alarm in open_alarm_list
-    )
-    status: MachineStatus = "drift_active" if unhandled_drift else "open_warning"
-    return status, len(open_alarm_list)
-
-
 def _machine_out(machine: Machine, *, status: MachineStatus, open_alarm_count: int) -> MachineOut:
     return MachineOut(
         id=machine.id,
@@ -238,7 +221,7 @@ async def list_machines() -> MachineListOut:
         out = [
             _machine_out(machine, status=status, open_alarm_count=count)
             for machine in machines
-            for status, count in [_compose_status(open_map.get(machine.id, []))]
+            for status, count in [compose_status(open_map.get(machine.id, []))]
         ]
         return MachineListOut(machines=out, count=len(out))
 
@@ -249,7 +232,7 @@ async def get_machine(machine_id: int) -> MachineOut:
         machine = await reads.get_machine(session, machine_id)
         if machine is None:
             raise ValueError(f"Maschine {machine_id} nicht gefunden.")
-        status, count = _compose_status(await reads.open_alarms(session, machine_id))
+        status, count = compose_status(await reads.open_alarms(session, machine_id))
         return _machine_out(machine, status=status, open_alarm_count=count)
 
 

@@ -40,6 +40,8 @@ from foreman.ingestion.normalized import (
     WorkerNoteRecord,
 )
 from foreman.ingestion.semantic import record_semantic_event
+from foreman.realtime.channels import ChangeSet
+from foreman.realtime.notify import notify_changes
 from foreman.substrate.client import SubstrateClient
 
 logger = logging.getLogger("foreman.ingestion.service")
@@ -104,6 +106,11 @@ class IngestionService:
     # Noch nicht committete Notizen dieses Abschnitts — vor dem Commit als EIN
     # Batch eingebettet (F-SEM, best-effort).
     _pending_notes: list[WorkerNote] = field(default_factory=list, init=False)
+    # Live-Push (F5): seit dem letzten Commit berührte Maschinen/Datenpunkte/Arten;
+    # vor jedem Commit als EIN NOTIFY gebündelt (Vorgabe 4), danach geleert.
+    _changed_machines: set[int] = field(default_factory=set, init=False)
+    _changed_data_points: set[int] = field(default_factory=set, init=False)
+    _changed_kinds: set[str] = field(default_factory=set, init=False)
 
     async def ingest(self, adapter: SourceAdapter, *, pace: Pacer | None = None) -> IngestStats:
         """Seedet die Topologie, konsumiert den Strom und persistiert alles.
@@ -114,6 +121,9 @@ class IngestionService:
         """
         self._stats = IngestStats()
         self._pending_notes = []
+        self._changed_machines.clear()
+        self._changed_data_points.clear()
+        self._changed_kinds.clear()
         await adapter.seed_topology(self.session)
         await self.session.flush()  # Topologie-IDs in dieser Transaktion verfügbar
 
@@ -127,6 +137,7 @@ class IngestionService:
                 await self._flush(batch)
                 batch.clear()
                 await self._embed_pending_notes()
+                await self._emit_change_notification()
                 await self.session.commit()
                 await pace(item_time)
             last_time = item_time
@@ -141,6 +152,7 @@ class IngestionService:
 
         await self._flush(batch)
         await self._embed_pending_notes()
+        await self._emit_change_notification()
         await self.session.commit()
         logger.info(
             "✅ Ingestion '%s' fertig: %d readings, %d alarms, %d runs, "
@@ -158,7 +170,32 @@ class IngestionService:
         return self._stats
 
     async def _flush(self, batch: Sequence[ReadingRow]) -> None:
+        if not batch:
+            return
         self._stats.readings_written += await copy_readings(self.session, batch)
+        # Live-Push (F5): berührte Datenpunkte fürs nächste NOTIFY vormerken.
+        self._changed_data_points.update(row[1] for row in batch)
+        self._changed_kinds.add("reading")
+
+    async def _emit_change_notification(self) -> None:
+        """Bündelt die seit dem letzten Commit berührten Entitäten zu EINEM NOTIFY.
+
+        Genau ein pg_notify pro Commit (Vorgabe 4) — der Hub debounct serverseitig
+        und lädt danach konsolidiert über den Read-Core nach. Signalisiert nur
+        live-relevante Änderungen (Readings → Trend/Status, Alarme → Status/Alarme);
+        nicht-live Ereignisse (Wartung, Läufe, Notizen) lösen keinen Push aus.
+        """
+        await notify_changes(
+            self.session,
+            ChangeSet(
+                machines=frozenset(self._changed_machines),
+                data_points=frozenset(self._changed_data_points),
+                kinds=frozenset(self._changed_kinds),
+            ),
+        )
+        self._changed_machines.clear()
+        self._changed_data_points.clear()
+        self._changed_kinds.clear()
 
     async def _embed_pending_notes(self) -> None:
         """Bettet die gesammelten Notizen vor dem Commit als EINEN Batch ein (best-effort).
@@ -205,6 +242,9 @@ class IngestionService:
             )
         )
         self._stats.alarms += 1
+        # Live-Push (F5): ein Alarm ändert Maschinen-Status (A) + Alarmliste (C).
+        self._changed_machines.add(event.machine_id)
+        self._changed_kinds.add("alarm")
         await self._mirror(
             machine_id=event.machine_id,
             event_type="alarm_raised",

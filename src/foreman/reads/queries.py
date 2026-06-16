@@ -1,14 +1,15 @@
 # ============================================================
-#  FOREMAN — mcp/reads.py
-#  Zweck: Die MCP-EIGENE Read-Schicht (F7). Dedizierte, testbare Read-only-
-#         Datenzugriffsfunktionen, die die MCP-Tools aufrufen — der saubere
-#         Service-Layer für die Schnittstelle. Spiegelt die bereits existierenden
-#         Read-Pfade (heute inline in den HTTP-Routern) als wiederverwendbare,
-#         injizierte (Session) Funktionen; KEIN Write-, KEIN LLM-/Reasoner-Trigger.
-#  Architektur-Einordnung: MCP-Schicht (F7). Reine Datenzugriffsschicht; die Session
-#         wird injiziert (DI, §6) — ohne globalen Zustand testbar.
-#  Invariante I (Brief §2): ausschließlich SELECT — keine Aktorik, keine teure
-#         Reasoner-Berechnung. Aggregierte Trends über die Minuten-Aggregat-Sicht.
+#  FOREMAN — reads/queries.py
+#  Zweck: Die geteilten Read-only-Datenzugriffe des Read-Cores. Dedizierte,
+#         testbare SELECT-Funktionen mit injizierter Session (DI) — der saubere
+#         Service-Layer, den ALLE Transporte teilen: MCP (F7), die HTTP-Read-
+#         Routen und der WebSocket-Push-Layer (F5). Spiegelt die Read-Pfade als
+#         wiederverwendbare Funktionen; KEIN Write, KEIN LLM-/Reasoner-Trigger.
+#  Architektur-Einordnung: Read-Core (Schicht 2). Reine Datenzugriffsschicht;
+#         die Session wird injiziert — ohne globalen Zustand testbar. Kennt
+#         keinen Transport (kein FastAPI, kein MCP, kein WS).
+#  Invariante: ausschließlich SELECT — keine Aktorik, keine teure Reasoner-
+#         Berechnung. Aggregierte Trends über die Minuten-Aggregat-Sicht.
 #  Konvention (§6): Type Hints überall, deutsche Kommentare, englische Bezeichner.
 # ============================================================
 from __future__ import annotations
