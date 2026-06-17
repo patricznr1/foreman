@@ -807,6 +807,18 @@ E trägt die schärfste der drei Haltungen: man kann die Wahrscheinlichkeit nie 
 
 ---
 
+### Sektion B — Maschinen-Detail (`frontend/lib/machine/`, `frontend/components/machine/`, `frontend/app/(app)/machines/`)
+
+Die zentrale Drill-down-Sicht und das Ziel vieler Querlinks. Leitfrage: "Wie geht es dieser Maschine — jetzt und im Verlauf — und weicht sie von ihrem eigenen Normalverhalten ab?" Erste [KERN]-Sektion. Voller Vertrag: GROUND_TRUTH §21.11.
+
+**Was ist es / wo sitzt es?**
+- Reine, transport-agnostische Logik in `lib/machine/`: `trend-series.ts` verschmilzt den historischen `/trend`-Pull (by NAME) mit dem Live-1-h-Fenster (WS-Thema `trend:{data_point_id}`, das bei jedem Reading das ganze Fenster neu pusht) auf dem `bucket`-Schlüssel — der Live-Rand atmet, ohne dass ältere Punkte oder die Achse springen; `deriveDriftSegments` leitet Über-/Unterschreitungen des Normalbands ab. Dazu `geometry.ts` (lineare SVG-Skalen + Pfade), `time-window.ts` (Schicht/Tag/Woche; Monat/9 Monate = [VISION], Backend deckelt bei 168 h), `history.ts` (Wartung + Notizen vereint, PII maskiert über `lib/ui/pii.ts` → `#hex6`), `roles.ts`, `url.ts`, sowie die Hooks `use-machine-trend` (Pull + Live → eine Reihe, fünf Zustände) und `use-machine-history` (blätterbarer Pull).
+- `components/machine/TimeSeriesChart` ist ein maßgeschneidertes, token-getriebenes SVG (bewusst KEINE Charting-Lib — hält das <100-kB-Erstbild-Ziel, volle Kontrolle über die Kodierung): Normalband als entsättigte Fläche, Drift als Differenzfläche (`diff-over`/`diff-under` + Schraffur-Pattern), Eigenprofil graceful (`profile_band` null → kein erfundener Strich), mehrkanalig (Linie + Fläche + Schraffur + aria-Label), Drift als Akzent — nie Alarm-Rot. Dazu `MachineHeader` (Identität + FCSM groß live über `machine:{id}` + Schnellaktionen), `MachineSpecs`, `MachineHistory` (PII maskiert), `MachineAlarms` (bettet die C-`AlarmRow` ein, maschinengefiltert — kein dupliziertes Rendering), `MachineList`, `MachineCrossLinks`, `SensorPicker`/`TimeWindowPicker`, `MachineDetailView` (Orchestrator, Rollen-Split ohne bedingte Hooks).
+- Routen: `app/(app)/machines/page.tsx` (Übersicht, scope-gefiltert) + `app/(app)/machines/[id]/page.tsx` (Detail, SSR-Stammdaten, `requireSection("B")`).
+
+**Warum so?**
+- Transport-Entkopplung (Studie §5.1): der Chart liest nur den abgeleiteten View-State und ist gegen live/historisch/Testdaten austauschbar. HITL hart: die Schnellaktionen (Notiz → J, Vorhersage → E, Ereigniskette → D) sind Navigation/Anforderung, nie Anlagen-Aktorik. PII (§8) wird immer maskiert gezeigt; Drift ist eine Beobachtung (Akzent), kein Alarm. Rollen-Varianten nach Matrix 3.1, Sichtbarkeit ≤ Server-Guard.
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```
