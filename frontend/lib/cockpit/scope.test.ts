@@ -33,6 +33,12 @@ describe("parseScope", () => {
     expect(parseScope({})).toEqual({ machineClass: null, lineId: null });
   });
 
+  it("nur strikte Ganzzahlen sind gültige Linien-IDs (kein nachsichtiges parseInt)", () => {
+    expect(parseScope({ line: "3abc" })).toEqual({ machineClass: null, lineId: null });
+    expect(parseScope({ line: "2.5" })).toEqual({ machineClass: null, lineId: null });
+    expect(parseScope({ line: " 7 " })).toEqual({ machineClass: null, lineId: 7 }); // getrimmt
+  });
+
   it("nimmt bei Array-Parametern den ersten Wert", () => {
     expect(parseScope({ class: ["Spindel", "Presse"], line: ["5"] })).toEqual({
       machineClass: "Spindel",

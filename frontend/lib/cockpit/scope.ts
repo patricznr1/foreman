@@ -22,9 +22,11 @@ export function parseScope(params: {
   const rawClass = Array.isArray(params.class) ? params.class[0] : params.class;
   const machineClass = rawClass != null && rawClass.length > 0 ? rawClass : null;
 
+  // Strikte Ganzzahl-Prüfung: "3abc"/"2.5" sind KEINE gültige Linien-ID (Number.parseInt
+  // wäre zu nachsichtig und würde "3abc" → 3 akzeptieren).
   const rawLine = Array.isArray(params.line) ? params.line[0] : params.line;
-  const parsedLine = rawLine != null && rawLine.length > 0 ? Number.parseInt(rawLine, 10) : Number.NaN;
-  const lineId = Number.isInteger(parsedLine) ? parsedLine : null;
+  const normalizedLine = rawLine?.trim() ?? "";
+  const lineId = /^\d+$/.test(normalizedLine) ? Number(normalizedLine) : null;
 
   return { machineClass, lineId };
 }

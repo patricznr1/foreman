@@ -90,6 +90,16 @@ describe("DriftHeatmap", () => {
     expect(screen.getByRole("gridcell", { name: /Presse 1/ }).getAttribute("tabindex")).toBe("-1");
   });
 
+  it("Roving-Tabindex überlebt das Schrumpfen der Matrix (Tab-Stop bleibt erhalten)", () => {
+    const { rerender } = render(<DriftHeatmap matrix={buildHeatmapMatrix(MACHINES)} />);
+    fireEvent.keyDown(screen.getByRole("grid"), { key: "End" }); // letzte Zelle der Zeile aktiv
+    // Matrix schrumpft (z. B. Scope-Filter/Live-Update) auf eine einzige Maschine
+    rerender(<DriftHeatmap matrix={buildHeatmapMatrix([machine({ id: 1, label: "Presse 1" })])} />);
+    const cells = screen.getAllByRole("gridcell");
+    expect(cells).toHaveLength(1);
+    expect(cells[0]!.getAttribute("tabindex")).toBe("0"); // keine Zelle wäre sonst erreichbar
+  });
+
   it("Enter auf der aktiven Zelle löst den Querlink aus", () => {
     const { onSelect } = renderHeatmap();
     fireEvent.keyDown(screen.getByRole("grid"), { key: "Enter" });

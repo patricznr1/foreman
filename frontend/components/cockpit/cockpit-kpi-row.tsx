@@ -43,7 +43,7 @@ export function CockpitKpiRow({ kpis, history }: CockpitKpiRowProps) {
       <Link
         href={alarmsHref()}
         aria-label="Offene kritische Alarme ansehen"
-        className="rounded-lg focus-visible:outline-none"
+        className="rounded-lg"
       >
         <KpiTile
           label="Offene kritische Alarme"
@@ -56,7 +56,7 @@ export function CockpitKpiRow({ kpis, history }: CockpitKpiRowProps) {
       <Link
         href={alarmsHref()}
         aria-label="Maschinen in Abweichung ansehen"
-        className="rounded-lg focus-visible:outline-none"
+        className="rounded-lg"
       >
         <KpiTile
           label="Maschinen in Abweichung"

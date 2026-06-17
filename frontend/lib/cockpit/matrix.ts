@@ -16,7 +16,8 @@ import type { HeatmapCell, HeatmapMatrix, HeatmapRow } from "./types";
 const NO_CLASS_KEY = "￿";
 const NO_CLASS_LABEL = "Ohne Klasse";
 
-/** Ab dieser Klassen-Mindestgröße + Drift-Mehrheit gilt eine Zeile als systematisch driftend. */
+/** Ab dieser Klassen-Mindestgröße + echter Drift-Mehrheit gilt eine Zeile als systematisch
+ *  driftend. Mehrheit = STRIKT mehr als die Hälfte (50/50 zählt nicht als „ganze Klasse"). */
 const SYSTEMATIC_MIN_MACHINES = 2;
 const SYSTEMATIC_DRIFT_SHARE = 0.5;
 
@@ -31,7 +32,7 @@ function buildRow(machineClass: string | null, cells: HeatmapCell[]): HeatmapRow
   const driftCount = sortedCells.filter((cell) => cell.kind === "drift").length;
   const systematic =
     sortedCells.length >= SYSTEMATIC_MIN_MACHINES &&
-    driftCount / sortedCells.length >= SYSTEMATIC_DRIFT_SHARE;
+    driftCount / sortedCells.length > SYSTEMATIC_DRIFT_SHARE;
   return {
     machineClass,
     label: machineClass ?? NO_CLASS_LABEL,

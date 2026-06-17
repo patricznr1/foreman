@@ -101,6 +101,11 @@ function CockpitContent({
     criticalOpen: [],
     driftCount: [],
   });
+  // Scope-Wechsel = neue Population → Verlaufsspur leeren (alter Spark/Trend wäre
+  // irreführend). Vor dem Push-Effekt, damit der erste Wert der neuen Lage stehen bleibt.
+  useEffect(() => {
+    setHistory({ availability: [], criticalOpen: [], driftCount: [] });
+  }, [machineClass, lineId]);
   useEffect(() => {
     setHistory((prev) => ({
       availability: pushSample(prev.availability, kpis.availabilityPct),
@@ -112,6 +117,12 @@ function CockpitContent({
   // Kipp-Puls: Zellen, die NEU in eine Abweichung kippen, pulsen einmal (§5.6).
   const prevKinds = useRef<Map<number, CellKind>>(new Map());
   const [kipped, setKipped] = useState<ReadonlySet<number>>(new Set());
+  // Scope-Wechsel: Kipp-Vorgeschichte verwerfen (sonst falscher Puls auf der neuen
+  // Population). Vor dem Erkennungs-Effekt → der erste Aufbau pulst nicht.
+  useEffect(() => {
+    prevKinds.current = new Map();
+    setKipped(new Set());
+  }, [machineClass, lineId]);
   useEffect(() => {
     const cells = matrix.rows.flatMap((row) => row.cells);
     setKipped(detectKipps(prevKinds.current, cells));

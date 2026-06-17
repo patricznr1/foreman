@@ -76,5 +76,12 @@ describe("buildHeatmapMatrix", () => {
       machine({ id: 3, machine_class: "Presse", status: "healthy" }),
     ]);
     expect(minority.rows[0]!.systematic).toBe(false);
+
+    // 50/50 ist KEINE Mehrheit (strikt mehr als die Hälfte nötig).
+    const half = buildHeatmapMatrix([
+      machine({ id: 1, machine_class: "Presse", status: "drift_active", open_alarm_count: 1, open_by_severity: { warning: 1 } }),
+      machine({ id: 2, machine_class: "Presse", status: "healthy" }),
+    ]);
+    expect(half.rows[0]!.systematic).toBe(false);
   });
 });

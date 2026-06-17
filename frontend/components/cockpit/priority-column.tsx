@@ -38,7 +38,7 @@ export function PriorityColumn({ entries }: PriorityColumnProps) {
               <Link
                 href={entry.href}
                 aria-label={`${entry.label}: ${entry.reason} — ${TARGET_LABEL[entry.target]}`}
-                className="touch-target flex items-center gap-3 rounded-lg border border-line-subtle bg-surface-raised p-3 hover:border-line-strong focus-visible:outline-none"
+                className="touch-target flex items-center gap-3 rounded-lg border border-line-subtle bg-surface-raised p-3 hover:border-line-strong"
               >
                 <StatusIndicator status={entry.fcsm} size="s" showLabel={false} />
                 <span className="flex flex-1 flex-col">

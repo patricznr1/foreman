@@ -14,7 +14,7 @@
 // ============================================================
 "use client";
 
-import { type KeyboardEvent, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { StatusIndicator } from "@/components/atoms/status-indicator";
 import { cx } from "@/lib/ui/cx";
@@ -60,6 +60,30 @@ export function DriftHeatmap({ matrix, kippedMachineIds, onSelectCell }: DriftHe
   const cellRefs = useRef(new Map<number, SVGGElement | null>());
 
   const rows = matrix.rows;
+  const rowLengths = rows.map((row) => row.cells.length);
+
+  // Roving-Tabindex stabil gegen Datenänderungen halten: fällt die aktive Zelle durch
+  // Live-Update/Scope-Wechsel weg, wird der Tab-Stop auf eine gültige Zelle geklemmt
+  // (sonst hätte keine gridcell tabIndex=0 → Matrix per Tastatur unerreichbar).
+  const normalizedActive = useMemo<GridPos>(() => {
+    const firstNonEmpty = rows.findIndex((row) => row.cells.length > 0);
+    if (firstNonEmpty === -1) {
+      return { row: 0, col: 0 };
+    }
+    const row = Math.min(Math.max(active.row, 0), rows.length - 1);
+    if ((rows[row]?.cells.length ?? 0) === 0) {
+      return { row: firstNonEmpty, col: 0 };
+    }
+    const col = Math.min(Math.max(active.col, 0), rows[row]!.cells.length - 1);
+    return { row, col };
+  }, [active.row, active.col, rows]);
+
+  useEffect(() => {
+    if (normalizedActive.row !== active.row || normalizedActive.col !== active.col) {
+      setActive(normalizedActive);
+    }
+  }, [active.row, active.col, normalizedActive]);
+
   if (rows.length === 0) {
     return (
       <p role="status" className="text-body text-fg-muted">
@@ -68,7 +92,6 @@ export function DriftHeatmap({ matrix, kippedMachineIds, onSelectCell }: DriftHe
     );
   }
 
-  const rowLengths = rows.map((row) => row.cells.length);
   const maxCols = Math.max(1, ...rowLengths);
   const width = LABEL_W + maxCols * (CELL + GAP);
   const height = TOP + rows.length * (CELL + ROW_GAP);
@@ -88,12 +111,12 @@ export function DriftHeatmap({ matrix, kippedMachineIds, onSelectCell }: DriftHe
   const handleKeyDown = (event: KeyboardEvent<SVGSVGElement>): void => {
     if (isGridKey(event.key)) {
       event.preventDefault();
-      focusCell(moveFocus(rowLengths, active, event.key));
+      focusCell(moveFocus(rowLengths, normalizedActive, event.key));
       return;
     }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      const cell = cellAt(active);
+      const cell = cellAt(normalizedActive);
       if (cell !== undefined) {
         onSelectCell?.(cell);
       }
@@ -143,7 +166,7 @@ export function DriftHeatmap({ matrix, kippedMachineIds, onSelectCell }: DriftHe
                 const x = LABEL_W + c * (CELL + GAP);
                 const hatch = hatchFor(cell.kind);
                 const kipped = kippedMachineIds?.has(cell.machineId) ?? false;
-                const isActive = r === active.row && c === active.col;
+                const isActive = r === normalizedActive.row && c === normalizedActive.col;
                 return (
                   <g
                     key={cell.machineId}
