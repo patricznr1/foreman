@@ -118,3 +118,90 @@ export interface WsServerMessage {
 
 /** WS-Close-Code bei fehlendem/ungültigem Token (realtime/ws.py). */
 export const WS_UNAUTHORIZED_CLOSE = 4401;
+
+// — Ausfallvorhersage & Empfehlung (Sektion E) — gegen den REALEN Code typisiert.
+//   Quelle: reasoners/failure/schema.py (FailurePredictionRead, TopFactor,
+//   WorkerRecommendationRead, validation_caveat_for), reasoners/failure/router.py.
+//   KERN-INVARIANTE (§16): validation_status/data_regime/validation_caveat sind
+//   PFLICHT (kein Default, Literal, DB-CHECK) — eine Vorhersage/Empfehlung kann
+//   nicht ohne ihren Sim-Vorbehalt existieren. Das Frontend führt diese Garantie
+//   als Negativ-Guard fort (fehlt der Vorbehalt → Fehler-Zustand, nie nackte Zahl).
+
+/** Wirkrichtung eines Einflussfaktors (assoziativ, NICHT kausal — Model Card). */
+export type FactorDirection = "increases_risk" | "decreases_risk";
+
+/** Operative Entscheidung relativ zum kostensensitiven Schwellwert. */
+export type RiskDecision = "elevated_risk" | "normal";
+
+/** Der Sim-Vorbehalt: einziger erlaubter Wert (Pflichtfeld, §16). */
+export type ValidationStatus = "simulation_only";
+
+/** Datenregime des Trainings: ausschließlich Simulation. */
+export type DataRegime = "simulation";
+
+/**
+ * Ein erklärender Faktor der Vorhersage. `feature` ist ein TECHNISCHER Tag
+ * (Muster {datenpunkt}__{stat} oder die Präfixe drift__, maint__, alarm__) — das
+ * UI zeigt ihn NIE roh, sondern paraphrasiert in Hallensprache (lib/prediction/factors.ts).
+ * `shap` ist die rohe Gewichts-Zahl der (im UI unbenannten) Faktor-Methode —
+ * das UI nutzt nur den Betrag als relative Balkenlänge, nie die Zahl, nie den
+ * Methodennamen (Paraphrase-Disziplin §1.3/§4E).
+ */
+export interface TopFactor {
+  feature: string;
+  value: number;
+  shap: number;
+  direction: FactorDirection;
+}
+
+/**
+ * Ausfallvorhersage (GET/POST /api/v1/reasoners/failure/predict[ions] ·
+ * FailurePredictionRead). Liefert NUR einen Punktwert `probability` — KEIN
+ * Unsicherheits-Band (das UI erfindet keines, sondern stellt die verfügbare
+ * Unsicherheit ehrlich dar; die Ehrlichkeit trägt der Vorbehalt-Block).
+ */
+export interface FailurePredictionRead {
+  id: number;
+  machine_id: number;
+  reference_time: string; // ISO 8601 (tz-aware)
+  horizon_h: number;
+  probability: number; // [0, 1] — Punktwert, keine Bandbreite im Vertrag
+  decision_threshold: number; // [0, 1]
+  decision: RiskDecision;
+  top_factors: TopFactor[];
+  validation_status: ValidationStatus;
+  data_regime: DataRegime;
+  model_version: string;
+  created_at: string; // ISO 8601
+}
+
+/**
+ * Werker-Empfehlung über einer Vorhersage (F-REC ·
+ * GET/POST /api/v1/reasoners/failure/predictions/{id}/recommendation ·
+ * WorkerRecommendationRead). `validation_caveat` ist DETERMINISTISCH vom Backend
+ * (validation_caveat_for(), DB-CHECK) — der Vier-Block-Vorbehalt zitiert genau
+ * dieses Feld, das Frontend formuliert ihn NIE selbst. probability/decision/
+ * horizon_h werden aus der Vorhersage mitgeführt (Invariante I, autoritativ).
+ */
+export interface WorkerRecommendationRead {
+  id: number;
+  prediction_id: number;
+  machine_id: number;
+  recommendation_text: string;
+  validation_caveat: string;
+  validation_status: ValidationStatus;
+  data_regime: DataRegime;
+  model_version: string;
+  referenced_source_ids: string[];
+  horizon_h: number;
+  probability: number;
+  decision: RiskDecision;
+  created_at: string; // ISO 8601
+}
+
+/** Request-Body für POST /predict (On-Demand-Auslöser). */
+export interface PredictRequestBody {
+  machine_id: number;
+  reference_time?: string | null;
+  lookback_hours?: number | null;
+}
