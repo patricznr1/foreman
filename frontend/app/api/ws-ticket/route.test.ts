@@ -26,6 +26,7 @@ describe("GET /api/ws-ticket (BFF)", () => {
     mockedGetSessionToken.mockResolvedValue(null);
     const response = await GET();
     expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toContain("no-store");
   });
 
   it("gibt NUR das kurzlebige Ticket zurück (nicht das Session-JWT)", async () => {
@@ -52,6 +53,18 @@ describe("GET /api/ws-ticket (BFF)", () => {
   it("502 wenn das Backend kein Ticket liefert", async () => {
     mockedGetSessionToken.mockResolvedValue("SESSION_JWT");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("nope", { status: 500 }));
+    const response = await GET();
+    expect(response.status).toBe(502);
+  });
+
+  it("502 wenn das Ticket kein String ist (strikte Validierung)", async () => {
+    mockedGetSessionToken.mockResolvedValue("SESSION_JWT");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ticket: 12345 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
     const response = await GET();
     expect(response.status).toBe(502);
   });

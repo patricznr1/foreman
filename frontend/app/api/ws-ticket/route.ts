@@ -11,10 +11,13 @@
 import { NextResponse } from "next/server";
 import { backendUrl, getSessionToken } from "@/lib/auth/session";
 
+// Secret-/Token-Antwort nie cachen — auf ALLEN Pfaden, auch bei Fehlern.
+const NO_STORE = { "cache-control": "no-store, private, max-age=0" } as const;
+
 export async function GET(): Promise<NextResponse> {
   const sessionToken = await getSessionToken();
   if (sessionToken === null) {
-    return NextResponse.json({ detail: "Nicht angemeldet" }, { status: 401 });
+    return NextResponse.json({ detail: "Nicht angemeldet" }, { status: 401, headers: NO_STORE });
   }
   try {
     const response = await fetch(`${backendUrl()}/api/v1/ws-ticket`, {
@@ -23,18 +26,24 @@ export async function GET(): Promise<NextResponse> {
       signal: AbortSignal.timeout(5_000),
     });
     if (!response.ok) {
-      return NextResponse.json({ detail: "WS-Ticket nicht verfügbar" }, { status: 502 });
+      return NextResponse.json(
+        { detail: "WS-Ticket nicht verfügbar" },
+        { status: 502, headers: NO_STORE },
+      );
     }
-    const data = (await response.json().catch(() => null)) as { ticket?: string } | null;
-    if (!data?.ticket) {
-      return NextResponse.json({ detail: "WS-Ticket nicht verfügbar" }, { status: 502 });
+    const data = (await response.json().catch(() => null)) as { ticket?: unknown } | null;
+    if (typeof data?.ticket !== "string" || data.ticket.length === 0) {
+      return NextResponse.json(
+        { detail: "WS-Ticket nicht verfügbar" },
+        { status: 502, headers: NO_STORE },
+      );
     }
     // Nur das kurzlebige Ticket an Browser-JS — no-store, kein Cache.
-    return NextResponse.json(
-      { token: data.ticket },
-      { headers: { "cache-control": "no-store, private, max-age=0" } },
-    );
+    return NextResponse.json({ token: data.ticket }, { headers: NO_STORE });
   } catch {
-    return NextResponse.json({ detail: "WS-Ticket nicht verfügbar" }, { status: 502 });
+    return NextResponse.json(
+      { detail: "WS-Ticket nicht verfügbar" },
+      { status: 502, headers: NO_STORE },
+    );
   }
 }
