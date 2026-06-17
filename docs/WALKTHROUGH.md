@@ -789,6 +789,14 @@ Plattform-Atome (StatusIndicator mehrkanalig, ProvenanceStamp, KpiTile, Fünf-Zu
 **Warum existiert es / wo sitzt es?**
 Der Durchstich beweist, dass Token → Atom → State-Schicht → WS/HTTP → Backend zusammenspielen und die fünf Zustände sichtbar funktionieren — das Fundament, auf dem jede künftige Sektion ruht, ohne es anzufassen.
 
+### Sektion C — Alarme & Warnungen (`frontend/lib/alarms/`, `frontend/components/alarms/`, `frontend/app/(app)/alarms/`)
+
+**Was tut es?**
+Die erste voll ausgebaute Sektion zeigt offene Alarme **nach Dringlichkeit gestaffelt** (ISA-18.2: kritisch oben, nicht chronologisch-flach), virtualisiert (nur Sichtbares im DOM), mit Prioritäts-Zählern, Filter und Gruppierung (Priorität/Bereich/Maschine). Jede Zeile codiert die Severity dreikanalig (Farbe + Position + Label) und trägt einen FCSM-Indikator; ein langsamer 1-Hz-Puls markiert **nur** unquittiert-kritische Alarme (nicht die Severity). Neue Alarme kommen über ein WS-Aggregat-Signal herein, werden nachgeladen und an ihrer Sortier-Position mit kurzem Einblend-Puls eingefügt — ohne Listen-Sprung. Der Schichtleiter quittiert zweistufig (Pflicht-Begründung bei kritisch); Werker lesen nur, der Manager sieht ein reines Lagebild. Alarmlawinen einer gemeinsamen Quelle werden zu einem Bündel zusammengefasst.
+
+**Warum existiert es / wo sitzt es?**
+`lib/alarms/` ist die reine, transport-agnostische View-State-Logik (Sortierung, Gruppierung, Flood-Bündelung, Lebenszyklus, Virtualisierungs-Mathematik) — ohne UI testbar; `components/alarms/` ist die rein präsentationale Sicht darüber, `app/(app)/alarms/page.tsx` der server-seitige Einstieg mit Sektions-Guard. Die harte Haltung: Quittieren/Eskalieren/Zurückstellen sind **Alarm-Status-Aktionen**, nie eine Anlagen-Schaltung — eine Sicherheits-Invariante lässt vor dem Senden ausschließlich den `…/acknowledge`-Pfad zu. Die Sicht sitzt vollständig auf dem FE1-Fundament auf (Tokens, Echtzeit-Schicht, StatusIndicator, Fünf-Zustände-Hülle, GlobalStatusBar) und dupliziert nichts. Offene Backend-Lücken (generische Quittier-Route, Listen-Scope, Shelving-Persistenz, zeitgesteuerte Eskalation) sind als markierte Anschlusspunkte gebaut, nicht erfunden (GROUND_TRUTH §21.9).
+
 ---
 
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
