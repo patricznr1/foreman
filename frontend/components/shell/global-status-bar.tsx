@@ -9,8 +9,10 @@
 // ============================================================
 "use client";
 
+import Link from "next/link";
 import { ProvenanceStamp } from "@/components/atoms/provenance-stamp";
 import { StatusIndicator } from "@/components/atoms/status-indicator";
+import { countByPriorityFromOverview } from "@/lib/alarms/counts";
 import type { FleetOverviewOut, MachineStatus } from "@/lib/api/contracts";
 import { canAccessSection } from "@/lib/auth/roles";
 import { useSession } from "@/lib/auth/use-session";
@@ -47,8 +49,21 @@ function FleetLiveBadge() {
   if (state.kind === "live" || state.kind === "cached") {
     const overview = state.data;
     const worst = worstMachineStatus(overview);
+    // Eskalations-Verschärfung (Studie §4C): offene kritische Alarme verschärfen
+    // ihre Präsenz in die globale Leiste (assertiv, mit Sprung zur Alarm-Sicht).
+    const criticalCount = countByPriorityFromOverview(overview).critical;
     return (
       <div className="flex items-center gap-3" aria-live="polite">
+        {criticalCount > 0 ? (
+          <span aria-live="assertive">
+            <Link
+              href="/alarms"
+              className="inline-flex items-center gap-1 rounded bg-alarm-critical px-2 py-0.5 text-caption font-semibold text-fg-on-accent"
+            >
+              {criticalCount} kritisch · ansehen
+            </Link>
+          </span>
+        ) : null}
         <StatusIndicator
           status={MACHINE_STATUS_TO_FCSM[worst]}
           label={MACHINE_STATUS_LABEL[worst]}

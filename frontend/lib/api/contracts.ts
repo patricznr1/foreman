@@ -61,6 +61,42 @@ export interface CurrentUser {
   assigned_machine_ids: number[];
 }
 
+// — Alarm-Vertrag (Sektion C) — gegen den REALEN Code, nicht gegen Annahmen.
+//   Quelle: schemas/resources.py (AlarmRead/AlarmSeverity), api/routers/alarms.py,
+//   reasoners/drift/router.py. Severity ist 5-stufig (NICHT kritisch/hoch/…); die
+//   ISA-18.2-Prioritäts-Staffelung leitet das Frontend ab (lib/alarms/priority.ts).
+
+/** Backend-Alarm-Severity (schemas/resources.py:23). */
+export type AlarmSeverity = "info" | "warning" | "alarm" | "critical" | "emergency";
+
+/**
+ * Ein Alarm inkl. Drift-Warnung (GET /api/v1/alarms · AlarmRead). Lebenszyklus
+ * trägt KEIN eigenes Feld — er wird aus den Zeitstempeln abgeleitet:
+ * `cleared_at` gesetzt → geklärt; sonst `acknowledged_at` gesetzt → quittiert;
+ * sonst aktiv. `acknowledged_by` ist ein HMAC-Token (§8), nie Klartext —
+ * das Frontend zeigt nur die maskierte Form.
+ */
+export interface AlarmRead {
+  id: number;
+  machine_id: number;
+  component_id: number | null;
+  data_point_id: number | null;
+  /** z. B. "DRIFT" für Drift-Warnungen (eigene, weichere Klasse). */
+  code: string | null;
+  message: string | null;
+  /** Roh-String; das Backend liefert AlarmSeverity, defensiv als string typisiert. */
+  severity: string;
+  category: string;
+  raised_at: string; // ISO 8601
+  cleared_at: string | null;
+  acknowledged_at: string | null;
+  acknowledged_by: string | null; // HMAC-Token "v{n}:{hex}", nie Klartext
+  created_at: string;
+}
+
+/** Drift-Warnungen (code=DRIFT) tragen genau diesen Backend-Code. */
+export const DRIFT_ALARM_CODE = "DRIFT";
+
 // — WebSocket-Vertrag (/api/v1/ws) — ein gemultiplexter Kanal, Themen-Abos. —
 
 /** Topic-Strings: "overview" | "machine:{id}" | "trend:{data_point_id}". */

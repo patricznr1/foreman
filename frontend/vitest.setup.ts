@@ -27,3 +27,14 @@ if (typeof window !== "undefined" && !window.matchMedia) {
     }),
   });
 }
+
+// jsdom hat kein ResizeObserver — die virtualisierte Alarmliste misst damit den
+// Viewport (in Tests wird die Höhe ohnehin über den viewportHeight-Override gesetzt).
+if (typeof globalThis !== "undefined" && !("ResizeObserver" in globalThis)) {
+  class ResizeObserverStub {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  (globalThis as { ResizeObserver?: unknown }).ResizeObserver = ResizeObserverStub;
+}
