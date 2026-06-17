@@ -819,6 +819,18 @@ Die zentrale Drill-down-Sicht und das Ziel vieler Querlinks. Leitfrage: "Wie geh
 **Warum so?**
 - Transport-Entkopplung (Studie §5.1): der Chart liest nur den abgeleiteten View-State und ist gegen live/historisch/Testdaten austauschbar. HITL hart: die Schnellaktionen (Notiz → J, Vorhersage → E, Ereigniskette → D) sind Navigation/Anforderung, nie Anlagen-Aktorik. PII (§8) wird immer maskiert gezeigt; Drift ist eine Beobachtung (Akzent), kein Alarm. Rollen-Varianten nach Matrix 3.1, Sichtbarkeit ≤ Server-Guard.
 
+### Sektion H — Gedächtnis & Verknüpfung (`frontend/lib/memory/`, `frontend/components/memory/`, `frontend/app/(app)/memory/`)
+
+FOREMANs Alleinstellung und die zweite [KERN]-Sektion: die Bedeutungssuche "hatten wir das schon mal — irgendwo, an irgendeiner Maschine, in irgendeiner Schicht?". Klassische Observability sammelt und visualisiert; sie kann nicht "ähnliche Vorfälle finden" — genau das ist der Beweis, dass FOREMAN ein Gedächtnis hat. Eigener, begehbarer Raum (`/memory`) und von überall über die Befehlsleiste (Cmd-K → H). Voller Vertrag: GROUND_TRUTH §21.12.
+
+**Was ist es / wo sitzt es?**
+- Reine, transport-agnostische Logik in `lib/memory/`: `view-model.ts` führt die F-SEM-Antwort (`list[WorkerNoteRead]`, nach Nähe sortiert, OHNE Score) in ein anzeigbares Ergebnis über und bewahrt die Backend-Reihenfolge als Rang (= Relevanz-Signal); `relevance.ts` leitet daraus eine grobe, ordinale Nähe-Stufe ab — niemals eine Prozentzahl; `cluster.ts` verdichtet Treffer derselben Maschine ("3 Hinweise an Maschine X"); `relations.ts` verknüpft Treffer NUR über real ableitbare Bezüge (gleiche Maschine, gleiche Schicht, zeitliche Nähe). Dazu `excerpt.ts`, `time.ts` (relative Hallensprache, injizierbares "jetzt"), `roles.ts`, `url.ts` und der On-Demand-Hook `use-memory-search.ts` (geteilter Reducer aus `lib/ondemand/` + AbortController + sessionStorage-Cache für Offline).
+- `components/memory/`: `MemorySearchBar` (die einladende, natürlichsprachliche Suchzeile — das Tor zum Raum), `MemoryResultList` (Sortierung + Verdichtung + die Verknüpfungs-Ansicht daneben + höfliche Live-Region), `SearchResultCard` (Quelle formcodiert, Relevanz als Stärke/Position, maskierter Auszug + `#hex6`-Autor, graceful Querlinks B/D), `ResultCluster` (aufklappbare Verdichtung), `RelationView` (kompakte Beziehungsdarstellung, KEIN Graph), `SourceGlyph`, `RelevanceMark`, `MemoryView` (Orchestrator, Rollen-Split + On-Demand-Phasen ohne bedingte Hooks). Die Befehlsleiste (`components/shell/command-palette.tsx`) übergibt jede Eingabe als Suche an `/memory?q=…`.
+- Route: `app/(app)/memory/page.tsx` (`requireSection("H")`, nimmt den Deep-Link `?q=` auf).
+
+**Warum so?**
+- Paraphrase-Disziplin am schärfsten (Studie §0/§4H): H zeigt das Gedächtnis nach außen — darum erscheint im sichtbaren UI kein Wort aus dem Innenleben (kein Verfahrens-/Bibliotheks-/Substrat-Begriff). Ein eigener Test (`hidden-term.test.tsx`) scannt den gerenderten Text — das strengste Gate der Serie. Ehrlichkeit der Nähe: das Backend liefert keinen Score, also ist die POSITION das Signal — eine Prozentzahl wäre Scheingenauigkeit. Ehrlichkeit der Herkunft: die Suche ist Abruf echter vergangener Notizen, keine Generierung → `ProvenanceStamp` ohne KI-Kennzeichnung. Verdichtung und Verknüpfung nur so weit, wie der F-SEM-Vertrag trägt (nur Schichtnotizen, keine Auflösung/Klasse) — alles darüber graceful markiert, nichts erfunden. HITL hart: H zeigt und navigiert, keine Aktorik. Sitzt vollständig auf FE1 + dem On-Demand-Muster aus E auf und dupliziert nichts (GROUND_TRUTH §21.12).
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```
