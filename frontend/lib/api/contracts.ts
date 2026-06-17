@@ -205,3 +205,85 @@ export interface PredictRequestBody {
   reference_time?: string | null;
   lookback_hours?: number | null;
 }
+
+// — Stammdaten & Historie (Sektion B — Maschinen-Detail) — gegen den REALEN Code
+//   typisiert. Quelle: schemas/resources.py (MachineRead/ComponentRead/DataPointRead/
+//   MaintenanceEventRead/WorkerNoteRead), api/routers/{machines,components,data_points,
+//   maintenance_events,worker_notes}.py. Personenfelder (`performed_by`/`author`) sind
+//   HMAC-Token "v{n}:{hex}" (§8), NIE Klartext — das UI zeigt nur die maskierte Form
+//   (#hex6, lib/ui/pii.ts). `worker_notes.text` ist beim Insert bereits NER-maskiert;
+//   `maintenance_events.description` ist Sach-/SPS-Text und bewusst NICHT maskiert
+//   (dokumentiertes Restrisiko §8).
+
+/** Eine Maschine (GET /api/v1/machines/{id} · MachineRead). `external_id` ist eine
+ *  anonymisierte Kennung ohne Personenbezug. */
+export interface MachineRead {
+  id: number;
+  line_id: number | null;
+  external_id: string | null;
+  label: string;
+  machine_class: string | null;
+  manufacturer: string | null;
+  location: string | null;
+  created_at: string; // ISO 8601
+}
+
+/** Eine Komponente einer Maschine (GET /api/v1/components?machine_id · ComponentRead). */
+export interface ComponentRead {
+  id: number;
+  machine_id: number;
+  label: string;
+  component_type: string | null;
+  created_at: string; // ISO 8601
+}
+
+/** Art eines Datenpunkts (DataPointKind-Literal, schemas/resources.py). */
+export type DataPointKind = "analog" | "digital" | "setpoint" | "counter";
+
+/** Protokoll-Herkunft eines Datenpunkts; "simulation" markiert synthetische Tags
+ *  (F3), damit Sim-Daten nie als reales Protokoll getarnt werden. */
+export type DataPointSource = "opcua" | "modbus" | "mqtt" | "s7" | "simulation";
+
+/** Ein Datenpunkt/Tag einer Maschine (GET /api/v1/data_points?machine_id ·
+ *  DataPointRead). `normal_min`/`normal_max` sind das statische Normalband, das auch
+ *  der Trend (`/machines/{id}/trend`) als Fläche mitführt. */
+export interface DataPointRead {
+  id: number;
+  machine_id: number;
+  component_id: number | null;
+  name: string;
+  kind: DataPointKind;
+  measurement_type: string | null;
+  unit: string | null;
+  source: DataPointSource | null;
+  address: string | null;
+  normal_min: number | null;
+  normal_max: number | null;
+  created_at: string; // ISO 8601
+}
+
+/** Ein Wartungs-/Prüfereignis (GET /api/v1/maintenance_events?machine_id ·
+ *  MaintenanceEventRead). `performed_by` ist ein HMAC-Token (§8), nie Klartext. */
+export interface MaintenanceEventRead {
+  id: number;
+  machine_id: number;
+  component_id: number | null;
+  type: string;
+  performed_at: string; // ISO 8601
+  description: string | null; // Sach-/SPS-Text, NICHT NER-maskiert (§8-Restrisiko)
+  performed_by: string | null; // HMAC-Token "v{n}:{hex}", nie Klartext
+  created_at: string; // ISO 8601
+}
+
+/** Eine Werker-Notiz / ein Schichtbericht (GET /api/v1/worker_notes?machine_id ·
+ *  WorkerNoteRead). `text` ist beim Insert bereits NER-maskiert (Personennamen →
+ *  [PERSON]); `author` ist ein HMAC-Token (§8). `embedding` wird nie ausgegeben. */
+export interface WorkerNoteRead {
+  id: number;
+  machine_id: number | null;
+  shift: string | null;
+  text: string; // bereits NER-maskiert (kein Rohtext)
+  classification: string | null; // in F2 ungenutzt
+  author: string | null; // HMAC-Token "v{n}:{hex}", nie Klartext
+  created_at: string; // ISO 8601
+}
