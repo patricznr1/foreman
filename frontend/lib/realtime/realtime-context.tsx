@@ -34,7 +34,7 @@ function defaultWsUrl(): string {
   return `${proto}//${window.location.host}/api/v1/ws`;
 }
 
-/** Holt das WS-Token just-in-time (derzeit das Session-JWT, siehe ws-ticket-Route). */
+/** Holt das kurzlebige WS-Ticket just-in-time (BFF → Backend GET /api/v1/ws-ticket). */
 async function fetchWsTicket(): Promise<string | null> {
   try {
     const response = await fetch("/api/ws-ticket", { credentials: "same-origin" });
