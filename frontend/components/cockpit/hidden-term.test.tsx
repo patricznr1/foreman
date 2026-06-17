@@ -23,6 +23,9 @@ import { PriorityColumn } from "./priority-column";
 // Interne Begriffe, die im Sichtbaren NIE auftauchen dürfen (Paraphrase-Disziplin).
 const FORBIDDEN = [
   "drift",
+  "kipped",
+  "fcsm",
+  "severity",
   "schraffur",
   "intensität",
   "heatmap-fläche",
