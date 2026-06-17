@@ -20,5 +20,6 @@ export function maskPseudonym(token: string | null | undefined): string | null {
     .replace(/[^a-fA-F0-9]/g, "")
     .slice(0, 6)
     .toLowerCase();
-  return hex.length > 0 ? `#${hex}` : null;
+  // Fail-closed: weniger als sechs Hexzeichen → kein (Teil-)Handle, sondern null.
+  return hex.length >= 6 ? `#${hex}` : null;
 }

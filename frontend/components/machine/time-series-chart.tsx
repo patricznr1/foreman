@@ -123,9 +123,9 @@ export function TimeSeriesChart({
         />
       ) : null}
 
-      {series.profileBand !== null ? (
-        <path data-testid="profile-band" fill="none" stroke="var(--color-fg-secondary)" strokeDasharray="4 3" />
-      ) : null}
+      {/* Eigenprofil-Overlay (F4): profile_band ist Backend-seitig reserviert/null →
+          graceful WEGGELASSEN, kein Platzhalter-Strich. Sobald F4 ein Band liefert,
+          hier eine gestrichelte Referenzlinie aus dem Band ableiten (Anschlusspunkt). */}
 
       {driftSegments.map((segment, index) => {
         const boundary = segment.direction === "over" ? normalMax : normalMin;

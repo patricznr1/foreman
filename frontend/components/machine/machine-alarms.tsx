@@ -47,7 +47,9 @@ export function MachineAlarms({
   const now = nowMs ?? Date.now();
 
   const onShelve = (id: number): void => {
-    setShelf((prev) => new Map(prev).set(id, now + SHELF_TTL_MS));
+    // Klick-Zeitpunkt, nicht Render-Zeit (TTL ab Klick — CodeRabbit-Fix).
+    const clickNow = nowMs ?? Date.now();
+    setShelf((prev) => new Map(prev).set(id, clickNow + SHELF_TTL_MS));
   };
   const onUnshelve = (id: number): void => {
     setShelf((prev) => {
