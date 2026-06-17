@@ -1,0 +1,145 @@
+/* ============================================================
+   AUTO-GENERIERT von scripts/build-tokens.ts — NICHT von Hand ändern.
+   Quelle: tokens/primitive.ts + tokens/themes.ts (Designstudie §5.7).
+   Neu generieren: npm run tokens:build
+   ============================================================ */
+
+@theme {
+  /* Farb-Utilities zeigen auf Runtime-Variablen (--tk-*) → Theme-Wechsel
+     überschreibt eine Ebene. UI nutzt nur diese semantischen Utilities. */
+  --color-surface-canvas: var(--tk-surface-canvas);
+  --color-surface-raised: var(--tk-surface-raised);
+  --color-surface-overlay: var(--tk-surface-overlay);
+  --color-line-subtle: var(--tk-line-subtle);
+  --color-line-strong: var(--tk-line-strong);
+  --color-focus-ring: var(--tk-focus-ring);
+  --color-fg-primary: var(--tk-fg-primary);
+  --color-fg-secondary: var(--tk-fg-secondary);
+  --color-fg-muted: var(--tk-fg-muted);
+  --color-fg-on-accent: var(--tk-fg-on-accent);
+  --color-alarm-critical: var(--tk-alarm-critical);
+  --color-alarm-high: var(--tk-alarm-high);
+  --color-alarm-medium: var(--tk-alarm-medium);
+  --color-alarm-low: var(--tk-alarm-low);
+  --color-alarm-journal: var(--tk-alarm-journal);
+  --color-state-failure: var(--tk-state-failure);
+  --color-state-check: var(--tk-state-check);
+  --color-state-outofspec: var(--tk-state-outofspec);
+  --color-state-maintenance: var(--tk-state-maintenance);
+  --color-state-ok: var(--tk-state-ok);
+  --color-note-caveat: var(--tk-note-caveat);
+  --color-data-series-1: var(--tk-data-series-1);
+  --color-data-series-2: var(--tk-data-series-2);
+  --color-data-series-3: var(--tk-data-series-3);
+  --color-data-series-4: var(--tk-data-series-4);
+  --color-data-normalband: var(--tk-data-normalband);
+  --color-heatmap-1: var(--tk-heatmap-1);
+  --color-heatmap-2: var(--tk-heatmap-2);
+  --color-heatmap-3: var(--tk-heatmap-3);
+  --color-heatmap-4: var(--tk-heatmap-4);
+  --color-heatmap-5: var(--tk-heatmap-5);
+  --color-diff-over: var(--tk-diff-over);
+  --color-diff-under: var(--tk-diff-under);
+
+  /* Schriftgrößen (§5.3) — Untergrenze 14px (caption). */
+  --text-caption: 0.875rem;
+  --text-body: 1rem;
+  --text-body-l: 1.125rem;
+  --text-h2: 1.375rem;
+  --text-h1: 1.75rem;
+  --text-kpi: 3rem;
+  --text-display: 4.5rem;
+
+  /* Schriftfamilien (§5.3): humanistische Sans + echte Monospace. */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+/* Dark = Primärmodus (Halle). :root trägt zusätzlich die theme-agnostischen Maße. */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --tk-surface-canvas: #15181C;
+  --tk-surface-raised: #1C2025;
+  --tk-surface-overlay: #23282E;
+  --tk-line-subtle: #2C3239;
+  --tk-line-strong: #3A424B;
+  --tk-focus-ring: #5B8DEF;
+  --tk-fg-primary: #E8ECEF;
+  --tk-fg-secondary: #A7B0B8;
+  --tk-fg-muted: #8D959D;
+  --tk-fg-on-accent: #15181C;
+  --tk-alarm-critical: #E5484D;
+  --tk-alarm-high: #F2820D;
+  --tk-alarm-medium: #E8C500;
+  --tk-alarm-low: #5B8DEF;
+  --tk-alarm-journal: #8D959D;
+  --tk-state-failure: #E5484D;
+  --tk-state-check: #F2820D;
+  --tk-state-outofspec: #E8C500;
+  --tk-state-maintenance: #5B8DEF;
+  --tk-state-ok: #3BA776;
+  --tk-note-caveat: #8B7CE5;
+  --tk-data-series-1: #9AA6B0;
+  --tk-data-series-2: #7FB0C9;
+  --tk-data-series-3: #C2A57E;
+  --tk-data-series-4: #A99BC0;
+  --tk-data-normalband: #2C3239;
+  --tk-heatmap-1: #22332F;
+  --tk-heatmap-2: #27554A;
+  --tk-heatmap-3: #2E8B6F;
+  --tk-heatmap-4: #49B98E;
+  --tk-heatmap-5: #7FE0BE;
+  --tk-diff-over: #5B8DEF;
+  --tk-diff-under: #F2820D;
+  --touch-min: 3.5rem;
+  --touch-safety: 4rem;
+  --touch-action: 4.5rem;
+  --touch-gap: 0.75rem;
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  --motion-slow: 200ms;
+}
+
+/* High-Contrast-Light (Streulicht) — eigene geprüfte Palette, keine naive Inversion. */
+[data-theme="hc-light"] {
+  color-scheme: light;
+  --tk-surface-canvas: #FFFFFF;
+  --tk-surface-raised: #F2F4F7;
+  --tk-surface-overlay: #E8EBEF;
+  --tk-line-subtle: #D2D7DE;
+  --tk-line-strong: #AEB6BF;
+  --tk-focus-ring: #2D5BB8;
+  --tk-fg-primary: #14181D;
+  --tk-fg-secondary: #41494F;
+  --tk-fg-muted: #5E666D;
+  --tk-fg-on-accent: #FFFFFF;
+  --tk-alarm-critical: #C62A2F;
+  --tk-alarm-high: #B45A09;
+  --tk-alarm-medium: #8A6D00;
+  --tk-alarm-low: #2D5BB8;
+  --tk-alarm-journal: #5E666D;
+  --tk-state-failure: #C62A2F;
+  --tk-state-check: #B45A09;
+  --tk-state-outofspec: #8A6D00;
+  --tk-state-maintenance: #2D5BB8;
+  --tk-state-ok: #1E7A50;
+  --tk-note-caveat: #5B4DBE;
+  --tk-data-series-1: #4A5560;
+  --tk-data-series-2: #3E6B82;
+  --tk-data-series-3: #7A5E36;
+  --tk-data-series-4: #5E5078;
+  --tk-data-normalband: #E8EBEF;
+  --tk-heatmap-1: #E2ECE8;
+  --tk-heatmap-2: #A9D2C4;
+  --tk-heatmap-3: #5BA990;
+  --tk-heatmap-4: #2E8B6F;
+  --tk-heatmap-5: #15604A;
+  --tk-diff-over: #2D5BB8;
+  --tk-diff-under: #B45A09;
+}

@@ -1,0 +1,106 @@
+/* ============================================================
+   FOREMAN Frontend — app/globals.css
+   Zweck: Tailwind v4 + generierte Token-Quelle + Basis-Schicht. Setzt die
+          entsättigte ruhige Grundfläche (ISA-101), Tabellenziffern, sichtbaren
+          Fokusring, Dichte-Modi, Touch-Ziel-Utilities und funktionale Motion
+          (reduced-motion respektiert). Studie §5.2–§5.8.
+   ============================================================ */
+@import "tailwindcss";
+@import "./styles/tokens.generated.css";
+
+/* Theme-Wechsel läuft über [data-theme] auf <html>; die Tokens lösen automatisch
+   auf. Dark-Variante für seltene theme-spezifische Feinheiten. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--color-surface-canvas);
+    color: var(--color-fg-primary);
+    font-family: var(--font-sans);
+    /* Tabellenziffern: Live-Messwerte springen beim Update nicht (§5.3). */
+    font-feature-settings: "tnum";
+    font-size: var(--text-body);
+    line-height: 1.45;
+  }
+  /* Vollständige Tastaturbedienung: sichtbarer Fokusring ≥ 3:1 (§5.8). */
+  :focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+  /* IDs/Audit-Zeilen in echter Monospace (§5.3). */
+  .font-mono,
+  code,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+  }
+}
+
+/* — Dichte-Modi (§5.4): ändern Abstände/Zeilenhöhen, NIE unter die Touch-Mindestmaße. — */
+:root,
+[data-density="standard"] {
+  --density-row: var(--touch-min);
+  --density-pad-y: 0.5rem;
+  --density-pad-x: 0.75rem;
+}
+[data-density="comfortable"] {
+  --density-row: var(--touch-action);
+  --density-pad-y: 0.75rem;
+  --density-pad-x: 1rem;
+}
+[data-density="compact"] {
+  --density-row: var(--touch-min);
+  --density-pad-y: 0.25rem;
+  --density-pad-x: 0.5rem;
+}
+
+/* — Touch-Ziel-Utilities (Handschuh, §5.4): primär ≥56px, sicherheitsrelevant ≥64px. — */
+.touch-target {
+  min-block-size: var(--touch-min);
+  min-inline-size: var(--touch-min);
+}
+.touch-target-safety {
+  min-block-size: var(--touch-safety);
+  min-inline-size: var(--touch-safety);
+}
+
+/* — Funktionale Motion (§5.6): einmaliger Kipp-Puls; 1-Hz-Puls NUR unquittiert-kritisch. — */
+@keyframes foreman-attention-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.attention-pulse {
+  animation: foreman-attention-pulse 1s ease-in-out infinite;
+}
+@keyframes foreman-state-flip {
+  0% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.state-flip {
+  animation: foreman-state-flip var(--motion-base) ease-out 1;
+}
+
+/* Reduced Motion: jede Bewegung → diskreter Zustandswechsel (§5.6). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
