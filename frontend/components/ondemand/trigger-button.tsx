@@ -9,6 +9,7 @@
 // ============================================================
 "use client";
 
+import { useId } from "react";
 import { cx } from "@/lib/ui/cx";
 
 export interface TriggerButtonProps {
@@ -36,6 +37,9 @@ export function TriggerButton({
 }: TriggerButtonProps) {
   const disabled = busy || disabledReason !== null;
   const shownLabel = busy && busyLabel ? busyLabel : label;
+  // Eindeutige id pro Instanz — mehrere Trigger (E + spätere D/F/G/H) auf einer
+  // Seite dürfen die aria-describedby-Verknüpfung nicht kollidieren lassen.
+  const reasonId = useId();
 
   return (
     <div className={cx("flex flex-col gap-2", className)}>
@@ -44,7 +48,7 @@ export function TriggerButton({
         onClick={onTrigger}
         disabled={disabled}
         aria-disabled={disabled}
-        aria-describedby={disabledReason !== null ? "trigger-disabled-reason" : undefined}
+        aria-describedby={disabledReason !== null ? reasonId : undefined}
         className={cx(
           "inline-flex min-h-[var(--touch-safety)] items-center justify-center gap-2",
           "rounded-lg px-6 text-body-l font-medium",
@@ -58,7 +62,7 @@ export function TriggerButton({
         {shownLabel}
       </button>
       {disabledReason !== null ? (
-        <p id="trigger-disabled-reason" className="text-caption text-note-caveat">
+        <p id={reasonId} className="text-caption text-note-caveat">
           {disabledReason}
         </p>
       ) : null}

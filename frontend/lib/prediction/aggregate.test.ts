@@ -18,6 +18,18 @@ describe("buildRiskAggregate", () => {
     expect(agg.rows[0]!.level).toBe("hoch");
   });
 
+  it("vergleicht created_at über Epoch, nicht als String (abweichende Zeitzonen)", () => {
+    // "09:00+02:00" = 07:00 UTC liegt VOR "08:00Z" = 08:00 UTC — ein String-
+    // Vergleich („09" > „08") würde fälschlich die frühere Vorhersage wählen.
+    const agg = buildRiskAggregate([
+      makePrediction({ machine_id: 5, created_at: "2026-06-17T09:00:00+02:00", probability: 0.1, decision_threshold: 0.5, decision: "normal" }),
+      makePrediction({ machine_id: 5, created_at: "2026-06-17T08:00:00Z", probability: 0.95, decision_threshold: 0.5, decision: "elevated_risk" }),
+    ]);
+    expect(agg.total).toBe(1);
+    expect(agg.rows[0]!.overThreshold).toBe(true); // die spätere (08:00Z) gewinnt
+    expect(agg.rows[0]!.level).toBe("hoch");
+  });
+
   it("sortiert hohes Risiko nach oben (kritisch oben, wie ISA-18.2 in C)", () => {
     const agg = buildRiskAggregate([
       makePrediction({ id: 1, machine_id: 1, probability: 0.2, decision_threshold: 0.5, decision: "normal" }),

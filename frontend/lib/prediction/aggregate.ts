@@ -26,6 +26,13 @@ export interface RiskAggregate {
 /** Sortier-Rang: hohes Risiko zuerst (kritisch oben, wie ISA-18.2 in C). */
 const LEVEL_RANK: Record<ConfidenceLevel, number> = { hoch: 0, erhoeht: 1, gering: 2 };
 
+/** ISO-Zeitstempel als Epoch — robust gegen abweichende Zeitzonen-Schreibweisen
+ *  (`Z` vs `+00:00`); ungültige Werte (NaN) gelten als „nicht neuer". */
+function epoch(iso: string): number {
+  const ms = new Date(iso).getTime();
+  return Number.isNaN(ms) ? -Infinity : ms;
+}
+
 /**
  * Reduziert eine Liste von Vorhersagen (jüngste je Maschine) auf das Risikobild.
  * Mehrere Vorhersagen je Maschine → die jüngste (created_at) gewinnt.
@@ -34,7 +41,7 @@ export function buildRiskAggregate(predictions: readonly FailurePredictionRead[]
   const latestByMachine = new Map<number, FailurePredictionRead>();
   for (const p of predictions) {
     const existing = latestByMachine.get(p.machine_id);
-    if (!existing || p.created_at > existing.created_at) {
+    if (!existing || epoch(p.created_at) > epoch(existing.created_at)) {
       latestByMachine.set(p.machine_id, p);
     }
   }
