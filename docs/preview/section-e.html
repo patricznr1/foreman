@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  FOREMAN — docs/preview/section-e.html
+  Zweck: STATISCHE Design-Vorschau der Sektion E (Ausfallvorhersage & Empfehlung)
+         — die ConfidenceCaveatCard (Schichtleiter-Variante), die Manager-
+         Aggregat-Variante und der On-Demand-Auslöser + Verarbeitungszustand.
+         Gebaut aus den ECHTEN FOREMAN-Dark-Tokens (tokens/primitive.ts + themes.ts)
+         und der realen Komponenten-Struktur. KEINE Funktion, KEINE Live-Daten —
+         nur der Look. Im Browser direkt öffenbar; NICHT Teil des App-Builds.
+  Architektur-Einordnung: Doku-Artefakt (kein Code-Pfad).
+============================================================ -->
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FOREMAN · Sektion E — Design-Vorschau</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{--canvas:#15181C;--raised:#1C2025;--overlay:#23282E;--lsub:#2C3239;--lstr:#3A424B;--fg1:#E8ECEF;--fg2:#A7B0B8;--fg3:#8D959D;--cav:#8B7CE5;--data:#9AA6B0;--ok:#3BA776}
+*{box-sizing:border-box}
+body{margin:0;background:#0E1014;color:var(--fg1);font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;padding:32px 18px;display:flex;justify-content:center}
+.page{width:100%;max-width:720px;display:flex;flex-direction:column;gap:16px}
+.doc-head{display:flex;flex-direction:column;gap:4px}
+.doc-head h1{font-size:18px;font-weight:600;margin:0;letter-spacing:-.01em}
+.doc-head p{font-size:13px;color:var(--fg3);margin:0;line-height:1.5}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.fmn{background:var(--canvas);border:1px solid var(--lstr);border-radius:14px;padding:18px}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3);margin:0}
+.cap{font-size:14px;color:var(--fg3);line-height:1.5}
+.track{position:relative;height:12px;width:100%;background:var(--overlay);border-radius:999px}
+.fill{position:absolute;top:0;bottom:0;background:var(--data);border-radius:999px}
+.btn{min-height:56px;padding:0 22px;border:1px solid var(--lstr);background:var(--overlay);color:var(--fg1);border-radius:10px;font:500 16px 'Inter';display:inline-flex;align-items:center;justify-content:center}
+.mono{font-family:'IBM Plex Mono',monospace}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Statische Design-Vorschau der FOREMAN-Sektion E: die ConfidenceCaveatCard mit Konfidenz, Einflussfaktoren, Empfehlung und untrennbarem Vorbehalt, dazu die Manager-Variante und der On-Demand-Auslöser.</h2>
+<div class="page">
+  <div class="doc-head">
+    <h1>FOREMAN · Sektion E — Ausfallvorhersage &amp; Empfehlung</h1>
+    <p>Statische Vorschau aus den echten Design-Tokens und der realen Komponenten-Struktur. Keine Funktion, keine Live-Daten — nur der Look.</p>
+  </div>
+
+  <div class="fmn">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--lsub);margin-bottom:18px">
+    <span class="cap"><span class="mono" style="color:var(--fg2)">Erkenntnisse</span> · Ausfallvorhersage — Maschine 7</span>
+    <span style="font-size:12px;color:var(--fg2);border:1px solid var(--lsub);border-radius:999px;padding:3px 10px">Schichtleiter</span>
+  </div>
+
+  <article aria-label="Ausfallvorhersage und Empfehlung" style="display:flex;flex-direction:column;gap:20px;border:1px solid var(--lstr);background:var(--canvas);border-radius:12px;padding:20px;max-width:580px;margin:0 auto">
+
+    <section style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px">
+        <span style="font-size:22px;font-weight:600;color:var(--fg1)">hohes Risiko</span>
+        <span class="cap">Vorlauf: 14 Tage</span>
+      </div>
+      <div class="track" aria-hidden="true">
+        <div class="fill" style="left:80%;width:10%"></div>
+        <div style="position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;background:var(--fg2)"></div>
+      </div>
+      <p class="cap">Grobe Einschätzung: ca. 80–90 % — keine Nachkommastellen. Schwelle bei 50 %.</p>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:12px">
+      <p class="eyebrow">Einflussfaktoren</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="color:var(--fg2)">↑</span><span style="font-size:16px">Lager Temperatur · im Mittel</span><span class="cap">— treibt das Risiko hoch</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="track" style="height:8px;max-width:300px"><div class="fill" style="left:0;width:100%;height:8px;background:var(--fg2)"></div></div><span class="cap">stark</span></div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="color:var(--fg2)">↑</span><span style="font-size:16px">Vibration Effektivwert · Verlauf</span><span class="cap">— treibt das Risiko hoch</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="track" style="height:8px;max-width:300px"><div class="fill" style="left:0;width:66%;height:8px;background:var(--fg2)"></div></div><span class="cap">stark</span></div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="color:var(--fg2)">↑</span><span style="font-size:16px">Zeit seit der letzten Wartung</span><span class="cap">— treibt das Risiko hoch</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="track" style="height:8px;max-width:300px"><div class="fill" style="left:0;width:37%;height:8px;background:var(--fg2)"></div></div><span class="cap">mittel</span></div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="color:var(--fg2)">↑</span><span style="font-size:16px">Auffälligkeiten in der Messreihe</span><span class="cap">— treibt das Risiko hoch</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="track" style="height:8px;max-width:300px"><div class="fill" style="left:0;width:29%;height:8px;background:var(--fg2)"></div></div><span class="cap">leicht</span></div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono" style="color:var(--fg2)">↓</span><span style="font-size:16px">Spindel Last · Abweichung vom Mittel</span><span class="cap">— senkt das Risiko</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:5px"><div class="track" style="height:8px;max-width:300px"><div class="fill" style="left:0;width:20%;height:8px;background:var(--fg2)"></div></div><span class="cap">leicht</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:12px;border:1px solid var(--lsub);background:var(--raised);border-radius:10px;padding:16px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <p class="eyebrow">Empfehlung — Vorschlag an Sie</p>
+        <p style="font-size:18px;color:var(--fg1);line-height:1.5;margin:0">Lagertemperatur und Schwingungsverlauf an Maschine 7 in der nächsten Schicht prüfen; eine Schmierung vor dem regulären Intervall vorziehen.</p>
+        <p class="cap">belegt über 3 Quellen</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;flex-wrap:wrap;gap:12px"><span class="btn">Quittieren</span><span class="btn">Verwerfen</span></div>
+        <p class="cap">Ihre Entscheidung wird protokolliert — die Anlage wird dadurch nicht geschaltet.</p>
+      </div>
+    </section>
+
+    <section aria-label="Vorbehalt" style="display:flex;gap:12px;border:1px solid rgba(139,124,229,.5);background:rgba(139,124,229,.1);border-radius:10px;padding:16px">
+      <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="#8B7CE5" stroke-width="1.6" style="flex:none;margin-top:1px"><circle cx="10" cy="10" r="8"/><line x1="10" y1="9" x2="10" y2="14" stroke-linecap="round"/><circle cx="10" cy="6.2" r="0.5" fill="#8B7CE5"/></svg>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <p class="eyebrow" style="color:var(--cav)">Vorbehalt</p>
+        <p style="font-size:16px;color:var(--fg2);line-height:1.5;margin:0">Diese Einschätzung beruht auf simulierten Verläufen und ist nicht an realen Ausfällen validiert.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 24px"><span class="cap">Datenbasis: <span style="color:var(--fg2)">Simulation</span></span><span class="cap">Validierung: <span style="color:var(--fg2)">nicht an realen Ausfällen validiert</span></span></div>
+      </div>
+    </section>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;border-top:1px solid var(--lsub);padding-top:12px">
+      <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--cav)"><span style="width:8px;height:8px;border-radius:50%;background:var(--fg3)"></span>Gecacht · Stand 08:30:05<span class="mono" style="text-transform:uppercase;letter-spacing:.04em">KI-erzeugt</span></span>
+      <span class="cap">Datenbasis: Simulation</span>
+    </div>
+
+    <nav aria-label="Weiter im Kontext" style="display:flex;flex-direction:column;gap:4px">
+      <span class="eyebrow">Weiter im Kontext</span>
+      <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14px">
+        <span style="color:var(--fg2);text-decoration:underline;text-underline-offset:2px">Belegender Sensorverlauf (Maschinen)</span>
+        <span style="color:var(--fg2);text-decoration:underline;text-underline-offset:2px">Auslösender Alarm</span>
+        <span style="color:var(--fg2);text-decoration:underline;text-underline-offset:2px">Ähnliche Vorfälle (Gedächtnis)</span>
+        <span style="color:var(--fg3)">Risikosenkende Wartung (folgt)</span>
+      </div>
+    </nav>
+  </article>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:20px">
+    <section style="border:1px solid var(--lsub);background:var(--raised);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <p class="eyebrow">Manager — Risikobild</p>
+      <p style="font-size:15px;color:var(--fg2);margin:0">1 von 3 Maschinen mit erhöhtem Risiko</p>
+      <div style="border:1px solid var(--lsub);border-radius:8px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--lsub)"><span style="font-size:15px">Maschine 12</span><span style="font-size:15px;color:var(--fg2)"><span class="mono">▲</span> hohes Risiko</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--lsub)"><span style="font-size:15px">Maschine 4</span><span style="font-size:15px;color:var(--fg2)"><span class="mono">▲</span> erhöhtes Risiko</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px"><span style="font-size:15px">Maschine 9</span><span style="font-size:15px;color:var(--fg2)"><span class="mono">—</span> geringes Risiko</span></div>
+      </div>
+      <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--cav)"><span style="width:8px;height:8px;border-radius:50%;background:var(--fg3)"></span>Gecacht · Stand 08:31<span class="mono" style="text-transform:uppercase">KI-erzeugt</span></span>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <p class="eyebrow">On-Demand-Auslöser</p>
+        <span class="btn" style="min-height:64px;align-self:flex-start">Vorhersage anfordern</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <p class="eyebrow">Verarbeitungszustand</p>
+        <div style="display:flex;align-items:center;gap:12px;min-height:64px;border:1px solid var(--lsub);background:var(--raised);border-radius:10px;padding:14px"><span style="width:10px;height:10px;border-radius:50%;background:var(--fg3);flex:none"></span><span style="font-size:15px;color:var(--fg2)">Werte die aktuelle Lage gegen vergangene Verläufe aus …</span></div>
+      </div>
+    </section>
+  </div>
+  </div>
+</div>
+</body>
+</html>
