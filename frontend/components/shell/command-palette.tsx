@@ -1,17 +1,27 @@
 // ============================================================
 //  FOREMAN Frontend — components/shell/command-palette.tsx
-//  Zweck: Befehlsleiste (Cmd-K, §3.3) — Sprung zu Sektionen und zum Gedächtnis
-//         (H) von überall. Vollständig tastaturbedienbar (Cmd/Ctrl+K öffnet,
-//         Pfeiltasten, Enter, Esc), Fokus wandert ins Eingabefeld, role=dialog.
+//  Zweck: Befehlsleiste (Cmd-K, §3.3) — Sprung zu Sektionen UND direkte
+//         Bedeutungssuche im Gedächtnis (H) von überall: was getippt wird, lässt
+//         sich als Suche an /memory übergeben (Cmd-K → H, Studie §3.3/§4H).
+//         Vollständig tastaturbedienbar (Cmd/Ctrl+K öffnet, Pfeiltasten, Enter,
+//         Esc), Fokus wandert ins Eingabefeld, role=dialog.
 //  Architektur-Einordnung: Persistentes Rahmenelement (Schicht 2, client).
 // ============================================================
 "use client";
 
 import { useRouter } from "next/navigation";
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type NavItem, visibleNav } from "@/lib/auth/roles";
+import { canAccessSection, visibleNav } from "@/lib/auth/roles";
 import { useSession } from "@/lib/auth/use-session";
 import { cx } from "@/lib/ui/cx";
+
+interface Command {
+  id: string;
+  /** Sichtbares Label (Hallensprache). */
+  label: string;
+  /** Aktion beim Auswählen (Sprung oder Suche). */
+  run: () => void;
+}
 
 export function CommandPalette() {
   const user = useSession();
@@ -21,11 +31,39 @@ export function CommandPalette() {
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const commands = useMemo<NavItem[]>(() => visibleNav(user.role), [user.role]);
-  const filtered = useMemo(
-    () => commands.filter((c) => c.label.toLowerCase().includes(query.trim().toLowerCase())),
-    [commands, query],
-  );
+  const nav = useMemo(() => visibleNav(user.role), [user.role]);
+  const trimmed = query.trim();
+  const lower = trimmed.toLowerCase();
+
+  const items = useMemo<Command[]>(() => {
+    const list: Command[] = [];
+    // Direkte Bedeutungssuche — nur wenn die Rolle das Gedächtnis sehen darf
+    // (Sichtbarkeit <= Backend-Autorisierung). Springt mit der Anfrage nach H.
+    if (trimmed.length > 0 && canAccessSection(user.role, "H")) {
+      const href = `/memory?q=${encodeURIComponent(trimmed)}`;
+      list.push({
+        id: "__search",
+        label: `Im Gedächtnis suchen: ${trimmed}`,
+        run: () => {
+          setOpen(false);
+          router.push(href);
+        },
+      });
+    }
+    for (const item of nav) {
+      if (item.label.toLowerCase().includes(lower)) {
+        list.push({
+          id: item.id,
+          label: item.label,
+          run: () => {
+            setOpen(false);
+            router.push(item.href);
+          },
+        });
+      }
+    }
+    return list;
+  }, [trimmed, lower, nav, user.role, router]);
 
   useEffect(() => {
     function onKey(event: globalThis.KeyboardEvent): void {
@@ -49,27 +87,23 @@ export function CommandPalette() {
     }
   }, [open]);
 
-  const go = useCallback(
-    (item: NavItem | undefined): void => {
-      if (item === undefined) {
-        return;
-      }
-      setOpen(false);
-      router.push(item.href);
-    },
-    [router],
-  );
+  const go = useCallback((item: Command | undefined): void => {
+    if (item === undefined) {
+      return;
+    }
+    item.run();
+  }, []);
 
   function onInputKey(event: ReactKeyboardEvent<HTMLInputElement>): void {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setActiveIndex((index) => Math.min(index + 1, filtered.length - 1));
+      setActiveIndex((index) => (items.length === 0 ? 0 : Math.min(index + 1, items.length - 1)));
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((index) => Math.max(index - 1, 0));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      go(filtered[activeIndex]);
+      go(items[activeIndex]);
     }
   }
 
@@ -113,14 +147,11 @@ export function CommandPalette() {
               aria-label="Befehl oder Suche"
               className="w-full bg-transparent px-4 py-3 text-body text-fg-primary outline-none"
             />
-            <ul
-              aria-label="Sprungziele"
-              className="max-h-72 overflow-auto border-t border-line-subtle"
-            >
-              {filtered.length === 0 ? (
+            <ul aria-label="Sprungziele und Suche" className="max-h-72 overflow-auto border-t border-line-subtle">
+              {items.length === 0 ? (
                 <li className="px-4 py-3 text-caption text-fg-muted">Kein Treffer</li>
               ) : (
-                filtered.map((item, index) => (
+                items.map((item, index) => (
                   <li key={item.id}>
                     <button
                       type="button"
