@@ -68,7 +68,7 @@ describe("assembleAlarmView — Flood & Aufklappen", () => {
   it("aufgeklapptes Bündel zeigt die Mitglieder zusätzlich", () => {
     const view = assembleAlarmView(flood, {
       ...base,
-      expandedBundles: new Set(["3|OVERLOAD"]),
+      expandedBundles: new Set(["line:3|OVERLOAD"]),
     });
     const rows = view.rows.filter((r) => r.kind === "row");
     expect(rows).toHaveLength(12);

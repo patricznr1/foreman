@@ -27,6 +27,14 @@ describe("severityToPriority — 5 Backend-Severities → ISA-Tiers", () => {
     expect(severityToPriority("bogus")).toBe("journal");
     expect(severityToPriority("")).toBe("journal");
   });
+
+  it("reservierte Schlüssel lösen NICHT über die Prototypkette auf (Journal/Fallback)", () => {
+    expect(severityToPriority("__proto__")).toBe("journal");
+    expect(severityToPriority("constructor")).toBe("journal");
+    expect(severityToPriority("hasOwnProperty")).toBe("journal");
+    expect(severityRank("constructor")).toBe(5);
+    expect(severityRank("toString")).toBe(5);
+  });
 });
 
 describe("Rang & Tokens", () => {

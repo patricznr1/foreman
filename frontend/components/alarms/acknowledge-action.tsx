@@ -16,6 +16,7 @@ import {
   ACK_DISABLED_TEXT,
   ackDisabledReason,
   acknowledgeEndpoint,
+  buildAcknowledgeRecord,
   requiresAckContext,
 } from "@/lib/alarms/acknowledge";
 import type { AlarmViewModel } from "@/lib/alarms/types";
@@ -110,7 +111,10 @@ export function AcknowledgeAction({
 
   async function confirm() {
     setErrorText(null);
-    const result = await acknowledge(vm);
+    // Auditierbarer Datensatz (wer/wann/warum): erzwingt die Pflicht-Begründung bei
+    // kritisch und reicht sie an den Quittier-Request weiter (Audit-Bezug Sektion I).
+    const record = buildAcknowledgeRecord(vm, reason, new Date().toISOString());
+    const result = await acknowledge(vm, record.reason);
     if (result.ok) {
       setOpen(false);
       setReason("");
@@ -158,6 +162,7 @@ export function AcknowledgeAction({
             <textarea
               ref={firstFieldRef as React.RefObject<HTMLTextAreaElement>}
               id={fieldId}
+              aria-label="Begründung für die Quittierung"
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               rows={2}

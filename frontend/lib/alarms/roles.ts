@@ -52,11 +52,13 @@ const ROLE_VIEW: Record<Role, AlarmRoleView> = {
   },
 };
 
-/** Defensiv: unbekannte Backend-Rolle → restriktivste Sicht (default-deny). */
+/** Defensiv: unbekannte Backend-Rolle → restriktivste Sicht (default-deny). Scope
+ *  „assigned-machines" mit (typischerweise leerer) Zuweisungsliste zeigt nichts —
+ *  konsistent mit dem Default-Deny-Versprechen, nicht „all". */
 const FALLBACK_VIEW: AlarmRoleView = {
   canAcknowledge: false,
   aggregateOnly: true,
-  scope: "all",
+  scope: "assigned-machines",
   acknowledgeIsDefault: false,
 };
 

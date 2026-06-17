@@ -91,9 +91,12 @@ export function buildAcknowledgeRecord(
   reason: string | null,
   atIso: string,
 ): AcknowledgeRecord {
-  return {
-    alarmId: vm.id,
-    atIso,
-    reason: reason && reason.trim().length > 0 ? reason.trim() : null,
-  };
+  const normalized = reason && reason.trim().length > 0 ? reason.trim() : null;
+  // Vertrag (Audit-/Nachvollziehbarkeit): eine kritische Quittierung MUSS eine
+  // Begründung tragen. Die UI verhindert das schon (Submit gesperrt) — hier die
+  // zweite Linie, damit der Datensatz die Lücke nie öffnen kann.
+  if (requiresAckContext(vm.priority) && normalized === null) {
+    throw new Error("Kritische Quittierung erfordert eine Begründung");
+  }
+  return { alarmId: vm.id, atIso, reason: normalized };
 }

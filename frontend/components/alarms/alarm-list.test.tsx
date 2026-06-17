@@ -79,7 +79,7 @@ describe("AlarmList — Flood-Bündel & A11y", () => {
     );
     expect(screen.getByText("12 Alarme")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Aufklappen" }));
-    expect(onToggle).toHaveBeenCalledWith("3|OVERLOAD");
+    expect(onToggle).toHaveBeenCalledWith("line:3|OVERLOAD");
   });
 
   it("Flood-Bündel mit unquittiert-kritischen Mitgliedern trägt den 1-Hz-Puls (ISA-18.2)", () => {

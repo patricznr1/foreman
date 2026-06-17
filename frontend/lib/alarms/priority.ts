@@ -29,11 +29,15 @@ const SEVERITY_TO_PRIORITY: Record<AlarmSeverity, Priority> = {
 };
 
 export function severityToPriority(severity: string): Priority {
-  return SEVERITY_TO_PRIORITY[severity as AlarmSeverity] ?? "journal";
+  // hasOwnProperty-Guard: reservierte Schlüssel (__proto__/constructor) dürfen
+  // nicht über die Prototypkette auflösen, sonst verfälscht sich die Priorität.
+  return Object.prototype.hasOwnProperty.call(SEVERITY_TO_PRIORITY, severity)
+    ? SEVERITY_TO_PRIORITY[severity as AlarmSeverity]
+    : "journal";
 }
 
 /** Feinrang der Severity für stabile Sortierung INNERHALB eines Tiers (Notfall vor Kritisch). */
-const SEVERITY_RANK: Record<string, number> = {
+const SEVERITY_RANK: Readonly<Record<AlarmSeverity, number>> = {
   emergency: 0,
   critical: 1,
   alarm: 2,
@@ -42,7 +46,9 @@ const SEVERITY_RANK: Record<string, number> = {
 };
 
 export function severityRank(severity: string): number {
-  return SEVERITY_RANK[severity] ?? 5;
+  return Object.prototype.hasOwnProperty.call(SEVERITY_RANK, severity)
+    ? SEVERITY_RANK[severity as AlarmSeverity]
+    : 5;
 }
 
 export const PRIORITY_LABEL: Record<Priority, string> = {

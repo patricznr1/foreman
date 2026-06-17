@@ -31,7 +31,9 @@ export interface WindowRange {
 
 export function windowRange(input: WindowInput): WindowRange {
   const { scrollTop, viewportHeight, rowHeight, count } = input;
-  const overscan = input.overscan ?? 4;
+  // overscan robust normalisieren (negative/NaN würden ein ungültiges Fenster geben).
+  const overscanRaw = Number.isFinite(input.overscan) ? (input.overscan as number) : 4;
+  const overscan = Math.max(0, Math.floor(overscanRaw));
   const safeCount = Math.max(0, Math.floor(count));
   const totalHeight = safeCount * Math.max(0, rowHeight);
 
@@ -39,7 +41,10 @@ export function windowRange(input: WindowInput): WindowRange {
     return { startIndex: 0, endIndex: 0, paddingTop: 0, paddingBottom: 0, totalHeight };
   }
 
-  const clampedScroll = Math.min(Math.max(0, scrollTop), totalHeight);
+  // Auf den real möglichen Scrollbereich klemmen (totalHeight - viewportHeight),
+  // nicht auf totalHeight — sonst liefert ein stale Scrollwert ein zu kleines Fenster.
+  const maxScroll = Math.max(0, totalHeight - viewportHeight);
+  const clampedScroll = Math.min(Math.max(0, scrollTop), maxScroll);
   const firstVisible = Math.floor(clampedScroll / rowHeight);
   const visibleCount = Math.ceil(viewportHeight / rowHeight);
 

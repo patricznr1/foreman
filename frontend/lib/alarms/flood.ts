@@ -17,9 +17,11 @@ export interface FloodOptions {
 }
 
 function bundleKey(vm: AlarmViewModel): string {
-  const line = vm.lineId === null ? "none" : String(vm.lineId);
+  // Ohne Linienzuordnung NICHT über alle Maschinen mischen — sonst landen fremde
+  // Maschinen mit gleichem Code irreführend in einem Bündel. Dann je Maschine.
+  const source = vm.lineId === null ? `machine:${vm.machineId}` : `line:${vm.lineId}`;
   const code = vm.code ?? "none";
-  return `${line}|${code}`;
+  return `${source}|${code}`;
 }
 
 function sourceLabel(representative: AlarmViewModel): string {
@@ -37,7 +39,9 @@ export function bundleRows(
   rows: readonly AlarmViewModel[],
   options: FloodOptions = {},
 ): AlarmListItem[] {
-  const threshold = options.threshold ?? 3;
+  // Ungültige Schwellen (0/-1/NaN) würden unbeabsichtigt bündeln → Fallback auf 3.
+  const rawThreshold = options.threshold ?? 3;
+  const threshold = Number.isInteger(rawThreshold) && rawThreshold >= 2 ? rawThreshold : 3;
 
   // 1. aktive Zeilen nach Quelle zählen.
   const groups = new Map<string, AlarmViewModel[]>();

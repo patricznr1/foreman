@@ -29,8 +29,8 @@ export interface AlarmRowProps {
   nested?: boolean;
 }
 
-function formatTime(iso: string): string {
-  const date = new Date(iso);
+function formatTime(value: string | number): string {
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return "—";
   }
@@ -98,9 +98,7 @@ export function AlarmRow({
             <span className="inline-flex shrink-0 items-center gap-1 rounded border border-line-strong px-1.5 text-caption text-fg-secondary">
               <span aria-hidden="true">⏸</span>
               Zurückgestellt
-              {vm.shelvedUntil !== null
-                ? ` bis ${formatTime(new Date(vm.shelvedUntil).toISOString())}`
-                : ""}
+              {vm.shelvedUntil !== null ? ` bis ${formatTime(vm.shelvedUntil)}` : ""}
             </span>
           ) : null}
         </div>

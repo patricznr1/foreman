@@ -40,11 +40,17 @@ const LIFECYCLE_OPTIONS: { value: LifecycleFilter; label: string }[] = [
 ];
 
 function togglePriority(filter: AlarmFilter, priority: Priority): AlarmFilter {
-  const priorities = new Set(filter.priorities);
+  // Semantik konsistent: leeres Set = „alle aktiv". Ein Klick aus „alle" wählt die
+  // Priorität ab (statt nur sie zu zeigen); sind danach wieder alle drin → leeren.
+  const priorities =
+    filter.priorities.size === 0 ? new Set<Priority>(PRIORITY_ORDER) : new Set(filter.priorities);
   if (priorities.has(priority)) {
     priorities.delete(priority);
   } else {
     priorities.add(priority);
+  }
+  if (priorities.size === PRIORITY_ORDER.length) {
+    return { ...filter, priorities: new Set<Priority>() };
   }
   return { ...filter, priorities };
 }
@@ -94,7 +100,7 @@ export function AlarmFilterBar({
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Nach Priorität filtern">
           {PRIORITY_ORDER.map((priority) => {
-            const active = filter.priorities.has(priority);
+            const active = filter.priorities.size === 0 || filter.priorities.has(priority);
             return (
               <button
                 key={priority}

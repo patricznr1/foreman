@@ -10,11 +10,12 @@ import type { MachineMeta } from "../types";
 
 let seq = 1000;
 
-/** AlarmRead mit sinnvollen Defaults; alles überschreibbar. */
+/** AlarmRead mit sinnvollen Defaults; alles überschreibbar. Der Sequenzzähler
+ *  wird NUR bei impliziter id erhöht (sonst werden Tests reihenfolgeabhängig). */
 export function alarm(over: Partial<AlarmRead> = {}): AlarmRead {
-  seq += 1;
+  const generatedId = over.id ?? ++seq;
   return {
-    id: seq,
+    id: generatedId,
     machine_id: 1,
     component_id: null,
     data_point_id: null,

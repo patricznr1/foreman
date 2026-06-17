@@ -27,7 +27,8 @@ export type AcknowledgeResult =
     };
 
 export interface UseAcknowledgeResult {
-  acknowledge: (vm: AlarmViewModel) => Promise<AcknowledgeResult>;
+  /** Optionaler `reason` = auditierbarer Pflicht-Kontext (bei kritisch erzwungen). */
+  acknowledge: (vm: AlarmViewModel, reason?: string | null) => Promise<AcknowledgeResult>;
   /** ID des gerade laufenden Quittier-Vorgangs (für die Button-Sperre). */
   pending: number | null;
 }
@@ -35,42 +36,48 @@ export interface UseAcknowledgeResult {
 export function useAcknowledge(): UseAcknowledgeResult {
   const [pending, setPending] = useState<number | null>(null);
 
-  const acknowledge = useCallback(async (vm: AlarmViewModel): Promise<AcknowledgeResult> => {
-    const endpoint = acknowledgeEndpoint(vm);
-    if (endpoint === null) {
-      return { ok: false, reason: "no-route" };
-    }
-    // SICHERHEITS-INVARIANTE (HITL): nur ein erlaubter Status-Pfad verlässt das
-    // Frontend. Jeder andere Pfad wird hier hart geblockt, bevor irgendetwas geht.
-    if (!isAlarmStatusActionPath(endpoint)) {
-      return { ok: false, reason: "blocked" };
-    }
-    setPending(vm.id);
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        body: "{}",
-      });
-      if (!response.ok) {
-        // Konsistent mit dem Lese-Hook (use-alarms): AuthZ-Ablehnungen sind hart.
-        if (response.status === 403) {
-          return { ok: false, reason: "forbidden", status: 403 };
-        }
-        if (response.status === 401) {
-          return { ok: false, reason: "unauthorized", status: 401 };
-        }
-        return { ok: false, reason: "error", status: response.status };
+  const acknowledge = useCallback(
+    async (vm: AlarmViewModel, reason?: string | null): Promise<AcknowledgeResult> => {
+      const endpoint = acknowledgeEndpoint(vm);
+      if (endpoint === null) {
+        return { ok: false, reason: "no-route" };
       }
-      const alarm = (await response.json()) as AlarmRead;
-      return { ok: true, alarm };
-    } catch {
-      return { ok: false, reason: "error" };
-    } finally {
-      setPending(null);
-    }
-  }, []);
+      // SICHERHEITS-INVARIANTE (HITL): nur ein erlaubter Status-Pfad verlässt das
+      // Frontend. Jeder andere Pfad wird hier hart geblockt, bevor irgendetwas geht.
+      if (!isAlarmStatusActionPath(endpoint)) {
+        return { ok: false, reason: "blocked" };
+      }
+      setPending(vm.id);
+      // Begründung forward-compatible mitsenden: die heutige Drift-Route nimmt keinen
+      // Body und ignoriert das Feld; eine künftige generische Route nimmt es an.
+      const trimmed = reason?.trim();
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: trimmed ? JSON.stringify({ reason: trimmed }) : "{}",
+        });
+        if (!response.ok) {
+          // Konsistent mit dem Lese-Hook (use-alarms): AuthZ-Ablehnungen sind hart.
+          if (response.status === 403) {
+            return { ok: false, reason: "forbidden", status: 403 };
+          }
+          if (response.status === 401) {
+            return { ok: false, reason: "unauthorized", status: 401 };
+          }
+          return { ok: false, reason: "error", status: response.status };
+        }
+        const alarm = (await response.json()) as AlarmRead;
+        return { ok: true, alarm };
+      } catch {
+        return { ok: false, reason: "error" };
+      } finally {
+        setPending(null);
+      }
+    },
+    [],
+  );
 
   return { acknowledge, pending };
 }
