@@ -221,9 +221,9 @@ export function CaptureForm({ user, roleView, machinesState, initialMachineId }:
 
       {/* 5) Dezente Brücke zu H — frühere Fälle an dieser Maschine (kein Pop-up-Zwang). */}
       <ContextSuggestions
-        key={machineId ?? "none"}
+        key={effectiveMachineId ?? "none"}
         text={text}
-        machineId={machineId}
+        machineId={effectiveMachineId}
         enabled={roleView.showSuggestions && online}
       />
     </div>
