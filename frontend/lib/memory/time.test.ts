@@ -19,7 +19,8 @@ describe("relativeTime", () => {
     expect(relativeTime("2026-05-27T12:00:00+00:00", NOW)).toBe("vor 3 Wochen");
   });
 
-  it("Zukunft wird zu soeben (keine negative Angabe)", () => {
+  it("Sub-Minute und Zukunft werden zu soeben (keine ungenaue 1-Minute-Angabe)", () => {
+    expect(relativeTime("2026-06-17T11:59:40+00:00", NOW)).toBe("soeben");
     expect(relativeTime("2026-06-18T12:00:00+00:00", NOW)).toBe("soeben");
   });
 });

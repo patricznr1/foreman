@@ -1,8 +1,8 @@
 // ============================================================
 //  FOREMAN Frontend — lib/memory/time.ts
-//  Zweck: Relative Zeitangabe in Hallensprache (vor 3 Wochen) fuer Treffer-Karten
+//  Zweck: Relative Zeitangabe in Hallensprache ("vor 3 Wochen") für Treffer-Karten
 //         (Studie §4H: Zeit je Treffer). Reine Funktion mit injizierbarem jetzt
-//         (testbar, kein verstecktes Date.now). Robust gegen ungueltige Stempel.
+//         (testbar, kein verstecktes Date.now). Robust gegen ungültige Stempel.
 //  Architektur-Einordnung: Darstellungs-Wording (Schicht 1/2). Reine Funktion.
 // ============================================================
 
@@ -13,7 +13,7 @@ const WEEK = 7 * DAY;
 const MONTH = 30 * DAY;
 const YEAR = 365 * DAY;
 
-/** ISO-Stempel auf relative deutsche Angabe; ungueltig/leer auf unbekannt. */
+/** ISO-Stempel auf relative deutsche Angabe; ungültig/leer auf unbekannt. */
 export function relativeTime(iso: string, now: Date = new Date()): string {
   const then = new Date(iso);
   const ts = then.getTime();
@@ -21,11 +21,12 @@ export function relativeTime(iso: string, now: Date = new Date()): string {
     return "unbekannt";
   }
   const diff = now.getTime() - ts;
-  if (diff < 0) {
+  // Zukunft und alles unter einer Minute: "soeben" (keine ungenaue 1-Minute-Angabe).
+  if (diff < MINUTE) {
     return "soeben";
   }
   if (diff < HOUR) {
-    const m = Math.max(1, Math.floor(diff / MINUTE));
+    const m = Math.floor(diff / MINUTE);
     return m === 1 ? "vor 1 Minute" : `vor ${m} Minuten`;
   }
   if (diff < DAY) {

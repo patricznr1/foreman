@@ -97,7 +97,7 @@ export function CommandPalette() {
   function onInputKey(event: ReactKeyboardEvent<HTMLInputElement>): void {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setActiveIndex((index) => Math.min(index + 1, items.length - 1));
+      setActiveIndex((index) => (items.length === 0 ? 0 : Math.min(index + 1, items.length - 1)));
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((index) => Math.max(index - 1, 0));

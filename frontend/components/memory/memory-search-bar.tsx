@@ -10,7 +10,7 @@
 // ============================================================
 "use client";
 
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
 
 export interface MemorySearchBarProps {
   defaultQuery?: string;
@@ -37,6 +37,12 @@ export function MemorySearchBar({
   const [machineId, setMachineId] = useState<number | null>(null);
   const reasonId = useId();
   const disabled = busy || disabledReason !== null;
+
+  // Ein Deep-Link-Wechsel (?q=…) ändert defaultQuery von außen (z. B. über die
+  // Befehlsleiste) — dann das Eingabefeld nachführen, damit es zur Suche passt.
+  useEffect(() => {
+    setQuery(defaultQuery);
+  }, [defaultQuery]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();

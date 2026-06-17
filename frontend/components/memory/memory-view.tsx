@@ -59,10 +59,10 @@ export function MemoryView({ user, initialQuery }: { user: CurrentUser; initialQ
   // Deep-Link aus der Befehlsleiste (?q=…) löst beim Eintritt genau eine Suche aus.
   useEffect(() => {
     const initial = initialQuery?.trim();
-    if (initial) {
+    if (initial && online) {
       search(initial, { machineId: null });
     }
-  }, [initialQuery, search]);
+  }, [initialQuery, online, search]);
 
   // `announce`: nur ein FRISCH geholtes Ergebnis sagt die Live-Region an — ein aus
   // dem Cache rehydriertes oder degradiertes Ergebnis bleibt still (kein alter Stand).

@@ -15,6 +15,12 @@ import type { MemoryHit, MemoryRelation, RelationType } from "./types";
 /** Treffer gelten als zeitlich nah, wenn ihr Abstand höchstens so groß ist. */
 const TEMPORAL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
+/** Normalisierter Schicht-Schlüssel (getrimmt) oder null, wenn leer. */
+function shiftKey(hit: MemoryHit): string | null {
+  const trimmed = hit.shift?.trim();
+  return trimmed ? trimmed : null;
+}
+
 /** Gruppiert Treffer nach einem Schlüssel; null-Schlüssel werden übersprungen. */
 function groupBy(
   hits: MemoryHit[],
@@ -82,13 +88,14 @@ export function deriveRelations(hits: MemoryHit[]): MemoryRelation[] {
     }
   }
 
-  for (const group of groupBy(hits, (h) => (h.shift && h.shift.trim() ? `s:${h.shift}` : null)).values()) {
+  for (const group of groupBy(hits, (h) => (shiftKey(h) === null ? null : `s:${shiftKey(h)}`)).values()) {
     const first = group[0];
-    if (group.length >= 2 && first !== undefined) {
+    const shift = first ? shiftKey(first) : null;
+    if (group.length >= 2 && shift !== null) {
       relations.push({
         type: "same_shift",
         hitIds: ids(group),
-        reason: `${group.length} Hinweise aus Schicht ${first.shift}`,
+        reason: `${group.length} Hinweise aus Schicht ${shift}`,
       });
     }
   }
