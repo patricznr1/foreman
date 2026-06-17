@@ -52,6 +52,9 @@ export function AlarmRow({
   const chainHref = `/insights?section=D&anchor=${vm.id}`;
   const predictHref = `/insights?section=E&machine=${vm.machineId}`;
   const driftHref = `/overview?drift=${vm.machineId}`;
+  // Erfassung (J) mit dieser Maschine vorausgewählt — eine Beobachtung zum Alarm
+  // festhalten (Daten-Eingabe, keine Aktorik); J liest ?machine= real aus.
+  const captureHref = `/capture?machine=${vm.machineId}`;
 
   const ariaLabel = `${vm.priorityLabel}, ${vm.machineLabel}, ${vm.message}, ${LIFECYCLE_LABEL[vm.lifecycle]}`;
 
@@ -134,6 +137,12 @@ export function AlarmRow({
           className="rounded px-2 py-1 text-caption text-fg-secondary underline underline-offset-2 hover:text-fg-primary"
         >
           Ausfall?
+        </Link>
+        <Link
+          href={captureHref}
+          className="rounded px-2 py-1 text-caption text-fg-secondary underline underline-offset-2 hover:text-fg-primary"
+        >
+          Notiz
         </Link>
         {vm.isDrift ? (
           <Link
