@@ -1,14 +1,17 @@
 // ============================================================
 //  FOREMAN Frontend — app/(app)/overview/page.tsx
-//  Zweck: Übersicht-Route (vertikaler Durchstich). Server-seitig: Sektions-Guard
-//         (A — Manager/Schichtleiter; Werker/Techniker → Landing) + HTTP-Snapshot
-//         als Erstbild. Die Live-Aktualisierung übernimmt OverviewView per WS.
+//  Zweck: Cockpit-Route (Sektion A). Server-seitig: Sektions-Guard (A — Manager/
+//         Schichtleiter; Werker/Techniker → Landing) + Geltungsbereich aus den
+//         Query-Parametern (?class=&line=) + HTTP-Snapshot als Erstbild. Die
+//         Live-Aktualisierung übernimmt CockpitView per WS-Thema "overview".
+//         Baut auf dem FE1-Übersicht-Durchstich auf (löst ihn als volle Sicht ab).
 //  Architektur-Einordnung: Routen-Sicht (Schicht 2/3, server + client-View).
 // ============================================================
+import { CockpitView } from "@/components/cockpit/cockpit-view";
 import type { FleetOverviewOut } from "@/lib/api/contracts";
 import { requireSection } from "@/lib/auth/guard";
 import { backendUrl, getSessionToken } from "@/lib/auth/session";
-import { OverviewView } from "@/views/overview/overview-view";
+import { parseScope } from "@/lib/cockpit/scope";
 
 async function fetchOverviewSnapshot(): Promise<FleetOverviewOut | undefined> {
   const token = await getSessionToken();
@@ -29,8 +32,14 @@ async function fetchOverviewSnapshot(): Promise<FleetOverviewOut | undefined> {
   }
 }
 
-export default async function OverviewPage() {
-  await requireSection("A");
+export default async function OverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ class?: string | string[]; line?: string | string[] }>;
+}) {
+  const user = await requireSection("A");
+  const params = await searchParams;
+  const scope = parseScope(params);
   const initialData = await fetchOverviewSnapshot();
-  return <OverviewView initialData={initialData} />;
+  return <CockpitView user={user} scope={scope} initialData={initialData} />;
 }
