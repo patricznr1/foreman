@@ -61,12 +61,14 @@ describe("ContextSuggestions — Treffer auf Anstoß", () => {
     expect(screen.queryByText(/KI-erzeugt/)).toBeNull();
   });
 
-  it("ist wegklappbar (Vorschlag, kein Pop-up-Zwang)", async () => {
+  it("ist wegklappbar und sperrt NICHT dauerhaft — der Anstoß kehrt zurück", async () => {
     stubHits();
     render(<ContextSuggestions text="Lager läuft heiß" machineId={5} enabled />);
     await userEvent.click(screen.getByRole("button", { name: /Ähnliche Notizen/ }));
     await waitFor(() => expect(screen.getByText(/Frühere Notizen/)).toBeInTheDocument());
     await userEvent.click(screen.getByRole("button", { name: /ausblenden/ }));
     expect(screen.queryByText(/Frühere Notizen/)).toBeNull();
+    // Nicht dauerhaft gesperrt: der Opt-in-Anstoß ist wieder da.
+    expect(screen.getByRole("button", { name: /Ähnliche Notizen/ })).toBeInTheDocument();
   });
 });

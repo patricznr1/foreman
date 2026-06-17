@@ -12,7 +12,7 @@
 // ============================================================
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { CurrentUser } from "@/lib/api/contracts";
 import type { CaptureRoleView } from "@/lib/capture/roles";
 import { SHIFTS } from "@/lib/capture/shifts";
@@ -76,27 +76,47 @@ export function CaptureForm({ user, roleView, machinesState, initialMachineId }:
   }, [machineId, machinesState]);
 
   const textFieldId = useId();
-  const draft = { text, machineId, shift, classification };
+  const submitLock = useRef(false);
+  // Nur eine im Scope VALIDIERTE Maschine geht in den POST — bei loading/error/empty
+  // (Liste noch nicht da) wird die vorausgewählte ?machine=-ID NICHT mitgesendet,
+  // statt eine unvalidierte/fremde Zuordnung zu schreiben.
+  const effectiveMachineId =
+    machinesState.kind === "ready" &&
+    machineId !== null &&
+    machinesState.machines.some((machine) => machine.id === machineId)
+      ? machineId
+      : null;
+  const draft = { text, machineId: effectiveMachineId, shift, classification };
   const canSubmit = isSubmittable(draft) && !sending;
   const syncState = deriveSyncState({ sending, flushing, pending, hadError, lastSyncedAt });
 
   async function onSubmit() {
+    // Synchroner Re-Entry-Schutz: ein zweiter (Doppel-)Klick vor dem Re-Render darf
+    // keine zweite Notiz senden/puffern (offline greift `sending` nicht rechtzeitig).
+    if (submitLock.current) {
+      return;
+    }
     if (!isSubmittable(draft)) {
       setFormError("Bitte eine Beobachtung eingeben.");
       return;
     }
+    submitLock.current = true;
     setFormError(null);
-    const result = await submit(draft);
-    if (result.kind === "sent") {
-      setLastSyncedAt(result.note.created_at);
-      setConfirmation({ kind: "sent" });
-      setText(""); // Folgenotiz: Zuordnung (Maschine/Schicht/Kategorie) bleibt erhalten.
-    } else if (result.kind === "queued") {
-      setConfirmation({ kind: "queued" });
-      setText("");
-      refresh();
-    } else {
-      setFormError(errorText(result.reason));
+    try {
+      const result = await submit(draft);
+      if (result.kind === "sent") {
+        setLastSyncedAt(result.note.created_at);
+        setConfirmation({ kind: "sent" });
+        setText(""); // Folgenotiz: Zuordnung (Maschine/Schicht/Kategorie) bleibt erhalten.
+      } else if (result.kind === "queued") {
+        setConfirmation({ kind: "queued" });
+        setText("");
+        refresh();
+      } else {
+        setFormError(errorText(result.reason));
+      }
+    } finally {
+      submitLock.current = false;
     }
   }
 

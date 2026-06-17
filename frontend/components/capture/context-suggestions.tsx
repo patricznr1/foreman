@@ -5,12 +5,12 @@
 //         der Entwurfstext geht erst auf eine BEWUSSTE Geste (Button) als Such-Query
 //         raus, nie passiv beim Tippen. Abruf echter Notizen, KEINE Generierung →
 //         ProvenanceStamp aiGenerated=false. Hallensprache, kein interner Begriff,
-//         kein Prozentwert. Autor maskiert (#hex6). Wegklappbar.
+//         kein Prozentwert. Autor maskiert (#hex6). „Ausblenden" kehrt zum Anstoß
+//         zurück (nicht dauerhaft gesperrt).
 //  Architektur-Einordnung: Sicht-Komponente (Schicht 3, client).
 // ============================================================
 "use client";
 
-import { useState } from "react";
 import { ProvenanceStamp } from "@/components/atoms/provenance-stamp";
 import { useContextSuggestions } from "@/lib/capture/use-context-suggestions";
 import { maskPseudonym } from "@/lib/ui/pii";
@@ -30,11 +30,10 @@ function formatDay(iso: string): string {
 }
 
 export function ContextSuggestions({ text, machineId, enabled }: ContextSuggestionsProps) {
-  const { phase, search, busy, canSearch } = useContextSuggestions(text, machineId, enabled);
-  const [dismissed, setDismissed] = useState(false);
+  const { phase, search, reset, canSearch } = useContextSuggestions(text, machineId, enabled);
 
   // Nichts möglich (keine Maschine / zu kurz / offline) und noch nichts gesucht → ruhen.
-  if (dismissed || (!canSearch && phase.kind === "idle")) {
+  if (!canSearch && phase.kind === "idle") {
     return null;
   }
 
@@ -44,7 +43,6 @@ export function ContextSuggestions({ text, machineId, enabled }: ContextSuggesti
       <button
         type="button"
         onClick={search}
-        disabled={busy}
         className="touch-target inline-flex w-fit items-center gap-2 rounded-lg border border-line-subtle bg-surface-raised px-4 text-caption text-fg-secondary"
       >
         <span aria-hidden="true" className="text-fg-muted">
@@ -64,9 +62,7 @@ export function ContextSuggestions({ text, machineId, enabled }: ContextSuggesti
   }
 
   if (phase.kind === "error") {
-    return (
-      <p className="text-caption text-fg-muted">Vorschläge gerade nicht abrufbar.</p>
-    );
+    return <p className="text-caption text-fg-muted">Vorschläge gerade nicht abrufbar.</p>;
   }
 
   const hits = phase.result.data;
@@ -89,7 +85,7 @@ export function ContextSuggestions({ text, machineId, enabled }: ContextSuggesti
         </h3>
         <button
           type="button"
-          onClick={() => setDismissed(true)}
+          onClick={reset}
           aria-label="Vorschläge ausblenden"
           className="touch-target inline-flex items-center rounded-md px-2 text-caption text-fg-muted"
         >

@@ -26,6 +26,8 @@ export interface UseContextSuggestionsResult {
   phase: OnDemandPhase<WorkerNoteRead[]>;
   /** Löst die Suche bewusst aus (Opt-in) — mit dem aktuellen Entwurf + Maschine. */
   search: () => void;
+  /** Klappt die Treffer weg und kehrt zum Anstoß zurück (nicht dauerhaft gesperrt). */
+  reset: () => void;
   busy: boolean;
   /** Ob eine Suche überhaupt möglich ist (Maschine gewählt, Query lang genug, aktiv). */
   canSearch: boolean;
@@ -88,5 +90,10 @@ export function useContextSuggestions(
     })();
   }, [enabled, machineId, query]);
 
-  return { phase, search, busy: phase.kind === "processing", canSearch };
+  const reset = useCallback(() => {
+    inflight.current?.abort();
+    dispatch({ type: "reset" });
+  }, []);
+
+  return { phase, search, reset, busy: phase.kind === "processing", canSearch };
 }

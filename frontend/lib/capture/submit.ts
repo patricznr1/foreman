@@ -67,6 +67,10 @@ export function classifyStatus(
  * injizierbar (Tests). Netz-/Parse-Fehler werden als transienter `error` gemeldet
  * (die Queue darf erneut versuchen). Nie ein throw nach außen.
  */
+/** Client-Timeout: ein hängendes Netz darf den Sende-/Flush-Pfad nicht blockieren —
+ *  ein Abbruch zählt als transienter Fehler (puffern + später erneut). */
+const SUBMIT_TIMEOUT_MS = 10_000;
+
 export async function submitNote(
   payload: WorkerNoteCreate,
   fetchImpl: typeof fetch = fetch,
@@ -77,6 +81,7 @@ export async function submitNote(
       credentials: "same-origin",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
     });
     const reason = classifyStatus(response.status);
     if (reason === "ok") {

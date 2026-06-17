@@ -29,6 +29,9 @@ export function useSelectableMachines(user: CurrentUser, enabled = true): Machin
 
   useEffect(() => {
     if (!enabled) {
+      // Wechsel zu „nicht aktiv" (z. B. Rollen-/Kontextwechsel): Liste verwerfen,
+      // damit kein veralteter „ready"-Zustand zurückbleibt.
+      setState({ kind: "empty" });
       return;
     }
     let active = true;
