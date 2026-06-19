@@ -41,7 +41,9 @@ def test_map_recall_response_zieht_metadaten_aus_metadata_container() -> None:
 def test_map_recall_response_flach_und_payload_und_numerische_strings() -> None:
     flach = {"memories": [{"text": "Fall B", "machine_id": 9}]}
     assert map_recall_response(flach, max_results=5)[0].machine_id == 9
-    payload = {"items": [{"summary": "Fall C", "payload": {"machine_id": "11", "explanation_id": "5"}}]}
+    payload = {
+        "items": [{"summary": "Fall C", "payload": {"machine_id": "11", "explanation_id": "5"}}]
+    }
     item = map_recall_response(payload, max_results=5)[0]
     assert item.machine_id == 11
     assert item.explanation_id == 5
