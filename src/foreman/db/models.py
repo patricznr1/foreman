@@ -280,6 +280,13 @@ class ReasonerExplanationRecord(Base, TimestampMixin):
     # grounded: Ergebnis des Gateway-Grounding-Post-Checks (None, wenn nicht geprüft).
     grounded: Mapped[bool | None] = mapped_column(Boolean)
     recall_used: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    # F5-FE Sektion D (§21-D): EINGEFRORENE Momentaufnahme der rekonstruierten Kette
+    # (serialisierte `EventChain`) + der ehrlichen Schwester-Referenzen (Liste
+    # `SiblingReference`). Nullable — Datensätze vor Migration 0009 tragen NULL.
+    # Wird bei Re-Fetch NIE neu abgeleitet, sondern als „Stand X" geliefert
+    # (§3.2 Pin/Persist), da sich Quelldaten zwischenzeitlich ändern können.
+    chain_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    siblings_snapshot: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
 
 
 class FailurePredictionRecord(Base, TimestampMixin):

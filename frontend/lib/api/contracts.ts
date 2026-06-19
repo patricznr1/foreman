@@ -311,3 +311,104 @@ export interface WorkerNoteCreate {
   author?: string | null;
   classification?: string | null;
 }
+
+// — Ereignisketten (Sektion D, F-REC) — gegen den REALEN Code typisiert.
+//   Quelle: reasoners/event_chain/schema.py (EventChain/ChainEvent/ChainWindow/
+//   SiblingReference/ReasonerExplanationRead/ReasonerExplanationDetailRead),
+//   reasoners/event_chain/router.py. KERN: die rekonstruierte Kette + die
+//   Schwester-Referenzen werden als EINGEFRORENER Snapshot ausgeliefert (POST
+//   /reconstruct, GET /explanations/{id}) — nie bei Re-Fetch neu abgeleitet
+//   („Stand X", Studie §3.2). Schwester-Referenzen sind EHRLICH aus realen
+//   NEXUS-Recall-Treffern; keine → leere Liste (kein Fake, §21-D).
+
+/** Konfidenz-Stufe der Erzählung (geschlossener Wertebereich) — NIE als Prozent gezeigt. */
+export type Confidence = "low" | "medium" | "high";
+
+/** Typ eines Kettenereignisses (formcodiertes Symbol, konsistent mit B). */
+export type ChainEventType =
+  | "anchor_alarm"
+  | "drift_alarm"
+  | "prior_alarm"
+  | "worker_note"
+  | "maintenance";
+
+/** Zeitfenster der Rekonstruktion (tz-aware UTC, geschlossen [start, end]). */
+export interface ChainWindow {
+  start: string; // ISO 8601
+  end: string; // ISO 8601
+}
+
+/**
+ * Ein einzelnes Ereignis der Kette. `trusted=true` für strukturierte Alarm-/
+ * Wartungsdaten; `trusted=false` für Werkernotiz-Freitext (untrusted, im UI als
+ * unsicherer markiert). `summary` ist backend-seitig PII-frei bzw. NER-maskiert.
+ */
+export interface ChainEvent {
+  source_id: string; // "alarm:{id}" | "note:{id}" | "maint:{id}"
+  event_type: ChainEventType;
+  occurred_at: string; // ISO 8601
+  machine_id: number | null;
+  summary: string;
+  trusted: boolean;
+}
+
+/** Die rekonstruierte, zeitlich geordnete Ereigniskette um einen Anker-Alarm. */
+export interface EventChain {
+  anchor_alarm_id: number;
+  machine_id: number | null;
+  window: ChainWindow;
+  events: ChainEvent[];
+}
+
+/**
+ * Eine ehrliche Schwester-Referenz aus einem realen Recall-Treffer (§21-D).
+ * Strukturierte Ziele (`machine_id`/`machine_class`/`explanation_id`) sind NUR
+ * gesetzt, wenn real auflösbar — sonst null (kein erfundenes Geschwister).
+ * `similarity_basis` benennt PII-frei, woran die Ähnlichkeit hängt; `excerpt` ist
+ * der backend-sanitisierte Kurz-Auszug (untrusted, reine Anzeige).
+ */
+export interface SiblingReference {
+  recall_ref: string | null;
+  machine_id: number | null;
+  machine_class: string | null;
+  explanation_id: number | null;
+  similarity_basis: string;
+  excerpt: string;
+}
+
+/**
+ * Listen-/Kopf-Sicht einer gespeicherten Erklärung (GET /explanations).
+ * `confidence` ist die verbale Stufe (NIE Prozent); `is_hypothesis`/
+ * `flagged_unsupported` tragen die Vorbehalt-/Ehrlichkeits-Haltung.
+ */
+export interface ReasonerExplanationRead {
+  id: number;
+  anchor_alarm_id: number;
+  machine_id: number | null;
+  reasoner: string;
+  narrative: string;
+  referenced_source_ids: string[];
+  flagged_unsupported: string[];
+  is_hypothesis: boolean;
+  confidence: Confidence;
+  grounded: boolean | null;
+  recall_used: boolean;
+  created_at: string; // ISO 8601
+}
+
+/**
+ * Detail-Sicht (POST /reconstruct, GET /explanations/{id}): Superset der Liste
+ * plus eingefrorene Kette (`chain`) + Schwester-Referenzen (`siblings`). `chain`
+ * ist null für Datensätze vor der Snapshot-Migration (graceful); `siblings` ist
+ * dann leer.
+ */
+export interface ReasonerExplanationDetailRead extends ReasonerExplanationRead {
+  chain: EventChain | null;
+  siblings: SiblingReference[];
+}
+
+/** Request-Body für POST /reconstruct (On-Demand-Auslöser; Anker IST ein Alarm). */
+export interface ReconstructRequestBody {
+  anchor_alarm_id: number;
+  lookback_hours?: number | null;
+}

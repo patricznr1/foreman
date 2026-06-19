@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from time import perf_counter
@@ -50,12 +51,19 @@ from foreman.reasoners.event_chain.prompts import (
     EVENT_CHAIN_SYSTEM_PROMPT,
     build_event_chain_user_prompt,
 )
-from foreman.reasoners.event_chain.recall import build_recall_query, recall_similar_incidents
+from foreman.reasoners.event_chain.recall import (
+    RecallItem,
+    build_recall_query,
+    build_sibling_references,
+    recall_similar_incidents,
+    sibling_similarity_basis,
+)
 from foreman.reasoners.event_chain.schema import (
     ChainWindow,
     Confidence,
     EventChain,
     ReasonerExplanation,
+    SiblingReference,
 )
 from foreman.substrate.client import SubstrateClient
 
@@ -223,6 +231,11 @@ class EventChainService:
         )
         record_event_chain_recall("hit" if recall_items else "miss")
 
+        # Ehrliche Schwester-Referenzen NUR aus den realen Recall-Treffern (§21-D):
+        # geteilte Ähnlichkeits-Basis (Anker-Signatur) + DB-aufgelöste Ziele
+        # (Maschinenklasse, jüngste Schwester-Erklärung). Leerer Recall → leere Liste.
+        siblings = await self._build_siblings(recall_items, anchor=anchor, machine=machine)
+
         # Grounding-Quellen (worker_notes/recall untrusted) → Gateway-Synthese.
         sources = build_grounding_sources(chain, recall_items)
         response = await self.gateway.complete(
@@ -242,13 +255,13 @@ class EventChainService:
         )
         self._last = explanation
 
-        record = await self._persist(explanation)
+        record = await self._persist(explanation, chain, siblings)
         await self._mirror(explanation, chain)
         record_event_chain_explanation(flagged=bool(explanation.flagged_unsupported))
         # Strukturierter Log (§11.1): Umfang/Flags/Konfidenz, KEINE PII/keine Notiz-Texte.
         logger.info(
             "%s reasoner=event_chain anchor=%s events=%s referenced=%s flagged=%s "
-            "confidence=%s recall=%s",
+            "confidence=%s recall=%s siblings=%s",
             REASON,
             anchor.id,
             len(chain.events),
@@ -256,6 +269,7 @@ class EventChainService:
             len(explanation.flagged_unsupported),
             explanation.confidence,
             bool(recall_items),
+            len(siblings),
         )
         return record
 
@@ -328,7 +342,15 @@ class EventChainService:
             )
             return []
 
-    async def _persist(self, explanation: ReasonerExplanation) -> ReasonerExplanationRecord:
+    async def _persist(
+        self,
+        explanation: ReasonerExplanation,
+        chain: EventChain,
+        siblings: Sequence[SiblingReference],
+    ) -> ReasonerExplanationRecord:
+        # Ketten- + Schwester-Snapshot EINGEFROREN als JSONB (§21-D): genau der Stand
+        # der Rekonstruktion, nie bei Re-Fetch neu abgeleitet (mode="json" serialisiert
+        # Datetimes/StrEnums verlustfrei und JSON-validierbar zurück).
         record = ReasonerExplanationRecord(
             anchor_alarm_id=explanation.anchor_alarm_id,
             machine_id=explanation.machine_id,
@@ -340,11 +362,59 @@ class EventChainService:
             confidence=explanation.confidence,
             grounded=explanation.grounding.grounded if explanation.grounding is not None else None,
             recall_used=explanation.recall_used,
+            chain_snapshot=chain.model_dump(mode="json"),
+            siblings_snapshot=[sibling.model_dump(mode="json") for sibling in siblings],
         )
         self.session.add(record)
         await self.session.flush()
         await self.session.refresh(record)
         return record
+
+    async def _build_siblings(
+        self, recall_items: Sequence[RecallItem], *, anchor: Alarm, machine: Machine | None
+    ) -> list[SiblingReference]:
+        """Formt die realen Recall-Treffer zu ehrlichen, strukturierten
+        Schwester-Referenzen (§21-D). Reine Form-Logik liegt in `recall.py`; hier nur
+        die DB-Auflösung der Ziele. Keine Recall-Treffer → leere Liste (kein Fake)."""
+        basis = sibling_similarity_basis(anchor, machine)
+        class_by_machine, explanation_by_machine = await self._resolve_sibling_targets(
+            recall_items, anchor_alarm_id=anchor.id
+        )
+        return build_sibling_references(
+            recall_items,
+            basis=basis,
+            class_by_machine=class_by_machine,
+            explanation_by_machine=explanation_by_machine,
+        )
+
+    async def _resolve_sibling_targets(
+        self, recall_items: Sequence[RecallItem], *, anchor_alarm_id: int
+    ) -> tuple[dict[int, str | None], dict[int, int | None]]:
+        """Löst je referenzierter `machine_id` die Maschinenklasse und die jüngste
+        Schwester-Erklärung auf — beides aus ECHTEN DB-Zeilen. Nicht auflösbar →
+        bleibt aus der Map heraus (→ `None` in der Referenz, kein erfundenes Ziel).
+        Die Erklärung des aktuellen Ankers wird ausgeschlossen (keine Selbst-Referenz).
+        """
+        machine_ids = sorted({i.machine_id for i in recall_items if i.machine_id is not None})
+        if not machine_ids:
+            return {}, {}
+        class_rows = await self.session.execute(
+            select(Machine.id, Machine.machine_class).where(Machine.id.in_(machine_ids))
+        )
+        class_by_machine: dict[int, str | None] = dict(class_rows.tuples().all())
+        explanation_by_machine: dict[int, int | None] = {}
+        for machine_id in machine_ids:
+            stmt = (
+                select(ReasonerExplanationRecord.id)
+                .where(
+                    ReasonerExplanationRecord.machine_id == machine_id,
+                    ReasonerExplanationRecord.anchor_alarm_id != anchor_alarm_id,
+                )
+                .order_by(ReasonerExplanationRecord.created_at.desc())
+                .limit(1)
+            )
+            explanation_by_machine[machine_id] = await self.session.scalar(stmt)
+        return class_by_machine, explanation_by_machine
 
     async def _mirror(self, explanation: ReasonerExplanation, chain: EventChain) -> None:
         """Spiegelt das Reasoning-Ergebnis als diskretes semantic_event (§12.4).

@@ -267,3 +267,42 @@ async def test_reconstruct_gateway_fehler_propagiert(
     )
     with pytest.raises(GatewayError):
         await service.reconstruct(anchor.id)
+
+
+@pytest.mark.integration
+async def test_reconstruct_friert_ketten_snapshot_ein(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """§21-D: Der persistierte Ketten-Snapshot ist eine Momentaufnahme — er wird
+    NICHT neu abgeleitet, wenn sich die Quelldaten später ändern. Beweis: eine
+    nachträgliche Notiz im Fenster lässt den alten Snapshot unberührt, taucht aber
+    in einer NEUEN Rekonstruktion auf."""
+    machine, anchor, note = await _seed(db_session)
+    reply = f"Vor [alarm:{anchor.id}] meldete [note:{note.id}] einen Hinweis."
+    service = EventChainService(
+        session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])
+    )
+    record1 = await service.reconstruct(anchor.id)
+    assert record1.chain_snapshot is not None
+    assert record1.siblings_snapshot == []  # kein Substrat → kein Fake
+    count1 = len(record1.chain_snapshot["events"])
+    assert any(e["source_id"] == f"alarm:{anchor.id}" for e in record1.chain_snapshot["events"])
+
+    # Quelldaten ändern sich NACH der Rekonstruktion.
+    db_session.add(
+        WorkerNote(
+            machine_id=machine.id,
+            text="Nachtrag im Fenster",
+            created_at=_ANCHOR_TIME - timedelta(hours=1),
+        )
+    )
+    await db_session.flush()
+
+    # Der eingefrorene Snapshot bleibt unverändert ...
+    assert len(record1.chain_snapshot["events"]) == count1
+    # ... eine NEUE Rekonstruktion sieht die zusätzliche Notiz.
+    record2 = await service.reconstruct(anchor.id)
+    assert record2.chain_snapshot is not None
+    assert len(record2.chain_snapshot["events"]) == count1 + 1

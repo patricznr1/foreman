@@ -22,6 +22,7 @@ import { MachineAlarms } from "./machine-alarms";
 import { MachineHeader } from "./machine-header";
 import { MachineHistory } from "./machine-history";
 import { MachineSpecs } from "./machine-specs";
+import { PinnedChains } from "./pinned-chains";
 import { MachineTrendPanel } from "./machine-trend-panel";
 import { SensorPicker } from "./sensor-picker";
 import { TimeWindowPicker } from "./time-window-picker";
@@ -103,6 +104,9 @@ export function MachineDetailView({ user, machine, components, dataPoints }: Mac
           canAcknowledge={roleView.canAcknowledge}
         />
       </div>
+
+      {/* Additiv (§4D): an diese Maschine angepinnte Ereignisketten mit eingefrorenem Stand. */}
+      <PinnedChains machineId={machine.id} />
 
       <MachineHistory machineId={machine.id} />
     </div>

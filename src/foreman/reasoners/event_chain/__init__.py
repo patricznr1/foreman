@@ -17,8 +17,10 @@ from foreman.reasoners.event_chain.schema import (
     Confidence,
     EventChain,
     ReasonerExplanation,
+    ReasonerExplanationDetailRead,
     ReasonerExplanationRead,
     ReconstructRequest,
+    SiblingReference,
 )
 
 __all__ = [
@@ -28,6 +30,8 @@ __all__ = [
     "Confidence",
     "EventChain",
     "ReasonerExplanation",
+    "ReasonerExplanationDetailRead",
     "ReasonerExplanationRead",
     "ReconstructRequest",
+    "SiblingReference",
 ]
