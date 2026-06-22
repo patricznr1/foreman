@@ -120,6 +120,13 @@ In die Plattform-FastAPI-App integriert (nicht der MCP-Server). Vollständiger V
 - `GET /api/v1/machines/{machine_id}/trend?datapoint=<name>&hours=<1–168>` — aggregierter `readings_1m`-Trend eines Datenpunkts + statisches Normalband (`normal_min`/`normal_max`). Auth-pflichtig; **gleiche Maschinen-Scope-Autorisierung** wie das WS-`machine`-Thema (**403** außerhalb des Scopes). **404**, wenn der Datenpunkt an der Maschine nicht existiert.
 - `WS /api/v1/ws?token=<jwt>` — **EIN** gemultiplexter WebSocket-Kanal mit Themen-Abos. Auth über Query-Token (die AuthMiddleware lässt WS-Scope durch → manuelle Auth, Close-Code 4401). Client-Nachrichten `{action: subscribe|unsubscribe, topic}`; jeder `subscribe` wird **autorisiert** (default-deny), bei Erfolg sofort ein Snapshot, danach Live-Deltas. Themen: `overview`, `machine:{id}`, `trend:{data_point_id}`.
 
+### Audit- & Plattform-Routen (Sektion I, ab I-Backend)
+
+In die Plattform-FastAPI-App integriert. Vollständiger Vertrag: **§22**.
+
+- `GET /api/v1/audit` — unveränderlicher Audit-Trail (jüngste zuerst), gefiltert nach `action_type`/`target_kind`/`target_id`/`actor`/`machine_id`/`since`/`until`, paginiert (`limit` 1–1000, `offset`). **Nur `manager`/Admin** (Schichtleiter/Techniker/Werker → **403**). `actor` bleibt pseudonym (HMAC-Token).
+- `GET /api/v1/topology` — ehrlich abgeleitete Systemtopologie (Eingänge aus `data_points.source` + jüngster `readings`-Aktivität, Gedächtnis-Substrat-Health, F7-MCP-Grenze). `manager` voll; `shift_lead` **nur Verbindungsstatus** (kein Audit-Bezug); `worker`/`technician` → **403**. Optionale Query: `probe` (Substrat live proben, schreibt Smoke-Marker), `fresh_within_minutes`.
+
 ---
 
 ## 5. Datenbank-Schema
@@ -162,8 +169,9 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - `id` PK · `email` (unique) · `password_hash` · `role` · `assigned_line_ids` (`bigint[]`, Default `{}`) · `assigned_machine_ids` (`bigint[]`, Default `{}`) · `created_at`
 - **Rollen-Vokabular (F5, englische IDs):** `worker` (Default), `shift_lead`, `technician`, `manager` — UI-Labels deutsch (Werker/Schichtleiter/Techniker/Manager). `assigned_*` sind die Scope-Quelle der WS-/HTTP-Abo-Autorisierung (§20): `worker` → seine Maschinen, `shift_lead` → seine Linien; `manager`/`technician` unrestricted. Leeres Array = kein Scope (default-deny).
 
-**`audit_logs`**
-- `id` PK · `user_id` FK (nullable) · `action` · `target` · `created_at`
+**`audit_logs`** — unveränderlicher Audit-Trail (Sektion I) + AI-Act-/Art.-50-Nachweis-Beleg
+- `id` PK · `user_id` FK (nullable, **Legacy-Skelett — vom Audit-Schreibpfad NICHT befüllt**) · `action` (Legacy-NOT-NULL, spiegelt `action_type`) · `target` (Legacy, menschenlesbarer Ziel-Spiegel) · `actor` (**pseudonym: HMAC-Token, nie Klartext** — Werker-ID bzw. konstantes MCP-Consumer-Label) · `actor_role` · `action_type` (CHECK `IN (hitl_acknowledge, mcp_retrieval)`, NULL-tolerant, erweiterbar) · `target_kind` · `target_id` · `machine_id` (für den Filter, **ohne FK** — der Trail überlebt eine Maschinen-Löschung) · `origin` (CHECK `IN (dashboard, mcp, system)`) · `detail` jsonb (PII-frei: Tool/IDs/Entscheidung) · `occurred_at` (tz-aware, server_default `now()`) · `created_at`
+- **Unveränderlichkeit (Defense-in-Depth, §22):** ein DB-Trigger weist `UPDATE`/`DELETE` auf `audit_logs` ab (append-only; Migration `0010`). `user_id` bleibt erhalten, wird aber nicht befüllt — der namentliche Nachweis lebt im QM-System (System of Record), nicht in FOREMAN (analog `acknowledged_by`). Zwei reale Schreibpfade: HITL-Quittierung (`origin=dashboard`, atomar mit der Quittier-Transaktion) und MCP-Abruf (`origin=mcp`, separater Sink/Commit — die MCP-Read-Invariante bleibt intakt).
 
 **`semantic_events`** — Spiegel der Dual-Writes ans Substrat
 - `id` PK · `machine_id` FK (nullable) · `event_type` · `payload` jsonb · `substrate_ref` (nullable) · `created_at`
@@ -190,6 +198,8 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - **`0006_failure_predictions_checks`** — härtet `failure_predictions` mit DB-CHECK-Constraints (Sim-Vorbehalt + gültige Entscheidung an der Persistenzgrenze, §16.1).
 - **`0007_failure_recommendations`** — legt die Tabelle `failure_recommendations` an (F-REC) mit FK auf `failure_predictions` (+ `machines`), JSONB-Spalte für die referenzierten Quellen, den Vorbehalt-/Caveat-Spalten und den geerbten autoritativen Zahlen; CHECK-Constraints (Sim-Vorbehalt + Entscheidung) und die Lese-Indizes `ix_failure_recommendations_prediction` + `ix_failure_recommendations_machine_created`.
 - **`0008_user_subscription_scope`** — ergänzt `users.assigned_line_ids` + `users.assigned_machine_ids` (`bigint[]`, Default `{}`) als Scope-Quelle der F5-WS-/HTTP-Abo-Autorisierung (§20).
+- **`0009_event_chain_snapshot`** — ergänzt `reasoner_explanations.chain_snapshot` + `siblings_snapshot` (JSONB, nullable) für den eingefrorenen Ereignisketten-Stand (F5-FE Sektion D, §14.5/§21.15).
+- **`0010_audit_trail_topology`** — erweitert `audit_logs` **additiv** (Sektion I): `actor`/`actor_role`/`action_type`/`target_kind`/`target_id`/`machine_id`/`origin`/`detail`/`occurred_at`; CHECK-Constraints auf `action_type`/`origin`; Lese-Indizes (`ix_audit_logs_occurred`/`_action_occurred`/`_machine`/`_target`); ein **Append-Only-Trigger** (PL/pgSQL, `BEFORE UPDATE OR DELETE` weist Mutationen ab — bewusst kein `TRUNCATE`-Trigger, damit Test-/Reset-Pfade leeren können; up/down getestet). Vollständiger Vertrag: **§22**.
 
 ---
 
@@ -214,7 +224,7 @@ Jeder Implementation-Commit, der Code ändert, **muss** `docs/WALKTHROUGH.md` im
 - Secrets ausschließlich in `.env` (gitignored). Repo ist öffentlich.
 - Anbindung an das Gedächtnis-Substrat nur über Umgebungsvariablen.
 - **Werker-bezogene Felder werden pseudonymisiert, NICHT anonymisiert** (deterministische HMAC-SHA-256-Tokenisierung über `users.id`, versionierter Schlüssel, Pepper im Secret-Store). Anonymisierung ist im Industrieumfeld weder vorgeschrieben noch das Ziel; für Nachweis-Felder wäre sie sogar rechtlich falsch. Details: `docs/research/anonymisierung-werkerdaten.md`.
-- **Trennung System of Record vs. Reasoning-Schicht:** Der rechtsverbindliche, namentliche Nachweis (Prüf-/Wartungsprotokoll, QM-System, `users`, `audit_logs`) ist attributierbar unter Art. 6 Abs. 1 lit. c (z. B. BetrSichV §14/TRBS 1203, ArbSchG §6, DGUV). FOREMAN ist **nicht** dieses System of Record für die Signatur — die Nutzdatenbank speichert nur Token; Rück-Auflösung Token→Person ist kontrolliert/auditiert und nur für berechtigte Zwecke (Auskunft/Löschung Art. 15/17, HITL-/Behörden-Nachweis).
+- **Trennung System of Record vs. Reasoning-Schicht:** Der rechtsverbindliche, namentliche Nachweis (Prüf-/Wartungsprotokoll, QM-System, `users`) ist attributierbar unter Art. 6 Abs. 1 lit. c (z. B. BetrSichV §14/TRBS 1203, ArbSchG §6, DGUV). FOREMAN ist **nicht** dieses System of Record für die Signatur — die Nutzdatenbank speichert nur Token; das gilt seit Sektion I auch für **`audit_logs`** (`actor` = HMAC-Token, der Legacy-`user_id`-FK bleibt ungenutzt). Rück-Auflösung Token→Person ist kontrolliert/auditiert und nur für berechtigte Zwecke (Auskunft/Löschung Art. 15/17, HITL-/Behörden-Nachweis).
 - Klartext-Identität ausschließlich in `users`; Löschung via Crypto-Shredding (pro-Werker-Schlüssel) — Verhaltensdaten/Maschinen-Gedächtnis bleiben intakt. Löschfristen pro Feld: Nachweis-Felder (`performed_by`, `acknowledged_by`) an gesetzliche Aufbewahrungspflicht gekoppelt, `worker_notes` kürzer.
 - **Human-in-the-Loop (BSI):** FOREMAN gibt Empfehlungen, aktoriert nie selbst. Safety-kritische Alarme (`category=safety`) erfordern eine Operator-Quittierung (`alarms.acknowledged_at`/`acknowledged_by`), bevor sie als erledigt gelten.
 - **Freitext-Scope der NER-Maskierung:** NER greift in F2 nur auf `worker_notes.text` (das einzige als Werker-Freitext deklarierte Feld). `maintenance_events.description` und `alarms.message` sind als Sach-/SPS-Text gedacht und werden **nicht** maskiert — enthalten sie wider Erwarten Personennamen, bleibt das ein dokumentiertes Restrisiko (organisatorische Regel „keine vollen Namen"; bei Bedarf Redactor später auf diese Felder ausweiten).
@@ -672,7 +682,7 @@ Rollenmatrix 3.1 als durchsetzbare Daten (`lib/auth/roles.ts`, `ACCESS_MATRIX`);
 | F Wartung | `/insights` (Hub) | [VISION] | Platzhalter |
 | G Belastungs-Simulation | `/insights` (Hub) | [VISION] | Platzhalter |
 | H Gedächtnis | `/memory` | [KERN] | ✅ voll: Bedeutungssuche (On-Demand), Relevanz=Position (kein Prozent), Verdichtung + Verknüpfung graceful, PII, Cmd-K → H, Rollen (§21.12) |
-| I Plattform | `/platform` | [VISION] | Platzhalter |
+| I Plattform | `/platform` | [BACKEND STEHT] · FE = Teil 2 | Backend: Audit-Trail + Topologie-Quelle (`GET /api/v1/audit` · `GET /api/v1/topology`, unveränderlich, ehrlich abgeleitet — §22). Rollen: Manager/Admin voll · Schichtleiter nur Status · Werker/Techniker kein Zugang. FE-Ansicht folgt (§21.16) |
 | J Erfassung | `/capture` | [KERN] | ✅ voll: reibungsarmes Formular (Freitext zuerst, vorbefüllte Zuordnungs-Chips, Kategorie mehrkanalig), Offline-Queue mit Sync-Status (Lösch-nach-Senden), Kontext-Vorauswahl aus B/Alarm/FAB, dezente Brücke zu H, Rollen-Varianten (§21.13) |
 | Anmeldung | `/login` | — | ✅ |
 
@@ -786,3 +796,44 @@ Die rekonstruierte Erzählung entlang der Zeit um einen **Anker-Alarm** — bele
 - **Markierte Anschlusspunkte (bewusst, nicht erfunden)**: (1) `GET /explanations` ist server-seitig NICHT scope-gefiltert → Rollen-Scope/Maschinen-Filter ist UX-Filter, keine AuthZ-Grenze (wie §21.9/§21.10). (2) Schwester-Referenzen leben von dem, was der reale NEXUS-Recall liefert — ohne Treffer kein Block (kein Fake). (3) Pin client-seitig (localStorage), kein Backend-Persistenz-Pfad → Pin gehört keinem Audit (vorbereitet für I). (4) Altdatensätze ohne Snapshot (`chain=null`) zeigen die Erzählung ohne Zeitachse (graceful, kein erfundener Verlauf). (5) Kausalität bleibt Sektion F vorbehalten — D zeigt nur zeitliche Folge.
 - **Adversariale Multi-Agent-Review** (Workflow, 6 Dimensionen): Befunde gegengeprüft und gefixt — Dimensionen Belegt-vs-Erzählt-Korrektheit / ISA-101-Ruhe / Live+Degradation / Rollen+HITL / Vertrags-Ehrlichkeit (inkl. „keine erfundenen Geschwister") / A11y.
 - **Gates** (lokal grün): Backend pytest (event_chain 99, davon 22 neu für A1/A2; ruff clean, mypy strict 0, Migration 0009 up/down getestet, Output-Guard intakt); Frontend tsc strict 0, ESLint 0, Vitest 568 gesamt (45 neu für D), tokens:check synchron, `next build` ok (`/insights/chains` ~8.5 kB / 114 kB First Load — bespoke SVG ohne Charting-Lib). Hidden-Term-Scan sauber.
+
+### 21.16 Sektion I — Plattform/Audit ([BACKEND STEHT] · FE = Teil 2)
+
+Die Plattform-/Audit-Sicht: (a) **Systemtopologie** — mit welchen Quellen/Konsumenten ist FOREMAN verbunden, was fließt woher; (b) **Audit-Trail** — wer/welches System hat wann welche Erkenntnis abgerufen oder welche HITL-Entscheidung ausgelöst (zugleich AI-Act-/Art.-50-Nachweis-Beleg, §10.5). Leitfrage (Studie §4I): „Mit welchen Drittsystemen ist die Plattform verbunden, was fließt woher, und ist jede abgerufene Erkenntnis nachvollziehbar?" Designgrundlage §4I ist **[VISION]**; dieser Backend-Teil baut die *ehrlich abgeleitete* Teilmenge, nicht das volle Multi-System-Bild. Voller Backend-Vertrag: **§22**.
+
+- **Backend (Teil 1, steht):** Audit-Trail (`src/foreman/audit/`) + Topologie-Quelle (`src/foreman/topology/`) + die Read-APIs `GET /api/v1/audit` und `GET /api/v1/topology`. Migration `0010` (unveränderliches `audit_logs` + Append-Only-Trigger). Zwei reale Writer-Pfade: HITL-Quittierung (Drift-Reasoner-Route, atomar) und MCP-Abruf (separater Sink, Read-Invariante intakt).
+- **Rollen (Studie-Matrix):** Audit nur **Manager/Admin**; Topologie **Manager** voll · **Schichtleiter** nur Verbindungsstatus (kein Audit) · **Werker/Techniker** kein Zugang.
+- **HITL = keine Aktorik:** der Audit protokolliert Entscheidungen, löst keine aus.
+- **FE-Ansicht folgt als Teil 2** (ruhige, nicht-animierte Topologie + unveränderlich-lesende Audit-Tabelle; Rollen-Split wie oben).
+
+---
+
+## 22. Audit-Trail & Topologie-Quelle (I-Backend)
+
+Plattform-/Audit-Sicht der Sektion I. Zwei Backend-Stücke + ihre Read-APIs; baut die ehrlich abgeleitete Teilmenge des [VISION]-Zielbilds §4I — kein erfundenes Multi-System-Bild.
+
+### 22.1 Audit-Trail (`src/foreman/audit/`)
+
+- **Schema (Migration `0010`, additiv):** `audit_logs` vom nackten Skelett zum echten Trail — Spalten siehe §5. `actor` ist immer ein **HMAC-Token** (nie Klartext, §8); `user_id` bleibt erhalten, aber ungenutzt.
+- **Unveränderlichkeit (Defense-in-Depth):** DB-Trigger `trg_audit_logs_append_only` (PL/pgSQL) weist `UPDATE`/`DELETE` ab — append-only an der Persistenzgrenze, nicht nur app-seitig (Vorbild: die `failure_*`-CheckConstraints). Bewusst **kein** `TRUNCATE`-Trigger (Test-/Reset-Pfade müssen leeren können; TRUNCATE feuert keine Row-Trigger).
+- **Writer (`audit/writer.py`):** ein reiner Zeilen-Bauer (`build_audit_log`) + zwei Pfade. `record(session, entry)` schreibt **in die übergebene Session** (atomar, kein eigener Commit) — für HITL. `emit_mcp_retrieval(...)` schreibt **best-effort auf eigener Session + Commit** — für MCP; schluckt jeden Fehler (loggt nur), damit ein Audit-Ausfall den Abruf nie bricht.
+- **Reale Schreibpfade (zwei):**
+  - **HITL:** `POST /api/v1/reasoners/drift/alarms/{id}/acknowledge` schreibt nach dem `flush` einen `hitl_acknowledge`-Eintrag (`target_kind=alarm`, `origin=dashboard`, `actor` = quittierender HMAC) **in dieselbe Transaktion** wie die Quittierung. (`alarms.py` hat bewusst keine eigene Ack-Route — die reale HITL-Entscheidung lebt an der Drift-Route, §21.9.)
+  - **MCP:** der Tool-Wrapper `_measured` (mcp/tools.py) emittiert im `finally` — **nach** dem Schließen der read-only-Session — einen `mcp_retrieval`-Eintrag (`origin=mcp`, `target_kind`/`target_id`/`machine_id` aus dem Abruf, `detail` = Tool + Ergebnis). Eigene Session/Commit; die MCP-Read-Invariante (I, §17.1) bleibt intakt.
+- **MCP-Akteur (ehrlich):** `mcp/auth.py` kennt **keine** Per-Client-Identität — nur einen geteilten Bearer-Token. Der `actor` ist daher ein **pseudonymisiertes Single-Consumer-Label** (`MCP_CONSUMER_LABEL`), ehrlich genau eine Konsumenten-Grenze. Per-Client-Attribution ist **[VISION]** bis es echte Per-Client-Credentials gibt.
+- **Read-API:** `GET /api/v1/audit` — Filter `action_type`/`target_kind`/`target_id`/`actor`/`machine_id`/`since`/`until`, paginiert (`limit`/`offset`), jüngste zuerst, **nur Manager/Admin** (sonst 403). `actor` bleibt pseudonym (`AuditEntryRead` ohne `user_id`/Legacy-Spalten).
+
+### 22.2 Topologie-Quelle (`src/foreman/topology/`)
+
+- **Ehrlich abgeleitet, nichts erfunden:** drei reale Knoten-Klassen —
+  - **Eingänge:** distinct `data_points.source` + jüngste `readings`-Aktivität je Quelle (Richtung `liefert`). `simulation` als **intern** markiert (kein externer Peer).
+  - **Gedächtnis-Substrat:** Health aus einer best-effort-Live-Probe (`run_substrate_smoke`, §9; schreibt einen Smoke-Marker, per `?probe=false` abschaltbar). Richtung `beides`.
+  - **F7-MCP-Grenze:** Ausgang (`liest`), Aktivität aus dem Audit-Trail (`mcp_retrieval`-Einträge — Teil A speist Teil B; ohne Audit-Einsicht/Schichtleiter wird der Trail nicht gelesen).
+- **Status nur wo messbar:** `verbunden`/`gestört`/`inaktiv`; wo nicht messbar → ehrlich `unbekannt`, **nie grün geraten** (Quelle ohne jüngste `readings` → `unbekannt`; veraltet → `inaktiv`).
+- **[VISION]-Kategorie:** benannte Drittsysteme (ERP, Energiemanagement, externe Simulationssoftware) erscheinen NUR in einer separaten, klar markierten `vision`-Liste — nie als verbunden.
+- **Hidden-Term (§8):** das Substrat heißt nach außen „Gedächtnis-Substrat" — keine internen Vokabeln in Feldwerten/Labels.
+- **Read-API:** `GET /api/v1/topology` — Manager voll; Schichtleiter **nur Verbindungsstatus** (kein Audit-Bezug → MCP-Knoten ohne Audit-Details); Werker/Techniker 403. Query: `probe`, `fresh_within_minutes`.
+
+### 22.3 Verifikation
+
+mypy strict 0, ruff clean. Migration `0010` up/down getestet; der Trigger blockt `UPDATE`/`DELETE` nachgewiesen (eigene ephemere DB je Lauf, eindeutiger Name). MCP-Read-Only-Invariante nachgewiesen (Tool-Pfad mutiert keine Domänendaten; der Audit-Sink committet separat). `actor` durchgängig pseudonym; kein Klartext-Personenbezug außerhalb `users`. Topologie ohne erfundene Knoten; Status ehrlich; [VISION] markiert. Hidden-Term-Scan über die neuen Außen-Strings sauber. Coverage ≥ 80 % auf `audit/`/`topology/` + den neuen Routern.

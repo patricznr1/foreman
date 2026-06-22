@@ -227,14 +227,59 @@ class User(Base, TimestampMixin):
 
 
 class AuditLog(Base, TimestampMixin):
-    """`audit_logs` — Protokoll sicherheits-/datenschutzrelevanter Aktionen."""
+    """`audit_logs` — unveränderlicher Audit-Trail (Sektion I) + AI-Act-Nachweis-Beleg.
+
+    Append-only: die Unveränderlichkeit ist DB-seitig per Trigger erzwungen
+    (Migration 0010, `BEFORE UPDATE OR DELETE` weist Mutationen ab) — Defense-in-Depth
+    analog den failure_*-CheckConstraints, nicht nur app-seitig.
+
+    Datenschutz (§8): der `actor` ist ein HMAC-Token ("v{n}:{64-hex}"), NIE Klartext —
+    konsistent mit `alarms.acknowledged_by`. Der rechtsverbindliche, namentliche
+    Nachweis bleibt im QM-System (System of Record), nicht in FOREMAN. Die Legacy-Spalte
+    `user_id` (FK→users) wird vom Audit-Schreibpfad bewusst NICHT befüllt (bleibt leer),
+    damit der Trail pseudonym bleibt.
+    """
 
     __tablename__ = "audit_logs"
 
+    # Erweiterbare, geschlossene Vokabulare auch an der Persistenzgrenze erzwingen
+    # (Defense-in-Depth, §10.5): ein Fremdwert wird von der DB abgewiesen. NULL bleibt
+    # für die Legacy-Skelett-Zeilen (vor 0010) erlaubt.
+    __table_args__ = (
+        CheckConstraint(
+            "action_type IS NULL OR action_type IN ('hitl_acknowledge', 'mcp_retrieval')",
+            name="ck_audit_logs_action_type",
+        ),
+        CheckConstraint(
+            "origin IS NULL OR origin IN ('dashboard', 'mcp', 'system')",
+            name="ck_audit_logs_origin",
+        ),
+    )
+
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    # Legacy-Skelett (0001): NICHT brechen, aber vom neuen Schreibpfad ungenutzt.
     user_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
     action: Mapped[str] = mapped_column(String(128), nullable=False)
     target: Mapped[str | None] = mapped_column(String(255))
+    # Sektion-I-Erweiterung (0010, additiv):
+    # actor: pseudonymer HMAC-Token (Werker-ID bzw. MCP-Consumer-Label), nie Klartext.
+    actor: Mapped[str | None] = mapped_column(String(128))
+    actor_role: Mapped[str | None] = mapped_column(String(32))
+    # action_type: typisierter Vorgang (enum-artig, CHECK-erzwungen, erweiterbar).
+    action_type: Mapped[str | None] = mapped_column(String(64))
+    # Ziel: Art (alarm/machine/explanation/prediction/…) + ID; machine_id für den Filter.
+    target_kind: Mapped[str | None] = mapped_column(String(32))
+    target_id: Mapped[int | None] = mapped_column(BigInteger)
+    # machine_id bewusst OHNE FK — der Audit-Trail überlebt eine Maschinen-Löschung.
+    machine_id: Mapped[int | None] = mapped_column(BigInteger)
+    # origin: Kanal des Vorgangs (dashboard/mcp/system, CHECK-erzwungen).
+    origin: Mapped[str | None] = mapped_column(String(16))
+    # detail: Herkunfts-/Entscheidungs-Detail (PII-frei: IDs/Tokens, kein Freitext).
+    detail: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # occurred_at: Zeitpunkt des Vorgangs (tz-aware); created_at = Insert-Zeit (Mixin).
+    occurred_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
 
 class SemanticEvent(Base, TimestampMixin):
@@ -421,3 +466,8 @@ Index(
     FailureRecommendationRecord.machine_id,
     FailureRecommendationRecord.created_at,
 )
+# Audit-Trail (Sektion I): jüngste zuerst + die häufigen Filter (Typ/Maschine/Ziel).
+Index("ix_audit_logs_occurred", AuditLog.occurred_at)
+Index("ix_audit_logs_action_occurred", AuditLog.action_type, AuditLog.occurred_at)
+Index("ix_audit_logs_machine", AuditLog.machine_id)
+Index("ix_audit_logs_target", AuditLog.target_kind, AuditLog.target_id)
