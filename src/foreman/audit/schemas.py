@@ -35,7 +35,7 @@ class AuditEntry(BaseModel):
 
 
 class AuditEntryRead(BaseModel):
-    """Pseudonyme Lese-Sicht einer Audit-Zeile (Read-API, nur Manager/Admin).
+    """Pseudonyme Lese-Sicht einer Audit-Zeile (Read-API, nur Manager).
 
     Bewusst OHNE die Legacy-Spalten `action`/`target` und OHNE `user_id` — der
     typisierte, pseudonyme Trail ist die maßgebliche Außensicht.

@@ -1,6 +1,6 @@
 # ============================================================
 #  FOREMAN — api/routers/topology.py (Sektion I)
-#  Zweck: Read-API der Systemtopologie — GET /api/v1/topology. Manager/Admin voll
+#  Zweck: Read-API der Systemtopologie — GET /api/v1/topology. Manager voll
 #         (inkl. Audit-abgeleiteter MCP-Aktivität); Schichtleiter nur Verbindungs-
 #         status (kein Audit-Bezug); Werker/Techniker 403.
 #  Architektur-Einordnung: HTTP-Schicht (Schicht 2).
@@ -20,7 +20,8 @@ from foreman.topology.service import build_topology
 
 router = APIRouter(prefix="/topology", tags=["topology"])
 
-# Volle Sicht (inkl. Audit-abgeleiteter MCP-Aktivität): Manager/Admin (= Manager).
+# Volle Sicht (inkl. Audit-abgeleiteter MCP-Aktivität): nur Manager. (Die Studie §4I
+# nennt „Manager/Admin"; FOREMAN kennt keine separate admin-Rolle → durchgesetzt für manager.)
 _FULL_ROLES = frozenset({ROLE_MANAGER})
 # Nur Verbindungsstatus (kein Audit): zusätzlich Schichtleiter.
 _STATUS_ROLES = frozenset({ROLE_MANAGER, ROLE_SHIFT_LEAD})

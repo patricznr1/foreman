@@ -1,7 +1,7 @@
 # ============================================================
 #  FOREMAN — api/routers/audit.py (Sektion I)
 #  Zweck: Read-API des Audit-Trails — GET /api/v1/audit, gefiltert + paginiert,
-#         jüngste zuerst. Nur Manager/Admin (Studie-Rollenmatrix); Schichtleiter/
+#         jüngste zuerst. Nur Manager (Studie-Rollenmatrix); Schichtleiter/
 #         Techniker/Werker erhalten 403. `actor` bleibt pseudonym.
 #  Architektur-Einordnung: HTTP-Schicht (Schicht 2).
 #  Konvention (§6): Type Hints überall, deutsche Kommentare, englische Bezeichner.
@@ -22,7 +22,7 @@ from foreman.realtime.authz import ROLE_MANAGER
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 
-# Audit-Einsicht: Manager/Admin (es gibt keine separate „admin"-Rolle → Manager).
+# Audit-Einsicht: Manager (es gibt keine separate „admin"-Rolle → Manager).
 # Schichtleiter/Techniker/Werker bewusst ausgeschlossen (Plattform-/Audit-Kontext).
 _AUDIT_ROLES = frozenset({ROLE_MANAGER})
 
@@ -41,7 +41,7 @@ async def list_audit_entries(
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[AuditLog]:
-    """Audit-Trail (jüngste zuerst), gefiltert. Nur Manager/Admin — sonst 403."""
+    """Audit-Trail (jüngste zuerst), gefiltert. Nur Manager — sonst 403."""
     if user.role not in _AUDIT_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf den Audit-Trail"

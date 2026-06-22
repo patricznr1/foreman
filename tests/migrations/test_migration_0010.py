@@ -139,6 +139,12 @@ def test_migration_0010_up_down_round_trip_and_immutability(test_settings: Setti
                 "INSERT INTO audit_logs (action, action_type) VALUES ('x', 'not_a_type')",
             )
 
+        # TRUNCATE bleibt ERLAUBT — bewusst kein TRUNCATE-Trigger, damit Test-/Reset-
+        # Pfade (_TRUNCATE_SQL … CASCADE) die Tabelle leeren können; TRUNCATE feuert
+        # keine Row-Trigger. Append-only meint UPDATE/DELETE, nicht „nie leerbar".
+        _admin_exec(sync_url, "TRUNCATE audit_logs")
+        assert _fetchval(sync_url, "SELECT COUNT(*) FROM audit_logs") == 0
+
         # downgrade auf 0009 → Spalten + Trigger weg, Tabelle + Legacy-Spalten bleiben.
         command.downgrade(cfg, "0009")
         cols_after = _columns(sync_url, _TABLE)

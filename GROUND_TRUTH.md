@@ -682,7 +682,7 @@ Rollenmatrix 3.1 als durchsetzbare Daten (`lib/auth/roles.ts`, `ACCESS_MATRIX`);
 | F Wartung | `/insights` (Hub) | [VISION] | Platzhalter |
 | G Belastungs-Simulation | `/insights` (Hub) | [VISION] | Platzhalter |
 | H Gedächtnis | `/memory` | [KERN] | ✅ voll: Bedeutungssuche (On-Demand), Relevanz=Position (kein Prozent), Verdichtung + Verknüpfung graceful, PII, Cmd-K → H, Rollen (§21.12) |
-| I Plattform | `/platform` | [BACKEND STEHT] · FE = Teil 2 | Backend: Audit-Trail + Topologie-Quelle (`GET /api/v1/audit` · `GET /api/v1/topology`, unveränderlich, ehrlich abgeleitet — §22). Rollen: Manager/Admin voll · Schichtleiter nur Status · Werker/Techniker kein Zugang. FE-Ansicht folgt (§21.16) |
+| I Plattform | `/platform` | [BACKEND STEHT] · FE = Teil 2 | Backend: Audit-Trail + Topologie-Quelle (`GET /api/v1/audit` · `GET /api/v1/topology`, unveränderlich, ehrlich abgeleitet — §22). Rollen: Manager voll · Schichtleiter nur Status · Werker/Techniker kein Zugang. FE-Ansicht folgt (§21.16) |
 | J Erfassung | `/capture` | [KERN] | ✅ voll: reibungsarmes Formular (Freitext zuerst, vorbefüllte Zuordnungs-Chips, Kategorie mehrkanalig), Offline-Queue mit Sync-Status (Lösch-nach-Senden), Kontext-Vorauswahl aus B/Alarm/FAB, dezente Brücke zu H, Rollen-Varianten (§21.13) |
 | Anmeldung | `/login` | — | ✅ |
 
@@ -802,7 +802,7 @@ Die rekonstruierte Erzählung entlang der Zeit um einen **Anker-Alarm** — bele
 Die Plattform-/Audit-Sicht: (a) **Systemtopologie** — mit welchen Quellen/Konsumenten ist FOREMAN verbunden, was fließt woher; (b) **Audit-Trail** — wer/welches System hat wann welche Erkenntnis abgerufen oder welche HITL-Entscheidung ausgelöst (zugleich AI-Act-/Art.-50-Nachweis-Beleg, §10.5). Leitfrage (Studie §4I): „Mit welchen Drittsystemen ist die Plattform verbunden, was fließt woher, und ist jede abgerufene Erkenntnis nachvollziehbar?" Designgrundlage §4I ist **[VISION]**; dieser Backend-Teil baut die *ehrlich abgeleitete* Teilmenge, nicht das volle Multi-System-Bild. Voller Backend-Vertrag: **§22**.
 
 - **Backend (Teil 1, steht):** Audit-Trail (`src/foreman/audit/`) + Topologie-Quelle (`src/foreman/topology/`) + die Read-APIs `GET /api/v1/audit` und `GET /api/v1/topology`. Migration `0010` (unveränderliches `audit_logs` + Append-Only-Trigger). Zwei reale Writer-Pfade: HITL-Quittierung (Drift-Reasoner-Route, atomar) und MCP-Abruf (separater Sink, Read-Invariante intakt).
-- **Rollen (Studie-Matrix):** Audit nur **Manager/Admin**; Topologie **Manager** voll · **Schichtleiter** nur Verbindungsstatus (kein Audit) · **Werker/Techniker** kein Zugang.
+- **Rollen (Studie-Matrix):** Audit nur **Manager**; Topologie **Manager** voll · **Schichtleiter** nur Verbindungsstatus (kein Audit) · **Werker/Techniker** kein Zugang.
 - **HITL = keine Aktorik:** der Audit protokolliert Entscheidungen, löst keine aus.
 - **FE-Ansicht folgt als Teil 2** (ruhige, nicht-animierte Topologie + unveränderlich-lesende Audit-Tabelle; Rollen-Split wie oben).
 
@@ -821,7 +821,8 @@ Plattform-/Audit-Sicht der Sektion I. Zwei Backend-Stücke + ihre Read-APIs; bau
   - **HITL:** `POST /api/v1/reasoners/drift/alarms/{id}/acknowledge` schreibt nach dem `flush` einen `hitl_acknowledge`-Eintrag (`target_kind=alarm`, `origin=dashboard`, `actor` = quittierender HMAC) **in dieselbe Transaktion** wie die Quittierung. (`alarms.py` hat bewusst keine eigene Ack-Route — die reale HITL-Entscheidung lebt an der Drift-Route, §21.9.)
   - **MCP:** der Tool-Wrapper `_measured` (mcp/tools.py) emittiert im `finally` — **nach** dem Schließen der read-only-Session — einen `mcp_retrieval`-Eintrag (`origin=mcp`, `target_kind`/`target_id`/`machine_id` aus dem Abruf, `detail` = Tool + Ergebnis). Eigene Session/Commit; die MCP-Read-Invariante (I, §17.1) bleibt intakt.
 - **MCP-Akteur (ehrlich):** `mcp/auth.py` kennt **keine** Per-Client-Identität — nur einen geteilten Bearer-Token. Der `actor` ist daher ein **pseudonymisiertes Single-Consumer-Label** (`MCP_CONSUMER_LABEL`), ehrlich genau eine Konsumenten-Grenze. Per-Client-Attribution ist **[VISION]** bis es echte Per-Client-Credentials gibt.
-- **Read-API:** `GET /api/v1/audit` — Filter `action_type`/`target_kind`/`target_id`/`actor`/`machine_id`/`since`/`until`, paginiert (`limit`/`offset`), jüngste zuerst, **nur Manager/Admin** (sonst 403). `actor` bleibt pseudonym (`AuditEntryRead` ohne `user_id`/Legacy-Spalten).
+- **Read-API:** `GET /api/v1/audit` — Filter `action_type`/`target_kind`/`target_id`/`actor`/`machine_id`/`since`/`until`, paginiert (`limit`/`offset`), jüngste zuerst, **nur Manager** (sonst 403). `actor` bleibt pseudonym (`AuditEntryRead` ohne `user_id`/Legacy-Spalten).
+- **Rollen-Hinweis:** die Designstudie §4I nennt „Manager/Admin"; das FOREMAN-Rollen-Vokabular (§5) kennt **keine separate `admin`-Rolle** → die Plattform-/Audit-Sicht ist durchgesetzt für `manager`. Käme später eine echte `admin`-Rolle, wird sie additiv in `_AUDIT_ROLES`/`_FULL_ROLES` aufgenommen.
 
 ### 22.2 Topologie-Quelle (`src/foreman/topology/`)
 
