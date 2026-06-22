@@ -21,8 +21,10 @@ from sqlalchemy import select
 from foreman.api.deps import CurrentUser, GatewayDep, SessionDep, SubstrateClientDep
 from foreman.db.models import ReasonerExplanationRecord
 from foreman.reasoners.event_chain.schema import (
+    ReasonerExplanationDetailRead,
     ReasonerExplanationRead,
     ReconstructRequest,
+    SiblingReference,
 )
 from foreman.reasoners.event_chain.service import AnchorNotFoundError, EventChainService
 
@@ -31,7 +33,7 @@ router = APIRouter(prefix="/reasoners/event_chain", tags=["event_chain"])
 
 @router.post(
     "/reconstruct",
-    response_model=ReasonerExplanationRead,
+    response_model=ReasonerExplanationDetailRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def reconstruct_event_chain(
@@ -40,19 +42,21 @@ async def reconstruct_event_chain(
     gateway: GatewayDep,
     substrate: SubstrateClientDep,
     current_user: CurrentUser,
-) -> ReasonerExplanationRecord:
+) -> ReasonerExplanationDetailRead:
     """Rekonstruiert on-demand die Ereigniskette um einen Anker-Alarm und
-    persistiert die gegroundete Erklärung. 404, wenn der Anker nicht existiert."""
+    persistiert die gegroundete Erklärung. Liefert die eingefrorene Kette + die
+    ehrlichen Schwester-Referenzen mit. 404, wenn der Anker nicht existiert."""
     service = EventChainService(session=session, gateway=gateway, substrate=substrate)
     lookback = (
         timedelta(hours=payload.lookback_hours) if payload.lookback_hours is not None else None
     )
     try:
-        return await service.reconstruct(payload.anchor_alarm_id, lookback=lookback)
+        record = await service.reconstruct(payload.anchor_alarm_id, lookback=lookback)
     except AnchorNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Anker-Alarm nicht gefunden"
         ) from exc
+    return ReasonerExplanationDetailRead.from_record(record)
 
 
 @router.get("/explanations", response_model=list[ReasonerExplanationRead])
@@ -70,12 +74,33 @@ async def list_explanations(
     return result.all()
 
 
-@router.get("/explanations/{explanation_id}", response_model=ReasonerExplanationRead)
-async def get_explanation(explanation_id: int, session: SessionDep) -> ReasonerExplanationRecord:
-    """Liefert eine einzelne gespeicherte Erklärung. 404, wenn nicht vorhanden."""
+@router.get("/explanations/{explanation_id}", response_model=ReasonerExplanationDetailRead)
+async def get_explanation(
+    explanation_id: int, session: SessionDep
+) -> ReasonerExplanationDetailRead:
+    """Liefert eine einzelne gespeicherte Erklärung inkl. eingefrorener Kette +
+    Schwester-Referenzen (aus dem Snapshot, nie neu abgeleitet). 404, wenn fehlt."""
     record = await session.get(ReasonerExplanationRecord, explanation_id)
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Erklärung nicht gefunden"
         )
-    return record
+    return ReasonerExplanationDetailRead.from_record(record)
+
+
+@router.get(
+    "/explanations/{explanation_id}/siblings",
+    response_model=list[SiblingReference],
+)
+async def get_explanation_siblings(
+    explanation_id: int, session: SessionDep
+) -> list[SiblingReference]:
+    """Liefert die EINGEFRORENEN Schwester-Referenzen einer gespeicherten Erklärung
+    (ehrlich aus realen Recall-Treffern, §21-D). Keine → leere Liste (kein Fake).
+    404, wenn die Erklärung nicht existiert."""
+    record = await session.get(ReasonerExplanationRecord, explanation_id)
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Erklärung nicht gefunden"
+        )
+    return [SiblingReference.model_validate(item) for item in (record.siblings_snapshot or [])]

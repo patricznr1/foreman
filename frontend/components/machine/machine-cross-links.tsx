@@ -9,6 +9,7 @@
 // ============================================================
 import Link from "next/link";
 
+import { chainsHref } from "@/lib/event-chains/url";
 import { cx } from "@/lib/ui/cx";
 
 export interface MachineCrossLinksProps {
@@ -41,7 +42,7 @@ export function MachineCrossLinks({
           Vorhersage anfordern
         </Link>
       ) : null}
-      <Link href={`/insights?machine=${machineId}`} className={LINK_CLASS}>
+      <Link href={chainsHref({ machine: machineId })} className={LINK_CLASS}>
         Ereigniskette
       </Link>
     </nav>

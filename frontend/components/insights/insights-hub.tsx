@@ -22,7 +22,7 @@ const ENTRIES: ReasonerEntry[] = [
     id: "D",
     title: "Ereignisketten",
     blurb: "Vorfälle über Zeit und Anlagen zu einer belegten Kette rekonstruieren.",
-    href: null,
+    href: "/insights/chains",
   },
   {
     id: "E",
