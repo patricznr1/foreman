@@ -22,6 +22,7 @@ from typing import cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.api.deps import get_embedding_provider
+from foreman.audit.writer import emit_mcp_retrieval
 from foreman.db.models import (
     Alarm,
     FailurePredictionRecord,
@@ -74,8 +75,21 @@ async def _read_session() -> AsyncIterator[AsyncSession]:
 
 
 @asynccontextmanager
-async def _measured(tool: str) -> AsyncIterator[None]:
-    """Misst Latenz + Ergebnis eines Tool-Aufrufs und trägt sie als Metrik ein (§11.2)."""
+async def _measured(
+    tool: str,
+    *,
+    target_kind: str | None = None,
+    target_id: int | None = None,
+    machine_id: int | None = None,
+) -> AsyncIterator[None]:
+    """Misst Latenz + Ergebnis eines Tool-Aufrufs (Metrik, §11.2) und schreibt den
+    Abruf in den Audit-Trail (Sektion I).
+
+    `_measured` ist der ÄUSSERE Context-Manager, `_read_session` der innere — beim
+    Block-Exit schließt die read-only-Session ZUERST, danach läuft dieses `finally`.
+    Der Audit-Sink öffnet daher eine EIGENE Session und committet selbst; die
+    MCP-Read-Invariante (I) bleibt unangetastet. Der Write ist best-effort.
+    """
     started = perf_counter()
     success = False
     try:
@@ -83,6 +97,13 @@ async def _measured(tool: str) -> AsyncIterator[None]:
         success = True
     finally:
         observe_mcp_call(tool=tool, latency_seconds=perf_counter() - started, success=success)
+        await emit_mcp_retrieval(
+            tool=tool,
+            target_kind=target_kind,
+            target_id=target_id,
+            machine_id=machine_id,
+            success=success,
+        )
 
 
 # ============================================================
@@ -213,7 +234,7 @@ def _note_hit_out(note: WorkerNote) -> NoteHitOut:
 # ============================================================
 async def list_machines() -> MachineListOut:
     """Listet Maschinen-Stammdaten plus aggregierten Status (gesund/Drift/Warnung)."""
-    async with _measured("list_machines"), _read_session() as session:
+    async with _measured("list_machines", target_kind="machine"), _read_session() as session:
         machines = await reads.list_machines(session)
         open_map = await reads.open_alarms_for_machines(
             session, [machine.id for machine in machines]
@@ -228,7 +249,12 @@ async def list_machines() -> MachineListOut:
 
 async def get_machine(machine_id: int) -> MachineOut:
     """Liefert eine Maschine samt aktuellem Status. Fehler, wenn nicht vorhanden."""
-    async with _measured("get_machine"), _read_session() as session:
+    async with (
+        _measured(
+            "get_machine", target_kind="machine", target_id=machine_id, machine_id=machine_id
+        ),
+        _read_session() as session,
+    ):
         machine = await reads.get_machine(session, machine_id)
         if machine is None:
             raise ValueError(f"Maschine {machine_id} nicht gefunden.")
@@ -238,7 +264,12 @@ async def get_machine(machine_id: int) -> MachineOut:
 
 async def get_drift_status(machine_id: int) -> DriftStatusOut:
     """Liefert die aktuelle Drift-Lage einer Maschine (offene, unquittierte Warnungen)."""
-    async with _measured("get_drift_status"), _read_session() as session:
+    async with (
+        _measured(
+            "get_drift_status", target_kind="machine", target_id=machine_id, machine_id=machine_id
+        ),
+        _read_session() as session,
+    ):
         warnings = await reads.list_drift_warnings(session, machine_id=machine_id, only_open=True)
         warn_out = [_alarm_out(alarm) for alarm in warnings]
         return DriftStatusOut(
@@ -261,7 +292,10 @@ async def get_alarms(
         raise ValueError(
             f"Unbekannte severity '{severity}'. Erlaubt: {sorted(_ALLOWED_SEVERITIES)}."
         )
-    async with _measured("get_alarms"), _read_session() as session:
+    async with (
+        _measured("get_alarms", target_kind="machine", target_id=machine_id, machine_id=machine_id),
+        _read_session() as session,
+    ):
         alarms = await reads.list_alarms(
             session, machine_id=machine_id, since=since, severity=severity
         )
@@ -271,7 +305,10 @@ async def get_alarms(
 
 async def list_failure_predictions(machine_id: int | None = None) -> FailurePredictionListOut:
     """Listet gespeicherte Ausfallvorhersagen — jede trägt ihren Sim-Vorbehalt mit."""
-    async with _measured("list_failure_predictions"), _read_session() as session:
+    async with (
+        _measured("list_failure_predictions", target_kind="prediction", machine_id=machine_id),
+        _read_session() as session,
+    ):
         records = await reads.list_predictions(session, machine_id=machine_id)
         out = [_prediction_out(record) for record in records]
         return FailurePredictionListOut(predictions=out, count=len(out))
@@ -279,7 +316,10 @@ async def list_failure_predictions(machine_id: int | None = None) -> FailurePred
 
 async def get_failure_prediction(prediction_id: int) -> FailurePredictionOut:
     """Liefert eine gespeicherte Ausfallvorhersage. Fehler, wenn nicht vorhanden."""
-    async with _measured("get_failure_prediction"), _read_session() as session:
+    async with (
+        _measured("get_failure_prediction", target_kind="prediction", target_id=prediction_id),
+        _read_session() as session,
+    ):
         record = await reads.get_prediction(session, prediction_id)
         if record is None:
             raise ValueError(f"Vorhersage {prediction_id} nicht gefunden.")
@@ -288,7 +328,10 @@ async def get_failure_prediction(prediction_id: int) -> FailurePredictionOut:
 
 async def get_worker_recommendation(prediction_id: int) -> WorkerRecommendationOut:
     """Liefert die gespeicherte Werker-Empfehlung zu einer Vorhersage (mit Vorbehalt)."""
-    async with _measured("get_worker_recommendation"), _read_session() as session:
+    async with (
+        _measured("get_worker_recommendation", target_kind="prediction", target_id=prediction_id),
+        _read_session() as session,
+    ):
         record = await reads.get_latest_recommendation(session, prediction_id)
         if record is None:
             raise ValueError(f"Empfehlung zu Vorhersage {prediction_id} nicht gefunden.")
@@ -297,7 +340,10 @@ async def get_worker_recommendation(prediction_id: int) -> WorkerRecommendationO
 
 async def list_event_chains(machine_id: int | None = None) -> EventChainListOut:
     """Listet gespeicherte Ereignisketten-Erklärungen (KI-Output mit Vertrauens-Markern)."""
-    async with _measured("list_event_chains"), _read_session() as session:
+    async with (
+        _measured("list_event_chains", target_kind="explanation", machine_id=machine_id),
+        _read_session() as session,
+    ):
         records = await reads.list_event_chains(session, machine_id=machine_id)
         out = [_event_chain_out(record) for record in records]
         return EventChainListOut(event_chains=out, count=len(out))
@@ -305,7 +351,10 @@ async def list_event_chains(machine_id: int | None = None) -> EventChainListOut:
 
 async def get_event_chain(explanation_id: int) -> EventChainOut:
     """Liefert eine gespeicherte Ereignisketten-Erklärung. Fehler, wenn nicht vorhanden."""
-    async with _measured("get_event_chain"), _read_session() as session:
+    async with (
+        _measured("get_event_chain", target_kind="explanation", target_id=explanation_id),
+        _read_session() as session,
+    ):
         record = await reads.get_event_chain(session, explanation_id)
         if record is None:
             raise ValueError(f"Ereignisketten-Erklärung {explanation_id} nicht gefunden.")
@@ -314,7 +363,10 @@ async def get_event_chain(explanation_id: int) -> EventChainOut:
 
 async def search_notes(query: str, machine_id: int | None = None, k: int = 5) -> NoteSearchOut:
     """Sucht semantisch ähnliche Notizen (Text maskiert, Autor pseudonym, kein LLM)."""
-    async with _measured("search_notes"), _read_session() as session:
+    async with (
+        _measured("search_notes", target_kind="note", machine_id=machine_id),
+        _read_session() as session,
+    ):
         bounded_k = max(1, min(k, _MAX_SEARCH_K))
         provider = get_embedding_provider()
         notes = await reads.search_notes(
@@ -328,7 +380,12 @@ async def get_readings(
     machine_id: int, datapoint: str, hours: int = _DEFAULT_READINGS_HOURS
 ) -> ReadingsOut:
     """Liefert den aggregierten Sensortrend eines Datenpunkts über die letzten `hours`."""
-    async with _measured("get_readings"), _read_session() as session:
+    async with (
+        _measured(
+            "get_readings", target_kind="machine", target_id=machine_id, machine_id=machine_id
+        ),
+        _read_session() as session,
+    ):
         bounded_hours = max(1, min(hours, _MAX_READINGS_HOURS))
         data_point = await reads.resolve_data_point(session, machine_id, datapoint)
         if data_point is None:

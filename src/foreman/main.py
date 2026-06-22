@@ -17,6 +17,7 @@ from foreman.api import metrics as metrics_api
 from foreman.api.middleware import AuthMiddleware
 from foreman.api.routers import (
     alarms,
+    audit,
     components,
     dashboard,
     data_points,
@@ -27,6 +28,7 @@ from foreman.api.routers import (
     production_runs,
     readings,
     substrate,
+    topology,
     worker_notes,
     ws_ticket,
 )
@@ -61,6 +63,8 @@ _API_V1_ROUTERS = (
     readings.router,
     dashboard.router,
     substrate.router,
+    audit.router,
+    topology.router,
     drift_router.router,
     event_chain_router.router,
     failure_router.router,

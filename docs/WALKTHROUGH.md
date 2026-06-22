@@ -879,3 +879,43 @@ Die rekonstruierte Erzählung entlang der Zeit um einen **Anker-Alarm** — der 
 **Warum existiert es / wo sitzt es?**
 …
 ```
+
+## I — Audit-Trail & Topologie-Quelle (Sektion I, Backend · Teil 1)
+
+> **Die Plattform sieht sich selbst — ehrlich.** Sektion I macht zwei Dinge sichtbar: WER/welches System hat WANN welche Erkenntnis abgerufen oder welche HITL-Entscheidung getroffen (Audit-Trail, zugleich AI-Act-/Art.-50-Nachweis-Beleg), und mit welchen Quellen/Konsumenten FOREMAN verbunden ist (Topologie). Das Zielbild der Designstudie §4I ist ein Multi-System-Mesh und als **[VISION]** markiert; dieser Teil baut die *ehrlich abgeleitete* Teilmenge — kein erfundener Knoten, kein erfundener Akteur. Voller Vertrag: GROUND_TRUTH §22.
+
+### Unveränderliches `audit_logs` (Migration 0010)
+
+**Was tut es?**
+Erweitert das nackte `audit_logs`-Skelett (id/user_id/action/target/created_at) additiv um den echten Trail: `actor` (HMAC-Token, nie Klartext), `actor_role`, `action_type` (CHECK), `target_kind`/`target_id`/`machine_id`, `origin` (CHECK), `detail` (JSONB), `occurred_at`. Ein PL/pgSQL-Trigger `trg_audit_logs_append_only` weist `UPDATE`/`DELETE` ab.
+
+**Warum existiert es / wo sitzt es?**
+Ein Audit-Trail, der sich ändern lässt, ist kein Beleg. Die Unveränderlichkeit ist deshalb **DB-seitig** erzwungen (Defense-in-Depth, Vorbild die `failure_*`-CheckConstraints), nicht nur app-seitig. Bewusst kein `TRUNCATE`-Trigger — TRUNCATE feuert keine Row-Trigger, und Test-/Reset-Pfade müssen die Tabelle leeren können. Der Legacy-`user_id`-FK bleibt erhalten, wird aber nicht befüllt: der namentliche Nachweis lebt im QM-System (System of Record), FOREMAN führt nur das Token (§8).
+
+### Writer (`audit/writer.py`)
+
+**Was tut es?**
+Ein reiner Zeilen-Bauer (`build_audit_log`: `AuditEntry` → ORM-Zeile, spiegelt `action_type` in die Legacy-`action`-NOT-NULL-Spalte) plus zwei Schreibwege. `record(session, entry)` schreibt IN die übergebene Session (atomar). `emit_mcp_retrieval(...)` schreibt best-effort auf EIGENER Session + Commit und schluckt jeden Fehler (loggt nur).
+
+**Warum existiert es / wo sitzt es?**
+Zwei Quellen, zwei Transaktions-Bedürfnisse: die HITL-Quittierung MUSS atomar mit dem Geschäfts-Write sein (eine Quittierung ohne ihren Beleg darf es nicht geben) → in-session. Der MCP-Abruf darf den read-only-Tool-Pfad NIE brechen → eigener Sink, best-effort. Beide bauen dieselbe Zeile.
+
+### Zwei reale Schreibpfade (HITL + MCP)
+
+**Was tut es?**
+HITL: die Drift-Quittier-Route (`reasoners/drift/router.py`) schreibt nach dem `flush` einen `hitl_acknowledge`-Eintrag in dieselbe Transaktion. MCP: der Tool-Wrapper `_measured` (`mcp/tools.py`) emittiert im `finally` einen `mcp_retrieval`-Eintrag mit Ziel-Kontext aus dem Abruf.
+
+**Warum existiert es / wo sitzt es?**
+Es gibt heute genau zwei reale HITL-/Abruf-Spuren — keine erfundenen. Die Quittier-Route liegt am Drift-Reasoner (nicht in `alarms.py`, das keine Ack-Route hat). Beim MCP ist `_measured` der ÄUSSERE Context-Manager, `_read_session` der innere: beim Block-Exit schließt die read-only-Session zuerst, dann läuft das `finally` — der Audit-Sink öffnet eine eigene Session, die Read-Invariante (I, §17.1) bleibt unangetastet. Der Akteur: `mcp/auth.py` kennt nur EINEN geteilten Token, keine Per-Client-Identität → der `actor` ist ein pseudonymisiertes Single-Consumer-Label, ehrlich genau eine Grenze; per-Client-Attribution ist [VISION].
+
+### Read-API + Topologie (`audit/service.py`, `topology/service.py`, Router)
+
+**Was tut es?**
+`GET /api/v1/audit` (gefiltert, paginiert, jüngste zuerst, nur Manager/Admin). `GET /api/v1/topology` leitet die Knoten ehrlich aus realen Quellen ab: Eingänge aus `data_points.source` + jüngster `readings`-Aktivität (simulation als intern), Gedächtnis-Substrat per Live-Smoke-Probe (`?probe=false` abschaltbar), F7-MCP-Grenze gespeist aus den `mcp_retrieval`-Audit-Zeilen. Status nur wo messbar (sonst `unbekannt`, nie grün); benannte Drittsysteme bleiben in einer separaten `[VISION]`-Liste.
+
+**Warum existiert es / wo sitzt es?**
+Die Linie quer durch FOREMAN: kein Fake. Eine Quelle ohne jüngste Daten wird `unbekannt`/`inaktiv`, nie verbunden gefärbt. ERP/Energiemanagement/externe Simulationssoftware existieren nicht als Integration → sie stehen ehrlich als Vision, nicht als grüner Knoten. Rollen-Split (Studie-Matrix): Audit nur Manager/Admin; Topologie Manager voll, Schichtleiter nur Verbindungsstatus (sein Datenqualitäts-Thema, kein Audit), Werker/Techniker kein Zugang. Schöne Kopplung: Teil A (Audit) speist Teil B (Topologie-MCP-Aktivität).
+
+### Gates (lokal grün)
+
+mypy strict 0, ruff clean + Format clean. Migration 0010 up/down getestet, Trigger blockt UPDATE/DELETE nachgewiesen (eigene ephemere DB je Lauf, eindeutiger Name). 607 Backend-Tests grün (ohne F-PRED, lokal Windows nativ) + 30 neue Sektion-I-Tests; Coverage ≥ 80 % auf `audit/`/`topology/` + den neuen Routern. MCP-Read-Only-Invariante nachgewiesen (Tool-Pfad mutiert keine Domänendaten; Audit-Sink committet separat). Hidden-Term-Scan über die neuen Außen-Strings sauber.

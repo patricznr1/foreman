@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from foreman.api.deps import CurrentUser, PseudonymizerDep, SessionDep
+from foreman.audit.writer import hitl_acknowledge_entry, record
 from foreman.db.models import Alarm
 from foreman.reasoners.drift.service import DRIFT_ALARM_CODE
 from foreman.schemas.resources import AlarmRead
@@ -73,5 +74,20 @@ async def acknowledge_drift_alarm(
     alarm.acknowledged_at = datetime.now(UTC)
     alarm.acknowledged_by = pseudo.tokenize_worker(str(current_user.id))
     await session.flush()
+    # Audit-Trail (Sektion I): die HITL-Entscheidung als pseudonyme Zeile IN derselben
+    # Transaktion festhalten — atomar mit der Quittierung, kein eigener Commit. Keine
+    # Aktorik; der Audit protokolliert die Entscheidung, löst keine aus.
+    await record(
+        session,
+        hitl_acknowledge_entry(
+            pseudo=pseudo,
+            user_id=str(current_user.id),
+            actor_role=current_user.role,
+            alarm_id=alarm.id,
+            machine_id=alarm.machine_id,
+            alarm_code=alarm.code,
+            severity=alarm.severity,
+        ),
+    )
     await session.refresh(alarm)
     return alarm
