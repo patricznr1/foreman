@@ -124,6 +124,42 @@ describe("PlatformView — Edge/Race", () => {
     );
   });
 
+  it("Topologie: transienter Refresh-Fehler hält den letzten Snapshot (Degradation)", async () => {
+    let topoCalls = 0;
+    const mock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/v1/topology")) {
+        topoCalls += 1;
+        return Promise.resolve(
+          topoCalls === 1 ? jsonResponse(makeTopologyView()) : jsonResponse({ detail: "boom" }, 500),
+        );
+      }
+      return Promise.resolve(jsonResponse([makeAuditEntry()]));
+    });
+    vi.stubGlobal("fetch", mock);
+    render(<PlatformView user={user("shift_lead")} />);
+    await screen.findByTestId("topology-graph");
+    await userEvent.click(screen.getByRole("button", { name: "Aktualisieren" }));
+    await waitFor(() => expect(topoCalls).toBeGreaterThan(1));
+    // Trotz fehlgeschlagenem Refresh bleibt der letzte Snapshot sichtbar (kein Fehlbild).
+    expect(screen.getByTestId("topology-graph")).toBeInTheDocument();
+  });
+
+  it("Topologie: fataler Fehler (403) zeigt den Fehlerzustand statt eines leeren Bilds", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/api/v1/topology")) {
+          return Promise.resolve(jsonResponse({ detail: "forbidden" }, 403));
+        }
+        return Promise.resolve(jsonResponse([]));
+      }),
+    );
+    render(<PlatformView user={user("shift_lead")} />);
+    expect(await screen.findByText(/Kein Zugriff auf diese Sicht/)).toBeInTheDocument();
+  });
+
   it("die Substrat-Probe lässt sich abschalten (probe=false im Query)", async () => {
     const mock = installFetch();
     render(<PlatformView user={user("shift_lead")} />);

@@ -15,6 +15,25 @@ export interface TopologyOptions {
   freshWithinMinutes?: number;
 }
 
+/** Backend-Bereich des Frischefensters (§22.2): 1 Minute bis 7 Tage. */
+export const FRESH_WITHIN_MIN = 1;
+export const FRESH_WITHIN_MAX = 10080;
+
+/** Klemmt das Frischefenster defensiv in den vom Backend akzeptierten Bereich. */
+export function clampFreshWithinMinutes(minutes: number): number {
+  if (!Number.isFinite(minutes)) {
+    return FRESH_WITHIN_MIN;
+  }
+  const rounded = Math.trunc(minutes);
+  if (rounded < FRESH_WITHIN_MIN) {
+    return FRESH_WITHIN_MIN;
+  }
+  if (rounded > FRESH_WITHIN_MAX) {
+    return FRESH_WITHIN_MAX;
+  }
+  return rounded;
+}
+
 /**
  * GET /api/v1/topology — ehrlich abgeleitete Systemtopologie. `probe=false`
  * unterdrückt die Substrat-Live-Probe (kein Smoke-Marker); `freshWithinMinutes`
@@ -25,7 +44,7 @@ export function topologyEndpoint(options: TopologyOptions): string {
   // Explizit beide Belegungen senden — der Refresh ist bewusst/sichtbar (§22.2).
   params.set("probe", options.probe ? "true" : "false");
   if (options.freshWithinMinutes !== undefined) {
-    params.set("fresh_within_minutes", String(options.freshWithinMinutes));
+    params.set("fresh_within_minutes", String(clampFreshWithinMinutes(options.freshWithinMinutes)));
   }
   return `/api/v1/topology?${params.toString()}`;
 }

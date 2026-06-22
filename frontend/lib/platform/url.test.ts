@@ -6,7 +6,7 @@
 // ============================================================
 import { describe, expect, it } from "vitest";
 import { emptyAuditFilter } from "./audit-filter";
-import { auditEndpoint, topologyEndpoint } from "./url";
+import { auditEndpoint, clampFreshWithinMinutes, FRESH_WITHIN_MAX, topologyEndpoint } from "./url";
 
 describe("topologyEndpoint", () => {
   it("setzt probe immer explizit (bewusster, sichtbarer Refresh)", () => {
@@ -18,6 +18,26 @@ describe("topologyEndpoint", () => {
     expect(topologyEndpoint({ probe: true, freshWithinMinutes: 120 })).toBe(
       "/api/v1/topology?probe=true&fresh_within_minutes=120",
     );
+  });
+
+  it("klemmt ein ungültiges fresh_within_minutes in den Backend-Bereich", () => {
+    expect(topologyEndpoint({ probe: true, freshWithinMinutes: 0 })).toContain(
+      "fresh_within_minutes=1",
+    );
+    expect(topologyEndpoint({ probe: true, freshWithinMinutes: 99999 })).toContain(
+      `fresh_within_minutes=${FRESH_WITHIN_MAX}`,
+    );
+  });
+});
+
+describe("clampFreshWithinMinutes", () => {
+  it("hält den Wert im Bereich 1..10080 (ganzzahlig)", () => {
+    expect(clampFreshWithinMinutes(0)).toBe(1);
+    expect(clampFreshWithinMinutes(-5)).toBe(1);
+    expect(clampFreshWithinMinutes(10081)).toBe(FRESH_WITHIN_MAX);
+    expect(clampFreshWithinMinutes(60)).toBe(60);
+    expect(clampFreshWithinMinutes(60.9)).toBe(60);
+    expect(clampFreshWithinMinutes(Number.NaN)).toBe(1);
   });
 });
 

@@ -119,7 +119,7 @@ function ManagerTabs() {
       </div>
 
       <div role="tabpanel" id="panel-topology" aria-labelledby="tab-topology" hidden={active !== "topology"}>
-        <TopologyPanel headingId="tab-topology" />
+        <TopologyPanel headingId="topology-panel-heading" />
       </div>
       <div role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" hidden={active !== "audit"}>
         <AuditPanel />

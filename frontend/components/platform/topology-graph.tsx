@@ -140,7 +140,10 @@ export function TopologyGraph({ model }: TopologyGraphProps) {
   const placedRight = placeColumn(right, RIGHT_X, "right", bandTop, bandH);
 
   const visionTop = bandTop + bandH + 32;
-  const visionH = model.vision.length > 0 ? 92 : 0;
+  // Höhe aus der tatsächlichen Zeilenzahl (3 Knoten/Zeile) — skaliert mit der
+  // Knotenanzahl, statt bei vielen [VISION]-Knoten aus der Zone zu laufen.
+  const visionRows = model.vision.length > 0 ? Math.ceil(model.vision.length / 3) : 0;
+  const visionH = visionRows > 0 ? Math.max(92, 48 + (visionRows - 1) * 22 + 18) : 0;
   const svgH = visionTop + visionH + 16;
 
   return (

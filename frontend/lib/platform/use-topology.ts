@@ -49,7 +49,15 @@ export function useTopology(probe: boolean, freshWithinMinutes?: number): UseTop
           signal: controller.signal,
         });
         if (!res.ok) {
-          setState({ kind: "error", message: fetchErrorKey(res.status) });
+          const message = fetchErrorKey(res.status);
+          const fatal = message === "unauthorized" || message === "forbidden";
+          // Degradation: transienter Fehler hält den letzten Snapshot; nur fatale
+          // Fehler (Zugriff entzogen / Sitzung weg) überschreiben ihn.
+          setState((prev) =>
+            !fatal && (prev.kind === "cached" || prev.kind === "live")
+              ? prev
+              : { kind: "error", message },
+          );
           return;
         }
         const raw = (await res.json()) as TopologyViewRead;
@@ -63,7 +71,12 @@ export function useTopology(probe: boolean, freshWithinMinutes?: number): UseTop
         if ((caught as Error).name === "AbortError") {
           return;
         }
-        setState({ kind: "error", message: "load-failed" });
+        // Netz-/Transientfehler: letzten Snapshot halten (Degradation), sonst Fehler.
+        setState((prev) =>
+          prev.kind === "cached" || prev.kind === "live"
+            ? prev
+            : { kind: "error", message: "load-failed" },
+        );
       } finally {
         if (!controller.signal.aborted) {
           setRefreshing(false);
