@@ -31,15 +31,40 @@ export interface PinnedChain {
   pinnedAt: string;
 }
 
-/** Fällt im SSR/Test-Kontext ohne echtes localStorage auf einen No-op zurück. */
+/** Fällt im SSR/Test-Kontext ohne echtes localStorage auf einen No-op zurück.
+ *  Der Zugriff ist defensiv gekapselt: in restriktiven Browser-Kontexten kann
+ *  `window.localStorage` synchron mit SecurityError werfen — dann null statt Crash. */
 function resolveStorage(storage?: PinStorage): PinStorage | null {
   if (storage) {
     return storage;
   }
-  if (typeof window !== "undefined" && window.localStorage) {
-    return window.localStorage;
+  if (typeof window === "undefined") {
+    return null;
   }
-  return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** Validiert einen rohen Eintrag gegen das PinnedChain-Schema (defensiv gegen
+ *  schemafremdes JSON im Storage — kein ungeprüfter Cast). */
+function isPinnedChain(value: unknown): value is PinnedChain {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.explanationId === "number" &&
+    typeof candidate.machineId === "number" &&
+    typeof candidate.anchorAlarmId === "number" &&
+    typeof candidate.confidence === "string" &&
+    typeof candidate.isHypothesis === "boolean" &&
+    typeof candidate.eventCount === "number" &&
+    typeof candidate.stampedAt === "string" &&
+    typeof candidate.pinnedAt === "string"
+  );
 }
 
 function readAll(storage: PinStorage): PinnedChain[] {
@@ -49,7 +74,7 @@ function readAll(storage: PinStorage): PinnedChain[] {
   }
   try {
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as PinnedChain[]) : [];
+    return Array.isArray(parsed) ? parsed.filter(isPinnedChain) : [];
   } catch {
     return [];
   }

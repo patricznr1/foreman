@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import asyncio
+from uuid import uuid4
 
 import asyncpg
 import pytest
@@ -81,9 +82,11 @@ def test_migration_0009_up_down_round_trip(test_settings: Settings) -> None:
     if not _reachable(admin_dsn):
         pytest.skip("Keine Test-DB erreichbar (Migrationstest übersprungen)")
 
-    migr_url = _swap_db(base_url, _MIGR_DB)
-    _admin_exec(admin_dsn, f'DROP DATABASE IF EXISTS "{_MIGR_DB}"')
-    _admin_exec(admin_dsn, f'CREATE DATABASE "{_MIGR_DB}"')
+    # Eindeutiger DB-Name je Lauf → keine Kollision bei parallelen Testläufen.
+    migr_db = f"{_MIGR_DB}_{uuid4().hex[:8]}"
+    migr_url = _swap_db(base_url, migr_db)
+    _admin_exec(admin_dsn, f'DROP DATABASE IF EXISTS "{migr_db}"')
+    _admin_exec(admin_dsn, f'CREATE DATABASE "{migr_db}"')
     cfg = Config("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", migr_url)
     try:
@@ -102,4 +105,4 @@ def test_migration_0009_up_down_round_trip(test_settings: Settings) -> None:
         command.upgrade(cfg, "head")
         assert _SNAPSHOT_COLUMNS <= _columns(migr_url, _TABLE)
     finally:
-        _admin_exec(admin_dsn, f'DROP DATABASE IF EXISTS "{_MIGR_DB}"')
+        _admin_exec(admin_dsn, f'DROP DATABASE IF EXISTS "{migr_db}"')

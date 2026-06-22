@@ -9,7 +9,7 @@
 // ============================================================
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ResultWithProvenance } from "@/components/ondemand";
 import type { CurrentUser } from "@/lib/api/contracts";
 import { type ChainRoleView, chainRoleView } from "@/lib/event-chains/roles";
@@ -64,6 +64,11 @@ function ChainsSingle({
   initialExplanationId: number | null;
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(initialExplanationId);
+  // Deep-Link-Auswahl nachführen, wenn sich der Anker-Parameter später ändert
+  // (z. B. neue ?explanation=-Navigation auf derselben Route).
+  useEffect(() => {
+    setSelectedId(initialExplanationId);
+  }, [initialExplanationId]);
   const detail = useChainDetail(selectedId);
 
   return (

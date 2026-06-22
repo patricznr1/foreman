@@ -13,7 +13,7 @@ import { confidenceLevel } from "./confidence";
 import { parseNarrative } from "./narrative";
 import { toSiblingModels } from "./siblings";
 import { buildNodes } from "./timeline";
-import type { ChainCardModel, ChainSummaryModel } from "./types";
+import type { ChainCardModel, ChainSummaryModel, ConfidenceLevel } from "./types";
 
 export type AssembleFailure = "empty-narrative";
 
@@ -64,6 +64,14 @@ export function assembleChainCard(detail: ReasonerExplanationDetailRead): Assemb
  * Verdichtet eine gespeicherte Erklärung zu einem Ein-Satz-Modell (Manager-Sicht,
  * Studie §4D: „ein Satz + Kennzahl", nie die volle Erzählung).
  */
+/** Grammatikalisch korrekte Adjektivform der Konfidenz-Stufe (statt `${level}e`,
+ *  das aus "mittel" das falsche "mittele" machte). */
+const CONFIDENCE_ADJECTIVE: Record<ConfidenceLevel, string> = {
+  gering: "geringe",
+  mittel: "mittlere",
+  hoch: "hohe",
+};
+
 export function toSummary(read: ReasonerExplanationRead): ChainSummaryModel {
   const level = confidenceLevel(read.confidence);
   const machinePart = read.machine_id !== null ? `Maschine ${read.machine_id}` : "unbekannte Maschine";
@@ -75,6 +83,6 @@ export function toSummary(read: ReasonerExplanationRead): ChainSummaryModel {
     confidence: level,
     isHypothesis: read.is_hypothesis,
     createdAtIso: read.created_at,
-    sentence: `Rekonstruierte Kette um Alarm ${read.anchor_alarm_id} an ${machinePart} (${level}e Konfidenz${hypothesisPart}).`,
+    sentence: `Rekonstruierte Kette um Alarm ${read.anchor_alarm_id} an ${machinePart} (${CONFIDENCE_ADJECTIVE[level]} Konfidenz${hypothesisPart}).`,
   };
 }

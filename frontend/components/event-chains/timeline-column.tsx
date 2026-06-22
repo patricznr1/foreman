@@ -9,7 +9,7 @@
 // ============================================================
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SYMBOL_LABEL } from "@/lib/event-chains/symbols";
 import { nextRovingIndex } from "@/lib/event-chains/timeline";
 import type { ChainNode, ChainSymbolKind } from "@/lib/event-chains/types";
@@ -35,6 +35,28 @@ function distinctKinds(nodes: ChainNode[]): ChainSymbolKind[] {
 export function TimelineColumn({ nodes, selectedSourceId, onSelect }: TimelineColumnProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Roving-Index bei Kartenwechsel klemmen: werden die Knoten kürzer, darf der
+  // Index nicht aus dem Bereich fallen (sonst hätte kein Knoten tabIndex 0 — die
+  // Tastatur-Navigation bräche).
+  useEffect(() => {
+    if (nodes.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+    setActiveIndex((current) => Math.min(current, nodes.length - 1));
+  }, [nodes.length]);
+
+  // Auswahl koppeln: wird eine Quelle (Quell-Chip) gewählt, folgt der Roving-Fokus.
+  useEffect(() => {
+    if (selectedSourceId === null) {
+      return;
+    }
+    const index = nodes.findIndex((node) => node.sourceId === selectedSourceId);
+    if (index >= 0) {
+      setActiveIndex(index);
+    }
+  }, [selectedSourceId, nodes]);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLOListElement>) {
     const next = nextRovingIndex(activeIndex, event.key, nodes.length);

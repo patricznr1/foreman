@@ -407,6 +407,9 @@ class EventChainService:
             stmt = (
                 select(ReasonerExplanationRecord.id)
                 .where(
+                    # reasoner_explanations ist reasoner-übergreifend → auf
+                    # Ereignisketten einschränken (sonst Verweis auf fremden Reasoner).
+                    ReasonerExplanationRecord.reasoner == REASONER_NAME,
                     ReasonerExplanationRecord.machine_id == machine_id,
                     ReasonerExplanationRecord.anchor_alarm_id != anchor_alarm_id,
                 )

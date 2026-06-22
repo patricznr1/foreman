@@ -55,4 +55,10 @@ describe("toSummary — Manager-Verdichtung (ein Satz, kein Prozent)", () => {
     expect(summary.sentence).toContain("Hypothese");
     expect(summary.sentence).not.toContain("%");
   });
+
+  it("bildet die Adjektivform grammatikalisch korrekt (mittlere, nicht mittele)", () => {
+    const summary = toSummary(makeRead({ confidence: "medium" }));
+    expect(summary.sentence).toContain("mittlere Konfidenz");
+    expect(summary.sentence).not.toContain("mittele");
+  });
 });

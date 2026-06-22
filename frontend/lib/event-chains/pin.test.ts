@@ -56,4 +56,16 @@ describe("pin store", () => {
     unpinChain(1, storage);
     expect(isPinned(1, storage)).toBe(false);
   });
+
+  it("filtert schemafremde Einträge aus dem Storage (kein Runtime-Crash)", () => {
+    const storage = makeStorage();
+    // Valides Array, aber mit schemafremden/leeren Einträgen (z. B. alte Version).
+    storage.setItem(
+      "foreman.chains.pinned",
+      JSON.stringify([makePin({ explanationId: 1 }), { explanationId: "x", pinnedAt: 42 }, null]),
+    );
+    const list = readPinnedChains(7, storage);
+    expect(list.length).toBe(1);
+    expect(list[0]?.explanationId).toBe(1);
+  });
 });
