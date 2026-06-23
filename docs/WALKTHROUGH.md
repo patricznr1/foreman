@@ -20,7 +20,7 @@ Jeder Baustein bekommt dieselben zwei Punkte:
 ## Das große Bild (in drei Sätzen)
 
 1. Eine Produktionsanlage erzeugt ständig Messdaten und Ereignisse — FOREMAN sammelt sie ein.
-2. Fünf spezialisierte "Denker" (Reasoner) werten diese Daten mit Hilfe eines Langzeitgedächtnisses aus und beantworten Fragen, die ein normales Dashboard nicht beantworten kann.
+2. Vier spezialisierte "Denker" (Reasoner) werten diese Daten mit Hilfe eines Langzeitgedächtnisses aus und beantworten Fragen, die ein normales Dashboard nicht beantworten kann.
 3. Die Antworten landen entweder im Werker-Dashboard oder werden über eine standardisierte Schnittstelle an andere Systeme weitergereicht.
 
 ---

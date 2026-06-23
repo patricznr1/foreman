@@ -30,7 +30,7 @@ Production lines generate data non-stop — sensor readings, PLC states, mainten
 - *Which chain of events led to this failure?*
 - *Is a process slowly drifting out of its normal range?*
 - *When is this component likely to fail?*
-- *Can the plant handle this planned extra load?*
+- *What load has this machine actually carried — and where were its limits?*
 
 The name says it all: a *foreman* is the experienced supervisor who has known the shop floor for years — and that institutional experience is exactly what FOREMAN provides as a system.
 
@@ -54,13 +54,12 @@ flowchart TB
     subgraph L2["② FOREMAN Reasoning Platform"]
         direction TB
         ING[Ingestion Service]
-        subgraph R["Five Reasoners"]
+        subgraph R["Four Reasoners"]
             direction LR
             R1[Event-Chain\nReconstruction]
             R2[Drift\nDetection]
             R3[Failure\nPrediction]
             R4[Maintenance\nCycle Analysis]
-            R5[Load\nSimulation]
         end
         GW[Model Gateway\nlocal + cloud]
     end
@@ -80,7 +79,7 @@ flowchart TB
     R --> MCP
 ```
 
-### The five reasoners
+### The four reasoners
 
 | Reasoner | The question it answers | Method (high level) |
 |---|---|---|
@@ -88,7 +87,8 @@ flowchart TB
 | **Drift Detection** | Is something drifting slowly? | Statistical deviation monitoring |
 | **Failure Prediction** | When will it fail? | Gradient boosting + LLM explanation |
 | **Maintenance-Cycle Analysis** | Which maintenance actually helps? | Causal evaluation of past interventions |
-| **Load Simulation** | Can the plant take this load? | Numerical simulation + Monte Carlo |
+
+> **Load data, not load simulation.** FOREMAN does not run its own load simulation — a real one needs parameters outside FOREMAN's observation boundary (machine timing, tool/material behaviour, environment) that the platform never sees. Instead it exposes the *observed* load profiles and limits read-only over the MCP interface, for an external simulation tool to build on. See [GROUND_TRUTH.md](GROUND_TRUTH.md) §2 / §17.
 
 ### The memory substrate
 
@@ -103,7 +103,7 @@ FOREMAN builds on an **external, biologically inspired memory substrate** that i
 | **Backend** | Python 3.12, FastAPI, async SQLAlchemy 2.0, Pydantic v2 |
 | **Storage** | PostgreSQL + TimescaleDB (time series) + vector search |
 | **Model gateway** | LiteLLM — local model (Qwen3 via Ollama) + cloud fallback (Anthropic) |
-| **Frontend** | Next.js 15, Tailwind CSS, shadcn/ui, Recharts |
+| **Frontend** | Next.js 15 (App Router), React 19, Tailwind CSS 4, bespoke SVG (no charting library) |
 | **Industrial connectivity** | asyncua (OPC UA), paho-mqtt, pymodbus |
 | **Integration** | Model Context Protocol (MCP) SDK |
 | **Operations** | Docker Compose |

@@ -28,12 +28,12 @@
 Drei Schichten:
 
 1. **Industrieumgebung** — Datenquellen: SPS/OPC UA, MQTT, Modbus, Logs, Wartungshistorie.
-2. **FOREMAN-Plattform** — Ingestion + fünf Reasoner + Modell-Gateway.
+2. **FOREMAN-Plattform** — Ingestion + vier Reasoner + Modell-Gateway.
 3. **Output-Kanäle** — Werker-Dashboard (F5, geplant) + **MCP-Schnittstelle (F7 ✅, read-only — FOREMAN als offener Knoten, §17)**.
 
 **Gedächtnis-Substrat:** externer Dienst hinter HTTP-API. Wird wie eine Datenbank konsumiert. **Kein Substrat-Code in diesem Repo.**
 
-### Die fünf Reasoner
+### Die vier Reasoner
 
 | # | Reasoner | Substrat-Fähigkeit (angebunden) |
 |---|---|---|
@@ -41,9 +41,10 @@ Drei Schichten:
 | 2 | Drift-Erkennung | Drift-/Stabilitäts-Überwachung |
 | 3 | Ausfallvorhersage | Mustererkennung über konsolidiertem Speicher |
 | 4 | Wartungszyklen-Analyse | kausale Auswertung (read-only) |
-| 5 | Belastungs-Simulation | historische Grenzwerte + Hypothesen |
 
-**Bau-Status:** Reasoner #1 (Ereignisketten, F6 ✅), #2 (Drift, F4 ✅), **#3 (Ausfallvorhersage, F-PRED ✅** — ehrlich deklarierter Methoden-Demonstrator auf Simulationsdaten, §16). #4/#5 folgen.
+**Bau-Status:** Reasoner #1 (Ereignisketten, F6 ✅), #2 (Drift, F4 ✅), **#3 (Ausfallvorhersage, F-PRED ✅** — ehrlich deklarierter Methoden-Demonstrator auf Simulationsdaten, §16). **#4 (Wartungszyklen) folgt — datenabhängig** (echte Wartungshistorie).
+
+**Belastungsdaten — kein Reasoner, sondern MCP-Datenfähigkeit.** FOREMAN führt **keine** eigene Belastungs-Simulation durch: eine echte Lastsimulation braucht Parameter außerhalb von FOREMANs Beobachtungsgrenze (Taktung der Teilespender, Materialverhalten von Werkzeug/Produkt, Umgebung), die die Plattform nie sieht — selbst zu simulieren hieße, Wissen über die Beobachtungsgrenze hinaus vorzutäuschen (dieselbe Linie wie Sim-Vorbehalt §16, „nur Belegbares", HITL ohne Aktorik). Stattdessen exponiert FOREMAN die **beobachteten** Lastdaten (historische Lastprofile, beobachtete Maximalwerte + ihre Folgen) read-only über die MCP-Schicht (§17); die eigentliche Simulation fährt **extern** bei einem Simulations-Konsumenten (externe Simulationssoftware als MCP-Konsument — in der Systemtopologie ehrlich als [VISION]-Drittsystem geführt, §22.2). Diese Lastprofil-Datenfähigkeit ist **noch nicht gebaut** (kein eigenes MCP-Tool neben `get_readings`, §17) und wird, wenn überhaupt, in der MCP-Schicht ergänzt — **nicht** als interner Reasoner.
 
 ---
 
@@ -53,7 +54,7 @@ Drei Schichten:
 - **DB:** PostgreSQL + TimescaleDB + Vektor-Suche
 - **Gateway:** eigene dünne `LLMGateway`-Abstraktion (`src/foreman/llm/`, F-LLM); LiteLLM ist ausschließlich Implementierungsdetail dahinter (`backends.py`). Lokal-first Qwen3 (Ollama) + Anthropic Cloud-Fallback, vier Priority-Modi. Reasoner sehen nur `LLMGateway`/`GatewayResponse`/`Task`/Fehlerhierarchie — nie einen LiteLLM-Typ. vLLM-Production-Pfad bleibt durch die Backend-Config offen. Vertrag: **§13**.
 - **Embeddings:** eigene dünne `EmbeddingProvider`-Abstraktion (`src/foreman/embeddings/`, F-SEM) — **parallel** zum Gateway, NICHT in den `LLMGateway` gequetscht (Completion ≠ Embedding). Lokal-first über Ollama (`bge-m3`, Default) + sentence-transformers-Alternative hinter derselben Schnittstelle; L2-normierte Vektoren, Dimension 1024 erzwungen (passt auf `vector(1024)`). Aufrufer (Ingestion, Suche, Reasoner) sehen nur `EmbeddingProvider`/`Vector`/`EmbeddingSettings`/Fehlerhierarchie — nie einen Backend-/Library-Typ. Vertrag: **§15**.
-- **Frontend:** Next.js 15, Tailwind, shadcn/ui, Recharts
+- **Frontend:** Next.js 15 (App Router), React 19, TypeScript strict, Tailwind CSS 4, Vitest + Testing Library; **bespoke token-getriebenes SVG statt Charting-Lib** (kein shadcn/ui, kein Recharts) — Details §21
 - **Industrie:** asyncua, paho-mqtt, pymodbus
 - **Integration:** MCP SDK
 - **Betrieb:** Docker Compose
@@ -680,7 +681,7 @@ Rollenmatrix 3.1 als durchsetzbare Daten (`lib/auth/roles.ts`, `ACCESS_MATRIX`);
 | D Ereignisketten | `/insights/chains` | [STEHT] | ✅ voll: zweispaltige `TimelineNarrative` (belegt vs. erzählt hart getrennt, bespoke SVG-Symbole, gekoppeltes Hervorheben), On-Demand-Trigger gegen Anker-Alarm, ehrliche Schwesterketten, Pin an B (eingefrorener Stand), Rollen-Varianten (§21.15) |
 | E Ausfallvorhersage | `/insights/prediction` | [STEHT] | ✅ voll: ConfidenceCaveatCard (Vier-Block, Vorbehalt untrennbar), geteiltes On-Demand-Muster, HITL-Entscheidung, Rollen-Varianten (§21.10) |
 | F Wartung | `/insights` (Hub) | [VISION] | Platzhalter |
-| G Belastungs-Simulation | `/insights` (Hub) | [VISION] | Platzhalter |
+| G Belastung (Lastprofil-Historie) | `/insights` (Hub) | [VISION] | Platzhalter — **Anzeige** beobachteter Lastprofile/Grenzwerte, ausdrücklich **kein Simulator** (Lastdaten als MCP-Datenfähigkeit, §2/§17); G-FE folgt separat |
 | H Gedächtnis | `/memory` | [KERN] | ✅ voll: Bedeutungssuche (On-Demand), Relevanz=Position (kein Prozent), Verdichtung + Verknüpfung graceful, PII, Cmd-K → H, Rollen (§21.12) |
 | I Plattform | `/platform` | [STEHT] (FE) · ehrliche Teilmenge von §4I [VISION] | ✅ voll: ruhige nicht-animierte bespoke-SVG-Systemtopologie (FOREMAN-Zentrum, Eingänge/Substrat/MCP-Grenze, [VISION] abgesetzt/nie verbunden) + eigener mehrkanaliger Verbindungsstatus (NE-107-Geist, `unbekannt` ehrlich neutral — bewusst NICHT das Fcsm-`StatusIndicator`-Atom, das kein `unbekannt` kennt) + unveränderlich-lesende Audit-Tabelle (monospace-IDs, `actor` pseudonym `#hex6`, Filter+Pagination auf die realen Query-Params). Rollen-Split: Manager Topologie+Audit (Tabs) · Schichtleiter nur Topologie (FE ruft `/audit` nie auf) · Werker/Techniker `requireSection`-Landing. HTTP-Snapshot + manueller Refresh (kein WS-Feed). Rollen-Varianten (§21.17) |
 | J Erfassung | `/capture` | [KERN] | ✅ voll: reibungsarmes Formular (Freitext zuerst, vorbefüllte Zuordnungs-Chips, Kategorie mehrkanalig), Offline-Queue mit Sync-Status (Lösch-nach-Senden), Kontext-Vorauswahl aus B/Alarm/FAB, dezente Brücke zu H, Rollen-Varianten (§21.13) |

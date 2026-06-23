@@ -9,7 +9,7 @@
 
 ## 1. Systembeschreibung
 
-FOREMAN ist eine Reasoning-Plattform für industrielle Produktionsumgebungen. Fünf Reasoner (Ereignisketten-Rekonstruktion, Drift-Erkennung, Ausfallvorhersage, Wartungszyklen-Analyse, Belastungs-Simulation) werten **Maschinen-Sensordaten, SPS-Daten und Werker-Notizen** aus und erzeugen daraus **Empfehlungen, Warnungen und Erklärungen**. Diese werden (a) in einem **Werker-Dashboard** dargestellt und (b) als aggregierte Erkenntnisse über eine **MCP-Schnittstelle** an Drittsysteme (z. B. Wartungsplanung, ERP) ausgegeben.
+FOREMAN ist eine Reasoning-Plattform für industrielle Produktionsumgebungen. Vier Reasoner (Ereignisketten-Rekonstruktion, Drift-Erkennung, Ausfallvorhersage, Wartungszyklen-Analyse) werten **Maschinen-Sensordaten, SPS-Daten und Werker-Notizen** aus und erzeugen daraus **Empfehlungen, Warnungen und Erklärungen**. Diese werden (a) in einem **Werker-Dashboard** dargestellt und (b) als aggregierte Erkenntnisse über eine **MCP-Schnittstelle** an Drittsysteme (z. B. Wartungsplanung, ERP) ausgegeben. Beobachtete Lastdaten (historische Lastprofile/Grenzwerte) werden — sofern künftig exponiert — als **reine Messdaten** read-only über dieselbe MCP-Schnittstelle bereitgestellt (**kein KI-Output**); eine eigentliche Belastungs-Simulation führt FOREMAN nicht selbst durch, die fährt extern bei einem Drittsystem.
 
 Architektonisch entscheidend für die regulatorische Einordnung:
 
