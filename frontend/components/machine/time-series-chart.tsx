@@ -70,6 +70,13 @@ export function TimeSeriesChart({
   }
   if (normalMin !== null) consider(normalMin);
   if (normalMax !== null) consider(normalMax);
+  // Eigenprofil-Korridor in die Y-Domäne einbeziehen, damit das Band nie aus dem Bild clippt.
+  if (series.profileBand) {
+    for (const bandPoint of series.profileBand.points) {
+      consider(bandPoint.lower);
+      consider(bandPoint.upper);
+    }
+  }
   if (!Number.isFinite(yLow) || !Number.isFinite(yHigh)) {
     yLow = 0;
     yHigh = 1;
@@ -86,6 +93,9 @@ export function TimeSeriesChart({
   }
   if (hasBand) {
     ariaParts.push(`Normalbereich ${formatNumber(normalMin)} bis ${formatNumber(normalMax)} ${unit ?? ""}`.trim());
+  }
+  if (series.profileBand) {
+    ariaParts.push("Eigenprofil-Erwartungskorridor eingeblendet");
   }
   if (driftSegments.length > 0) {
     ariaParts.push("Abweichung gegen den Normalbereich erkannt");
@@ -123,9 +133,44 @@ export function TimeSeriesChart({
         />
       ) : null}
 
-      {/* Eigenprofil-Overlay (F4): profile_band ist Backend-seitig reserviert/null →
-          graceful WEGGELASSEN, kein Platzhalter-Strich. Sobald F4 ein Band liefert,
-          hier eine gestrichelte Referenzlinie aus dem Band ableiten (Anschlusspunkt). */}
+      {/* F4-Eigenprofil-Overlay: gestrichelter Erwartungskorridor je Zustand (Median +
+          Korridorgrenzen) — eigener, gestrichelter Token, klar unterscheidbar von der
+          Vollflächen-Normalband-Schicht. Null → graceful weggelassen (kein Strich). */}
+      {series.profileBand ? (
+        <g data-testid="profile-band">
+          <path
+            data-testid="profile-band-upper"
+            d={linePath(
+              series.profileBand.points.map((p) => ({ x: xScale(p.t), y: yScale(p.upper) })),
+            )}
+            fill="none"
+            stroke="var(--color-data-series-2)"
+            strokeWidth={1}
+            strokeDasharray="4 3"
+            opacity={0.75}
+          />
+          <path
+            d={linePath(
+              series.profileBand.points.map((p) => ({ x: xScale(p.t), y: yScale(p.lower) })),
+            )}
+            fill="none"
+            stroke="var(--color-data-series-2)"
+            strokeWidth={1}
+            strokeDasharray="4 3"
+            opacity={0.75}
+          />
+          <path
+            data-testid="profile-band-mid"
+            d={linePath(
+              series.profileBand.points.map((p) => ({ x: xScale(p.t), y: yScale(p.mid) })),
+            )}
+            fill="none"
+            stroke="var(--color-data-series-2)"
+            strokeWidth={1.5}
+            strokeDasharray="2 3"
+          />
+        </g>
+      ) : null}
 
       {driftSegments.map((segment, index) => {
         const boundary = segment.direction === "over" ? normalMax : normalMin;

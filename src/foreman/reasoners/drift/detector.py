@@ -83,6 +83,17 @@ class DataPointDriftState:
         return bool(self.adwin.drift_detected)
 
     @property
+    def noise_sigma(self) -> float | None:
+        """Eingefrorene robuste Rausch-Streuung (sigma), oder None vor Warm-up-Ende.
+
+        Die Streuungsbasis, gegen die der Detektor die Effektgroesse bildet
+        (effect_size = |Residuum| / sigma) und damit die Halbbreite des persistierten
+        Eigenprofil-Bands (median +/- k*sigma). Exponiert, damit der Service am
+        Laufende die echte Detektor-Basis wegschreibt (keine Read-Rekonstruktion).
+        """
+        return self._sigma
+
+    @property
     def effect_size(self) -> float:
         """Standardisierte Effektgröße: |Residuum| / Rausch-Streuung (z-Score).
 

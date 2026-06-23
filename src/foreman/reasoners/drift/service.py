@@ -17,15 +17,22 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from time import perf_counter
+from typing import Final
 
 from sqlalchemy import bindparam, select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from foreman.db.models import Alarm, DataPoint, Machine, ProductionRun
+from foreman.db.models import Alarm, DataPoint, DriftProfile, Machine, ProductionRun
 from foreman.ingestion.semantic import record_semantic_event
 from foreman.logging_setup import ALERT, ERROR, REASON, get_logger
 from foreman.observability.metrics import observe_reasoner_run, record_drift_event
-from foreman.reasoners.drift.detector import DriftReasoner
+from foreman.reasoners.drift.baseline import BASELINE_WINDOW, state_key_for
+from foreman.reasoners.drift.detector import (
+    WARMUP_MIN_SAMPLES,
+    DataPointDriftState,
+    DriftReasoner,
+)
 from foreman.reasoners.drift.relevance import (
     DEFAULT_MIN_EFFECT_SIZE,
     DEFAULT_PERSISTENCE_INTERVALS,
@@ -50,6 +57,11 @@ DRIFT_ALARM_CATEGORY = "process"
 DRIFT_ALARM_SEVERITY = "warning"
 DRIFT_ALARM_CODE = "DRIFT"
 DRIFT_EVENT_TYPE = "drift_detected"
+
+# Mindest-Stichprobe je Betriebszustand, damit sein Median ins persistierte Eigenprofil
+# aufgenommen wird — darunter ist der Zustands-Median zu wackelig (ehrlich weglassen,
+# nicht raten). Das GANZE Profil hängt zusätzlich an der etablierten Rausch-Streuung.
+MIN_STATE_PROFILE_SAMPLES: Final = 10
 
 
 @dataclass(frozen=True)
@@ -86,6 +98,60 @@ class MachineTopology:
     setup_active_id: int | None
 
 
+@dataclass(frozen=True)
+class DataPointProfile:
+    """Serialisierbares Eigenprofil eines Datenpunkts (Detektor-Basis am Laufende).
+
+    `state_medians` bildet je Betriebszustand (state_key als String) den gleitenden
+    Median + Stichprobengröße ab; `noise_sigma` ist die eine eingefrorene Rausch-
+    Streuung des Datenpunkts, `effect_size_k` der Schwellenfaktor des Laufs. Die
+    Read-Schicht expandiert daraus `median +/- effect_size_k * noise_sigma` je Bucket.
+    """
+
+    data_point_id: int
+    machine_id: int
+    state_medians: dict[str, dict[str, float | int]]
+    noise_sigma: float
+    effect_size_k: float
+    total_samples: int
+
+
+def extract_profile(
+    data_point_id: int,
+    machine_id: int,
+    state: DataPointDriftState,
+    *,
+    effect_size_k: float,
+    min_state_samples: int = MIN_STATE_PROFILE_SAMPLES,
+) -> DataPointProfile | None:
+    """Baut das persistierbare Eigenprofil aus dem Detektor-Zustand am Laufende.
+
+    Quelle ist die ECHTE Detektor-Basis: der gleitende Median je Zustand
+    (`RollingResidualBaseline.state_profiles`) + die eingefrorene `noise_sigma` —
+    NICHT über das Anzeigefenster neu gerechnet. None, wenn die Streuung noch nicht
+    etabliert ist (Warm-up) oder kein Zustand genug Samples hat (ehrlich leer, nicht
+    geraten).
+    """
+    sigma = state.noise_sigma
+    if sigma is None or sigma <= 0.0:
+        return None
+    state_medians: dict[str, dict[str, float | int]] = {
+        str(state_key): {"median": median_value, "sample_count": sample_count}
+        for state_key, (median_value, sample_count) in state.baseline.state_profiles().items()
+        if sample_count >= min_state_samples
+    }
+    if not state_medians:
+        return None
+    return DataPointProfile(
+        data_point_id=data_point_id,
+        machine_id=machine_id,
+        state_medians=state_medians,
+        noise_sigma=sigma,
+        effect_size_k=effect_size_k,
+        total_samples=state.seen,
+    )
+
+
 def detect_drift_in_stream(
     samples: Iterable[MachineSample],
     runs: Sequence[tuple[datetime, datetime | None]],
@@ -120,9 +186,9 @@ def detect_drift_in_stream(
         in_steady = gate.update(sample.bucket, state)
         # Zustands-Schlüssel für die Deseasonalisierung: die Tagesstunde trennt die
         # zyklische Schicht-Last, sodass je Schicht ein eigener Median greift
-        # (Research §3). Damit verschwindet das systematische Schicht-Residuum, das
-        # sonst Fehlalarme auf gesunden Maschinen auslöst.
-        state_key = sample.bucket.hour
+        # (Research §3). Geteilte Funktion — dieselbe, die die Read-Expansion des
+        # Eigenprofil-Bands nutzt, sonst zeigte das Band den falschen Zustands-Korridor.
+        state_key = state_key_for(sample.bucket)
 
         for data_point_id, value in sorted(sample.analog_values.items()):
             signaled = reasoner.observe(
@@ -166,16 +232,21 @@ class DriftService:
             topology = await self._load_topology(machine_id)
             runs = await self._load_runs(topology.line_id)
             samples = await self._load_samples(topology, start, end)
+            reasoner = DriftReasoner()
             findings = list(
                 detect_drift_in_stream(
                     samples,
                     runs,
+                    reasoner=reasoner,
                     min_effect_size=self.min_effect_size,
                     persistence_intervals=self.persistence_intervals,
                 )
             )
             for finding in findings:
                 await self._emit_drift_event(finding, machine_id)
+            # F4-Eigenprofil am Laufende wegschreiben: die echte Detektor-Basis je
+            # analogem Datenpunkt (Median je Zustand + Streuung); computed_at = Fenster-Ende.
+            await self._persist_profiles(reasoner, topology, computed_at=end)
         except Exception:
             observe_reasoner_run("drift", perf_counter() - t0, success=False)
             logger.exception(
@@ -321,3 +392,38 @@ class DriftService:
             finding.data_point_id,
         )
         return alarm
+
+    async def _persist_profiles(
+        self, reasoner: DriftReasoner, topology: MachineTopology, *, computed_at: datetime
+    ) -> None:
+        """Persistiert je analogem Datenpunkt das Eigenprofil (Upsert) — die echte
+        Detektor-Basis am Laufende. Kein Profil (Warm-up nicht erreicht / kein
+        Zustand mit genug Samples) -> kein Write (ehrlich leer, nicht geraten)."""
+        for data_point_id in topology.analog_ids:
+            state = reasoner.state_for(data_point_id)
+            if state is None:
+                continue
+            profile = extract_profile(
+                data_point_id, topology.machine_id, state, effect_size_k=self.min_effect_size
+            )
+            if profile is None:
+                continue
+            await self._upsert_profile(profile, computed_at)
+
+    async def _upsert_profile(self, profile: DataPointProfile, computed_at: datetime) -> None:
+        """Schreibt EIN Profil je Datenpunkt (ON CONFLICT data_point_id DO UPDATE)."""
+        values: dict[str, object] = {
+            "data_point_id": profile.data_point_id,
+            "machine_id": profile.machine_id,
+            "state_medians": profile.state_medians,
+            "noise_sigma": profile.noise_sigma,
+            "effect_size_k": profile.effect_size_k,
+            "window_samples": BASELINE_WINDOW,
+            "warmup_samples": WARMUP_MIN_SAMPLES,
+            "total_samples": profile.total_samples,
+            "computed_at": computed_at,
+        }
+        stmt = pg_insert(DriftProfile).values(**values)
+        update_cols = {key: value for key, value in values.items() if key != "data_point_id"}
+        stmt = stmt.on_conflict_do_update(index_elements=["data_point_id"], set_=update_cols)
+        await self.session.execute(stmt)

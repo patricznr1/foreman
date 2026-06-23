@@ -77,4 +77,29 @@ describe("MachineTrendPanel", () => {
     renderPanel();
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
+
+  it("zeigt den Eigenprofil-Stand, wenn ein Profil vorliegt", async () => {
+    const withBand: MachineTrendOut = {
+      ...historical,
+      profile_band: {
+        computed_at: "2026-06-17T08:00:00Z",
+        effect_size_k: 3.0,
+        points: [
+          { bucket: "2026-06-17T10:00:00Z", lower: 12, mid: 15, upper: 18 },
+          { bucket: "2026-06-17T10:30:00Z", lower: 13, mid: 16, upper: 19 },
+        ],
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => withBand }));
+    renderPanel();
+    const stamp = await screen.findByTestId("profile-stamp");
+    expect(stamp.textContent).toContain("Eigenprofil");
+  });
+
+  it("ohne Profil kein Eigenprofil-Stand (graceful)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => historical }));
+    renderPanel();
+    await screen.findByRole("img");
+    expect(screen.queryByTestId("profile-stamp")).toBeNull();
+  });
 });

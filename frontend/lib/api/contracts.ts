@@ -39,6 +39,26 @@ export interface TrendPointOut {
   last: number | null;
 }
 
+/** Ein zeitaufgelöster Korridorpunkt des F4-Eigenprofil-Bands (deckt sich mit `points`). */
+export interface ProfileBandPointOut {
+  bucket: string; // ISO 8601, Minuten-Bucket
+  lower: number;
+  mid: number;
+  upper: number;
+}
+
+/**
+ * Das zustandsspezifische F4-Eigenprofil-Band (drift_profiles, gegateter Replay).
+ * `mid` = gelernter Zustands-Median, `lower`/`upper` = Korridor
+ * `median +/- effect_size_k * noise_sigma` (echte Detektor-Bewertungsbasis).
+ * `computed_at` = Profil-Stand (kein Live-Wert).
+ */
+export interface ProfileBandOut {
+  computed_at: string; // ISO 8601
+  effect_size_k: number;
+  points: ProfileBandPointOut[];
+}
+
 export interface MachineTrendOut {
   machine_id: number;
   data_point_id: number;
@@ -49,7 +69,8 @@ export interface MachineTrendOut {
   normal_max: number | null;
   points: TrendPointOut[];
   truncated: boolean;
-  profile_band: null; // reserviert (F4-Eigenprofil folgt) — derzeit immer null
+  /** F4-Eigenprofil-Band; null, wenn kein/zu junges Profil vorliegt (graceful). */
+  profile_band: ProfileBandOut | null;
 }
 
 /** GET /api/v1/me — Identität + Rolle + Per-User-Scope (Spiegel der Server-Authz). */

@@ -96,3 +96,88 @@ async def test_machine_trend_forbidden_for_worker(client: AsyncClient) -> None:
         f"/api/v1/machines/{machine_id}/trend?datapoint=vib", headers=worker_auth
     )
     assert response.status_code == 403
+
+
+# --------------------------------------------------------------------------- #
+#  F4-Eigenprofil-Overlay: beide Transport-Einstiege (HTTP + WS) tragen das Band
+# --------------------------------------------------------------------------- #
+async def test_machine_trend_returns_profile_band_for_manager(
+    client: AsyncClient, raw_conn: object
+) -> None:
+    # HTTP-Einstieg: liegt ein persistiertes Profil vor, trägt das Erstbild das Band.
+    import json
+    from datetime import UTC, datetime
+
+    auth = await _auth(client, "trd-prof@x.de", "manager")
+    machine_id, dp_id = await _seed_machine_with_data_point(client, auth)
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    await raw_conn.execute(  # type: ignore[attr-defined]
+        "INSERT INTO drift_profiles (data_point_id, machine_id, state_medians, noise_sigma, "
+        "effect_size_k, window_samples, warmup_samples, total_samples, computed_at) "
+        "VALUES ($1, $2, $3::jsonb, 1.0, 3.0, 1440, 100, 200, $4)",
+        dp_id,
+        machine_id,
+        json.dumps({str(now.hour): {"median": 10.0, "sample_count": 50}}),
+        now,
+    )
+    await raw_conn.execute(  # type: ignore[attr-defined]
+        "INSERT INTO readings (data_point_id, time, value) VALUES ($1, $2, 10.5)", dp_id, now
+    )
+
+    response = await client.get(
+        f"/api/v1/machines/{machine_id}/trend?datapoint=vib&hours=24", headers=auth
+    )
+
+    assert response.status_code == 200, response.text
+    band = response.json()["profile_band"]
+    assert band is not None
+    assert band["effect_size_k"] == 3.0
+    assert (band["points"][0]["lower"], band["points"][0]["mid"], band["points"][0]["upper"]) == (
+        7.0,
+        10.0,
+        13.0,
+    )
+
+
+async def test_ws_trend_snapshot_carries_profile_band(db_session: object, raw_conn: object) -> None:
+    # WS-Einstieg: der Snapshot beim Abo (echter Pfad _load_topic -> build_trend_by_id)
+    # trägt dasselbe Band wie der HTTP-Einstieg — EINE Wahrheit für beide Transporte.
+    from datetime import UTC, datetime
+
+    from foreman.db.models import DataPoint, DriftProfile, Machine, User
+    from foreman.ingestion.service import copy_readings
+    from foreman.realtime.topics import trend_topic
+    from foreman.realtime.ws import _load_topic
+
+    machine = Machine(label="M")
+    db_session.add(machine)  # type: ignore[attr-defined]
+    await db_session.flush()  # type: ignore[attr-defined]
+    data_point = DataPoint(machine_id=machine.id, name="vib", kind="analog")
+    db_session.add(data_point)  # type: ignore[attr-defined]
+    await db_session.flush()  # type: ignore[attr-defined]
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    db_session.add(  # type: ignore[attr-defined]
+        DriftProfile(
+            data_point_id=data_point.id,
+            machine_id=machine.id,
+            state_medians={str(now.hour): {"median": 10.0, "sample_count": 50}},
+            noise_sigma=1.0,
+            effect_size_k=3.0,
+            window_samples=1440,
+            warmup_samples=100,
+            total_samples=200,
+            computed_at=now,
+        )
+    )
+    manager = User(email="ws-prof@x.de", password_hash="x", role="manager")
+    db_session.add(manager)  # type: ignore[attr-defined]
+    await copy_readings(db_session, [(now, data_point.id, 10.5, None)])  # type: ignore[arg-type]
+    await db_session.commit()  # type: ignore[attr-defined]
+
+    payload = await _load_topic(db_session, manager, trend_topic(data_point.id))  # type: ignore[arg-type]
+
+    assert payload is not None
+    band = payload["profile_band"]
+    assert band is not None
+    assert band["effect_size_k"] == 3.0
+    assert band["points"][0]["mid"] == 10.0

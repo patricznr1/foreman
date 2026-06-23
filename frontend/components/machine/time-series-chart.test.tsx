@@ -80,6 +80,30 @@ describe("TimeSeriesChart", () => {
     expect(container.querySelector('[data-testid="profile-band"]')).toBeNull();
   });
 
+  it("Eigenprofil vorhanden: gestrichelter Korridor (data-series-2), klar vom Normalband unterscheidbar", () => {
+    const series = makeSeries({
+      profileBand: {
+        computedAt: Date.parse("2026-06-17T22:00:00Z"),
+        effectSizeK: 3,
+        points: [
+          { t: START, lower: 12, mid: 15, upper: 18 },
+          { t: END, lower: 12, mid: 15, upper: 18 },
+        ],
+      },
+    });
+    const { container } = render(
+      <TimeSeriesChart series={series} driftSegments={[]} startMs={START} endMs={END} />,
+    );
+    const band = container.querySelector('[data-testid="profile-band"]');
+    expect(band).not.toBeNull();
+    // Eigener Token (nicht der Vollflächen-Normalband-Token) + gestrichelt = unterscheidbar.
+    expect(band?.innerHTML).toContain("data-series-2");
+    expect(band?.querySelector("[stroke-dasharray]")).not.toBeNull();
+    // aria-Label benennt den Erwartungskorridor (nicht nur sichtbar, auch zugänglich).
+    const img = container.querySelector('[role="img"]');
+    expect(img?.getAttribute("aria-label")).toContain("Eigenprofil");
+  });
+
   it("Drift als Akzent (diff-over + Schraffur), NICHT Alarm-Rot", () => {
     const drift: DriftSegment[] = [
       {

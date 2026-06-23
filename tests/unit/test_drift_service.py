@@ -11,10 +11,13 @@ from __future__ import annotations
 import random
 from datetime import UTC, datetime, timedelta
 
+from foreman.reasoners.drift.detector import WARMUP_MIN_SAMPLES, DataPointDriftState
 from foreman.reasoners.drift.service import (
+    MIN_STATE_PROFILE_SAMPLES,
     DriftFinding,
     MachineSample,
     detect_drift_in_stream,
+    extract_profile,
 )
 
 _START = datetime(2026, 5, 4, 6, 0, tzinfo=UTC)
@@ -111,3 +114,48 @@ def test_drift_finding_traegt_kennzahlen() -> None:
     finding = findings[0]
     assert isinstance(finding, DriftFinding)
     assert finding.effect_size >= 4.0  # über der Relevanz-Schwelle
+
+
+# --------------------------------------------------------------------------- #
+#  Profil-Extraktion am Laufende (F4-Eigenprofil): Band = ECHTE Detektor-Basis
+# --------------------------------------------------------------------------- #
+def test_extract_profile_traegt_detektor_median_und_sigma() -> None:
+    # Band = Detektor-Basis: das Profil übernimmt EXAKT current_median(state_key) +
+    # die eingefrorene noise_sigma — kein im Read neu gerechneter Wert.
+    rng = random.Random(11)
+    state = DataPointDriftState()
+    for _ in range(WARMUP_MIN_SAMPLES + 30):
+        state.update(10.0 + rng.gauss(0.0, 1.0), in_steady_state=True, state_key=8)
+
+    profile = extract_profile(data_point_id=42, machine_id=7, state=state, effect_size_k=3.0)
+
+    assert profile is not None
+    assert profile.data_point_id == 42 and profile.machine_id == 7
+    assert profile.noise_sigma == state.noise_sigma  # exakt die Detektor-Streuung
+    assert profile.effect_size_k == 3.0
+    entry = profile.state_medians["8"]
+    assert entry["median"] == state.baseline.current_median(8)  # exakt der Zustands-Median
+    assert entry["sample_count"] >= WARMUP_MIN_SAMPLES
+
+
+def test_extract_profile_ueberspringt_zustand_mit_zu_wenig_samples() -> None:
+    # Ein Zustand mit zu wenig Stichprobe fehlt im Profil (ehrlich leer, nicht geraten).
+    rng = random.Random(5)
+    state = DataPointDriftState()
+    for _ in range(WARMUP_MIN_SAMPLES + 30):
+        state.update(10.0 + rng.gauss(0.0, 1.0), in_steady_state=True, state_key=8)
+    for _ in range(MIN_STATE_PROFILE_SAMPLES - 1):
+        state.update(10.0 + rng.gauss(0.0, 1.0), in_steady_state=True, state_key=20)
+
+    profile = extract_profile(data_point_id=1, machine_id=1, state=state, effect_size_k=3.0)
+
+    assert profile is not None
+    assert "8" in profile.state_medians
+    assert "20" not in profile.state_medians  # < MIN_STATE_PROFILE_SAMPLES -> weggelassen
+
+
+def test_extract_profile_none_ohne_etablierte_streuung() -> None:
+    # Vor Warm-up-Ende ist die Streuung nicht etabliert -> kein Profil (nicht geraten).
+    state = DataPointDriftState()
+    state.update(10.0, in_steady_state=True, state_key=8)
+    assert extract_profile(data_point_id=1, machine_id=1, state=state, effect_size_k=3.0) is None

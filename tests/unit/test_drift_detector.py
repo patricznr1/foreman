@@ -10,7 +10,11 @@
 from __future__ import annotations
 
 import random
+from datetime import UTC, datetime
 
+import pytest
+
+from foreman.reasoners.drift.baseline import RollingResidualBaseline, state_key_for
 from foreman.reasoners.drift.detector import (
     WARMUP_MIN_SAMPLES,
     DataPointDriftState,
@@ -171,3 +175,45 @@ def test_reasoner_haelt_zustand_je_data_point_getrennt() -> None:
             drift_1 = True
         assert reasoner.observe(2, v2, in_steady_state=True) is False
     assert drift_1 is True
+
+
+# --------------------------------------------------------------------------- #
+#  Profil-Export für die Persistenz (F4-Eigenprofil-Overlay)
+# --------------------------------------------------------------------------- #
+def test_noise_sigma_ist_die_effektgroessen_basis() -> None:
+    # noise_sigma IST die Streuung, gegen die der Detektor die Effektgröße bildet —
+    # genau die Halbbreiten-Basis, die das persistierte Band trägt (Band = Detektor-Basis).
+    rng = random.Random(11)
+    state = DataPointDriftState()
+    assert state.noise_sigma is None  # vor Warm-up nicht etabliert
+    for _ in range(WARMUP_MIN_SAMPLES + 5):
+        state.update(10.0 + _noise(rng, 1.0), in_steady_state=True)
+    sigma = state.noise_sigma
+    assert sigma is not None and sigma > 0.0
+    state.update(15.0, in_steady_state=True)
+    assert state.effect_size == pytest.approx(abs(state.last_residual) / sigma)
+
+
+def test_state_profiles_liefert_median_und_count_je_zustand() -> None:
+    # Die Profil-Basis je Betriebszustand: gleitender Median + Stichprobengröße.
+    baseline = RollingResidualBaseline()
+    for value in (10.0, 12.0, 14.0):
+        baseline.observe(value, state_key=8)  # Frühschicht
+    for value in (20.0, 22.0):
+        baseline.observe(value, state_key=20)  # Spätschicht
+    profiles = baseline.state_profiles()
+    assert profiles[8] == (12.0, 3)  # median([10, 12, 14]) = 12
+    assert profiles[20] == (21.0, 2)  # median([20, 22]) = 21
+
+
+def test_state_profiles_ueberspringt_leere_zustaende() -> None:
+    # Ein nie gesehener Zustand taucht nicht auf (ehrlich leer, nicht geraten).
+    baseline = RollingResidualBaseline()
+    baseline.observe(5.0, state_key=8)
+    assert set(baseline.state_profiles()) == {8}
+
+
+def test_state_key_for_ist_die_tagesstunde() -> None:
+    # EINE Quelle des Zustands-Schlüssels für Detektor-Lauf UND Read-Expansion.
+    assert state_key_for(datetime(2026, 6, 23, 13, 45, tzinfo=UTC)) == 13
+    assert state_key_for(datetime(2026, 6, 23, 0, 0, tzinfo=UTC)) == 0
