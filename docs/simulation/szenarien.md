@@ -147,7 +147,7 @@ Aufbau auf den vier Einzel-Szenarien (§1–§4), als `drift`-Block (ramp/varian
 
 Eine durchgehende Kette über drei Dateien, am Betriebstag **Freitag (Tag 4)** gestaffelt — bewusst kein Wochenend-Tag (Stillstand):
 
-`FD-02` Dosis-Streuung (t\*=4d, Notiz 4d13h) → `PR-02` intermittierende Unterfüllung (Notiz 4d14h, Alarm `PART_UNDERFILL` 4d14h30m) → `VS-01` Ausschuss-Anstieg (`reject_rate` ab t\*=4d, Notiz 4d15h, Alarm `REJECT_RATE_HIGH` 4d16h). Strenge zeitliche Ordnung Oberlauf vor Unterlauf.
+`FD-02` Dosis-Streuung (t\*=4d, Notiz 4d13h) → `PR-02` intermittierende Unterfüllung (Werker-Notiz 4d14h — bewusst **kein** Alarm, damit der press_force-Lastalarm der echte Verschleiß-Anker bleibt) → `VS-01` Ausschuss-Anstieg (`reject_rate` ab t\*=4d, Notiz 4d15h, Alarm `REJECT_RATE_HIGH` 4d16h). Strenge zeitliche Ordnung Oberlauf vor Unterlauf.
 
 Die Verbindung ist **zeitliche Folge, keine behauptete Kausalität** — der Ereignisketten-Reasoner (F6) rekonstruiert sie on-demand ab dem VS-01-Anker rückwärts. Mechanisch ist die Kette **kein** Feld einer Datei, sondern emergent aus den Ereignissen mehrerer Maschinen in der DB (Oberlauf-Ereignis früher, Unterlauf-Wirkung später, gleiche `line.label`). Die Unterfüllung an PR-02 ist ein **transientes** Ereignis (Alarm/Notiz), bewusst **nicht** als zweite Drift auf `press_force` modelliert (eine Drift je Datenpunkt; PR-02s `press_force`-Kurve trägt allein den Werkzeugverschleiß).
 
@@ -164,7 +164,7 @@ Pro Park-Datei trägt der `ground_truth`-Block (`extra=allow`) ein `maintenance_
 
 **Ehrlichkeits-Fälle (nicht jede Drift ist Wartungsversagen):** AX-03 (Lager-Drift durch **Überlast**, trotz korrekter Wartung), PR-01 (Dichtung am **Lebensende**, trotz disziplinierter Inspektion), FD-02 (reiner **Verschleiß**). #4 darf diesen Schwestern keinen Wartungsfehler (P1–P4) zuschreiben.
 
-**P5 (Intra-Maschinen-Wartungseffekt / Sägezahn) ist NICHT Teil dieses Schritts.** Das aktuelle Schema kennt nur *eine* monotone Drift je Datenpunkt; „gute Wartung flacht die Driftrate ab" ist **innerhalb** einer Maschine heute nicht abbildbar (über Schwestern hinweg dagegen schon — genau P1–P4). P5 braucht die Engine-Erweiterung **E1** (mehrphasige Drift / `maintenance_effect`) und ist der nachgelagerte Schritt, ebenso der Reasoner #4 selbst und FE-Sektion F.
+**P5 (Intra-Maschinen-Wartungseffekt / Sägezahn) ist NICHT Teil dieses Schritts.** Das aktuelle Schema kennt nur *eine* monotone Drift je Datenpunkt; „gute Wartung flacht die Driftrate ab“ ist **innerhalb** einer Maschine heute nicht abbildbar (über Schwestern hinweg dagegen schon — genau P1–P4). P5 braucht die Engine-Erweiterung **E1** (mehrphasige Drift / `maintenance_effect`) und ist der nachgelagerte Schritt, ebenso der Reasoner #4 selbst und FE-Sektion F.
 
 ### 7.5 Beobachtungsgrenze (hart)
 

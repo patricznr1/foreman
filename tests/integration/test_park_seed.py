@@ -106,7 +106,13 @@ async def test_backfill_kranke_und_gesunde_schwester(
     assert max_healthy < 3.5, f"AX-01 (Kontrolle) muss stabil bleiben, max={max_healthy}"
 
     # maintenance_events beider Schwestern persistiert, performed_by tokenisiert.
-    rows = await raw_conn.fetch("SELECT type, performed_by FROM maintenance_events")
+    # Auf die getesteten Maschinen scopen (robust gegen kuenftig mitgeseedete Daten).
+    rows = await raw_conn.fetch(
+        "SELECT me.type, me.performed_by FROM maintenance_events me "
+        "JOIN machines m ON m.id = me.machine_id "
+        "WHERE m.external_id = ANY($1::text[])",
+        ["AX-01", "AX-02"],
+    )
     assert len(rows) >= 2
     for row in rows:
         assert row["performed_by"] is not None
@@ -132,18 +138,20 @@ async def test_d_kette_zeitlich_gestaffelt_oberlauf_vor_unterlauf(
         "SELECT min(wn.created_at) FROM worker_notes wn "
         "JOIN machines m ON m.id = wn.machine_id WHERE m.external_id = 'FD-02'"
     )
-    # Ketten-Mitte: Unterfuellungs-Alarm an PR-02.
-    pr02_underfill = await raw_conn.fetchval(
-        "SELECT raised_at FROM alarms WHERE code = 'PART_UNDERFILL'"
+    # Ketten-Mitte: fruehste Werker-Notiz an PR-02 (Unterfuellung ist bewusst KEIN
+    # Alarm, damit der press_force-Lastalarm der echte Verschleiss-Anker bleibt).
+    pr02_note = await raw_conn.fetchval(
+        "SELECT min(wn.created_at) FROM worker_notes wn "
+        "JOIN machines m ON m.id = wn.machine_id WHERE m.external_id = 'PR-02'"
     )
     # Ketten-Endpunkt: Ausschuss-Alarm an VS-01.
     vs01_reject = await raw_conn.fetchval(
         "SELECT raised_at FROM alarms WHERE code = 'REJECT_RATE_HIGH'"
     )
 
-    assert fd02_note is not None and pr02_underfill is not None and vs01_reject is not None
-    # Oberlauf vor Unterlauf: FD-02 (Dosis) -> PR-02 (Unterfuellung) -> VS-01 (Ausschuss).
-    assert fd02_note < pr02_underfill < vs01_reject
+    assert fd02_note is not None and pr02_note is not None and vs01_reject is not None
+    # Oberlauf vor Unterlauf: FD-02 (Dosis 4d13h) -> PR-02 (Unterfuellung 4d14h) -> VS-01 (Ausschuss 4d16h).
+    assert fd02_note < pr02_note < vs01_reject
 
 
 async def test_run_park_faehrt_alle_zwoelf(

@@ -8,7 +8,7 @@
 #       -> #4-Muster P2 (Wechselintervall zu lang) + P4 (Inspektion uebersprungen).
 #   (2) D-KETTEN-MITTE: am Freitag (Tag 4) treffen unterfuellte Teile von FD-02
 #       ein -> intermittierende Unterfuellung. Das ist ein TRANSIENTES Ereignis
-#       (Alarm + Werker-Notiz), KEINE monotone Drift — bewusst NICHT als zweite
+#       (Werker-Notiz, KEIN Alarm), KEINE monotone Drift — bewusst NICHT als zweite
 #       Kurve auf press_force modelliert (eine Drift je Datenpunkt; Ehrlichkeit).
 # Beobachtungsgrenze: ueberfaelliger Werkzeugwechsel + ausgelassene Inspektion
 #   leben nur in maintenance_events/ground_truth, nie als Datenpunkt.
@@ -182,13 +182,10 @@ worker_notes:
       ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel ueberfaellig.
 
 alarms:
-  - offset: "4d14h30m"                    # Ketten-Mitte: Unterfuellung (transient, Prozess)
-    component: ram_drive
-    data_point: press_force
-    code: "PART_UNDERFILL"
-    message: "PR-02 intermittierende Unterfuellung — Teile unterhalb Sollmasse erkannt"
-    severity: warning
-    category: process
+  # Ketten-Mitte (Unterfuellung) wird BEWUSST nur als Werker-Notiz (4d14h) gefuehrt,
+  # NICHT als Alarm: ein frueher Prozess-Alarm auf press_force wuerde den Lead-Time-
+  # Anker fuer primary_drift auf ~4d ziehen und das "Drift Tage vor dem Lastalarm"-
+  # Narrativ verfaelschen. Der einzige PR-02-Alarm ist der echte Verschleiss-Lastalarm.
   - offset: "16d10h"                      # B1: Werkzeugverschleiss-Lastalarm
     component: tool
     data_point: press_force
@@ -214,7 +211,7 @@ ground_truth:
     chain_id: "underfill_chain"
     upstream: ["FD-02"]
     downstream: ["VS-01"]
-    note: "Unterfuellung Tag 4 (PART_UNDERFILL, 4d14h30m) ist TRANSIENT (Alarm+Notiz), zeitlich NACH FD-02-Dosis-Streuung (t*=4d, Notiz 4d13h) und VOR VS-01-Ausschuss (4d15h/16h). Nicht als Drift auf press_force modelliert."
+    note: "Unterfuellung Tag 4 (Werker-Notiz 4d14h, bewusst KEIN Alarm) ist TRANSIENT, zeitlich NACH FD-02-Dosis-Streuung (t*=4d, Notiz 4d13h) und VOR VS-01-Ausschuss (4d15h/16h). Nicht als Drift auf press_force modelliert; der einzige PR-02-Alarm ist der Verschleiss-Lastalarm (16d10h)."
   maintenance_causal:
     pattern: interval_too_long_and_skipped_inspection   # P2 + P4
     cause: "tool_change-Intervall 90d statt 30d (P2) + planmaessige Inspektion an ~10d uebersprungen (P4, Event-Absenz)"
