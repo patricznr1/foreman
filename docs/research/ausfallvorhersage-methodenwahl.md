@@ -10,7 +10,7 @@
 
 ## 1. Fragestellung
 
-Der Drift-Reasoner beantwortet „hat sich das Verhalten verschoben?". Der Ausfallvorhersage-Reasoner geht einen Schritt weiter: **„Wie wahrscheinlich fällt diese Maschine/Komponente in einem definierten Zeitfenster aus?"** Das ist prognostisch, braucht historisches Ausfallwissen als Wahrheit und ist damit das datenhungrigste der fünf Reasoner — in einer Realität, in der echte Ausfälle selten und die Historie kurz ist.
+Der Drift-Reasoner beantwortet „hat sich das Verhalten verschoben?". Der Ausfallvorhersage-Reasoner geht einen Schritt weiter: **„Wie wahrscheinlich fällt diese Maschine/Komponente in einem definierten Zeitfenster aus?"** Das ist prognostisch, braucht historisches Ausfallwissen als Wahrheit und ist damit das datenhungrigste der vier Reasoner — in einer Realität, in der echte Ausfälle selten und die Historie kurz ist.
 
 Das Dokument klärt sechs Fragen: Problem-Framing (2), Modellfamilien (3), Klassen-Ungleichgewicht (4), Feature-Engineering (5), Validierung bei Datenknappheit (6), Erklärbarkeits-Schnittstelle zum LLM (7). Abschnitt 8 benennt die getroffene Wahl mit Code; Tradeoffs stehen in den Vergleichstabellen davor.
 

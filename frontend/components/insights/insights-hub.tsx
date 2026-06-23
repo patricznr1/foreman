@@ -39,8 +39,8 @@ const ENTRIES: ReasonerEntry[] = [
   },
   {
     id: "G",
-    title: "Belastungs-Simulation",
-    blurb: "Folgen einer Lasteinstellung durchspielen — beeinflusst die reale Anlage nicht.",
+    title: "Belastung",
+    blurb: "Beobachtete Lastprofile und Grenzwerte einsehen — reine Anzeige, kein Simulator.",
     href: null,
   },
 ];

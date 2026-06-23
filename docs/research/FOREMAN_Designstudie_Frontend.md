@@ -14,7 +14,7 @@ Diese Studie übersetzt den Projektrahmen nicht in eine Wiederholung, sondern in
 Drei Begriffe ziehen sich als roter Faden durch:
 
 - **Zustand zeigen** — Sichten, die einen Ist-Zustand permanent und live darstellen (Cockpit, Detail, Alarme). Sie sind ambient, drängen sich nicht auf, blockieren nie.
-- **Erkenntnis erzeugen** — Aktionen, die eine Analyse anstoßen, deren Ergebnis abgerufen und dann gezeigt wird (Ereignisketten, Ausfallvorhersage, Wartungskausalität, Belastungs-Simulation, semantische Suche). Sie haben einen klaren Auslöser, einen Verarbeitungszustand und ein Ergebnis mit Herkunftsstempel.
+- **Erkenntnis erzeugen** — Aktionen, die eine Analyse anstoßen, deren Ergebnis abgerufen und dann gezeigt wird (Ereignisketten, Ausfallvorhersage, Wartungskausalität, semantische Suche). Sie haben einen klaren Auslöser, einen Verarbeitungszustand und ein Ergebnis mit Herkunftsstempel. (Die Lastprofil-Anzeige G fällt **nicht** hierunter — sie zeigt nur Beobachtetes, stößt keine Analyse an.)
 - **Drei bleibende Haltungen** — keine Ausbaustufe, sondern Verfassung: (1) der **Simulations-Vorbehalt** an jeder Ausfallvorhersage ist immer sichtbar; (2) **Human-in-the-Loop statt Aktorik** — die Plattform erklärt und empfiehlt, sie schaltet nie; (3) das **Gedächtnis nach außen ist immer paraphrasiert** — kein internes Vokabular im sichtbaren Wording.
 
 Wo im Frontend Erkenntnisse aus der dahinterliegenden Gedächtnis- und Analyseschicht auftauchen, werden sie in Werker-Sprache benannt. Die Studie hält diese Disziplin selbst ein: sie spricht von „Einflussfaktoren", „ähnlichen Fällen", „Abweichung gegen das eigene Profil" — nicht von den darunterliegenden Verfahren. Die technischen Verfahren stehen in Sektion 5 dort, wo sie die Entwicklung betreffen, nicht im Bedien-Wording.
@@ -35,7 +35,7 @@ Die Stack-Grundsatzentscheidung ist projektseitig bereits gefallen und soll es b
 - **Angular** wäre dort stärker, wo eine einzige große, formularlastige Linienanwendung mit erzwungener Struktur gebaut wird; sein Opinionated-Charakter nimmt Team-Varianz heraus. Für FOREMANs Vielzahl kleiner, schnell iterierter Spezialsichten ist diese Schwere ein Nachteil, nicht ein Vorteil.
 - **Vue/Svelte** sind technisch tauglich und im Bundle leichter (relevant für Schwachnetz), verlieren aber gegen Reacts Ökosystem bei genau den Spezialteilen, die FOREMAN braucht: virtualisierte Tabellen mit zehntausenden Alarmzeilen, WebGL-Bridges, robuste Offline-Sync-Bibliotheken.
 - **Electron** ist kein Web-Framework, sondern eine Verpackung; sein Platz ist eng umrissen (Leitstand-Kiosk, Service-Laptop mit Offline-Anspruch) und in 5.1 begründet. Pauschal eingesetzt wäre es Ballast.
-- **WebGL/Three.js** ist kein Default, sondern ein Werkzeug für genau zwei Stellen: die Flotten-/Drift-Heatmap über viele Maschinen (A) und die Belastungs-Simulation (G). Überall sonst ist DOM/SVG/Canvas-Charting die robustere, barriereärmere und wartbarere Wahl.
+- **WebGL/Three.js** ist kein Default, sondern ein Werkzeug für genau eine Stelle: die Flotten-/Drift-Heatmap über viele Maschinen (A). Überall sonst — auch G (Lastprofil-Historie, reine Anzeige) — ist DOM/SVG/Canvas-Charting die robustere, barriereärmere und wartbarere Wahl.
 
 **Die HMI-Normen — der eigentliche Charakterträger.**
 
@@ -193,7 +193,7 @@ Der Rollenschnitt ist die früheste Designentscheidung, weil er die Navigation t
 | **D** Ereignisketten | ◐ gespeicherte lesen · *niedrig* | ● rekonstruieren (Trigger) · *hoch* | ● lesen für Diagnose · *hoch* | ◐ Zusammenfassung lesen · *niedrig* |
 | **E** Ausfallvorhersage | ◐ Empfehlung lesen · *niedrig* | ● anstoßen + quittieren · *hoch* | ◐ lesen · *mittel* | ◐ Risiko aggregiert · *niedrig* |
 | **F** Wartungszyklen | ◐ Anstehendes lesen · *niedrig* | ● planen · *hoch* | ● ausführen/abhaken · *mittel* | ● Intervall-/Kostenblick · *hoch* |
-| **G** Belastungs-Simulation | ● durchspielen · *mittel* | ● durchspielen · *hoch* | ● durchspielen · *hoch* | ◐ Ergebnis lesen · *niedrig* |
+| **G** Belastung (Lastprofil-Historie) | ◐ lesen · *niedrig* | ◐ lesen · *mittel* | ◐ lesen · *mittel* | ◐ aggregiert lesen · *niedrig* |
 | **H** Gedächtnis & Verknüpfung | ● suchen/lesen · *mittel* | ● suchen/verknüpfen · *hoch* | ● suchen für Diagnose · *hoch* | ◐ thematisch suchen · *mittel* |
 | **I** Integration/Plattform | ○ — | ◐ Status lesen · *niedrig* | ○ — | ● Topologie + Audit · *hoch* |
 | **J** Eingabe & Erfassung | ● erfassen (primär) · *fokussiert* | ● erfassen + sichten · *mittel* | ● mobil erfassen · *mittel* | ◐ lesen · *niedrig* |
@@ -204,7 +204,7 @@ Der Rollenschnitt ist die früheste Designentscheidung, weil er die Navigation t
 - **Techniker → A, I (○).** Der Techniker arbeitet maschinen- und auftragszentriert, nicht flottenstrategisch; das Cockpit gäbe ihm Breite, wo er Tiefe braucht. Die Plattformsicht ist für seinen Diagnoseauftrag irrelevant.
 - **Schichtleiter → A, I (◐).** Er sieht die Flotte nur für seine Linien (Lagebild seiner Verantwortung), nicht werksübergreifend; Plattformstatus nur lesend, weil Integrationsentscheidungen Management/Admin sind.
 - **Manager → C, D, E (◐, aggregiert).** Der Manager quittiert keine Einzelalarme und stößt keine Einzel-Rekonstruktion an — das wäre Mikromanagement und verwischt Verantwortung. Er bekommt verdichtete Zähler, Trends und Risikobilder; der Drill ins Einzelne ist möglich, aber nicht die Default-Dichte.
-- **G ist für alle ● (außer Manager ◐).** Die Belastungs-Simulation ist bewusst die eine Sektion, in der auch der Werker aktiv durchspielt statt nur liest — sie ist das didaktische, gefahrlose Probierfeld. Der Manager liest hier nur Ergebnisse, weil das Durchspielen eine operative, keine strategische Handlung ist.
+- **G ist reine Anzeige (◐ lesend für alle).** FOREMAN simuliert keine Belastung selbst — eine echte Lastsimulation bräuchte Parameter außerhalb der Beobachtungsgrenze (gleiche Linie wie der Sim-Vorbehalt in E, HITL ohne Aktorik). G zeigt die **beobachteten** Lastprofile und Grenzwerte einer Maschine/Klasse über die Zeit; die eigentliche Simulation fährt **extern** bei einer Simulationssoftware, die FOREMANs Lastdaten über MCP abruft. Niemand „spielt" hier — alle lesen Beobachtetes (Manager aggregiert).
 
 ### 3.2 Live-vs-On-Demand-Architektur
 
@@ -228,7 +228,7 @@ Die Architektur trennt zwei Datenregime, und diese Trennung ist im UI erlebbar, 
    Nutzer-Trigger ────────▶ │  Erkenntnis-Schicht    │   PULL       ┌─ D Ereignisketten
    („rekonstruieren",       │  (Reasoner, on-demand) │ ◀───────────▶├─ E Ausfallvorhersage
     „vorhersagen",          │  + Herkunft + Vorbehalt│  Request/    ├─ F Wartungskausalität
-    „simulieren",           │                        │  Response    ├─ G Belastungs-Simulation
+    „abrufen",              │                        │  Response    ├─ G Belastung (Lastprofil-Historie)
     „suchen")               └───────────┬────────────┘              └─ H Semantische Suche
                                         │
                                         ▼
@@ -416,25 +416,25 @@ Jede Sektion folgt demselben Raster, damit sie einzeln umsetzbar ist. Layout-Ang
 
 ---
 
-### G. Belastungs-Simulation · [VISION, Reasoner #5]
+### G. Belastung — Lastprofil-/Grenzwert-Historie · [VISION · Anzeige, kein Reasoner]
 
-**Reifegrad.** [VISION] — und die **einzige Sektion, in der der Werker durchspielt statt nur liest**. Gestalterisch ist das die didaktischste, „spielerischste" Sicht — aber spielerisch im Sinn von *gefahrlos erkundbar*, nicht verspielt-dekorativ. Klare Grenzen, ehrliche Herkunft (Folgen aus historischen Maxima), kein Eindruck, man steuere die echte Anlage.
+**Reifegrad.** [VISION] — eine schlanke, **reine Anzeige** des Beobachteten. FOREMAN führt **keine eigene Belastungs-Simulation** durch: eine echte Lastsimulation braucht Parameter außerhalb der Beobachtungsgrenze (Taktung der Teilespender, Material- und Umgebungsverhalten), die FOREMAN nie sieht — selbst zu simulieren hieße, über die Beobachtungsgrenze hinaus Wissen vorzutäuschen (gleiche Linie wie der Sim-Vorbehalt in E, HITL ohne Aktorik). G zeigt deshalb, was die Maschine **real** getragen hat; die eigentliche Simulation fährt extern. Gestalterisch ruhig und ehrlich, kein „Probierfeld". (Das G-Frontend wird separat gebaut.)
 
-**Zweck und Leitfrage.** *„Was passiert, wenn ich diese Maschine an ihre Lastgrenze fahre — virtuell, ohne Risiko?"*
+**Zweck und Leitfrage.** *„Welche Lasten hat diese Maschine real getragen — und wo lagen ihre beobachteten Grenzen?"*
 
-**Informationsarchitektur.** Eingang: **Last-Parameter** (z. B. Drehzahl, Durchsatz, Temperatur-Vorgabe) als Slider mit klar markierten Normalbereich- und Grenzwert-Zonen. Ausgang: **prognostizierte Folgen** (Sensorreaktionen, Belastung, Ausfallrisiko), abgeleitet aus historischen Maxima dieser Maschine/Klasse. Dazu Szenario-Vergleich (mehrere Einstellungen nebeneinander).
+**Informationsarchitektur.** Eingang: Auswahl von Maschine/Klasse, Last-Datenpunkt (z. B. Drehzahl, Durchsatz, Drehmoment) und Zeitfenster. Ausgang: die **beobachtete Lastprofil-Historie** (Verlauf der realen Lastwerte) mit den **beobachteten Maximalwerten** und ihren dokumentierten Folgen sowie den hinterlegten Grenzwert-/Normalbereich-Linien. **Kein** Eingabe-/Slider-Steuerpult, **keine** prognostizierten „Was-wäre-wenn"-Folgen — nur das Belegte. Diese beobachteten Lastdaten sind zugleich die saubere Datengrundlage, die FOREMAN read-only über MCP (GROUND_TRUTH §17) an eine **externe Simulationssoftware** ausgibt, die die eigentliche Simulation fährt.
 
-**Layout-Konzept.** Zweigeteilt: oben/links das **Steuerpult** (Slider, groß, handschuhsicher), unten/rechts die **Folgen-Visualisierung** (Reaktionskurven + Grenzwert-Linien + Risiko-Anzeige), die live auf Slider-Bewegung reagiert. Darunter eine **Szenario-Leiste** (gespeicherte Einstellungen als Chips zum Vergleich). Ankerelement ist die Slider→Folgen-Kopplung — Eingabe und Wirkung müssen gleichzeitig im Blick sein. Mobil: Slider oben, Folgen direkt darunter, Szenarien als horizontale Chip-Reihe.
+**Layout-Konzept.** Ein Verlaufs-Chart (analog zu B's Sensortrend) der realen Lastwerte über das gewählte Zeitfenster, mit deutlich markierten Grenzwert-/Normalbereich-Linien und hervorgehobenen beobachteten Maxima (mit Stand/Herkunft). Darunter optional eine kompakte Liste der Grenzwert-Annäherungen/-Überschreitungen (beobachtete Ereignisse, kein Modell). Ankerelement ist die Verlaufskurve gegen die Grenzwert-Linie.
 
-**Slider-Interaktion, Szenario-Vergleich, Grenzwert-Visualisierung (im Detail).** Die **Slider** sind groß (Track-Höhe und Griff handschuhtauglich, Griff ≥ 64 px) und tragen drei markierte Zonen: Normalbereich (neutral), Annäherung an die Grenze (Warnzone), jenseits historischer Maxima (extrapoliert — sichtbar als „über belegtem Bereich, Aussage unsicherer"). Bewegt der Nutzer den Slider, reagieren die **Folgenkurven live**; an der **Grenzwert-Linie** kippt die Darstellung sichtbar (die Linie ist fett, beschriftet, und die Kurve, die sie überschreitet, wechselt in die Warn-Kodierung). **Extrapolation jenseits der Maxima** wird ehrlich als unsicherer gekennzeichnet (gestrichelt, mit Vorbehalt-Hinweis — verwandt mit dem E-Vorbehalt). **Szenario-Vergleich:** der Nutzer friert eine Einstellung als Chip ein und legt eine zweite daneben; die Folgenkurven werden überlagert (mit Differenz-Hervorhebung), sodass „Einstellung A vs. B" direkt ablesbar ist. Wichtig: ein dauerhaftes, ruhiges Label „Simulation — beeinflusst die reale Anlage nicht" verankert, dass hier nichts geschaltet wird (HITL/Sicherheit).
+**Anzeige-Interaktion, Grenzwert-Visualisierung (im Detail).** Die Sicht ist **lesend**: Datenpunkt und Zeitfenster wählen, ein beobachtetes Maximum oder Grenzwert-Ereignis antippen für Detail + Herkunft/Stand. Die **Grenzwert-Linie** ist das stärkste grafische Element (fett, beschriftet); reale Werte, die sie historisch berührt/überschritten haben, sind als markierte Punkte hervorgehoben. **Keine** Slider, **keine** Extrapolation jenseits des Beobachteten, **keine** „Einstellung A vs. B"-Was-wäre-wenn-Überlagerung — nur reale Verläufe (mehrere Zeiträume/Datenpunkte lassen sich zum Vergleich überlagern, aber stets als Beobachtetes). Ein dauerhaftes, ruhiges Label „beobachtete Werte — keine Simulation" verankert, dass hier nichts geschaltet oder simuliert wird (HITL/Sicherheit).
 
-**Interaktionsmodell.** *Ein:* Slider schieben, Szenario einfrieren/vergleichen, Grenzwert-Detail antippen. *Aus:* live berechnete Folgen (On-Demand-Reasoner, aber interaktiv-kontinuierlich statt einmaliger Trigger). Zustandsübergänge: Eingabe → Folgen → Szenario gespeichert.
+**Interaktionsmodell.** *Ein:* Datenpunkt + Zeitfenster wählen, Maximum/Ereignis antippen. *Aus:* die beobachtete Historie als Read (Pull, „gecacht, Stand X"). **Keine** Schalt-/Steuer-/Simulations-Aktion — die Anzeige beeinflusst die reale Anlage nicht. Zustandsübergänge: Auswahl → geladene Historie.
 
-**Visuelle Kodierung.** Normal/Warn/Extrapoliert als Zonen (Fläche + Label + Muster, nicht nur Farbe). Grenzwert-Linie als stärkstes grafisches Element. Szenario-Chips farblich unterscheidbar, aber gedämpft. Bewegung ist hier funktional (Kurve folgt Slider) — das ist die eine Sektion, in der kontinuierliche Animation richtig ist, weil sie die Ursache-Wirkung sichtbar macht; `prefers-reduced-motion` ersetzt sie durch diskrete Schritt-Updates.
+**Visuelle Kodierung.** Lastverlauf als Linie (Position), Normalbereich als entsättigte Fläche, Grenzwert als stärkste, beschriftete Linie; beobachtete Überschreitungen als markierte Punkte (Form + Label, nicht nur Farbe). Keine sliderfolgende Animation — die Sicht ist statisch und aktualisiert auf Refresh; `prefers-reduced-motion` neutral.
 
-**Rollenspezifische Varianten.** Werker/Schichtleiter/Techniker: voll durchspielen (das ist der Sinn der Sektion). Werker bekommt eine geführtere Variante mit stärker markierten Grenzen. Manager: liest gespeicherte Szenario-Ergebnisse, spielt nicht selbst.
+**Rollenspezifische Varianten.** Werker/Schichtleiter/Techniker: lesen die beobachtete Lastprofil-Historie ihrer Maschine(n). Manager: liest aggregiert (Lastreserven/-spitzen über die Flotte). Niemand „spielt" — die Sicht zeigt nur Beobachtetes.
 
-**Verbindung zu anderen Sektionen.** Maximalwerte und Reaktionsprofile aus B. Risiko-Logik verwandt mit E. „Was wäre wenn" speist Wartungsplanung F. Auffällige Szenarien als Notiz nach J / Wissen nach H.
+**Verbindung zu anderen Sektionen.** Maximalwerte und Reaktionsprofile aus B (Sensortrend). Risiko-Bezug verwandt mit E. Beobachtete Grenzwert-Ereignisse als Notiz nach J / Wissen nach H. Die ausgegebenen Lastprofile speisen extern eine Simulationssoftware (MCP-Konsument), die — anders als FOREMAN — tatsächlich simuliert.
 
 ---
 
