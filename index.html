@@ -128,7 +128,7 @@
       <h1>FOREMAN</h1>
       <div class="accentline"></div>
       <div class="tag">Production Intelligence with Memory</div>
-      <p class="lead">An AI platform that doesn’t just monitor industrial production environments — it remembers them. Five specialized reasoners on a biologically inspired memory substrate.</p>
+      <p class="lead">An AI platform that doesn’t just monitor industrial production environments — it remembers them. Four specialized reasoners on a biologically inspired memory substrate.</p>
       <div class="cta">
         <a class="btn primary" href="https://gamma.app/docs/Copy-of-FOREMAN-8kkqcy0pbksm2ng" target="_blank" rel="noopener">▶ Watch the deck</a>
         <a class="btn ghost" href="https://github.com/patricznr1/foreman">View on GitHub</a>
@@ -138,22 +138,20 @@
       <svg viewBox="0 0 300 300" width="100%">
         <g stroke="#2DD4BF" stroke-opacity="0.55" stroke-width="1.6">
           <line x1="150" y1="150" x2="150" y2="54"/>
-          <line x1="150" y1="150" x2="241" y2="120"/>
-          <line x1="150" y1="150" x2="207" y2="227"/>
-          <line x1="150" y1="150" x2="93" y2="227"/>
-          <line x1="150" y1="150" x2="59" y2="120"/>
+          <line x1="150" y1="150" x2="246" y2="150"/>
+          <line x1="150" y1="150" x2="150" y2="246"/>
+          <line x1="150" y1="150" x2="54" y2="150"/>
         </g>
         <g fill="#0E141C" stroke="#2DD4BF" stroke-width="2">
           <circle cx="150" cy="54" r="8"/>
-          <circle cx="241" cy="120" r="8"/>
-          <circle cx="207" cy="227" r="8"/>
-          <circle cx="93" cy="227" r="8"/>
-          <circle cx="59" cy="120" r="8"/>
+          <circle cx="246" cy="150" r="8"/>
+          <circle cx="150" cy="246" r="8"/>
+          <circle cx="54" cy="150" r="8"/>
         </g>
         <circle cx="150" cy="150" r="24" fill="none" stroke="#14B8A6" stroke-width="2.5"/>
         <circle cx="150" cy="150" r="7" fill="#2DD4BF"/>
       </svg>
-      <div style="text-align:center;color:#5B7085;font-size:12px;letter-spacing:2px;margin-top:8px">FIVE REASONERS · ONE MEMORY CORE</div>
+      <div style="text-align:center;color:#5B7085;font-size:12px;letter-spacing:2px;margin-top:8px">FOUR REASONERS · ONE MEMORY CORE</div>
     </div>
   </div>
 </div>
@@ -163,7 +161,7 @@
   <div class="wrap">
     <div class="eyebrow">The pitch</div>
     <h2>FOREMAN in ten slides</h2>
-    <p class="sub">The full project deck — problem, three-layer architecture, the five reasoners, and how it is built. Interactive; use the arrows to navigate. <a href="https://gamma.app/docs/Copy-of-FOREMAN-8kkqcy0pbksm2ng" target="_blank" rel="noopener">Open in full screen ↗</a></p>
+    <p class="sub">The full project deck — problem, three-layer architecture, its reasoning layer, and how it is built. Interactive; use the arrows to navigate. <a href="https://gamma.app/docs/Copy-of-FOREMAN-8kkqcy0pbksm2ng" target="_blank" rel="noopener">Open in full screen ↗</a></p>
     <div class="deckframe">
       <div class="bar"><i></i><i></i><i></i><span>FOREMAN · deck</span></div>
       <div class="ratio">
@@ -181,7 +179,7 @@
     <p class="sub">Industry delivers the data, FOREMAN reasons, operators act. Each layer is autonomous — the platform is an open node in the industrial software stack, not a closed app.</p>
     <div class="grid3">
       <div class="card"><div class="n">LAYER 1</div><h3>Industrial environment</h3><p>Sensor streams, PLC logic (OPC&nbsp;UA, MQTT, Modbus), log files, and maintenance history — integrated through normalizing, anonymizing adapters.</p></div>
-      <div class="card"><div class="n">LAYER 2</div><h3>Reasoning platform</h3><p>Five specialized reasoners work against a shared memory substrate, routed through a local + cloud model gateway.</p></div>
+      <div class="card"><div class="n">LAYER 2</div><h3>Reasoning platform</h3><p>Four specialized reasoners work against a shared memory substrate, routed through a local + cloud model gateway.</p></div>
       <div class="card"><div class="n">LAYER 3</div><h3>Output channels</h3><p>An operator dashboard with traceable explanations — plus an MCP interface that any third-party system can consume.</p></div>
     </div>
   </div>
@@ -191,15 +189,15 @@
 <section class="block" id="reasoners">
   <div class="wrap">
     <div class="eyebrow">Layer two</div>
-    <h2>Five reasoners, one memory core</h2>
+    <h2>Four reasoners, one memory core</h2>
     <p class="sub">Each reasoner answers a question that a snapshot dashboard cannot.</p>
     <div class="rlist">
       <div class="rrow"><div class="idx">01</div><div><h3>Event-chain reconstruction</h3><p>Links incidents, sensor drift, and operator logs into coherent narratives over time.</p></div></div>
       <div class="rrow"><div class="idx">02</div><div><h3>Drift detection</h3><p>Flags changes in a machine’s behavior against its own historical profile.</p></div></div>
       <div class="rrow"><div class="idx">03</div><div><h3>Failure prediction</h3><p>Matches the current state against consolidated precursor patterns from past incidents.</p></div></div>
       <div class="rrow"><div class="idx">04</div><div><h3>Maintenance-cycle analysis</h3><p>Causal deviation analysis between maintenance events and machine behavior to optimize intervals.</p></div></div>
-      <div class="rrow"><div class="idx">05</div><div><h3>Load simulation</h3><p>Lets operators virtually approach load limits — based on historical peaks and their consequences.</p></div></div>
     </div>
+    <p class="sub" style="margin-top:18px"><b>Load data, not load simulation.</b> FOREMAN does not simulate load itself — that needs parameters outside its observation boundary. It exposes the observed load profiles and limits read-only over MCP, for an external simulation tool to build on.</p>
   </div>
 </section>
 
