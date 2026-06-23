@@ -179,5 +179,12 @@ def test_szenarien_doc_deckt_park_und_muster_ab() -> None:
         assert family in text, f"szenarien.md erwaehnt {family} nicht"
     for pattern in ("P1", "P2", "P3", "P4"):
         assert pattern in text, f"szenarien.md erwaehnt {pattern} nicht"
-    # P5 ist NICHT Teil dieses PR (E1) — darf nicht als umgesetzt behauptet werden.
-    assert "P5" in text  # als ausdruecklich NICHT umgesetzt erwaehnt
+    # P5 darf NICHT als umgesetzt behauptet werden: die Doku muss P5 ausdruecklich
+    # als nicht-Teil-dieses-Schritts UND an die (offene) Engine-Erweiterung E1
+    # gekoppelt fuehren — nicht nur den Token erwaehnen (sonst wuerde eine
+    # widerspruechliche Doku trotzdem gruen testen).
+    p5_idx = text.find("P5")
+    assert p5_idx != -1, "szenarien.md erwaehnt P5 nicht"
+    p5_window = text[p5_idx : p5_idx + 400]
+    assert "NICHT Teil" in p5_window, "P5 muss ausdruecklich als 'NICHT Teil dieses Schritts' markiert sein"
+    assert "E1" in p5_window, "P5 muss an die (offene) Engine-Erweiterung E1 gekoppelt sein"
