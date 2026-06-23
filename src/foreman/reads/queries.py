@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from foreman.db.models import (
     Alarm,
     DataPoint,
+    DriftProfile,
     FailurePredictionRecord,
     FailureRecommendationRecord,
     Machine,
@@ -219,6 +220,15 @@ async def resolve_data_point(session: AsyncSession, machine_id: int, name: str) 
     stmt = (
         select(DataPoint).where(DataPoint.machine_id == machine_id, DataPoint.name == name).limit(1)
     )
+    return (await session.scalars(stmt)).first()
+
+
+async def load_drift_profile(session: AsyncSession, data_point_id: int) -> DriftProfile | None:
+    """Lädt das persistierte Eigenprofil eines Datenpunkts (F4) oder None.
+
+    Read-only Basis des Eigenprofil-Overlays — die Read-Schicht expandiert daraus
+    je Trend-Bucket den Zustands-Korridor (`reads.trend.expand_profile_band`)."""
+    stmt = select(DriftProfile).where(DriftProfile.data_point_id == data_point_id)
     return (await session.scalars(stmt)).first()
 
 

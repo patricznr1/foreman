@@ -92,9 +92,53 @@ describe("mergeTrendSeries", () => {
     expect(series?.truncated).toBe(true);
   });
 
-  it("trägt das reservierte profileBand graceful als null (kein erfundener Strich)", () => {
+  it("trägt profileBand graceful als null, wenn kein Profil vorliegt", () => {
     const series = mergeTrendSeries(trend([point("2026-06-17T09:00:00Z", 12)]), null);
     expect(series?.profileBand).toBeNull();
+  });
+
+  it("mappt profile_band auf den zeitaufgelösten profileBand-Korridor", () => {
+    const withBand = trend([point("2026-06-17T08:00:00Z", 10)], {
+      profile_band: {
+        computed_at: "2026-06-17T22:00:00Z",
+        effect_size_k: 3.0,
+        points: [{ bucket: "2026-06-17T08:00:00Z", lower: 7, mid: 10, upper: 13 }],
+      },
+    });
+    const series = mergeTrendSeries(withBand, null);
+    expect(series?.profileBand).not.toBeNull();
+    expect(series?.profileBand?.effectSizeK).toBe(3.0);
+    expect(series?.profileBand?.computedAt).toBe(Date.parse("2026-06-17T22:00:00Z"));
+    expect(series?.profileBand?.points[0]).toEqual({
+      t: Date.parse("2026-06-17T08:00:00Z"),
+      lower: 7,
+      mid: 10,
+      upper: 13,
+    });
+  });
+
+  it("verschmilzt die Band-Punkte beider Fenster auf t (Live gewinnt am Rand)", () => {
+    const historical = trend([point("2026-06-17T09:59:00Z", 12)], {
+      profile_band: {
+        computed_at: "2026-06-17T09:00:00Z",
+        effect_size_k: 3.0,
+        points: [{ bucket: "2026-06-17T09:59:00Z", lower: 9, mid: 12, upper: 15 }],
+      },
+    });
+    const live = trend([point("2026-06-17T10:00:00Z", 13)], {
+      profile_band: {
+        computed_at: "2026-06-17T10:00:00Z",
+        effect_size_k: 3.0,
+        points: [{ bucket: "2026-06-17T10:00:00Z", lower: 10, mid: 13, upper: 16 }],
+      },
+    });
+    const series = mergeTrendSeries(historical, live);
+    expect(series?.profileBand?.points.map((p) => p.t)).toEqual([
+      Date.parse("2026-06-17T09:59:00Z"),
+      Date.parse("2026-06-17T10:00:00Z"),
+    ]);
+    // Metadaten aus dem frischeren Fenster (Live).
+    expect(series?.profileBand?.computedAt).toBe(Date.parse("2026-06-17T10:00:00Z"));
   });
 });
 

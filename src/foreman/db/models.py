@@ -445,6 +445,59 @@ class FailureRecommendationRecord(Base, TimestampMixin):
     decision: Mapped[str] = mapped_column(String(32), nullable=False)
 
 
+class DriftProfile(Base, TimestampMixin):
+    """`drift_profiles` — persistiertes Eigenprofil je Datenpunkt (F4-Overlay).
+
+    Die zustandsspezifische Bewertungsbasis des Drift-Reasoners (Reasoner #2),
+    am Ende eines Replay-Laufs weggeschrieben: je Betriebszustand (`state_key` =
+    Tagesstunde) der gleitende Median (`RollingResidualBaseline.current_median`),
+    dazu die EINE robuste Rausch-Streuung `noise_sigma` (MAD x 1.4826) des Datenpunkts
+    und der Schwellenfaktor `effect_size_k` (= `min_effect_size` des Laufs). Daraus
+    expandiert die Read-Schicht je Trend-Bucket den Korridor
+    `median(state_key) +/- effect_size_k * noise_sigma` — die ECHTE Detektor-Basis
+    (genau die Schwelle, ab der `effect_size` Drift als relevant wertet), keine im
+    Read neu erfundene Rekonstruktion.
+
+    Ehrlichkeit (§16-Linie, Defense-in-Depth): kein Profil ohne etablierte Streuung
+    (CHECK `noise_sigma > 0`); Zustände mit zu wenig Samples fehlen in
+    `state_medians` (ehrlich leer, nicht geraten). `computed_at` ist der Profil-Stand
+    (Ende des Replay-Fensters) — keine vorgetäuschte Live-Aktualität.
+    """
+
+    __tablename__ = "drift_profiles"
+    __table_args__ = (
+        # Genau ein Profil je Datenpunkt — Upsert-Ziel (ON CONFLICT data_point_id).
+        UniqueConstraint("data_point_id", name="uq_drift_profiles_data_point"),
+        # Defense-in-Depth (§16.1-Linie): ein geratenes Band wird DB-seitig abgewiesen —
+        # kein Profil ohne etablierte Streuung / ohne positiven Schwellenfaktor.
+        CheckConstraint("noise_sigma > 0", name="ck_drift_profiles_sigma_positive"),
+        CheckConstraint("effect_size_k > 0", name="ck_drift_profiles_k_positive"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    data_point_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("data_points.id", ondelete="CASCADE"), nullable=False
+    )
+    # machine_id denormalisiert (für den Read-/Cockpit-Filter); CASCADE wie der Datenpunkt.
+    machine_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("machines.id", ondelete="CASCADE"), nullable=False
+    )
+    # state_medians: {state_key (str) -> {"median": float, "sample_count": int}} —
+    # je befülltem Betriebszustand der gleitende Median + Stichprobengröße.
+    state_medians: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # noise_sigma: eingefrorene robuste Rausch-Streuung des Datenpunkts (Residuum-Raum).
+    noise_sigma: Mapped[float] = mapped_column(Double, nullable=False)
+    # effect_size_k: Band-Halbbreiten-Faktor = min_effect_size des Laufs (Default 3.0).
+    effect_size_k: Mapped[float] = mapped_column(Double, nullable=False)
+    # window_samples/warmup_samples: Profil-Metadaten (Baseline-Fenster / Warm-up).
+    window_samples: Mapped[int] = mapped_column(Integer, nullable=False)
+    warmup_samples: Mapped[int] = mapped_column(Integer, nullable=False)
+    # total_samples: Gesamt-Stichprobe über alle Zustände (Reife des Profils).
+    total_samples: Mapped[int] = mapped_column(Integer, nullable=False)
+    # computed_at: Profil-Stand (Ende des Replay-Fensters), tz-aware.
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 # Häufige Lese-Zugriffe absichern (keine Indizes auf der readings-Rohtabelle, §3.4).
 Index("ix_alarms_machine_raised", Alarm.machine_id, Alarm.raised_at)
 Index("ix_worker_notes_machine", WorkerNote.machine_id)
@@ -471,3 +524,5 @@ Index("ix_audit_logs_occurred", AuditLog.occurred_at)
 Index("ix_audit_logs_action_occurred", AuditLog.action_type, AuditLog.occurred_at)
 Index("ix_audit_logs_machine", AuditLog.machine_id)
 Index("ix_audit_logs_target", AuditLog.target_kind, AuditLog.target_id)
+# Eigenprofil (F4): Read-/Cockpit-Filter je Maschine.
+Index("ix_drift_profiles_machine", DriftProfile.machine_id)

@@ -19,11 +19,31 @@ export interface TrendSample {
   last: number | null;
 }
 
+/** Ein Korridorpunkt des Eigenprofil-Bands (Epoche vorab geparst, wie TrendSample). */
+export interface ProfileBandPoint {
+  /** `bucket` als Epoche (ms) — deckt sich mit dem zugehörigen TrendSample. */
+  t: number;
+  lower: number;
+  mid: number;
+  upper: number;
+}
+
+/**
+ * Das zustandsspezifische F4-Eigenprofil-Band: der gelernte Erwartungskorridor je
+ * Bucket (`mid` = Zustands-Median, `lower`/`upper` = `median +/- k*sigma`). `computedAt`
+ * ist der Profil-Stand (ms) — keine vorgetäuschte Live-Aktualität.
+ */
+export interface ProfileBand {
+  computedAt: number;
+  effectSizeK: number;
+  points: ProfileBandPoint[];
+}
+
 /**
  * Eine fertige Sensor-Trendreihe: historischer Pull + Live-Rand zu EINER Reihe
  * verschmolzen, aufsteigend nach Zeit, ohne Bucket-Duplikate. Trägt das statische
- * Normalband mit; `profileBand` ist der reservierte, vorwärtskompatible Slot für
- * das F4-Eigenprofil-Overlay — derzeit immer `null` (kein erfundener Strich).
+ * Normalband mit; `profileBand` ist das F4-Eigenprofil-Overlay — null, wenn kein/zu
+ * junges Profil vorliegt (graceful weglassen, nie erfinden).
  */
 export interface TrendSeries {
   dataPointId: number;
@@ -32,8 +52,8 @@ export interface TrendSeries {
   measurementType: string | null;
   normalMin: number | null;
   normalMax: number | null;
-  /** Reserviert (F4-Eigenprofil) — bis dahin null; graceful weglassen, nie erfinden. */
-  profileBand: null;
+  /** F4-Eigenprofil-Korridor; null = kein/zu junges Profil (kein erfundener Strich). */
+  profileBand: ProfileBand | null;
   samples: TrendSample[];
   /** Backend hat das Fenster gekappt (mehr Punkte als die Obergrenze). */
   truncated: boolean;

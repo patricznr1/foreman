@@ -12,7 +12,14 @@
 // ============================================================
 import type { MachineTrendOut, TrendPointOut } from "@/lib/api/contracts";
 
-import type { DriftDirection, DriftSegment, TrendSample, TrendSeries } from "./types";
+import type {
+  DriftDirection,
+  DriftSegment,
+  ProfileBand,
+  ProfileBandPoint,
+  TrendSample,
+  TrendSeries,
+} from "./types";
 
 /** Rohpunkte zu Samples (Bucket einmal zu Epoche geparst), aufsteigend nach Zeit. */
 export function toTrendSamples(points: TrendPointOut[]): TrendSample[] {
@@ -26,6 +33,41 @@ export function toTrendSamples(points: TrendPointOut[]): TrendSample[] {
       last: p.last,
     }))
     .sort((a, b) => a.t - b.t);
+}
+
+/**
+ * Verschmilzt das F4-Eigenprofil-Band beider Fenster auf dem t-Schlüssel (Live gewinnt
+ * am überlappenden Rand, wie bei den Samples). Metadaten (Stand, k) aus dem frischeren
+ * Fenster. Kein Band in beiden Fenstern → null (graceful, kein erfundener Strich).
+ */
+function mergeProfileBands(
+  historical: MachineTrendOut | null,
+  live: MachineTrendOut | null,
+  meta: MachineTrendOut,
+): ProfileBand | null {
+  const source = meta.profile_band ?? live?.profile_band ?? historical?.profile_band ?? null;
+  if (source === null) {
+    return null;
+  }
+  const byT = new Map<number, ProfileBandPoint>();
+  for (const raw of [historical?.profile_band ?? null, live?.profile_band ?? null]) {
+    if (raw === null) {
+      continue;
+    }
+    for (const bandPoint of raw.points) {
+      const t = Date.parse(bandPoint.bucket);
+      byT.set(t, { t, lower: bandPoint.lower, mid: bandPoint.mid, upper: bandPoint.upper });
+    }
+  }
+  const points = [...byT.values()].sort((a, b) => a.t - b.t);
+  if (points.length === 0) {
+    return null;
+  }
+  return {
+    computedAt: Date.parse(source.computed_at),
+    effectSizeK: source.effect_size_k,
+    points,
+  };
 }
 
 /**
@@ -64,9 +106,9 @@ export function mergeTrendSeries(
     measurementType: meta.measurement_type,
     normalMin: meta.normal_min,
     normalMax: meta.normal_max,
-    // Graceful: das F4-Eigenprofil ist Backend-seitig reserviert/null — wir tragen
-    // null durch und erfinden keinen Strich (Studie §4B, GROUND_TRUTH §20.5).
-    profileBand: null,
+    // F4-Eigenprofil-Korridor (echte Detektor-Basis), über beide Fenster verschmolzen;
+    // null, wenn kein/zu junges Profil vorliegt (graceful, Studie §4B, GROUND_TRUTH §20.5).
+    profileBand: mergeProfileBands(historical, live, meta),
     samples,
     truncated: (historical?.truncated ?? false) || (live?.truncated ?? false),
   };

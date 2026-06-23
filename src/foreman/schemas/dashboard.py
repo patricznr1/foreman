@@ -54,8 +54,30 @@ class TrendPointOut(_Out):
     last: float | None
 
 
+class ProfileBandPointOut(_Out):
+    """Ein zeitaufgelöster Korridorpunkt des Eigenprofil-Bands (F4)."""
+
+    bucket: datetime
+    lower: float
+    mid: float
+    upper: float
+
+
+class ProfileBandOut(_Out):
+    """Das zustandsspezifische Eigenprofil-Band (F4) entlang der Trend-Buckets.
+
+    `mid` = gleitender Zustands-Median, `lower`/`upper` = Korridor
+    `median +/- effect_size_k * noise_sigma` (echte Detektor-Bewertungsbasis).
+    `computed_at` = Profil-Stand (kein Live-Wert).
+    """
+
+    computed_at: datetime
+    effect_size_k: float
+    points: list[ProfileBandPointOut]
+
+
 class MachineTrendOut(_Out):
-    """Aggregierter Sensortrend + statisches Normalband (Thema trend:{data_point_id})."""
+    """Aggregierter Sensortrend + statisches Normalband + F4-Eigenprofil-Band."""
 
     machine_id: int
     data_point_id: int
@@ -66,6 +88,6 @@ class MachineTrendOut(_Out):
     normal_max: float | None
     points: list[TrendPointOut]
     truncated: bool
-    # Reservierter, vorwärtskompatibler Slot für das zustandsspezifische F4-Eigenprofil
-    # (entsteht durch gegateten Replay, folgt als eigener Schritt) — bis dahin null.
-    profile_band: None = None
+    # Zustandsspezifisches F4-Eigenprofil-Band (gegateter Replay, persistiert in
+    # drift_profiles); null, wenn kein/zu junges Profil vorliegt (graceful).
+    profile_band: ProfileBandOut | None = None

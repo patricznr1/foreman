@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 from foreman.reads.overview import FleetOverview, MachineOverview
 from foreman.reads.queries import ReadingBucket
-from foreman.reads.trend import MachineTrend
+from foreman.reads.trend import MachineTrend, ProfileBand, ProfileBandPoint
 from foreman.schemas.dashboard import FleetOverviewOut, MachineStatusOut, MachineTrendOut
 
 
@@ -78,6 +78,7 @@ def test_machine_trend_out_serializes_points_and_reserves_profile_band() -> None
             ),
         ),
         truncated=False,
+        profile_band=None,
     )
 
     payload = MachineTrendOut.model_validate(trend).model_dump(mode="json")
@@ -86,5 +87,44 @@ def test_machine_trend_out_serializes_points_and_reserves_profile_band() -> None
     assert payload["normal_max"] == 5.0
     assert payload["points"][0]["avg"] == 2.5
     assert payload["points"][0]["bucket"].startswith("2026-06-16T12:00:00")
-    # Eigenprofil-Overlay (F4-Replay) folgt — der Vertrag reserviert das Feld schon.
+    # Ohne persistiertes Profil bleibt das Eigenprofil-Band null (graceful).
     assert payload["profile_band"] is None
+
+
+def test_machine_trend_out_serializes_profile_band() -> None:
+    # Liegt ein Eigenprofil vor, trägt der Vertrag das zeitaufgelöste Band (F4).
+    trend = MachineTrend(
+        machine_id=1,
+        data_point_id=2,
+        data_point_name="vibration",
+        unit="mm/s",
+        measurement_type="speed",
+        normal_min=0.0,
+        normal_max=5.0,
+        points=(
+            ReadingBucket(
+                bucket=datetime(2026, 6, 16, 8, 0, tzinfo=UTC), avg=2.5, min=2.0, max=3.0, last=2.5
+            ),
+        ),
+        truncated=False,
+        profile_band=ProfileBand(
+            computed_at=datetime(2026, 6, 16, 22, 0, tzinfo=UTC),
+            effect_size_k=3.0,
+            points=(
+                ProfileBandPoint(
+                    bucket=datetime(2026, 6, 16, 8, 0, tzinfo=UTC), lower=1.0, mid=2.5, upper=4.0
+                ),
+            ),
+        ),
+    )
+
+    payload = MachineTrendOut.model_validate(trend).model_dump(mode="json")
+
+    band = payload["profile_band"]
+    assert band is not None
+    assert band["effect_size_k"] == 3.0
+    assert band["computed_at"].startswith("2026-06-16T22:00:00")
+    assert band["points"][0]["lower"] == 1.0
+    assert band["points"][0]["mid"] == 2.5
+    assert band["points"][0]["upper"] == 4.0
+    assert band["points"][0]["bucket"].startswith("2026-06-16T08:00:00")

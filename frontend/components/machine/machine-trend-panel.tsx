@@ -23,6 +23,11 @@ export interface MachineTrendPanelProps {
   nowMs?: number;
 }
 
+/** Profil-Stand (computed_at) lesbar — ehrlich als „Stand", keine Live-Aktualität. */
+function formatProfileStand(ms: number): string {
+  return new Date(ms).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+}
+
 export function MachineTrendPanel({
   machineId,
   dataPoint,
@@ -56,8 +61,13 @@ export function MachineTrendPanel({
               endMs={endMs}
               reduced={reduced}
             />
-            <div className="flex items-center justify-end">
-              <ProvenanceStamp freshness={freshness} stampedAt={stampedAt} />
+            <div className="flex items-center justify-between gap-2">
+              {data.series.profileBand ? (
+                <span data-testid="profile-stamp" className="text-caption text-fg-muted">
+                  Eigenprofil · Stand {formatProfileStand(data.series.profileBand.computedAt)}
+                </span>
+              ) : null}
+              <ProvenanceStamp freshness={freshness} stampedAt={stampedAt} className="ml-auto" />
             </div>
           </div>
         )}

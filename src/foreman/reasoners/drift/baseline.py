@@ -17,11 +17,23 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Hashable
 from dataclasses import dataclass, field
+from datetime import datetime
 from statistics import median
 from typing import Final
 
 # Gleitendes Baseline-Fenster: 1440 Min = 24 h bei 1 Sample/Minute (Research §6.1).
 BASELINE_WINDOW: Final = 1440
+
+
+def state_key_for(moment: datetime) -> int:
+    """Zustands-Schlüssel der Deseasonalisierung: die Tagesstunde (0-23).
+
+    Trennt die zyklische Schicht-Last, sodass je Schicht ein eigener Median greift
+    (Research §3). EINE Quelle für den Detektor-Lauf (`detect_drift_in_stream`) UND
+    die Read-Expansion des Eigenprofil-Bands — würde sie dupliziert, zeigte das Band
+    den Korridor des falschen Zustands.
+    """
+    return moment.hour
 
 
 @dataclass
@@ -66,6 +78,19 @@ class RollingResidualBaseline:
         residual = 0.0 if reference is None else value - reference
         dq.append(value)
         return residual
+
+    def state_profiles(self) -> dict[Hashable, tuple[float, int]]:
+        """Je Betriebszustand `(median, sample_count)` — die Profil-Basis der Persistenz.
+
+        Nur Zustände mit mindestens einem Wert; leere Fenster fehlen (ehrlich leer,
+        nicht geraten). Der Median ist exakt der, gegen den `observe` das nächste
+        Residuum bildet — die echte Detektor-Bewertungsbasis je Zustand.
+        """
+        return {
+            state_key: (median(window), len(window))
+            for state_key, window in self._by_state.items()
+            if window
+        }
 
     @property
     def count(self) -> int:
