@@ -1,0 +1,153 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — FD-01 (feeder, GESUNDE Schwester / B7)
+# -----------------------------------------------------------------------------
+# Park-Konvention (alle 12 Park-Dateien): gemeinsame line.label "Montagelinie 1",
+# gemeinsamer scenario.start + 21d/10m, eigene machine.external_id, gleiche
+# machine_class fuer Schwestern. Der Park entsteht ohne Schema-Aenderung; der
+# Schwester-/Klassen-Vergleich passiert maschinenuebergreifend in der DB.
+# Fachliche Begruendung + Master-Ground-Truth: docs/simulation/szenarien.md
+#   (Abschnitt "Twin-Park Montagelinie 1").
+# Schema-Konvention (Offsets s/m/h/d ab scenario.start, Enums): bearing_drift.yaml.
+# Rolle: Referenz-Schwester der Klasse feeder. KEINE Degradation, disziplinierte
+#   Wartung. Jede Drift-/Wartungs-Meldung hier ist ein #2/#4-Abnahmefehler.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_fd01
+  title: "Montagelinie 1 / FD-01 Teilezufuehrung A — gesunde Referenz-Schwester"
+  description: >
+    Teilezufuehrung A der Montagelinie 1. Ueber 21 Tage voellig gesund:
+    Schicht-Saisonalitaet (Frueh/Spaet/Nacht) und Wochenend-Stillstand, alle
+    Signale im Normalband, kein Drift. Disziplinierte Wartung. Negativkontrolle
+    fuer den Schwester-Vergleich mit FD-02 (Ketten-Kopf).
+  start: "2026-06-01T06:00:00+02:00"   # Montag, Fruehschicht
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "FD-01"
+  label: "Teilezufuehrung A"
+  machine_class: "feeder"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 10"
+
+components:
+  - key: feeder_drive
+    label: "Foerderantrieb"
+    component_type: drive
+  - key: hopper
+    label: "Dosiertrichter mit Klemmzylinder"
+    component_type: actuator
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: feed_rate
+    name: "feed_rate"
+    component: feeder_drive
+    kind: analog
+    measurement_type: signal
+    unit: "1/min"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 120.0
+    baseline: { mean: 100.0, noise_std: 2.0, gated_by: machine_state }
+
+  - key: dose_mass
+    name: "dose_mass"
+    component: feeder_drive
+    kind: analog
+    measurement_type: signal
+    unit: "g"
+    source: simulation
+    normal_min: 40.0
+    normal_max: 60.0
+    baseline: { mean: 50.0, noise_std: 0.5, gated_by: machine_state }
+
+  - key: feeder_current
+    name: "feeder_motor_current"
+    component: feeder_drive
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 12.0
+    baseline: { mean: 6.0, noise_std: 0.3, gated_by: machine_state }
+
+  - key: switch_time
+    name: "clamp_switch_time"
+    component: hopper
+    kind: analog
+    measurement_type: signal
+    unit: "ms"
+    source: simulation
+    normal_min: 80.0
+    normal_max: 200.0
+    baseline: { mean: 115.0, noise_std: 4.0, gated_by: machine_state }
+
+  - key: target_dose
+    name: "target_dose"
+    component: feeder_drive
+    kind: setpoint
+    measurement_type: signal
+    unit: "g"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 100.0
+    # Sollwert: NICHT gegated (sonst Sprung auf 0 im Stillstand) — konstante Baseline.
+    baseline: { mean: 50.0, noise_std: 0.0 }
+
+maintenance_events:
+  - offset: "1d07h"
+    component: feeder_drive
+    type: inspection
+    description: >
+      Routine-Inspektion Teilezufuehrung A: Foerderschnecke, Klemmzylinder und
+      Dosierung sichtgeprueft, ohne Befund. Wartungsplan eingehalten.
+    performed_by: "PSEUDO_M03"
+
+worker_notes:
+  - offset: "4d08h"
+    shift: frueh
+    author: "PSEUDO_W01"
+    text: >
+      FD-01 laeuft sauber, Dosierung stabil. Nichts Auffaelliges in der Frueh.
+
+alarms: []
+
+ground_truth:
+  drift_present: false
+  expected_drift_detections: 0
+  expected_false_alarms: 0
+  sibling_role: "Referenz-Schwester der Klasse feeder (Kontrolle zu FD-02)"
+  maintenance_causal:
+    pattern: control
+    regime: "diszipliniert (Inspektion im Plan)"
+    expected_finding: "keiner — gesunde Schwester, darf NICHT als wartungsbedingt auffaellig gemeldet werden"
+    control_for: ["FD-02"]
+    expected_false_findings: 0
+  narrative_anchor: >
+    Negativkontrolle der feeder-Klasse. Saisonalitaet ohne Verschleiss. Jede
+    Drift- oder Wartungsauffaelligkeits-Meldung auf FD-01 ist ein Abnahmefehler.

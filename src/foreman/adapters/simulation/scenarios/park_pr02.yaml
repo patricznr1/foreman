@@ -1,0 +1,233 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — PR-02 (servo_press, B1 + P2/P4, KETTEN-MITTE)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: kranke Schwester der Klasse servo_press, faehrt das schwere Produkt
+#   (hoehere Kraft-Grundlast, load_factor > 1). ZWEI getrennte Geschichten:
+#   (1) B1 Werkzeugverschleiss als MONOTONER Kraft-/Strom-/Ramweg-Anstieg ab t*=4d
+#       -> #4-Muster P2 (Wechselintervall zu lang) + P4 (Inspektion uebersprungen).
+#   (2) D-KETTEN-MITTE: am Freitag (Tag 4) treffen unterfuellte Teile von FD-02
+#       ein -> intermittierende Unterfuellung. Das ist ein TRANSIENTES Ereignis
+#       (Alarm + Werker-Notiz), KEINE monotone Drift — bewusst NICHT als zweite
+#       Kurve auf press_force modelliert (eine Drift je Datenpunkt; Ehrlichkeit).
+# Beobachtungsgrenze: ueberfaelliger Werkzeugwechsel + ausgelassene Inspektion
+#   leben nur in maintenance_events/ground_truth, nie als Datenpunkt.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_pr02
+  title: "Montagelinie 1 / PR-02 Fuegepresse 2 — Werkzeugverschleiss (vernachlaessigt) + Unterfuellung (Ketten-Mitte)"
+  description: >
+    Fuegepresse 2 der Montagelinie 1, faehrt das schwere Produkt. Das Fuegewerkzeug
+    ist ueberfaellig (Wechselintervall 90d statt 30d, planmaessige Inspektion an
+    Tag 10 uebersprungen): ab Tag 4 steigt die Fuegekraft-Signatur, Motorstrom und
+    Ram-Haltephase monoton (Werkzeugverschleiss). Am selben Freitag (Tag 4) treffen
+    zusaetzlich unterfuellte Teile aus FD-02 ein — die Presse meldet
+    intermittierende Unterfuellung (Ketten-Mitte). Kontroll-Schwestern PR-01/PR-03
+    sind diszipliniert gewartet.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "PR-02"
+  label: "Fuegepresse 2"
+  machine_class: "servo_press"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 21"
+
+components:
+  - key: ram_drive
+    label: "Ram-Antrieb"
+    component_type: drive
+  - key: hydraulic
+    label: "Hydraulikaggregat"
+    component_type: hydraulic
+  - key: tool
+    label: "Fuegewerkzeug"
+    component_type: tool
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.10 }   # schweres Produkt -> hoehere Grundlast
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.10 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 1.05 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: press_force
+    name: "press_force"
+    component: ram_drive
+    kind: analog
+    measurement_type: force
+    unit: "kN"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 250.0
+    baseline: { mean: 180.0, noise_std: 3.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "4d"                        # t* = Werkzeug altert (Standzeit ueberschritten)
+      end: "21d"
+      # Lastfaktor 1.10 (schweres Produkt): Grundwert ~198 kN, Endwert ~228 kN —
+      # auffaellig, aber mit Headroom unter normal_max 250 (kein Clipping; Engine
+      # klemmt ohnehin nur nach unten).
+      target_delta: 30.0
+      shape: progressive                 # beschleunigt gegen Standzeitende (VB-Knick)
+
+  - key: ram_position
+    name: "ram_end_position"
+    component: ram_drive
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 400.0
+    baseline: { mean: 202.0, noise_std: 1.6, gated_by: machine_state }   # Instanz-Streuung (schweres Produkt)
+    drift:
+      type: ramp
+      start: "4d"                        # Haltephase/Endlage waechst mit dem Verschleiss
+      end: "21d"
+      target_delta: 8.0
+
+  - key: hydraulic_pressure
+    name: "hydraulic_pressure"
+    component: hydraulic
+    kind: analog
+    measurement_type: signal
+    unit: "bar"
+    source: simulation
+    normal_min: 80.0
+    normal_max: 180.0
+    baseline: { mean: 126.0, noise_std: 2.0, gated_by: machine_state }
+
+  - key: oil_temp
+    name: "hydraulic_oil_temperature"
+    component: hydraulic
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 70.0
+    baseline: { mean: 46.0, noise_std: 1.0, gated_by: machine_state }
+
+  - key: motor_current
+    name: "press_motor_current"
+    component: ram_drive
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 60.0
+    baseline: { mean: 33.0, noise_std: 1.0, gated_by: machine_state }
+    drift:
+      type: ramp                         # Strom spiegelt die steigende Fuegekraft (∝)
+      start: "4d"
+      end: "21d"
+      target_delta: 6.0
+
+  - key: target_force
+    name: "target_force"
+    component: tool
+    kind: setpoint
+    measurement_type: force
+    unit: "kN"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 250.0
+    # Sollwert: NICHT gegated (sonst Sprung auf 0 im Stillstand) — konstante Baseline.
+    baseline: { mean: 210.0, noise_std: 0.0 }
+
+maintenance_events:
+  - offset: "0d"
+    component: tool
+    type: tool_change
+    description: >
+      Werkzeugwechsel Fuegepresse 2: Fuegestempel getauscht (Standzeitbeginn).
+      Hinweis: Wechselintervall hier faktisch 90 Tage statt der fuer das schwere
+      Produkt vorgesehenen 30 Tage — bewusst gestreckt.
+    performed_by: "PSEUDO_M02"
+
+worker_notes:
+  - offset: "4d14h"                       # Freitag (Tag 4) — KETTEN-MITTE
+    shift: spaet
+    author: "PSEUDO_W02"
+    text: >
+      PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen
+      Hueben. Koennte das von der Zufuehrung kommen? Seit heute Mittag haeufiger.
+  - offset: "15d14h"
+    shift: spaet
+    author: "PSEUDO_W03"
+    text: >
+      PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon
+      ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel ueberfaellig.
+
+alarms:
+  - offset: "4d14h30m"                    # Ketten-Mitte: Unterfuellung (transient, Prozess)
+    component: ram_drive
+    data_point: press_force
+    code: "PART_UNDERFILL"
+    message: "PR-02 intermittierende Unterfuellung — Teile unterhalb Sollmasse erkannt"
+    severity: warning
+    category: process
+  - offset: "16d10h"                      # B1: Werkzeugverschleiss-Lastalarm
+    component: tool
+    data_point: press_force
+    code: "TOOL_LOAD_HIGH"
+    message: "PR-02 Fuegekraft ueber Erwartung — Werkzeugverschleiss vermutet"
+    severity: warning
+    category: process
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: press_force
+    type: ramp
+    t_star: "4d"
+    expected_detection_window: ["4d", "7d"]
+  secondary_confirmation:
+    - { data_point: motor_current, onset: "4d", role: "redundantes Lastsignal (∝ Fuegekraft)" }
+    - { data_point: ram_position, onset: "4d", role: "Haltephase/Endlage waechst" }
+  expected_false_alarms: 0
+  sibling_role: "kranke Schwester der Klasse servo_press (Kontrollen: PR-01, PR-03)"
+  chain_role:
+    position: middle
+    chain_id: "underfill_chain"
+    upstream: ["FD-02"]
+    downstream: ["VS-01"]
+    note: "Unterfuellung Tag 4 (PART_UNDERFILL, 4d14h30m) ist TRANSIENT (Alarm+Notiz), zeitlich NACH FD-02-Dosis-Streuung (t*=4d, Notiz 4d13h) und VOR VS-01-Ausschuss (4d15h/16h). Nicht als Drift auf press_force modelliert."
+  maintenance_causal:
+    pattern: interval_too_long_and_skipped_inspection   # P2 + P4
+    cause: "tool_change-Intervall 90d statt 30d (P2) + planmaessige Inspektion an ~10d uebersprungen (P4, Event-Absenz)"
+    affected: "PR-02 (press_force/motor_current/ram_position Drift ab 4d -> Lastalarm 16d)"
+    control: ["PR-01", "PR-03"]
+    expected_finding: "zu langes Wechselintervall + fehlende Inspektion korrelieren mit Verschleiss-Drift und Ausfall; disziplinierte Schwestern bleiben gesund"
+    expected_skipped_event: { type: inspection, expected_offset_around: "10d", present: false }
+    expected_false_findings: 0
+  failure:
+    offset: "19d12h"
+    type: tool_failure
+  narrative_anchor: >
+    Doppelrolle: #4-Kernfall (vernachlaessigte Wartung -> Verschleiss -> Ausfall)
+    UND Ketten-Mitte der Unterfuellungs-Kette. Werkzeugverschleiss (press_force/
+    Strom) ab t*=4d Tage vor dem Lastalarm (~16d) erkennbar; die Unterfuellung
+    (Tag 4) ist ein separates, transientes Ketten-Ereignis.

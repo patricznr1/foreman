@@ -1,0 +1,210 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — PR-01 (servo_press, B2 Hydraulik-Leckage)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: kranke Schwester der Klasse servo_press. Familie B2: Dichtungsalterung
+#   -> Hydraulikdruck faellt langsam (negativer target_delta), Oeltemperatur
+#   steigt spaet (Leckage-Reibung), Ramweg waechst (Kompensation des Druckabfalls).
+# #4-Einordnung: Wartung war diszipliniert; die Dichtung erreicht ihr
+#   Lebensdauerende — Beleg, dass nicht jede Degradation durch Intervall-Wahl
+#   verhinderbar ist (Ehrlichkeit, neben AX-03 Ueberlast). Kontroll-Schwestern
+#   PR-02/PR-03 haben normalen Druck.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_pr01
+  title: "Montagelinie 1 / PR-01 Fuegepresse 1 — Hydraulik-Leckage (Druckabfall)"
+  description: >
+    Fuegepresse 1 der Montagelinie 1. Eine alternde Dichtung im Hydraulikkreis
+    fuehrt ab Tag 6 zu langsam fallendem Systemdruck; ab Tag 8 faehrt der Ram
+    einen laengeren Weg, um die Fuegekraft zu halten, ab Tag 10 steigt die
+    Oeltemperatur als Spaetindikator (Leckage-Reibung). Presskraft bleibt zunaechst
+    im Sollband. Kontroll-Schwestern PR-02/PR-03 zeigen normalen Druck.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "PR-01"
+  label: "Fuegepresse 1"
+  machine_class: "servo_press"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 20"
+
+components:
+  - key: ram_drive
+    label: "Ram-Antrieb"
+    component_type: drive
+  - key: hydraulic
+    label: "Hydraulikaggregat"
+    component_type: hydraulic
+  - key: tool
+    label: "Fuegewerkzeug"
+    component_type: tool
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: press_force
+    name: "press_force"
+    component: ram_drive
+    kind: analog
+    measurement_type: force
+    unit: "kN"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 250.0
+    baseline: { mean: 180.0, noise_std: 3.0, gated_by: machine_state }
+
+  - key: ram_position
+    name: "ram_end_position"
+    component: ram_drive
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 400.0
+    baseline: { mean: 201.0, noise_std: 1.4, gated_by: machine_state }   # Instanz-Streuung
+    drift:
+      type: ramp
+      start: "8d"                        # Ram faehrt weiter, um Druckabfall zu kompensieren
+      end: "21d"
+      target_delta: 6.0                  # +6 mm Endlage
+
+  - key: hydraulic_pressure
+    name: "hydraulic_pressure"
+    component: hydraulic
+    kind: analog
+    measurement_type: signal
+    unit: "bar"
+    source: simulation
+    normal_min: 80.0
+    normal_max: 180.0
+    baseline: { mean: 130.0, noise_std: 2.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "6d"                        # t* = beginnende Dichtungs-Leckage
+      end: "21d"
+      target_delta: -22.0                # Druck faellt 130 -> ~108 bar (linear)
+
+  - key: oil_temp
+    name: "hydraulic_oil_temperature"
+    component: hydraulic
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 70.0
+    baseline: { mean: 45.0, noise_std: 1.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "10d"                       # SPAETindikator: Leckage-Reibung erwaermt das Oel
+      end: "21d"
+      target_delta: 16.0                 # -> ~61 °C, Richtung Warnschwelle
+
+  - key: motor_current
+    name: "press_motor_current"
+    component: ram_drive
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 60.0
+    baseline: { mean: 30.0, noise_std: 1.0, gated_by: machine_state }
+
+  - key: target_force
+    name: "target_force"
+    component: tool
+    kind: setpoint
+    measurement_type: force
+    unit: "kN"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 250.0
+    # Sollwert: NICHT gegated (sonst Sprung auf 0 im Stillstand) — konstante Baseline.
+    baseline: { mean: 190.0, noise_std: 0.0 }
+
+maintenance_events:
+  - offset: "2d10h"
+    component: hydraulic
+    type: inspection
+    description: >
+      Planmaessige Inspektion Hydraulikkreis PR-01: Druck im Sollband, Dichtungen
+      sichtgeprueft, keine sichtbare Leckage. Regelintervall 14 Tage eingehalten.
+    performed_by: "PSEUDO_M02"
+
+worker_notes:
+  - offset: "15d14h"
+    shift: spaet
+    author: "PSEUDO_W03"
+    text: >
+      PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht
+      einen Tick laenger. Teile noch io, aber wird langsam auffaellig.
+
+alarms:
+  - offset: "16d09h"
+    component: hydraulic
+    data_point: hydraulic_pressure
+    code: "HYD_PRESS_LOW_WARN"
+    message: "Hydraulikdruck PR-01 unter Warnschwelle (Leckage vermutet)"
+    severity: warning
+    category: hardware
+  - offset: "18d11h"
+    component: hydraulic
+    data_point: hydraulic_pressure
+    code: "HYD_PRESS_LOW_CRIT"
+    message: "Hydraulikdruck PR-01 kritisch — Dichtungswechsel erforderlich"
+    severity: critical
+    category: hardware
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: hydraulic_pressure
+    type: ramp
+    t_star: "6d"
+    expected_detection_window: ["6d", "10d"]
+  secondary_confirmation:
+    - { data_point: ram_position, onset: "8d", role: "Kompensations-Weg (ramp)" }
+    - { data_point: oil_temp, onset: "10d", role: "spaeter Temperatur-Anstieg (Leckage-Reibung)" }
+  expected_false_alarms: 0
+  sibling_role: "kranke Schwester der Klasse servo_press (Kontrollen: PR-02 normaler Druck, PR-03 gesund)"
+  maintenance_causal:
+    pattern: wear_not_maintenance_caused
+    regime: "diszipliniert (Inspektion 14d im Plan)"
+    cause: "Dichtungsalterung / Lebensdauerende der Hydraulikdichtung"
+    affected: "PR-01 (hydraulic_pressure faellt ab 6d)"
+    control: ["PR-03"]
+    expected_finding: "Degradation trotz disziplinierter Wartung — nicht durch Intervall-Wahl verhinderbar (Ehrlichkeit)"
+    expected_false_findings: 0
+  failure:
+    offset: "18d11h"
+    type: hydraulic_failure
+  narrative_anchor: >
+    Hydraulik-Druckabfall (t*=6d) muss klar vor der Werker-Notiz (~15d) und dem
+    Druck-Alarm (~16d) erkannt werden. #4-Ehrlichkeit: disziplinierte Wartung,
+    Dichtung dennoch am Lebensende.
