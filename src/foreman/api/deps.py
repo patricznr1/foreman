@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from functools import lru_cache
 from typing import Annotated
 
@@ -69,6 +69,25 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def require_roles(*allowed: str) -> Callable[[User], User]:
+    """Dependency-Factory: erzwingt SERVERSEITIG eine der erlaubten Rollen — über die
+    FE-UX-Sperre hinaus, damit direkte API-Calls die Rollen-Matrix nicht umgehen
+    können (§21.18). 403, wenn die Rolle nicht erlaubt ist. Authentifizierung bleibt
+    Vorbedingung (`get_current_user` → 401). KEINE Aktorik — nur Zugriffskontrolle.
+    """
+    allowed_roles = frozenset(allowed)
+
+    def _require(user: CurrentUser) -> User:
+        if user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Diese Aktion ist deiner Rolle nicht erlaubt",
+            )
+        return user
+
+    return _require
 
 
 def get_pseudonymizer(settings: SettingsDep) -> Pseudonymizer:

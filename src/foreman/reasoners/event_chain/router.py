@@ -14,12 +14,14 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import timedelta
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, GatewayDep, SessionDep, SubstrateClientDep
-from foreman.db.models import ReasonerExplanationRecord
+from foreman.api.deps import GatewayDep, SessionDep, SubstrateClientDep, require_roles
+from foreman.db.models import ReasonerExplanationRecord, User
+from foreman.realtime.authz import ROLE_MANAGER, ROLE_SHIFT_LEAD
 from foreman.reasoners.event_chain.schema import (
     ReasonerExplanationDetailRead,
     ReasonerExplanationRead,
@@ -29,6 +31,10 @@ from foreman.reasoners.event_chain.schema import (
 from foreman.reasoners.event_chain.service import AnchorNotFoundError, EventChainService
 
 router = APIRouter(prefix="/reasoners/event_chain", tags=["event_chain"])
+
+# Rekonstruktion ist ein On-Demand-Trigger (§21.15): Schichtleiter/Manager dürfen
+# anstoßen, Werker/Techniker lesen nur. SERVERSEITIG erzwungen (§21.18).
+TriggerUser = Annotated[User, Depends(require_roles(ROLE_SHIFT_LEAD, ROLE_MANAGER))]
 
 
 @router.post(
@@ -41,7 +47,7 @@ async def reconstruct_event_chain(
     session: SessionDep,
     gateway: GatewayDep,
     substrate: SubstrateClientDep,
-    current_user: CurrentUser,
+    current_user: TriggerUser,
 ) -> ReasonerExplanationDetailRead:
     """Rekonstruiert on-demand die Ereigniskette um einen Anker-Alarm und
     persistiert die gegroundete Erklärung. Liefert die eingefrorene Kette + die
