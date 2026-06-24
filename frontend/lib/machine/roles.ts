@@ -1,11 +1,12 @@
 // ============================================================
 //  FOREMAN Frontend — lib/machine/roles.ts
 //  Zweck: Rollen-Varianten der Maschinen-Detail-Sicht (Matrix 3.1, ACCESS_MATRIX.B
-//         = worker reduced / shift_lead full / technician full / manager reduced;
-//         Studie §4B). Werker: lesen + Notiz, reduzierte Sensoren. Schichtleiter:
-//         voll, fordert Vorhersage an, quittiert. Techniker: Diagnose-Tiefe +
-//         Offline-Cache. Manager: nur Aggregat, keine Einzelaktion. Sichtbarkeit
-//         bleibt ≤ Server-Autorisierung (Guard requireSection("B")).
+//         = worker reduced / shift_lead full / technician full / manager full;
+//         Studie §4B). Werker: lesen + Notiz, reduzierte Sensoren (mobil/Handschuh).
+//         Schichtleiter: voll, fordert Vorhersage an, quittiert. Techniker: Diagnose-
+//         Tiefe + Offline-Cache. Manager: volles Sensor-Lagebild (Desktop), aber nur
+//         Aggregat/keine Einzelaktion. Sichtbarkeit bleibt ≤ Server-Autorisierung
+//         (Guard requireSection("B")).
 //  Architektur-Einordnung: View-State (Schicht 2, rein).
 // ============================================================
 import type { Role } from "@/lib/api/contracts";
@@ -59,7 +60,10 @@ const ROLE_VIEW: Record<Role, MachineRoleView> = {
     canCaptureNote: false,
     canRequestPrediction: false,
     canAcknowledge: false,
-    sensorDetail: "reduced",
+    // Volles Sensor-Lagebild am Desktop — die reduzierte Variante ist für mobile Werker
+    // gedacht (Studie §4B), nicht für den Manager. aggregateOnly bleibt: er sieht das
+    // volle Bild, greift aber nicht ein.
+    sensorDetail: "full",
     factorContext: false,
     aggregateOnly: true,
     offlineCache: false,

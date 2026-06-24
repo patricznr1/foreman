@@ -39,7 +39,15 @@ export function MachineDetailView({ user, machine, components, dataPoints }: Mac
   const reduced = roleView.sensorDetail === "reduced";
   const maxSensors = reduced ? 1 : 4;
 
-  const initialSelected = dataPoints.slice(0, reduced ? 1 : Math.min(2, dataPoints.length)).map((dp) => dp.id);
+  // Aussagekräftige (analoge) Messkurven zuerst als Default — der digitale Laufzustand
+  // (machine_running) ist als Erstbild wenig aussagekräftig. Stabiler Sort hält die
+  // Reihenfolge innerhalb der Gruppen; ohne analoge Sensoren bleibt die Original-Folge.
+  const meaningfulFirst = [...dataPoints].sort(
+    (a, b) => Number(a.kind !== "analog") - Number(b.kind !== "analog"),
+  );
+  const initialSelected = meaningfulFirst
+    .slice(0, reduced ? 1 : Math.min(2, dataPoints.length))
+    .map((dp) => dp.id);
 
   const [windowId, setWindowId] = useState<TimeWindowId>(DEFAULT_TIME_WINDOW);
   const [selected, setSelected] = useState<number[]>(initialSelected);
