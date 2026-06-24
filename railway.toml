@@ -1,0 +1,32 @@
+# ============================================================
+#  FOREMAN — railway.toml (Backend-Service · config-as-code)
+#  Zweck: Build-/Deploy-Konfiguration des FOREMAN-Backends auf Railway.
+#         Gilt für den Service, dessen Root-Directory das Repo-Root ist.
+#  Architektur-Einordnung: Betrieb (Railway, Schicht 0).
+#
+#  WICHTIG — config-as-code ist SINGLE-SERVICE und verwaltet KEINE Env-Vars.
+#  Die übrigen zwei Services (TimescaleDB-Image + Frontend), alle Variablen/
+#  Secrets und die DATABASE_URL-Service-Referenz sind in DEPLOY.md beschrieben
+#  (Etappe 1b, manuelle Provisionierung). TimescaleDB läuft als eigener Service
+#  aus dem Image timescale/timescaledb-ha:pg16 mit Volume; postgres.conf-Tuning
+#  ist optional (Railway-Default genügt für die Demo).
+# ============================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Migrationen VOR dem Server anwenden (spiegelt das Compose-Command), dann uvicorn.
+# alembic.ini + migrations/ liegen im Image; $PORT injiziert Railway (lokaler Fallback 8000).
+# Migration läuft im Start-Command (NICHT im Build): die DB ist nur zur LAUFZEIT
+# über Private Networking erreichbar (Railway-Doku). Park-Seed läuft NICHT beim
+# Boot — separater Einmal-Schritt (siehe DEPLOY.md).
+# --host :: bindet dual-stack (IPv6 + IPv4): Railways internes DNS löst auf IPv6
+# auf — reines 0.0.0.0 wäre per Private Networking (FE→Backend) nicht erreichbar.
+startCommand = "sh -c 'alembic upgrade head && uvicorn foreman.main:app --host :: --port ${PORT:-8000}'"
+healthcheckPath = "/health"
+# spaCy-Modell + LightGBM-Import machen den Kaltstart spürbar — großzügiges Fenster.
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

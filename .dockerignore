@@ -1,0 +1,38 @@
+# ============================================================
+#  FOREMAN — .dockerignore (Backend-Build-Kontext, Repo-Root)
+#  Zweck: Den Build-Kontext des Backend-Images (context = Repo-Root) schlank
+#         halten und Geheimnisse fernhalten. Das Backend-Dockerfile kopiert NUR
+#         pyproject.toml, README.md, src/, migrations/, alembic.ini — alles
+#         andere darf aus dem Kontext fliegen (massiv kleinerer Upload auf Railway:
+#         ohne .venv und ohne frontend/node_modules).
+#  HINWEIS: Diese Datei stand nicht in der ursprünglichen Datei-Liste, ist aber
+#         für einen brauchbaren Railway-Backend-Build praktisch nötig (sonst
+#         wandern .venv + frontend/node_modules in den Kontext). Im PR markiert.
+# ============================================================
+
+# Versionskontrolle
+.git
+.gitignore
+
+# Python-Umgebung + Caches (im Image neu installiert)
+.venv
+**/__pycache__
+*.py[cod]
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.coverage
+htmlcov
+
+# Frontend (eigener Service, eigener Build — fürs Backend-Image irrelevant)
+frontend
+
+# Secrets / lokale Env (Railway liefert Variablen zur Laufzeit)
+.env
+.env.*
+
+# Nicht ins Backend-Image kopiert (reduziert nur den Kontext)
+tests
+docs
+*.md
+!README.md

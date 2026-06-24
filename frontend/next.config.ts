@@ -11,6 +11,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Schlankes Container-Image: Next bündelt den getracten Server (+ minimale
+  // node_modules) nach .next/standalone — die Laufzeit braucht keine dev-Toolchain
+  // und kein npm install mehr (Dockerfile übernimmt nur standalone + .next/static).
+  output: "standalone",
   // Lint ist ein eigenes Quality-Gate (npm run lint) — nicht im Build doppeln.
   eslint: { ignoreDuringBuilds: true },
   experimental: {

@@ -1,0 +1,24 @@
+# ============================================================
+#  FOREMAN Frontend — railway.toml (Frontend-Service · config-as-code)
+#  Zweck: Build-/Deploy-Konfiguration des Next.js-15-Frontends auf Railway.
+#         Gilt für den Service mit Root-Directory = "frontend".
+#  Architektur-Einordnung: Betrieb (Railway, Schicht 0).
+#
+#  Env-Vars siehe DEPLOY.md:
+#   - FOREMAN_API_URL          → server-seitig, INTERNE Backend-URL (private networking)
+#   - NEXT_PUBLIC_FOREMAN_WS_URL → Browser, ÖFFENTLICHE wss://…/api/v1/ws
+#  NEXT_PUBLIC_* wird ZUR BUILD-ZEIT ins Bundle gebacken → vor dem FE-Build setzen.
+# ============================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Next-Standalone-Server (CMD ["node","server.js"] im Dockerfile); $PORT von Railway.
+# Healthcheck gegen die öffentliche Login-Seite — liefert 200 (anders als "/", das
+# unauthentifiziert auf /login umleitet und damit kein 200 für den Healthcheck wäre).
+healthcheckPath = "/login"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
