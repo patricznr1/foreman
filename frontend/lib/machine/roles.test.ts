@@ -31,8 +31,9 @@ describe("machineRoleView", () => {
     expect(v.canRequestPrediction).toBe(false);
   });
 
-  it("Manager: nur Aggregat, keine Einzelaktion", () => {
+  it("Manager: volles Sensor-Lagebild, aber nur Aggregat (keine Einzelaktion)", () => {
     const v = machineRoleView("manager");
+    expect(v.sensorDetail).toBe("full"); // Desktop-Überblick, nicht die reduzierte Werker-Variante
     expect(v.aggregateOnly).toBe(true);
     expect(v.canCaptureNote).toBe(false);
   });
