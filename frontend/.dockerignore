@@ -1,0 +1,27 @@
+# ============================================================
+#  FOREMAN Frontend — .dockerignore
+#  Zweck: Build-Kontext schlank halten + lokale Geheimnisse/Artefakte fernhalten.
+#         npm ci installiert frisch im Image → node_modules NIE mitschicken.
+# ============================================================
+
+# Abhängigkeiten + Build-Ausgaben (im Image neu erzeugt)
+node_modules
+.next
+out
+
+# Lokale Env-Dateien NIE ins Image (FOREMAN_API_URL/WS o.ä. sind deploy-spezifisch)
+.env
+.env*.local
+
+# Caches / Test- / Editor-Artefakte
+*.tsbuildinfo
+coverage
+test-results
+*.log
+.DS_Store
+
+# Im Image nicht benötigt
+.git
+Dockerfile
+.dockerignore
+README.md
