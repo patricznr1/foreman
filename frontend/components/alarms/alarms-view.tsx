@@ -26,14 +26,20 @@ import { FiveState } from "@/lib/ui/five-states";
 import { AlarmAggregate } from "./alarm-aggregate";
 import { AlarmFilterBar } from "./alarm-filter-bar";
 import { AlarmList } from "./alarm-list";
+import { AlarmSituationHeader } from "./alarm-situation-header";
 
 const SHELF_MS = 15 * 60 * 1000;
 const OVERVIEW_TOPICS = ["overview"] as const;
 
 export function AlarmsView({ user }: { user: CurrentUser }) {
   const roleView = alarmRoleView(user.role);
+  // aggregateOnly bleibt der Pfad für die restriktive Fallback-Sicht (unbekannte
+  // Rolle, default-deny) — der manager ist jetzt Vollzugriff (§21.9).
   if (roleView.aggregateOnly) {
     return <AlarmAggregate />;
+  }
+  if (user.role === "manager") {
+    return <ManagerAlarmsView user={user} />;
   }
   if (user.role === "shift_lead") {
     return <LeadAlarmsView user={user} />;
@@ -47,6 +53,28 @@ function LeadAlarmsView({ user }: { user: CurrentUser }) {
   const overview = useTopicView(store, "overview").data as FleetOverviewOut | undefined;
   return (
     <AlarmsWorkspace user={user} overview={overview} signalTopics={OVERVIEW_TOPICS} canAcknowledge />
+  );
+}
+
+/** Manager (Werksleiter-/Vorführ-Vollzugriff, §21.9): das Lagebild als Überblicks-
+ *  Kopf ÜBER der vollen Alarmliste — Überblick PLUS Detail statt Aggregat-Sackgasse.
+ *  overview-Abo liefert Labels + Lagebild; Scope „all" (roleView) zeigt die ganze
+ *  Flotte; Quittieren erlaubt (HITL-Status-Aktion, KEINE Anlagen-Aktorik). */
+function ManagerAlarmsView({ user }: { user: CurrentUser }) {
+  const store = useRealtimeStore();
+  const overview = useTopicView(store, "overview").data as FleetOverviewOut | undefined;
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <section aria-label="Alarm-Lagebild" className="px-4 pt-4">
+        <AlarmSituationHeader overview={overview} />
+      </section>
+      <AlarmsWorkspace
+        user={user}
+        overview={overview}
+        signalTopics={OVERVIEW_TOPICS}
+        canAcknowledge
+      />
+    </div>
   );
 }
 

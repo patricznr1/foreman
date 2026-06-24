@@ -15,11 +15,14 @@ describe("memoryRoleView", () => {
     expect(view.aggregateFirst).toBe(false);
   });
 
-  it("Manager: aggregierte Muster zuerst, mit Filter und Verknüpfung", () => {
+  it("Manager (Vollzugriff): Muster zuerst, aber voller Zugang inkl. Diagnose-Sprung", () => {
+    // Werksleiter-/Vorführprofil (§21.12): behält die Muster-zuerst-Anordnung,
+    // bekommt aber den Sprung in die Diagnose (Vollzugriff, keine Sackgasse).
     const view = memoryRoleView("manager");
     expect(view.aggregateFirst).toBe(true);
     expect(view.canFilter).toBe(true);
     expect(view.showRelations).toBe(true);
+    expect(view.jumpToDiagnosis).toBe(true);
   });
 
   it("Techniker/Schichtleiter: volle Suche mit Sprung in Diagnose", () => {

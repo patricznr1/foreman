@@ -64,14 +64,37 @@ describe("AlarmRow", () => {
     expect(screen.getByLabelText(/Außerhalb Spezifikation/)).toBeInTheDocument();
   });
 
-  it("Querlinks → Maschine/Kette/Ausfall vorbereitet", () => {
+  it("ganze Zeile ist klickbar → Maschine (Name + Volltext-Tooltip am Overlay-Link)", () => {
+    render(<AlarmRow vm={vm({ machine_id: 1, message: "Lager heiß, Geräusch seit Frühschicht" })} {...props} />);
+    // Stretched-Link über die ganze Zeile; Name trägt den Maschinenbezug, damit
+    // mehrere Zeilen unterscheidbar bleiben. Der Overlay-Link trägt zudem den
+    // Volltext als title — sonst verdeckt er den Tooltip des Meldungs-divs.
+    const rowLink = screen.getByRole("link", { name: /Presse 1 öffnen/ });
+    expect(rowLink).toHaveAttribute("href", "/machines/1");
+    expect(rowLink).toHaveAttribute("title", "Lager heiß, Geräusch seit Frühschicht");
+  });
+
+  it("Querlinks → Kette/Ausfall bleiben eigenständig (nicht im Zeilen-Link verschachtelt)", () => {
     render(<AlarmRow vm={vm({ machine_id: 1, severity: "alarm" })} {...props} />);
-    expect(screen.getByRole("link", { name: "Maschine" })).toHaveAttribute(
-      "href",
-      "/machines/1",
-    );
+    // Der frühere Rand-Link "Maschine" ist durch die klickbare Zeile redundant und entfällt.
+    expect(screen.queryByRole("link", { name: "Maschine" })).toBeNull();
     expect(screen.getByRole("link", { name: "Kette" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ausfall?" })).toBeInTheDocument();
+  });
+
+  it("C-Liste: Message truncated mit title-Tooltip (Volltext für Hover/Screenreader)", () => {
+    render(<AlarmRow vm={vm({ message: "Lager heiß, Geräusch seit Frühschicht" })} {...props} />);
+    const msg = screen.getByText("Lager heiß, Geräusch seit Frühschicht");
+    expect(msg).toHaveClass("truncate");
+    expect(msg).toHaveAttribute("title", "Lager heiß, Geräusch seit Frühschicht");
+  });
+
+  it("fullMessage: Volltext ohne truncate (für die Maschinensicht B)", () => {
+    render(
+      <AlarmRow vm={vm({ message: "Lager heiß, Geräusch seit Frühschicht" })} {...props} fullMessage />,
+    );
+    const msg = screen.getByText("Lager heiß, Geräusch seit Frühschicht");
+    expect(msg).not.toHaveClass("truncate");
   });
 
   it("Quittier-Ziel vorhanden (zeilenspezifischer Accessible Name), wenn die Rolle quittieren darf", () => {

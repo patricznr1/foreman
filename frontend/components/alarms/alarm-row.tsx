@@ -27,6 +27,8 @@ export interface AlarmRowProps {
   onUnshelve: (alarmId: number) => void;
   /** Mitglied eines aufgeklappten Flood-Bündels (eingerückt darstellen). */
   nested?: boolean;
+  /** Volltext statt einzeiligem Kurztext (Maschinensicht B, nicht virtualisiert). */
+  fullMessage?: boolean;
 }
 
 function formatTime(value: string | number): string {
@@ -45,6 +47,7 @@ export function AlarmRow({
   onShelve,
   onUnshelve,
   nested = false,
+  fullMessage = false,
 }: AlarmRowProps) {
   // Querlinks (Kontextnavigation §4C/§3.3): Deep-Links auf bestehende Routen.
   // Maschine → Detailseite (Sektion B), die den Alarm im Kontext zeigt (Trend,
@@ -64,7 +67,8 @@ export function AlarmRow({
     <article
       aria-label={ariaLabel}
       className={cx(
-        "flex h-full items-center gap-3 bg-surface-raised pr-2 pl-3",
+        "relative flex h-full gap-3 bg-surface-raised pr-2 pl-3",
+        fullMessage ? "items-start py-2" : "items-center",
         railWidth(vm.priority),
         PRIORITY_BORDER[vm.priority],
         nested && "ml-6 border-l-2",
@@ -72,6 +76,23 @@ export function AlarmRow({
         vm.lifecycle === "cleared" && "opacity-60",
       )}
     >
+      {/* Klickbare Zeile (Studie §4C "Zeile öffnen"): die ganze Zeile öffnet die
+          Maschine (B), wo der Alarm im Kontext + Volltext lebt. Stretched-Link
+          (after:inset-0) statt <article>-in-<Link> → keine <a>-in-<a>-Verschachtelung;
+          die Rand-Querlinks/Buttons liegen mit z-10 darüber und bleiben bedienbar.
+          In B selbst (fullMessage) entfällt der Link — er führte zirkulär zur
+          eigenen Maschine. */}
+      {!fullMessage ? (
+        <Link
+          href={machineHref}
+          aria-label={`${vm.machineLabel} öffnen`}
+          // Der Overlay-Link überdeckt den Meldungs-`title` → er trägt den Volltext
+          // selbst, damit der Hover-Zugang über die ganze Zeile erhalten bleibt.
+          title={vm.message}
+          className="absolute inset-0 z-[1] rounded focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
+        />
+      ) : null}
+
       {/* Kanal 1 (Farbe): Prioritäts-Punkt; Puls nur unquittiert-kritisch. */}
       <span
         aria-hidden="true"
@@ -107,7 +128,18 @@ export function AlarmRow({
             </span>
           ) : null}
         </div>
-        <div className="truncate text-caption text-fg-secondary">{vm.message}</div>
+        <div
+          className={cx(
+            "text-caption text-fg-secondary",
+            fullMessage ? "whitespace-pre-wrap break-words" : "truncate",
+          )}
+          // In der virtualisierten C-Liste bleibt der Text einzeilig (feste
+          // Slot-Höhe) — der Volltext ist als title-Tooltip + in der Maschinensicht
+          // (B, fullMessage) zugänglich.
+          title={fullMessage ? undefined : vm.message}
+        >
+          {vm.message}
+        </div>
       </div>
 
       <div className="hidden flex-col items-end text-caption text-fg-muted sm:flex">
@@ -121,13 +153,9 @@ export function AlarmRow({
         {vm.expectedAction}
       </span>
 
-      <nav aria-label="Querlinks" className="hidden items-center gap-1 sm:flex">
-        <Link
-          href={machineHref}
-          className="rounded px-2 py-1 text-caption text-fg-secondary underline underline-offset-2 hover:text-fg-primary"
-        >
-          Maschine
-        </Link>
+      {/* Querlinks liegen mit z-10 ÜBER dem Stretched-Link → eigenständig bedienbar.
+          Der frühere "Maschine"-Link entfällt: die ganze Zeile öffnet sie bereits. */}
+      <nav aria-label="Querlinks" className="relative z-10 hidden items-center gap-1 sm:flex">
         <Link
           href={chainHref}
           className="rounded px-2 py-1 text-caption text-fg-secondary underline underline-offset-2 hover:text-fg-primary"
@@ -163,7 +191,7 @@ export function AlarmRow({
             type="button"
             onClick={() => onUnshelve(vm.id)}
             aria-label={`Zurückstellung für ${vm.machineLabel} aufheben`}
-            className="touch-target inline-flex items-center rounded-md border border-line-strong px-3 text-caption text-fg-primary"
+            className="relative z-10 touch-target inline-flex items-center rounded-md border border-line-strong px-3 text-caption text-fg-primary"
           >
             Einblenden
           </button>
@@ -175,7 +203,7 @@ export function AlarmRow({
               type="button"
               onClick={() => onShelve(vm.id)}
               aria-label={`Alarm an ${vm.machineLabel} zurückstellen`}
-              className="hidden touch-target items-center rounded-md px-2 text-caption text-fg-secondary sm:inline-flex"
+              className="relative z-10 hidden touch-target items-center rounded-md px-2 text-caption text-fg-secondary sm:inline-flex"
               title="Sichtbar zurückstellen (zeitlich begrenzt)"
             >
               Zurückstellen
@@ -187,6 +215,7 @@ export function AlarmRow({
             canAcknowledge={canAcknowledge}
             online={online}
             onAcknowledged={onAcknowledged}
+            className="relative z-10"
           />
         </>
       )}

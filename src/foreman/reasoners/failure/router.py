@@ -17,18 +17,20 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import timedelta
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
 from foreman.api.deps import (
-    CurrentUser,
     FailureModelDep,
     GatewayDep,
     SessionDep,
     SubstrateClientDep,
+    require_roles,
 )
-from foreman.db.models import FailurePredictionRecord, FailureRecommendationRecord
+from foreman.db.models import FailurePredictionRecord, FailureRecommendationRecord, User
+from foreman.realtime.authz import ROLE_MANAGER, ROLE_SHIFT_LEAD
 from foreman.reasoners.failure.recommendation import (
     NumericGroundingError,
     PredictionNotFoundError,
@@ -44,6 +46,10 @@ from foreman.reasoners.failure.service import FailureService, MachineNotFoundErr
 
 router = APIRouter(prefix="/reasoners/failure", tags=["failure"])
 
+# Vorhersage/Empfehlung sind On-Demand-Trigger (§21.10): Schichtleiter/Manager dürfen
+# anstoßen, Werker/Techniker lesen nur. SERVERSEITIG erzwungen (§21.18).
+TriggerUser = Annotated[User, Depends(require_roles(ROLE_SHIFT_LEAD, ROLE_MANAGER))]
+
 
 @router.post(
     "/predict",
@@ -54,7 +60,7 @@ async def predict_failure(
     payload: PredictRequest,
     session: SessionDep,
     model: FailureModelDep,
-    current_user: CurrentUser,
+    current_user: TriggerUser,
 ) -> FailurePredictionRecord:
     """Erzeugt on-demand eine Ausfallvorhersage für eine Maschine und persistiert sie.
     404, wenn die Maschine nicht existiert."""
@@ -111,7 +117,7 @@ async def create_recommendation(
     session: SessionDep,
     gateway: GatewayDep,
     substrate: SubstrateClientDep,
-    current_user: CurrentUser,
+    current_user: TriggerUser,
 ) -> FailureRecommendationRecord:
     """Erzeugt on-demand eine LLM-Werker-Empfehlung zu einer Vorhersage und persistiert sie.
 

@@ -26,8 +26,11 @@ describe("chainRoleView — Rollenmatrix Zeile D", () => {
     expect(view).toEqual({ canTrigger: false, canPin: false, aggregateOnly: false });
   });
 
-  it("Manager sieht nur das Aggregat", () => {
-    expect(chainRoleView("manager").aggregateOnly).toBe(true);
+  it("Manager (Vollzugriff): volle Erzählung, rekonstruiert und pinnt", () => {
+    const view = chainRoleView("manager");
+    expect(view.aggregateOnly).toBe(false);
+    expect(view.canTrigger).toBe(true);
+    expect(view.canPin).toBe(true);
   });
 
   it("unbekannte Rolle → default-deny", () => {

@@ -14,17 +14,23 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, PseudonymizerDep, SessionDep
+from foreman.api.deps import PseudonymizerDep, SessionDep, require_roles
 from foreman.audit.writer import hitl_acknowledge_entry, record
-from foreman.db.models import Alarm
+from foreman.db.models import Alarm, User
+from foreman.realtime.authz import ROLE_MANAGER, ROLE_SHIFT_LEAD, ROLE_TECHNICIAN
 from foreman.reasoners.drift.service import DRIFT_ALARM_CODE
 from foreman.schemas.resources import AlarmRead
 
 router = APIRouter(prefix="/reasoners/drift", tags=["drift"])
+
+# Quittieren ist eine HITL-Status-Aktion (§21.9): Schichtleiter/Techniker/Manager
+# dürfen, Werker liest nur. SERVERSEITIG erzwungen (§21.18) — nicht nur FE-UX-Filter.
+AckUser = Annotated[User, Depends(require_roles(ROLE_SHIFT_LEAD, ROLE_TECHNICIAN, ROLE_MANAGER))]
 
 
 @router.get("/alarms", response_model=list[AlarmRead])
@@ -53,7 +59,7 @@ async def list_drift_alarms(
 async def acknowledge_drift_alarm(
     alarm_id: int,
     session: SessionDep,
-    current_user: CurrentUser,
+    current_user: AckUser,
     pseudo: PseudonymizerDep,
 ) -> Alarm:
     """Quittiert eine Drift-Warnung (HITL). Erst danach gilt sie als erledigt.

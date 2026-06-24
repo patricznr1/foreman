@@ -24,9 +24,15 @@ describe("alarmRoleView — Matrix 3.1", () => {
     expect(alarmRoleView("technician").scope).toBe("assigned-machines");
   });
 
-  it("Manager: nur Aggregat, KEIN Einzel-Quittieren", () => {
-    expect(canAcknowledgeAlarms("manager")).toBe(false);
-    expect(alarmRoleView("manager").aggregateOnly).toBe(true);
+  it("Manager (Vorführ-Vollzugriff): volle Liste + quittieren, Scope alle", () => {
+    // Bewusste Abweichung von Matrix 3.1: das manager-Login ist das Werksleiter-/
+    // Vorführ-Profil — volle Lese-Dichte + Quittieren (HITL-Status, keine Aktorik),
+    // Scope über die ganze Flotte. Quittieren ist möglich, aber nicht Default-Geste.
+    const v = alarmRoleView("manager");
+    expect(v.aggregateOnly).toBe(false);
+    expect(canAcknowledgeAlarms("manager")).toBe(true);
+    expect(v.scope).toBe("all");
+    expect(v.acknowledgeIsDefault).toBe(false);
   });
 
   it("unbekannte Rolle → restriktivste Sicht (default-deny)", () => {

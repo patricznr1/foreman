@@ -31,11 +31,12 @@ describe("predictionRoleView", () => {
     expect(v.canDecide).toBe(false);
   });
 
-  it("Manager: nur Aggregat, nie die Einzelempfehlung, kein Trigger", () => {
+  it("Manager (Vollzugriff): volle Sicht, fordert an und entscheidet", () => {
     const v = predictionRoleView("manager");
-    expect(v.aggregateOnly).toBe(true);
-    expect(v.canTrigger).toBe(false);
-    expect(v.canDecide).toBe(false);
+    expect(v.aggregateOnly).toBe(false);
+    expect(v.canTrigger).toBe(true);
+    expect(v.canDecide).toBe(true);
+    expect(v.factorDetail).toBe(true);
   });
 
   it("unbekannte Backend-Rolle → restriktivster Default (default-deny)", () => {

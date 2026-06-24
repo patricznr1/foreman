@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 
 import asyncpg
 import pytest
@@ -208,9 +208,12 @@ def fake_redactor() -> FakeRedactor:
 
 @pytest_asyncio.fixture
 async def auth_token(client: AsyncClient) -> str:
-    """Registriert einen Test-Nutzer und gibt ein gültiges JWT zurück."""
+    """Registriert einen Test-Nutzer (Rolle `shift_lead`) und gibt ein gültiges JWT
+    zurück. shift_lead ist der operative Standard-Nutzer der Suite — er darf die
+    Trigger-/Quittier-Routen (§21.18), damit die bestehenden Reasoner-Tests den
+    Erfolgs-Pfad prüfen; rollenspezifische Sperren testet `auth_headers_for`."""
     creds = {"email": "tester@foreman.de", "password": "supersecret1"}
-    await client.post("/auth/register", json=creds)
+    await client.post("/auth/register", json={**creds, "role": "shift_lead"})
     response = await client.post("/auth/login", json=creds)
     token: str = response.json()["access_token"]
     return token
@@ -221,3 +224,19 @@ async def auth_client(client: AsyncClient, auth_token: str) -> AsyncClient:
     """Client mit gesetztem Bearer-Token für geschützte Routen."""
     client.headers["Authorization"] = f"Bearer {auth_token}"
     return client
+
+
+@pytest_asyncio.fixture
+def auth_headers_for(client: AsyncClient) -> Callable[[str, str], Awaitable[dict[str, str]]]:
+    """Factory: registriert + loggt einen Nutzer mit gegebener Rolle ein und liefert
+    den Bearer-Header — für rollenspezifische RBAC-Tests (§21.18). Mehrere Aufrufe
+    mit verschiedenen E-Mails/Rollen sind möglich (jeder eigener Nutzer)."""
+
+    async def _make(email: str, role: str) -> dict[str, str]:
+        creds = {"email": email, "password": "supersecret1"}
+        await client.post("/auth/register", json={**creds, "role": role})
+        resp = await client.post("/auth/login", json=creds)
+        token: str = resp.json()["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+
+    return _make

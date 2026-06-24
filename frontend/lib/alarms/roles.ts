@@ -44,9 +44,13 @@ const ROLE_VIEW: Record<Role, AlarmRoleView> = {
     scope: "assigned-machines",
     acknowledgeIsDefault: false,
   },
+  // Manager = Werksleiter-/Vorführ-Vollzugriff (bewusste Abweichung von Matrix 3.1,
+  // §21.9): volle Liste statt nur Aggregat, Quittieren erlaubt (HITL-Status-Aktion,
+  // KEINE Anlagen-Aktorik), Scope über die ganze Flotte. Quittieren ist möglich,
+  // aber nicht die Default-Geste (der Werksleiter sieht, greift selten selbst ein).
   manager: {
-    canAcknowledge: false,
-    aggregateOnly: true,
+    canAcknowledge: true,
+    aggregateOnly: false,
     scope: "all",
     acknowledgeIsDefault: false,
   },
