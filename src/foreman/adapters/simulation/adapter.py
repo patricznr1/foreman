@@ -105,9 +105,25 @@ def _build_profile(dp: DataPointSpec) -> SignalProfile | None:
 class SimulationAdapter(SourceAdapter):
     """Szenario-getriebener Generator realistischer Sensordaten mit Drift bei t*."""
 
-    def __init__(self, scenario: Scenario, *, seed: int | None = None) -> None:
+    def __init__(
+        self,
+        scenario: Scenario,
+        *,
+        seed: int | None = None,
+        end_anchor: datetime | None = None,
+    ) -> None:
         self._scenario = scenario
         self._seed = seed if seed is not None else DEFAULT_SEED
+        # --anchor-now: verschiebt das GESAMTE Zeitfenster, sodass das Szenario-Ende auf
+        # `end_anchor` fällt (Demo-Frische, damit die Daten nicht veralten). Die relative
+        # Struktur (Degradations-Offsets, Saisonalität) bleibt unverändert — nur das
+        # absolute Fenster wandert. end_anchor=None → kein Versatz (feste YAML-Zeit,
+        # reproduzierbar für Tests/F4-Validierung).
+        self._time_shift: timedelta = (
+            end_anchor - (scenario.start_utc + scenario.duration_delta)
+            if end_anchor is not None
+            else timedelta(0)
+        )
         self._topology: TopologyMap | None = None
         self._seasonality = SeasonalitySpec(
             shifts=tuple(
@@ -149,6 +165,7 @@ class SimulationAdapter(SourceAdapter):
         scenario_name: str | None = None,
         scenario_path: str | Path | None = None,
         seed: int | None = None,
+        end_anchor: datetime | None = None,
     ) -> SimulationAdapter:
         """Baut den Adapter aus Szenario-Objekt, -Name oder -Pfad (Registry-Eintrag)."""
         if scenario is not None:
@@ -161,7 +178,7 @@ class SimulationAdapter(SourceAdapter):
             raise ValueError(
                 "SimulationAdapter braucht 'scenario', 'scenario_name' oder 'scenario_path'."
             )
-        return cls(resolved, seed=seed)
+        return cls(resolved, seed=seed, end_anchor=end_anchor)
 
     @property
     def name(self) -> str:
@@ -189,7 +206,7 @@ class SimulationAdapter(SourceAdapter):
         return math.floor(self._scenario.duration_delta.total_seconds() / interval_s)
 
     def _offset_to_utc(self, offset: str) -> datetime:
-        return self._scenario.start_utc + parse_duration(offset)
+        return self._scenario.start_utc + self._time_shift + parse_duration(offset)
 
     # --- normalisierte Ausgabe ---
     def readings(self) -> Iterator[NormalizedReading]:
@@ -205,8 +222,8 @@ class SimulationAdapter(SourceAdapter):
         for i in range(self._tick_count()):
             # local_dt: lokale Schicht-Wandzeit (für Saisonalität/Schichtlogik).
             # utc_dt: derselbe Instant in UTC — der Normalform-Vertrag (§12) emittiert UTC.
-            local_dt = start_local + timedelta(seconds=i * interval_s)
-            utc_dt = self._scenario.start_utc + timedelta(seconds=i * interval_s)
+            local_dt = start_local + self._time_shift + timedelta(seconds=i * interval_s)
+            utc_dt = self._scenario.start_utc + self._time_shift + timedelta(seconds=i * interval_s)
             elapsed_s = i * interval_s
             for plan in self._plans:
                 data_point_id = dp_ids[plan.key]

@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import statistics
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 from foreman.adapters.simulation.adapter import SimulationAdapter
 from foreman.adapters.simulation.scenario import Scenario, load_scenario_by_name
@@ -202,3 +202,42 @@ def test_readings_werden_in_utc_emittiert() -> None:
     for reading in readings:
         assert reading.time.utcoffset() == timedelta(0)
     assert min(reading.time for reading in readings) == adapter.scenario.start_utc
+
+
+# --------------------------------------------------------------------------- #
+#  --anchor-now: Backfill-Fenster auf „jetzt" verschieben (Demo-Frische)
+# --------------------------------------------------------------------------- #
+def test_end_anchor_verschiebt_fenster_auf_anker() -> None:
+    # --anchor-now: das gesamte Backfill-Fenster wandert, sodass der Start auf
+    # (anker - duration) und das Ende auf den Anker faellt. Die festen Event-Offsets
+    # verschieben sich exakt mit; die Drift-Muster (elapsed-basiert) bleiben erhalten.
+    # Die Saisonalitaet (lokale Wandzeit) wandert bewusst mit — die Werte sind also
+    # NICHT zwingend identisch, das Zeitfenster aber deterministisch verschoben.
+    scenario = load_scenario_by_name("minimal_bearing_drift")
+    anchor = datetime(2026, 6, 24, 9, 0, tzinfo=UTC)
+    expected_shift = anchor - (scenario.start_utc + scenario.duration_delta)
+    plain = SimulationAdapter(scenario, seed=1)
+    shifted = SimulationAdapter(scenario, seed=1, end_anchor=anchor)
+    _fake_seed(plain)
+    _fake_seed(shifted)
+
+    s_times = [r.time for r in shifted.readings()]
+    assert s_times
+    # Start = anker - duration; Ende faellt knapp (1-2 Intervall-Ticks) unter den Anker.
+    assert min(s_times) == anchor - scenario.duration_delta
+    assert max(s_times) < anchor
+    assert anchor - max(s_times) < 2 * scenario.interval_delta
+
+    # Events tragen feste Offsets → exakt um den Shift verschoben, ganz im Fenster.
+    p_ev = [e.occurred_at for e in plain.events()]
+    s_ev = [e.occurred_at for e in shifted.events()]
+    assert s_ev == [t + expected_shift for t in p_ev]
+    assert all(anchor - scenario.duration_delta <= t <= anchor for t in s_ev)
+
+
+def test_ohne_end_anchor_bleibt_feste_szenario_zeit() -> None:
+    # Default (kein Anker): unveraenderte feste Szenario-Zeit — reproduzierbar fuer Tests/F4.
+    scenario = load_scenario_by_name("minimal_bearing_drift")
+    adapter = SimulationAdapter(scenario, seed=1)
+    _fake_seed(adapter)
+    assert next(iter(adapter.readings())).time == scenario.start_utc
