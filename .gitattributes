@@ -1,0 +1,3 @@
+# LightGBM-Modell ist Text, aber CRLF-empfindlich (LightGBM parst Zeilen) — nie
+# konvertieren, sonst "Model format error, expect a tree here" beim Laden (Crash).
+src/foreman/reasoners/failure/artifacts/** -text
