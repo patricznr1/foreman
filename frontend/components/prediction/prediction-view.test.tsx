@@ -50,10 +50,25 @@ describe("PredictionView — Rollen-Split", () => {
     expect(screen.getByRole("button", { name: /Vorhersage anfordern/ })).toBeInTheDocument();
   });
 
-  it("Manager: nur Aggregat — kein Trigger, kein Einzel-Vorschlag", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => res(true, 200, [])));
+  it("Manager (Vollzugriff): Risikobild-Kopf + Flotten-Auswahl + Trigger", async () => {
+    // Werksleiter-/Vorführprofil (§21.10): keine Aggregat-Sackgasse — der manager
+    // wählt aus der Flotte (kein assigned_machine_ids) und fordert selbst an.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/machines")) {
+          return res(true, 200, [
+            { id: 1, line_id: 3, external_id: null, label: "Presse 1", machine_class: null, manufacturer: null, location: null, created_at: "2026-01-01T00:00:00Z" },
+            { id: 2, line_id: 3, external_id: null, label: "Presse 2", machine_class: null, manufacturer: null, location: null, created_at: "2026-01-01T00:00:00Z" },
+          ]);
+        }
+        return res(true, 200, []); // Vorhersagen (Risikobild-Kopf + Panel-Autoload)
+      }),
+    );
     render(<PredictionView user={user({ role: "manager", assigned_machine_ids: [] })} />);
-    expect(await screen.findByText(/Keine Vorhersagen vorhanden/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Vorhersage anfordern/ })).toBeNull();
+    // Vollzugriff: der manager kann jetzt selbst anfordern ...
+    expect(await screen.findByRole("button", { name: /Vorhersage anfordern/ })).toBeInTheDocument();
+    // ... und wählt die Maschine aus der Flotte (Auswahl statt "keine zugeordnet").
+    expect(await screen.findByRole("combobox")).toBeInTheDocument();
   });
 });

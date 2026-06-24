@@ -27,8 +27,11 @@ const ROLE_VIEW: Record<Role, PredictionRoleView> = {
   shift_lead: { canTrigger: true, canDecide: true, factorDetail: true, aggregateOnly: false },
   // Techniker: liest mit Faktor-Detail für die Diagnose (kein Trigger, keine Entscheidung).
   technician: { canTrigger: false, canDecide: false, factorDetail: true, aggregateOnly: false },
-  // Manager: aggregiertes Risikobild über Maschinen, nie die Einzelempfehlung als Befehl.
-  manager: { canTrigger: false, canDecide: false, factorDetail: false, aggregateOnly: true },
+  // Manager = Werksleiter-/Vorführ-Vollzugriff (bewusste Abweichung Matrix 3.1,
+  // §21.10): volle Einzelsicht + Faktor-Detail, fordert an (Trigger, erzeugt
+  // Erkenntnis – KEINE Aktorik) und entscheidet (HITL quittieren/verwerfen,
+  // client-seitig auditierbar). Das Risikobild bleibt als Überblicks-Kopf.
+  manager: { canTrigger: true, canDecide: true, factorDetail: true, aggregateOnly: false },
 };
 
 /** Restriktivster Default für unbekannte Backend-Rollen (default-deny). */
