@@ -88,8 +88,13 @@ describe("AlarmsView — Staffelung & Rollen", () => {
     expect(screen.queryByRole("button", { name: /quittieren/i })).toBeNull();
   });
 
-  it("Manager: nur Aggregat (Zähler/Trends), kein Einzel-Quittieren, keine Liste", async () => {
-    const { transport } = setup(user("manager"), [[]]);
+  it("Manager (Vollzugriff): Lagebild-Kopf UND volle Liste, darf quittieren (Drift)", async () => {
+    // Werksleiter-/Vorführ-Profil (§21.9): das Lagebild bleibt als Überblicks-Kopf,
+    // darunter die volle Liste — keine Aggregat-Sackgasse mehr. Quittieren erlaubt
+    // (HITL-Status, keine Aktorik); reale Quittier-Route nur für Drift.
+    const { transport } = setup(user("manager"), [
+      [alarm({ id: 5, machine_id: 1, code: "DRIFT", severity: "critical" })],
+    ]);
     act(() => {
       transport.emit("overview", {
         ...emptyOverview,
@@ -108,9 +113,10 @@ describe("AlarmsView — Staffelung & Rollen", () => {
         open_alarm_total: 2,
       });
     });
+    // Lagebild-Kopf (Überblick) ...
     expect(await screen.findByText("Häufigste Quellen")).toBeInTheDocument();
-    expect(screen.getByText(/Manager-Sicht/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /quittieren/i })).toBeNull();
+    // ... UND die volle Liste mit Quittier-Ziel (manager darf jetzt quittieren).
+    expect(await screen.findByRole("button", { name: /quittieren/i })).toBeInTheDocument();
   });
 });
 
