@@ -17,13 +17,19 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# 1) Abhängigkeiten zuerst (Layer-Cache): nur Manifest kopieren, dann auflösen.
-COPY pyproject.toml ./
+# 1) Abhängigkeiten zuerst (Layer-Cache): Manifest + README (für Package-Metadaten) kopieren, dann auflösen.
+COPY pyproject.toml README.md ./
 RUN uv pip install --system --no-cache .
 
 # 2) NER-Modell für die Freitext-Maskierung (Research §5.3 b).
 #    ~560 MB — bewusst im Image, damit der heiße Pfad ohne Laufzeit-Download startet.
 RUN python -m spacy download de_core_news_lg
+
+# 2b) System-Laufzeitbibliothek: libgomp1 (OpenMP) wird von LightGBM (Ausfallvorhersage-
+#     Reasoner) zur Laufzeit dynamisch geladen — im slim-Image nicht enthalten.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # 3) Anwendungscode + Migrationen
 COPY src ./src
