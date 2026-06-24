@@ -22,9 +22,12 @@ dockerfilePath = "Dockerfile"
 # Migration läuft im Start-Command (NICHT im Build): die DB ist nur zur LAUFZEIT
 # über Private Networking erreichbar (Railway-Doku). Park-Seed läuft NICHT beim
 # Boot — separater Einmal-Schritt (siehe DEPLOY.md).
-# --host :: bindet dual-stack (IPv6 + IPv4): Railways internes DNS löst auf IPv6
-# auf — reines 0.0.0.0 wäre per Private Networking (FE→Backend) nicht erreichbar.
-startCommand = "sh -c 'alembic upgrade head && uvicorn foreman.main:app --host :: --port ${PORT:-8000}'"
+# --host 0.0.0.0: Railways Healthcheck-Prober (healthcheck.railway.app) erreicht uvicorn
+# zuverlässig nur über 0.0.0.0 (Railway-Doku, uvicorn-Beispiel) — --host :: scheiterte am
+# Healthcheck ("service unavailable"). FE→Backend über Private Networking bleibt intakt:
+# die Environment ist dual-stack (nach 16.10.2025 erstellt) → railway.internal löst auch
+# auf IPv4 auf, der Backend-Service ist intern damit auch über 0.0.0.0 erreichbar.
+startCommand = "sh -c 'alembic upgrade head && uvicorn foreman.main:app --host 0.0.0.0 --port ${PORT:-8000}'"
 healthcheckPath = "/health"
 # spaCy-Modell + LightGBM-Import machen den Kaltstart spürbar — großzügiges Fenster.
 healthcheckTimeout = 300

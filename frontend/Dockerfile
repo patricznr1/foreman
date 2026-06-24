@@ -37,8 +37,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 # Standalone-Server bindet an HOSTNAME/PORT; Railway injiziert PORT zur Laufzeit.
-# :: = dual-stack (IPv6 + IPv4) — robust gegen Railways IPv6-internes/Legacy-Routing.
-ENV HOSTNAME=::
+# 0.0.0.0: Railways Healthcheck-Prober (healthcheck.railway.app) erreicht den Server
+# zuverlässig über IPv4 (Railway-Doku) — HOSTNAME=:: scheitert am Healthcheck
+# ("service unavailable"). Das Frontend wird ohnehin nur öffentlich (Browser→Domain)
+# angesprochen, kein eingehendes Private Networking nötig.
+ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
 # Unprivilegiert laufen (das offizielle node-Image bringt den Nutzer 'node' mit).
