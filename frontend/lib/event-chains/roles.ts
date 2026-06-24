@@ -25,8 +25,10 @@ const ROLE_VIEW: Record<Role, ChainRoleView> = {
   shift_lead: { canTrigger: true, canPin: true, aggregateOnly: false },
   // Techniker: liest für die Diagnose und pinnt an die Maschine (kein Trigger).
   technician: { canTrigger: false, canPin: true, aggregateOnly: false },
-  // Manager: verdichtete Zusammenfassung über Ketten, nie die volle Erzählung.
-  manager: { canTrigger: false, canPin: false, aggregateOnly: true },
+  // Manager = Werksleiter-/Vorführ-Vollzugriff (bewusste Abweichung Matrix 3.1,
+  // §21.15): volle Erzählung statt nur Zusammenfassung, rekonstruiert (Trigger,
+  // erzeugt Erkenntnis – KEINE Aktorik) und pinnt.
+  manager: { canTrigger: true, canPin: true, aggregateOnly: false },
 };
 
 /** Restriktivster Default für unbekannte Backend-Rollen (default-deny). */

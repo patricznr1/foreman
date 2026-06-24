@@ -37,11 +37,13 @@ afterEach(() => {
 });
 
 describe("ChainsView — Rollen-Split", () => {
-  it("Manager: nur Aggregat, keine gespeicherte-Ketten-Liste", async () => {
+  it("Manager (Vollzugriff): volle Sicht – gespeicherte Ketten + Rekonstruieren mit Anker", async () => {
+    // Werksleiter-/Vorführprofil (§21.15): keine Aggregat-Sackgasse mehr — der
+    // manager liest die volle Erzählung und kann selbst rekonstruieren (Trigger).
     vi.stubGlobal("fetch", vi.fn(async () => res(true, 200, [])));
-    render(<ChainsView user={user({ role: "manager" })} anchorAlarmId={null} machineId={null} />);
-    expect(await screen.findByText(/Noch keine Ketten gespeichert/)).toBeInTheDocument();
-    expect(screen.queryByText(/Gespeicherte Ketten/)).toBeNull();
+    render(<ChainsView user={user({ role: "manager" })} anchorAlarmId={5} machineId={null} />);
+    expect(await screen.findByText(/Gespeicherte Ketten/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Kette rekonstruieren/ })).toBeInTheDocument();
   });
 
   it("Schichtleiter mit Anker: Trigger vorhanden", async () => {
