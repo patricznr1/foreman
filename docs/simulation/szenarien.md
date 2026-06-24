@@ -1,7 +1,7 @@
 # FOREMAN-Simulations-Szenarien — fachliche Begründung & F4-Validierungserwartung
 
 > Stand Juni 2026 · außentauglich (öffentliches Repo)
-> Gegenstand: die vier Szenario-Dateien unter `src/foreman/adapters/simulation/scenarios/` als **Datengrundlage mit bekannter Wahrheit** für die Validierung des Drift-Reasoners (Sprint F4). Dieses Dokument liefert pro Szenario die Story, die fachliche Begründung der Signal- und Drift-Parameter (mit Quellen) und die konkrete Validierungs­erwartung (t\*, Erkennungsfenster, Fehlalarm-Erwartung).
+> Gegenstand: die Szenario-Dateien unter `src/foreman/adapters/simulation/scenarios/` als **Datengrundlage mit bekannter Wahrheit** — die vier Einzel-Szenarien (§1–§4, Validierung des Drift-Reasoners, Sprint F4) sowie der **Twin-Park "Montagelinie 1"** (§7, Schwester-/Klassen-Park für den Wartungszyklen-Reasoner #4). Dieses Dokument liefert pro Szenario die Story, die fachliche Begründung der Signal- und Drift-Parameter (mit Quellen) und die konkrete Validierungs­erwartung (t\*, Erkennungsfenster, Fehlalarm-Erwartung).
 > **Architektur (IP):** Das Langzeitgedächtnis ist ein **externer Dienst hinter einer HTTP-API**; für diese Szenarien irrelevant, keine Substrat-Interna.
 > **Querverweise:** Drift-Verfahren & Validierungslogik → [`../research/drift-erkennung-verfahren.md`](../research/drift-erkennung-verfahren.md) (§7); erwartete Feature-Signale → [`../research/ausfallvorhersage-methodenwahl.md`](../research/ausfallvorhersage-methodenwahl.md) (§5).
 
@@ -100,9 +100,77 @@ Gemeinsamer roter Faden: In allen drei Positiv-Szenarien erkennt der Drift-Reaso
 
 - **F3-Schema-Abgleich:** Beim Schreiben von `prompts/F3_ingestion_simulation.md` das hier verwendete Schema als verbindlich übernehmen oder die YAMLs daran anpassen (insb. `drift`-Block-Felder, Offset-Notation, `maintenance_events`-Unterstützung).
 - **`measurement_type: vibration`** in GROUND_TRUTH §5 ergänzen (derzeit `signal`/`mm/s`-Workaround).
-- **Werker-Notiz-Stil:** Sobald der Stilguide (Cowork-Auftrag B) vorliegt, die Notizen-Texte daran angleichen; aktuell knappe, plausible deutsche Schichtbericht-Notizen.
+- **Werker-Notiz-Stil:** Notiz-Texte am Stilguide (`werker-notizen-stilguide.md`) ausrichten; aktuell knappe, plausible deutsche Schichtbericht-Notizen.
 - **Parametrierung an Realdaten:** Magnituden und Zeithorizonte sind fachlich plausibel, aber synthetisch; sobald reale SPS-/Sensordaten vorliegen, gegen sie kalibrieren.
 - **Erkennungsfenster vs. Detektor-Parameter:** Die Fenster (z. B. 7–10 d) sind mit den Warm-up-/`delta`-Startwerten aus dem Drift-Doc (§6) konsistent zu halten; bei Tuning beidseitig nachziehen.
+
+---
+
+## 7. Twin-Park "Montagelinie 1" — Schwester-/Klassen-Park (Schritt 1)
+
+Über die vier Einzel-Szenarien hinaus liefert der Park einen **Schwester-/Klassen-Vergleich**: mehrere Instanzen je Maschinenklasse, als Linie angeordnet. Er ist die Datengrundlage für den Wartungszyklen-Reasoner (#4, noch offen) und den Klassen-Drift-Vergleich. Magnituden und Degradationssignaturen sind — wie bei den vier Einzel-Szenarien — fachlich begründet (Quellen unten), die Werte sind synthetisch.
+
+**Bau ohne Schema-Änderung.** Ein Park entsteht aus **N Einzelmaschinen-Szenariodateien mit gleicher `line.label`** (`"Montagelinie 1"`), verschiedener `machine.external_id` und gleicher `machine_class` für Schwestern. `seed.py` schlüsselt die Linie auf `label` → alle 12 Maschinen hängen an **einer** Linie; der Schwester-/Klassen-Vergleich passiert maschinenübergreifend in der DB. Gemeinsame Zeitachse: `start: 2026-06-01T06:00 (+02:00)`, `duration: 21d`, `sample_interval: 10m`. Dateien: `src/foreman/adapters/simulation/scenarios/park_*.yaml`; Seed der ganzen Linie über `python -m foreman.adapters.simulation.park`.
+
+### 7.1 Park-Layout (12 Maschinen / 5 Klassen)
+
+| external_id | Klasse | Rolle | Datei | Degradation |
+|---|---|---|---|---|
+| FD-01 | `feeder` | Teilezuführung A, **gesunde Kontrolle** | `park_fd01` | — |
+| FD-02 | `feeder` | Teilezuführung B, **D-Ketten-Kopf** | `park_fd02` | B6 Dosis-Streuung + B5 Pneumatik-Schaltzeit |
+| PR-01 | `servo_press` | Fügepresse 1 | `park_pr01` | B2 Hydraulik-Leckage |
+| PR-02 | `servo_press` | Fügepresse 2, **D-Ketten-Mitte** | `park_pr02` | B1 Werkzeugverschleiß (P2+P4) |
+| PR-03 | `servo_press` | Fügepresse 3, **gesunde Kontrolle** | `park_pr03` | — |
+| AX-01 | `servo_axis` | Handling-Achse X, **P1-/P3-Kontrolle** | `park_ax01` | — |
+| AX-02 | `servo_axis` | Handling-Achse Y | `park_ax02` | B4 falscher Schmierstoff (P1) |
+| AX-03 | `servo_axis` | Handling-Achse Z (vertikal) | `park_ax03` | B3 Lager-Drift durch Überlast |
+| AX-04 | `servo_axis` | Handling-Achse U, **gesund/über-gewartet** | `park_ax04` | — (P3) |
+| RB-01 | `robot` | Bestückroboter 1, **gesunde Kontrolle** | `park_rb01` | — |
+| RB-02 | `robot` | Bestückroboter 2 (Reserve), **gesund/Duty-Sonderfall** | `park_rb02` | — |
+| VS-01 | `vision` | Endkontrolle, **D-Ketten-Endpunkt** | `park_vs01` | reject-Anstieg (Wirkung der Kette) |
+
+**Instanz-Streuung** ohne Schema-Änderung über `baseline.mean`/`noise_std`/`load_factor` je Datei (Fertigungstoleranz, Duty, Einbaulage). Bewusste Sonderfälle für den Eigenprofil-Test (#2): **AX-03** trägt durch die Vertikallage ein erhöhtes Grund-Drehmoment/-Strom — das ist **normal, kein Drift**; **RB-02** läuft nur Früh-/Spätschicht (anderes Duty-Profil, normal). Datenpunkt-Katalog je Klasse: Kraft/Drehmoment/Strom/Temperatur über die `measurement_type`-Enums, Druck/Position/Vibration über `signal`+Einheit, Sollwerte über `kind: setpoint` (konstante Baseline). **Zähler (`counter`) sind bewusst nicht modelliert** — die Engine erzeugt nur State- (`driven_by`) oder Analog-Signale (`mean`); ein monoton zählender Wert ist heute nicht abbildbar und würde als irreführende Konstante erscheinen.
+
+### 7.2 Degradationsfamilien B1–B7
+
+Aufbau auf den vier Einzel-Szenarien (§1–§4), als `drift`-Block (ramp/variance) ausgedrückt:
+
+- **B1 Werkzeugverschleiß** (PR-02): `press_force`/`motor_current`/`ram_position` ramp progressiv ab t\*=4d (∝ Schnittkraft, ISO 8688). Schwestern PR-01/PR-03 gesund.
+- **B2 Hydraulik-Leckage** (PR-01): `hydraulic_pressure` ramp ↓ ab t\*=6d, `oil_temp` ↑ spät, `ram_position` ↑ (Kompensation).
+- **B3 Lager-Drift / Überlast** (AX-03): `axis_bearing_vibration` ramp progressiv ab t\*=7d (ISO 20816 Zone A→C/D), Temperatur spät — durch Vertikallast, trotz korrekter Wartung.
+- **B4 Schmier-Korrelation** (AX-02 vs AX-01): `axis_bearing_vibration` ramp progressiv ab t\*=3d (falscher Schmierstoff Y, ISO VG 46); AX-01 (Fett X) stabil.
+- **B5 Pneumatik-Schaltzeit** (FD-02): `clamp_switch_time` ramp progressiv ab t\*=10d (Ventil-/Dichtungsverschleiß).
+- **B6 Dosis-Streuung** (FD-02, Ketten-Kopf): `dose_mass` variance + `feed_rate` ramp ↓ ab t\*=4d.
+- **B7 Gesund (Negativkontrolle)**: FD-01, PR-03, AX-01, AX-04, RB-01, RB-02 — **kein** `drift`-Block, `drift_present: false`. Jede Drift-/Wartungs-Meldung hier ist ein #2/#4-Abnahmefehler.
+
+### 7.3 D-Kette (Sektion D, F6 on-demand)
+
+Eine durchgehende Kette über drei Dateien, am Betriebstag **Freitag (Tag 4)** gestaffelt — bewusst kein Wochenend-Tag (Stillstand):
+
+`FD-02` Dosis-Streuung (t\*=4d, Notiz 4d13h) → `PR-02` intermittierende Unterfüllung (Werker-Notiz 4d14h — bewusst **kein** Alarm, damit der press_force-Lastalarm der echte Verschleiß-Anker bleibt) → `VS-01` Ausschuss-Anstieg (`reject_rate` ab t\*=4d, Notiz 4d15h, Alarm `REJECT_RATE_HIGH` 4d16h). Strenge zeitliche Ordnung Oberlauf vor Unterlauf.
+
+Die Verbindung ist **zeitliche Folge, keine behauptete Kausalität** — der Ereignisketten-Reasoner (F6) rekonstruiert sie on-demand ab dem VS-01-Anker rückwärts. Mechanisch ist die Kette **kein** Feld einer Datei, sondern emergent aus den Ereignissen mehrerer Maschinen in der DB (Oberlauf-Ereignis früher, Unterlauf-Wirkung später, gleiche `line.label`). Die Unterfüllung an PR-02 ist ein **transientes** Ereignis (Alarm/Notiz), bewusst **nicht** als zweite Drift auf `press_force` modelliert (eine Drift je Datenpunkt; PR-02s `press_force`-Kurve trägt allein den Werkzeugverschleiß).
+
+### 7.4 Wartungs-Kausalmuster P1–P4 (Reasoner #4) — Master-Ground-Truth
+
+Pro Park-Datei trägt der `ground_truth`-Block (`extra=allow`) ein `maintenance_causal`-Feld (Ursache-Ereignis, betroffene Maschine, Kontroll-Schwestern, erwarteter #4-Befund, `expected_false_findings: 0`). Übersicht der eingebauten Muster:
+
+| Muster | Aussage für #4 | Umsetzung | Betroffen | Kontrolle |
+|---|---|---|---|---|
+| **P1 Schmierstoff-Wahl** | Folge hängt am *Schmierstoff*, nicht am *Ob-geschmiert* | gleiche Wartungsart, Fett Y (VG46) vs X (VG150) | AX-02 | AX-01 |
+| **P2 Intervall zu lang → Ausfall** | längeres Wechselintervall korreliert mit Drift/Ausfall | tool_change 90d statt 30d → B1-Drift → tool_failure | PR-02 | PR-01, PR-03 |
+| **P3 Intervall zu kurz → Verschwendung** | kürzeres Intervall bringt **keine** Verbesserung | lubrication 7d (3 Events) = identisch gesund wie 30d | AX-04 | AX-01 |
+| **P4 Übersprungene Inspektion** | fehlende Inspektion geht dem Ausfall voraus | planmäßige Inspektion ~10d weggelassen (Event-Absenz) | PR-02 | PR-01, PR-03 |
+
+**Ehrlichkeits-Fälle (nicht jede Drift ist Wartungsversagen):** AX-03 (Lager-Drift durch **Überlast**, trotz korrekter Wartung), PR-01 (Dichtung am **Lebensende**, trotz disziplinierter Inspektion), FD-02 (reiner **Verschleiß**). #4 darf diesen Schwestern keinen Wartungsfehler (P1–P4) zuschreiben.
+
+**P5 (Intra-Maschinen-Wartungseffekt / Sägezahn) ist NICHT Teil dieses Schritts.** Das aktuelle Schema kennt nur *eine* monotone Drift je Datenpunkt; „gute Wartung flacht die Driftrate ab“ ist **innerhalb** einer Maschine heute nicht abbildbar (über Schwestern hinweg dagegen schon — genau P1–P4). P5 braucht die Engine-Erweiterung **E1** (mehrphasige Drift / `maintenance_effect`) und ist der nachgelagerte Schritt, ebenso der Reasoner #4 selbst und FE-Sektion F.
+
+### 7.5 Beobachtungsgrenze (hart)
+
+Der **Grund** einer Degradation (falscher Schmierstoff, überfälliges Werkzeug, übersprungene Inspektion) lebt ausschließlich im **Wartungs-Log** (`maintenance_events.description`) und in der **Ground-Truth** (`ground_truth`, unsere verborgene Validierungs-Wahrheit) — **niemals** als gemessener Datenpunkt. FOREMAN „sieht" nur die **Wirkungen** in beobachtbaren Signalen (Vibration, Temperatur, Kraft, Druck, Strom, reject_rate). Die Last-Größen des Parks (Kraft/Drehmoment/Druck/Strom) fallen als beobachtete Datenpunkte an und speisen später die G-Anzeige als Nebenprodukt — kein Simulator. Konsistent mit der #5-/Belastungs-Korrektur.
+
+> Magnituden, Intervalle und Zeithorizonte sind fachlich begründete, **synthetische** Annahmen (ISO 20816/8688, RCM P-F-Intervall, Schmierstoff κ/NLGI/ISO-VG), die finale Echtheits-Abnahme macht Patric (17 Jahre Industrie). Vor Einsatz mit Realdaten kalibrieren.
 
 ---
 

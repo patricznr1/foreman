@@ -1,0 +1,171 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — PR-03 (servo_press, GESUNDE Schwester / B7)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: Referenz-Schwester der Klasse servo_press. KEINE Degradation,
+#   disziplinierte Wartung (tool_change + Inspektion im Plan) — der direkte
+#   Kontrast zu PR-02 (P2/P4). Jede Drift-/Wartungs-Meldung hier ist ein
+#   #2/#4-Abnahmefehler.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_pr03
+  title: "Montagelinie 1 / PR-03 Fuegepresse 3 — gesunde Referenz-Schwester"
+  description: >
+    Fuegepresse 3 der Montagelinie 1. Ueber 21 Tage gesund: Kraft, Druck,
+    Oeltemperatur und Strom im Normalband, kein Drift. Diszipliniertes
+    Wartungsregime (Werkzeugwechsel zum Standzeitbeginn, planmaessige Inspektion
+    an Tag 10) — die Kontrolle zu PR-02 (uebersprungene Inspektion / ueberfaelliges
+    Werkzeug).
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "PR-03"
+  label: "Fuegepresse 3"
+  machine_class: "servo_press"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 22"
+
+components:
+  - key: ram_drive
+    label: "Ram-Antrieb"
+    component_type: drive
+  - key: hydraulic
+    label: "Hydraulikaggregat"
+    component_type: hydraulic
+  - key: tool
+    label: "Fuegewerkzeug"
+    component_type: tool
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: press_force
+    name: "press_force"
+    component: ram_drive
+    kind: analog
+    measurement_type: force
+    unit: "kN"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 250.0
+    baseline: { mean: 178.0, noise_std: 3.0, gated_by: machine_state }
+
+  - key: ram_position
+    name: "ram_end_position"
+    component: ram_drive
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 400.0
+    baseline: { mean: 199.0, noise_std: 1.5, gated_by: machine_state }   # Instanz-Streuung
+
+  - key: hydraulic_pressure
+    name: "hydraulic_pressure"
+    component: hydraulic
+    kind: analog
+    measurement_type: signal
+    unit: "bar"
+    source: simulation
+    normal_min: 80.0
+    normal_max: 180.0
+    baseline: { mean: 133.0, noise_std: 2.0, gated_by: machine_state }
+
+  - key: oil_temp
+    name: "hydraulic_oil_temperature"
+    component: hydraulic
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 70.0
+    baseline: { mean: 44.0, noise_std: 1.0, gated_by: machine_state }
+
+  - key: motor_current
+    name: "press_motor_current"
+    component: ram_drive
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 60.0
+    baseline: { mean: 29.0, noise_std: 1.0, gated_by: machine_state }
+
+  - key: target_force
+    name: "target_force"
+    component: tool
+    kind: setpoint
+    measurement_type: force
+    unit: "kN"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 250.0
+    # Sollwert: NICHT gegated (sonst Sprung auf 0 im Stillstand) — konstante Baseline.
+    baseline: { mean: 185.0, noise_std: 0.0 }
+
+maintenance_events:
+  - offset: "0d"
+    component: tool
+    type: tool_change
+    description: >
+      Werkzeugwechsel Fuegepresse 3: Fuegestempel zum Standzeitbeginn getauscht.
+      Wechselintervall 30 Tage gemaess Vorgabe.
+    performed_by: "PSEUDO_M02"
+  - offset: "10d09h"
+    component: ram_drive
+    type: inspection
+    description: >
+      Planmaessige Inspektion PR-03: Ram-Antrieb, Hydraulik und Werkzeug
+      geprueft, ohne Befund. Regelintervall eingehalten (Kontrast zu PR-02).
+    performed_by: "PSEUDO_M02"
+
+worker_notes:
+  - offset: "6d08h"
+    shift: frueh
+    author: "PSEUDO_W01"
+    text: >
+      PR-03 laeuft sauber, Kraftverlauf wie immer. Keine Auffaelligkeiten.
+
+alarms: []
+
+ground_truth:
+  drift_present: false
+  expected_drift_detections: 0
+  expected_false_alarms: 0
+  sibling_role: "Referenz-Schwester der Klasse servo_press (Kontrolle zu PR-01/PR-02)"
+  maintenance_causal:
+    pattern: control
+    regime: "diszipliniert (tool_change 30d + Inspektion 10d im Plan)"
+    expected_finding: "keiner — gesunde Schwester, direkter Kontrast zu PR-02 (P2/P4)"
+    control_for: ["PR-02"]
+    expected_false_findings: 0
+  narrative_anchor: >
+    Negativkontrolle der servo_press-Klasse und Wartungs-Gegenbeispiel zu PR-02:
+    gleiche Klasse, diszipliniertes Regime, gesund.

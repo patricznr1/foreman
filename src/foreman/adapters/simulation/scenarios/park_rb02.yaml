@@ -1,0 +1,143 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — RB-02 (robot, GESUND / Duty-Sonderfall)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: Referenz-Schwester der Klasse robot mit ABWEICHENDEM Duty-Profil:
+#   RB-02 ist der Reserve-/Zusatzroboter und laeuft nur Frueh- + Spaetschicht
+#   (keine Nacht), mit etwas anderem Grundmoment. Gesund, KEIN Drift. Pruefstein,
+#   dass der Schwester-Vergleich (#2/#4) das andere Auslastungsprofil NICHT als
+#   Anomalie wertet — anders als bei AX-03 (dort ist die Drift echt).
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_rb02
+  title: "Montagelinie 1 / RB-02 Bestueckroboter 2 — gesund, abweichendes Duty-Profil"
+  description: >
+    Bestueckroboter 2 der Montagelinie 1, der Reserve-Roboter. Laeuft nur Frueh-
+    und Spaetschicht (keine Nachtschicht) und mit etwas niedrigerem Grundmoment.
+    Ueber 21 Tage gesund, kein Drift. Das abweichende Auslastungsprofil (weniger
+    Schichten) ist NORMAL und darf im Schwester-Vergleich nicht als Auffaelligkeit
+    erscheinen.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "RB-02"
+  label: "Bestueckroboter 2 (Reserve)"
+  machine_class: "robot"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 41"
+
+components:
+  - key: joint_bearing
+    label: "Gelenklager Achse 1"
+    component_type: bearing
+  - key: gearbox
+    label: "Getriebe"
+    component_type: gearbox
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 0.95 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 0.95 }
+  weekend: idle
+  note: "Reserve-Roboter — nur Frueh- und Spaetschicht, keine Nachtschicht (abweichendes Duty-Profil, normal)."
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: cycle_time
+    name: "robot_cycle_time"
+    component: gearbox
+    kind: analog
+    measurement_type: signal
+    unit: "s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 15.0
+    baseline: { mean: 8.2, noise_std: 0.2, gated_by: machine_state }
+
+  - key: max_joint_torque
+    name: "robot_max_joint_torque"
+    component: joint_bearing
+    kind: analog
+    measurement_type: torque
+    unit: "Nm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 80.0
+    baseline: { mean: 40.0, noise_std: 2.0, gated_by: machine_state }
+
+  - key: path_following_error
+    name: "robot_path_following_error"
+    component: joint_bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 1.0
+    baseline: { mean: 0.30, noise_std: 0.05, gated_by: machine_state }
+
+  - key: drive_temp
+    name: "robot_drive_temperature"
+    component: gearbox
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 70.0
+    baseline: { mean: 39.0, noise_std: 1.0, gated_by: machine_state }
+
+maintenance_events:
+  - offset: "3d10h"
+    component: gearbox
+    type: inspection
+    description: >
+      Routine-Inspektion Bestueckroboter 2 (Reserve): Getriebe und Gelenklager
+      geprueft, ohne Befund. Wartungsplan eingehalten.
+    performed_by: "PSEUDO_M03"
+
+worker_notes:
+  - offset: "10d15h"
+    shift: spaet
+    author: "PSEUDO_W04"
+    text: >
+      RB-02 laeuft nur Frueh und Spaet, nachts steht er. Wenn er laeuft, ist er
+      sauber. Nichts zu vermerken.
+
+alarms: []
+
+ground_truth:
+  drift_present: false
+  expected_drift_detections: 0
+  expected_false_alarms: 0
+  sibling_role: "Referenz-Schwester der Klasse robot (gesund, abweichendes Duty-Profil)"
+  baseline_not_drift:
+    - { data_point: machine_state, note: "nur Frueh-/Spaetschicht (keine Nacht) — abweichendes Duty-Profil, NORMAL; kein Drift/keine Anomalie" }
+  maintenance_causal:
+    pattern: control
+    regime: "diszipliniert (Inspektion im Plan), reduzierter Schichtbetrieb"
+    expected_finding: "keiner — gesund; das andere Auslastungsprofil darf NICHT als Auffaelligkeit gemeldet werden"
+    control_for: ["RB-01"]
+    expected_false_findings: 0
+  narrative_anchor: >
+    Gesunde Schwester mit anderem Duty-Profil — Gegenstueck zu AX-03: dort ist die
+    hohe Grundlast normal UND es gibt echte Drift; hier ist das andere Profil
+    normal UND es gibt keine Drift.

@@ -1,0 +1,167 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — AX-04 (servo_axis, GESUND / P3 ueber-gewartet)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: Referenz-Schwester der Klasse servo_axis. Muster P3 (Intervall zu kurz
+#   -> Verschwendung): Schmierung alle 7 Tage (drei Ereignisse im Fenster) statt
+#   30d wie AX-01 — das Verhalten ist IDENTISCH gesund, der 4-fache Aufwand bringt
+#   KEINE messbare Verbesserung. Reiner Event-Log-Kontrast, KEINE Drift noetig.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_ax04
+  title: "Montagelinie 1 / AX-04 Handling-Achse U — gesund, aber ueber-gewartet (P3)"
+  description: >
+    Handling-Achse U der Montagelinie 1. Ueber 21 Tage gesund — wie AX-01, aber
+    mit deutlich kuerzerem Schmierintervall (alle 7 Tage statt 30). Die Signale
+    sind nicht besser als bei AX-01; der haeufigere Wartungsaufwand zahlt sich
+    nicht aus. Beleg fuer Ueber-Wartung (P3) im #4-Intervall-Vergleich.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "AX-04"
+  label: "Handling-Achse U"
+  machine_class: "servo_axis"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 33"
+
+components:
+  - key: bearing
+    label: "Linearfuehrungslager"
+    component_type: bearing
+  - key: ballscrew
+    label: "Kugelgewindetrieb"
+    component_type: ballscrew
+  - key: motor
+    label: "Servomotor"
+    component_type: motor
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: axis_torque
+    name: "axis_torque"
+    component: motor
+    kind: analog
+    measurement_type: torque
+    unit: "Nm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 60.0
+    baseline: { mean: 18.0, noise_std: 1.0, gated_by: machine_state }
+
+  - key: motor_current
+    name: "axis_motor_current"
+    component: motor
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 16.0
+    baseline: { mean: 8.0, noise_std: 0.4, gated_by: machine_state }
+
+  - key: following_error
+    name: "axis_following_error"
+    component: ballscrew
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 0.10
+    baseline: { mean: 0.02, noise_std: 0.004, gated_by: machine_state }
+
+  - key: bearing_vibration
+    name: "axis_bearing_vibration"
+    component: bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 2.0, noise_std: 0.15, gated_by: machine_state }
+
+  - key: bearing_temp
+    name: "axis_bearing_temperature"
+    component: bearing
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline: { mean: 45.0, noise_std: 1.0, gated_by: machine_state }
+
+maintenance_events:
+  - offset: "0d09h"
+    component: bearing
+    type: lubrication
+    description: >
+      Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) —
+      spezifikationskonform. Verkuerztes Intervall 7 Tage (1/3).
+    performed_by: "PSEUDO_M01"
+  - offset: "7d09h"
+    component: bearing
+    type: lubrication
+    description: >
+      Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) —
+      verkuerztes Intervall 7 Tage (2/3). Lagerzustand unveraendert gut.
+    performed_by: "PSEUDO_M01"
+  - offset: "14d09h"
+    component: bearing
+    type: lubrication
+    description: >
+      Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) —
+      verkuerztes Intervall 7 Tage (3/3). Kein Mehrwert gegenueber 30d-Intervall.
+    performed_by: "PSEUDO_M01"
+
+worker_notes:
+  - offset: "9d08h"
+    shift: frueh
+    author: "PSEUDO_W04"
+    text: >
+      AX-04 laeuft top, wie immer. Wird halt jede Woche nachgeschmiert — ob das
+      noetig ist? Sieht aus wie AX-01, die kriegt's nur monatlich.
+
+alarms: []
+
+ground_truth:
+  drift_present: false
+  expected_drift_detections: 0
+  expected_false_alarms: 0
+  sibling_role: "Referenz-Schwester der Klasse servo_axis (gesund, ueber-gewartet)"
+  maintenance_causal:
+    pattern: interval_too_short                           # P3
+    cause: "lubrication-Intervall 7d (3 Ereignisse im Fenster) statt 30d wie AX-01"
+    affected: "AX-04 (Verhalten identisch gesund zu AX-01)"
+    control: ["AX-01"]
+    expected_finding: "kuerzeres Intervall bringt KEINE messbare Verbesserung gegenueber AX-01 -> Ueber-Wartung/Verschwendung; KEINE Drift, daher KEINE Drift-Meldung erlaubt"
+    expected_false_findings: 0
+  narrative_anchor: >
+    P3-Beleg ueber reinen Event-Log-Kontrast: 4-facher Schmieraufwand, gleiches
+    gesundes Verhalten wie AX-01. Optimierungspotenzial = Intervall verlaengern.

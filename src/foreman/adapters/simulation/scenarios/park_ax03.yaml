@@ -1,0 +1,210 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — AX-03 (servo_axis, B3 Lager-Drift / Ueberlast)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: kranke Schwester der Klasse servo_axis — die VERTIKALACHSE (Z). Zwei
+#   bewusste Eigenschaften:
+#   (1) Ehrlicher HOCHLAST-SONDERFALL: erhoehter Grund-axis_torque/-Haltestrom
+#       (Gewichtskraft der Vertikallage) ist NORMAL, KEIN Drift -> Pruefstein
+#       fuers Eigenprofil-Overlay (#2). Die Detektion darf den hohen Grundwert
+#       nicht als Anomalie melden.
+#   (2) B3 Lager-Drift ab t*=7d durch UEBERLAST (Vertikallast), TROTZ korrekter
+#       Wartung -> #4-Ehrlichkeit: nicht jede Degradation ist ein Wartungsfehler.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_ax03
+  title: "Montagelinie 1 / AX-03 Handling-Achse Z (vertikal) — Lager-Drift durch Ueberlast"
+  description: >
+    Vertikale Handling-Achse Z der Montagelinie 1. Durch die Einbaulage traegt
+    sie die Gewichtskraft dauerhaft mit: erhoehtes Grund-Drehmoment und erhoehter
+    Haltestrom sind hier NORMAL (nicht Drift). Korrekt geschmiert, dennoch ermuedet
+    das Lager ab Tag 7 unter der hohen Last (Schwingung steigt Zone A -> C/D,
+    Temperatur folgt spaet). Kontroll-Schwestern AX-01/AX-04 (horizontal) haben
+    niedrigeres Grundmoment und bleiben gesund.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "AX-03"
+  label: "Handling-Achse Z (vertikal)"
+  machine_class: "servo_axis"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 32"
+
+components:
+  - key: bearing
+    label: "Linearfuehrungslager"
+    component_type: bearing
+  - key: ballscrew
+    label: "Kugelgewindetrieb"
+    component_type: ballscrew
+  - key: motor
+    label: "Servomotor"
+    component_type: motor
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: axis_torque
+    name: "axis_torque"
+    component: motor
+    kind: analog
+    measurement_type: torque
+    unit: "Nm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 60.0
+    # Erhoehtes Grundmoment durch Vertikallast — NORMAL fuer diese Einbaulage, kein Drift.
+    baseline: { mean: 34.0, noise_std: 1.2, gated_by: machine_state }
+
+  - key: motor_current
+    name: "axis_motor_current"
+    component: motor
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 16.0
+    # Erhoehter Haltestrom (Gewichtskraft) — ebenfalls normaler Grundwert.
+    baseline: { mean: 11.0, noise_std: 0.5, gated_by: machine_state }
+    drift:
+      type: ramp                         # schwaches Mitsignal der Lagerermuedung
+      start: "12d"
+      end: "21d"
+      target_delta: 1.2
+
+  - key: following_error
+    name: "axis_following_error"
+    component: ballscrew
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 0.10
+    baseline: { mean: 0.025, noise_std: 0.004, gated_by: machine_state }
+
+  - key: bearing_vibration
+    name: "axis_bearing_vibration"
+    component: bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 2.1, noise_std: 0.15, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "7d"                        # t* = Lagerermuedung unter Vertikallast
+      end: "21d"
+      target_delta: 4.0                  # 2.1 -> ~6.1 mm/s (Zone C/D)
+      shape: progressive
+
+  - key: bearing_temp
+    name: "axis_bearing_temperature"
+    component: bearing
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline: { mean: 48.0, noise_std: 1.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "14d"                       # Spaetindikator
+      end: "21d"
+      target_delta: 22.0                 # -> ~70 °C
+
+maintenance_events:
+  - offset: "2d09h"
+    component: bearing
+    type: lubrication
+    description: >
+      Nachschmierung Achslager AX-03 mit Schmierstoff X (Lithiumkomplex-Fett
+      NLGI 2, ISO VG 150) — spezifikationskonform, Intervall 30 Tage.
+    performed_by: "PSEUDO_M01"
+  - offset: "2d10h"
+    component: bearing
+    type: inspection
+    description: >
+      Inspektion Vertikalachse AX-03: Fuehrung und Lager geprueft, Schmierung
+      bestaetigt. Hohe Grundlast durch Einbaulage dokumentiert (bekannt/normal).
+    performed_by: "PSEUDO_M03"
+
+worker_notes:
+  - offset: "17d14h"                      # ~1 Schicht vor dem Schwingungs-Alarm
+    shift: spaet
+    author: "PSEUDO_W03"
+    text: >
+      AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. Laeuft eh immer
+      am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.
+
+alarms:
+  # Warn-Alarm auf das tatsaechlich band-ueberschreitende Signal (Schwingung kreuzt
+  # 4.5 bei ~17.85d), an einem Betriebstag (Fr 18d 09:00, Fruehschicht) — analog
+  # AX-02. Die Temperatur bleibt Spaetindikator (secondary_confirmation), erreicht
+  # aber im Lauf nur ~70 C (< Warnschwelle 75) und traegt daher KEINEN eigenen Alarm.
+  - offset: "18d09h"
+    component: bearing
+    data_point: bearing_vibration
+    code: "AXIS_VIB_WARN"
+    message: "Lagerschwingung AX-03 ueber Warnschwelle (Zone C/D)"
+    severity: warning
+    category: hardware
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: bearing_vibration
+    type: ramp
+    t_star: "7d"
+    expected_detection_window: ["7d", "11d"]
+  secondary_confirmation:
+    - { data_point: bearing_temp, onset: "14d", role: "spaete Bestaetigung" }
+    - { data_point: motor_current, onset: "12d", role: "schwaches Mitsignal" }
+  expected_false_alarms: 0
+  baseline_not_drift:
+    - { data_point: axis_torque, note: "erhoehtes Grundmoment (~34 Nm) ist Vertikallast, NORMAL — Eigenprofil-Overlay darf es nicht als Anomalie melden" }
+    - { data_point: motor_current, note: "erhoehter Grund-Haltestrom (~11 A) ist Einbaulage, NORMAL" }
+  sibling_role: "kranke Schwester der Klasse servo_axis (Kontrollen: AX-01/AX-04, horizontal, niedrigeres Grundmoment)"
+  maintenance_causal:
+    pattern: overload_not_maintenance_caused
+    regime: "korrekt geschmiert (Fett X, 30d) + Inspektion"
+    cause: "Lagerermuedung durch dauerhafte Vertikal-/Ueberlast — NICHT durch Schmierstoff oder Intervall"
+    affected: "AX-03 (bearing_vibration ab 7d)"
+    control: ["AX-01", "AX-04"]
+    expected_finding: "Degradation trotz korrekter Wartung -> #4 darf sie NICHT als Wartungsfehler (P1-P4) klassifizieren; Ursache ist Belastung/Einbaulage"
+    expected_false_findings: 0
+  failure:
+    offset: "20d18h"
+    type: bearing_failure
+  narrative_anchor: >
+    Zwei Ehrlichkeits-Pruefsteine in einem: hoher Grundwert ist normal (kein Drift,
+    Eigenprofil) UND echte Drift trotz korrekter Wartung (Ueberlast, kein
+    Wartungsfehler). Verhindert eine zu saubere "Wartung erklaert alles"-Welt.

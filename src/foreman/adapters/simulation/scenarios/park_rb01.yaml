@@ -1,0 +1,133 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — RB-01 (robot, GESUNDE Schwester / B7)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: Referenz-Schwester der Klasse robot. KEINE Degradation, disziplinierte
+#   Wartung, Standard-Dreischicht. Kontrolle zur Duty-Schwester RB-02.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_rb01
+  title: "Montagelinie 1 / RB-01 Bestueckroboter 1 — gesunde Referenz-Schwester"
+  description: >
+    Bestueckroboter 1 der Montagelinie 1. Ueber 21 Tage gesund: Taktzeit,
+    Gelenkmoment, Bahntreue und Antriebstemperatur im Normalband, kein Drift.
+    Standard-Dreischicht. Kontroll-Schwester zu RB-02 (abweichendes Duty-Profil).
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "RB-01"
+  label: "Bestueckroboter 1"
+  machine_class: "robot"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 40"
+
+components:
+  - key: joint_bearing
+    label: "Gelenklager Achse 1"
+    component_type: bearing
+  - key: gearbox
+    label: "Getriebe"
+    component_type: gearbox
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: cycle_time
+    name: "robot_cycle_time"
+    component: gearbox
+    kind: analog
+    measurement_type: signal
+    unit: "s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 15.0
+    baseline: { mean: 8.0, noise_std: 0.2, gated_by: machine_state }
+
+  - key: max_joint_torque
+    name: "robot_max_joint_torque"
+    component: joint_bearing
+    kind: analog
+    measurement_type: torque
+    unit: "Nm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 80.0
+    baseline: { mean: 42.0, noise_std: 2.0, gated_by: machine_state }
+
+  - key: path_following_error
+    name: "robot_path_following_error"
+    component: joint_bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 1.0
+    baseline: { mean: 0.30, noise_std: 0.05, gated_by: machine_state }
+
+  - key: drive_temp
+    name: "robot_drive_temperature"
+    component: gearbox
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 70.0
+    baseline: { mean: 40.0, noise_std: 1.0, gated_by: machine_state }
+
+maintenance_events:
+  - offset: "3d09h"
+    component: gearbox
+    type: inspection
+    description: >
+      Routine-Inspektion Bestueckroboter 1: Getriebe und Gelenklager geprueft,
+      Bahntreue im Sollband, ohne Befund. Wartungsplan eingehalten.
+    performed_by: "PSEUDO_M03"
+
+worker_notes:
+  - offset: "6d09h"
+    shift: frueh
+    author: "PSEUDO_W01"
+    text: >
+      RB-01 laeuft sauber, Taktzeit stabil, keine Auffaelligkeiten an den Gelenken.
+
+alarms: []
+
+ground_truth:
+  drift_present: false
+  expected_drift_detections: 0
+  expected_false_alarms: 0
+  sibling_role: "Referenz-Schwester der Klasse robot (Kontrolle zu RB-02)"
+  maintenance_causal:
+    pattern: control
+    regime: "diszipliniert (Inspektion im Plan)"
+    expected_finding: "keiner — gesunde Schwester"
+    control_for: ["RB-02"]
+    expected_false_findings: 0
+  narrative_anchor: >
+    Negativkontrolle der robot-Klasse. Standard-Dreischicht, gesund.

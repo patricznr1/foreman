@@ -1,0 +1,159 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — VS-01 (vision, D-KETTEN-ENDPUNKT)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: Endkontrolle (Einzel-Maschine ihrer Klasse) und ENDPUNKT der
+#   Unterfuellungs-Kette. Ab Tag 4 (Freitag) steigt die Ausschussrate, weil die
+#   von FD-02 unterdosierten und an PR-02 schlecht gefuegten Teile hier abgewiesen
+#   werden. WICHTIG: die Ursache liegt STROMAUFWAERTS (FD-02/PR-02), nicht in der
+#   Vision-Anlage selbst — VS-01 ist gesund, zeigt nur die WIRKUNG. F6 verankert
+#   die Ketten-Rekonstruktion an diesem reject-Anstieg und referenziert die
+#   stromaufwaertigen Ereignisse (zeitliche Folge, keine behauptete Kausalitaet).
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_vs01
+  title: "Montagelinie 1 / VS-01 Endkontrolle — Ausschuss-Anstieg (Ketten-Endpunkt)"
+  description: >
+    Optische Endkontrolle der Montagelinie 1. Ueber weite Strecken stabil
+    (~1 % Ausschuss). Ab Tag 4 (Freitag) steigt die Ausschussrate auf ~5 %, weil
+    unterfuellte/schlecht gefuegte Teile aus FD-02 -> PR-02 hier abgewiesen werden.
+    Die Vision-Anlage selbst ist gesund (Beleuchtung, Inspektionszeit normal) —
+    der reject-Anstieg ist die WIRKUNG der stromaufwaertigen Stoerung, nicht ihre
+    Ursache. Endpunkt und Anker der Unterfuellungs-Kette.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "VS-01"
+  label: "Endkontrolle (Kamera)"
+  machine_class: "vision"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 50"
+
+components:
+  - key: camera
+    label: "Inspektionskamera"
+    component_type: sensor
+  - key: lighting
+    label: "Beleuchtungseinheit"
+    component_type: lighting
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: reject_rate
+    name: "reject_rate"
+    component: camera
+    kind: analog
+    measurement_type: signal
+    unit: "%"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 3.0
+    baseline: { mean: 1.0, noise_std: 0.25, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "4d"                        # t* = unterfuellte Teile aus FD-02/PR-02 treffen ein
+      end: "5d"                          # steiler Anstieg am Betriebstag Freitag, danach Plateau
+      target_delta: 4.0                  # ~1 % -> ~5 % Ausschuss (ueber Normalband 3 %)
+
+  - key: inspection_time
+    name: "inspection_time"
+    component: camera
+    kind: analog
+    measurement_type: signal
+    unit: "ms"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 500.0
+    baseline: { mean: 250.0, noise_std: 8.0, gated_by: machine_state }
+
+  - key: illumination_level
+    name: "illumination_level"
+    component: lighting
+    kind: analog
+    measurement_type: signal
+    unit: "%"
+    source: simulation
+    normal_min: 80.0
+    normal_max: 100.0
+    baseline: { mean: 95.0, noise_std: 1.0, gated_by: machine_state }
+
+maintenance_events:
+  - offset: "3d11h"
+    component: lighting
+    type: inspection
+    description: >
+      Routine-Inspektion Endkontrolle VS-01: Kamera-Kalibrierung und
+      Beleuchtungsstaerke geprueft, im Sollband, ohne Befund.
+    performed_by: "PSEUDO_M03"
+
+worker_notes:
+  - offset: "4d15h"                       # Freitag (Tag 4) — KETTEN-ENDPUNKT
+    shift: spaet
+    author: "PSEUDO_W03"
+    text: >
+      VS-01 weist seit heute Mittag deutlich mehr Teile ab, fast alle wegen
+      Fuellung/Sitz. Kamera und Licht sind ok — kommt von vorne aus der Linie.
+
+alarms:
+  - offset: "4d16h"
+    component: camera
+    data_point: reject_rate
+    code: "REJECT_RATE_HIGH"
+    message: "Ausschussrate VS-01 ueber Warnschwelle (>3 %)"
+    severity: warning
+    category: quality
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: reject_rate
+    type: ramp
+    t_star: "4d"
+    expected_detection_window: ["4d", "6d"]
+  expected_false_alarms: 0
+  sibling_role: "Einzel-Maschine der Klasse vision (keine Schwester)"
+  chain_role:
+    position: tail
+    chain_id: "underfill_chain"
+    upstream: ["FD-02", "PR-02"]
+    anchor: true
+    note: "reject-Anstieg ab 4d ist die WIRKUNG der stromaufwaertigen Unterfuellung. F6 verankert hier und rekonstruiert rueckwaerts (PR-02 4d14h, FD-02 4d13h) — zeitliche Folge, KEINE behauptete Kausalitaet."
+  cause_is_upstream:
+    note: "VS-01 selbst ist gesund (illumination_level/inspection_time stabil). Der Ausschuss ist KEIN Vision-Defekt — #4 darf VS-01 keinen eigenen Wartungs-/Geraetefehler zuschreiben."
+  maintenance_causal:
+    pattern: effect_not_maintenance_caused
+    regime: "diszipliniert (Inspektion Kamera/Beleuchtung im Plan), Anlage gesund"
+    cause: "reject-Anstieg ist die WIRKUNG der stromaufwaertigen Unterfuellung (FD-02 Dosis-Streuung -> PR-02), nicht ein Wartungs-/Geraetefehler von VS-01"
+    affected: "VS-01 (reject_rate ab 4d)"
+    control: ["FD-02", "PR-02"]
+    expected_finding: "#4 darf VS-01 KEINEN eigenen Wartungsfehler zuschreiben; die Ursache liegt stromaufwaerts (D-Kette, F6)"
+    expected_false_findings: 0
+  narrative_anchor: >
+    Ketten-Endpunkt: die beobachtbare Spitze der Stoerung. Der Grund liegt
+    stromaufwaerts; die Vision-Anlage zeigt nur die Wirkung. Kein eigener Defekt,
+    daher kein failure-Anker.

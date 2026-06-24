@@ -1,0 +1,152 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — AX-01 (servo_axis, GESUND / P1-Kontrolle)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: Referenz-Schwester der Klasse servo_axis. Korrekt geschmiert
+#   (Fett X, ISO VG 150) im 30d-Intervall -> gesund. Doppelte Kontrolle:
+#   P1-Kontrolle zu AX-02 (falscher Schmierstoff) UND P3-Kontrolle zu AX-04
+#   (ueber-gewartet, 7d). Jede Drift-Meldung hier ist ein Abnahmefehler.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_ax01
+  title: "Montagelinie 1 / AX-01 Handling-Achse X — gesunde Referenz (korrekt geschmiert)"
+  description: >
+    Handling-Achse X der Montagelinie 1. Ueber 21 Tage gesund: Lager korrekt
+    geschmiert (Fett X, Lithiumkomplex NLGI 2, ISO VG 150), Schwingung im
+    Zone-A/B-Band, kein Drift. Kontroll-Schwester fuer den Schmierstoff-Vergleich
+    mit AX-02 (P1) und fuer den Intervall-Vergleich mit AX-04 (P3).
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "AX-01"
+  label: "Handling-Achse X"
+  machine_class: "servo_axis"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 30"
+
+components:
+  - key: bearing
+    label: "Linearfuehrungslager"
+    component_type: bearing
+  - key: ballscrew
+    label: "Kugelgewindetrieb"
+    component_type: ballscrew
+  - key: motor
+    label: "Servomotor"
+    component_type: motor
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: axis_torque
+    name: "axis_torque"
+    component: motor
+    kind: analog
+    measurement_type: torque
+    unit: "Nm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 60.0
+    baseline: { mean: 18.0, noise_std: 1.0, gated_by: machine_state }
+
+  - key: motor_current
+    name: "axis_motor_current"
+    component: motor
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 16.0
+    baseline: { mean: 8.0, noise_std: 0.4, gated_by: machine_state }
+
+  - key: following_error
+    name: "axis_following_error"
+    component: ballscrew
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 0.10
+    baseline: { mean: 0.02, noise_std: 0.004, gated_by: machine_state }
+
+  - key: bearing_vibration
+    name: "axis_bearing_vibration"
+    component: bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 2.0, noise_std: 0.15, gated_by: machine_state }
+
+  - key: bearing_temp
+    name: "axis_bearing_temperature"
+    component: bearing
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline: { mean: 45.0, noise_std: 1.0, gated_by: machine_state }
+
+maintenance_events:
+  - offset: "2d09h"
+    component: bearing
+    type: lubrication
+    description: >
+      Nachschmierung Achslager AX-01 mit Schmierstoff X (Lithiumkomplex-Fett
+      NLGI 2, Grundoelviskositaet ISO VG 150) — spezifikationskonform.
+      Regelintervall 30 Tage.
+    performed_by: "PSEUDO_M01"
+
+worker_notes:
+  - offset: "5d08h"
+    shift: frueh
+    author: "PSEUDO_W04"
+    text: >
+      AX-01 laeuft ruhig, kein Geraeusch, Achse sauber. Nichts zu vermerken.
+
+alarms: []
+
+ground_truth:
+  drift_present: false
+  expected_drift_detections: 0
+  expected_false_alarms: 0
+  sibling_role: "Referenz-Schwester der Klasse servo_axis (P1-Kontrolle zu AX-02, P3-Kontrolle zu AX-04)"
+  maintenance_causal:
+    pattern: control
+    regime: "korrekt geschmiert (Fett X, ISO VG 150), Intervall 30d"
+    expected_finding: "keiner — gesund; darf bei P1 (Schmierstoff) und P3 (Intervall) NICHT als auffaellig gemeldet werden"
+    control_for: ["AX-02", "AX-04"]
+    expected_false_findings: 0
+  narrative_anchor: >
+    Negativkontrolle der servo_axis-Klasse und gemeinsamer Bezugspunkt fuer
+    Schmierstoff-Wahl (gegen AX-02) und Intervall-Optimierung (gegen AX-04).

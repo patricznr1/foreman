@@ -1,0 +1,186 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — AX-02 (servo_axis, B4 / P1 falscher Schmierstoff)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: kranke Schwester der Klasse servo_axis. Familie B4 / Muster P1: gleiche
+#   Wartungsart (Nachschmierung), aber FALSCHER Schmierstoff (Fett Y, ISO VG 46,
+#   Grundoelviskositaet zu niedrig) -> beschleunigte Lagerdegradation ab t*=3d,
+#   Temperatur folgt spaet. Direkter Kontrast zu AX-01 (Fett X, gesund). Das ist
+#   der #4-Kernbeleg "die Folge haengt am SCHMIERSTOFF, nicht am OB-geschmiert".
+# Beobachtungsgrenze: der falsche Schmierstoff lebt nur in description +
+#   ground_truth — beobachtbar ist allein die Wirkung (Schwingung/Temperatur).
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_ax02
+  title: "Montagelinie 1 / AX-02 Handling-Achse Y — falscher Schmierstoff (Schmier-Korrelation)"
+  description: >
+    Handling-Achse Y der Montagelinie 1. Am selben Tag wie AX-01 nachgeschmiert,
+    jedoch mit ungeeignetem Ersatzfett (Fett Y, ISO VG 46 — Grundoelviskositaet
+    zu niedrig fuer Drehzahl/Last). In den Tagen danach steigt die
+    Lagerschwingung deutlich (Zone A -> D) ab Tag 3, die Lagertemperatur folgt
+    als Spaetindikator ab Tag 12. Kontroll-Schwester AX-01 (Fett X) bleibt stabil.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "AX-02"
+  label: "Handling-Achse Y"
+  machine_class: "servo_axis"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 31"
+
+components:
+  - key: bearing
+    label: "Linearfuehrungslager"
+    component_type: bearing
+  - key: ballscrew
+    label: "Kugelgewindetrieb"
+    component_type: ballscrew
+  - key: motor
+    label: "Servomotor"
+    component_type: motor
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: axis_torque
+    name: "axis_torque"
+    component: motor
+    kind: analog
+    measurement_type: torque
+    unit: "Nm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 60.0
+    baseline: { mean: 18.0, noise_std: 1.0, gated_by: machine_state }
+
+  - key: motor_current
+    name: "axis_motor_current"
+    component: motor
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 16.0
+    baseline: { mean: 8.0, noise_std: 0.4, gated_by: machine_state }
+
+  - key: following_error
+    name: "axis_following_error"
+    component: ballscrew
+    kind: analog
+    measurement_type: signal
+    unit: "mm"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 0.10
+    baseline: { mean: 0.02, noise_std: 0.004, gated_by: machine_state }
+
+  - key: bearing_vibration
+    name: "axis_bearing_vibration"
+    component: bearing
+    kind: analog
+    measurement_type: signal
+    unit: "mm/s"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 4.5
+    baseline: { mean: 2.0, noise_std: 0.15, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "3d"                        # t* = unmittelbar nach Fehl-Schmierung
+      end: "21d"
+      target_delta: 4.6                  # 2.0 -> ~6.6 mm/s (Zone D): klare Degradation
+      shape: progressive
+
+  - key: bearing_temp
+    name: "axis_bearing_temperature"
+    component: bearing
+    kind: analog
+    measurement_type: temperature
+    unit: "°C"
+    source: simulation
+    normal_min: 20.0
+    normal_max: 75.0
+    baseline: { mean: 45.0, noise_std: 1.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "12d"                       # Spaetindikator: Temperatur folgt der Schwingung
+      end: "21d"
+      target_delta: 26.0                 # -> ~71 °C, Richtung Warnschwelle
+
+maintenance_events:
+  - offset: "2d09h"
+    component: bearing
+    type: lubrication
+    description: >
+      Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2,
+      Grundoel ISO VG 46) — Grundoelviskositaet zu niedrig fuer Drehzahl/Last,
+      NICHT spezifikationskonform (vorgesehenes Fett X war alle, Ersatz genommen).
+    performed_by: "PSEUDO_M01"
+
+worker_notes:
+  - offset: "13d22h"
+    shift: nacht
+    author: "PSEUDO_W05"
+    text: >
+      AX-02 wird lauter, singt beim Verfahren. AX-01 daneben ruhig, beide gleich
+      alt und gleich gewartet. Komisch.
+
+alarms:
+  - offset: "14d10h"
+    component: bearing
+    data_point: bearing_vibration
+    code: "AXIS_VIB_WARN"
+    message: "Lagerschwingung AX-02 ueber Warnschwelle (Zone C/D)"
+    severity: warning
+    category: hardware
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: bearing_vibration
+    type: ramp
+    t_star: "3d"
+    expected_detection_window: ["3d", "7d"]
+  secondary_confirmation:
+    - { data_point: bearing_temp, onset: "12d", role: "spaete Bestaetigung (Temperatur folgt)" }
+  expected_false_alarms: 0
+  sibling_role: "kranke Schwester der Klasse servo_axis (Kontrolle: AX-01, gleiche Wartungsart, Fett X)"
+  maintenance_causal:
+    pattern: grease_choice                                # P1
+    cause: "maintenance_events: Fett Y (ISO VG 46) statt Fett X (ISO VG 150) an AX-02 bearing, 2d09h"
+    affected: "AX-02 (bearing_vibration ramp ab 3d)"
+    control: ["AX-01"]
+    expected_finding: "Folge-Degradation korreliert mit dem SCHMIERSTOFF, nicht mit der Wartungsart; AX-01 (Fett X) bleibt stabil und darf NICHT als wartungsbedingt gemeldet werden"
+    expected_false_findings: 0
+  failure:
+    offset: "20d10h"
+    type: bearing_failure
+  narrative_anchor: >
+    #4-Kernbeleg P1: gleiche Wartung, anderer Schmierstoff, divergente Degradation.
+    Drift nur an AX-02; AX-01 ist Kontrolle. Der Grund (Fett Y) steht nur im
+    Wartungs-Log und in ground_truth, nie als Sensor.

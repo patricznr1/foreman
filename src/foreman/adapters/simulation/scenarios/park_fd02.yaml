@@ -1,0 +1,194 @@
+# =============================================================================
+# FOREMAN Twin-Park "Montagelinie 1" — FD-02 (feeder, B5 + B6, D-KETTEN-KOPF)
+# -----------------------------------------------------------------------------
+# Park-Konvention: siehe park_fd01.yaml. Schema-Konvention: bearing_drift.yaml.
+# Rolle: kranke Schwester der Klasse feeder. Traegt ZWEI Degradationsfamilien:
+#   B6 Dosis-Streuung (dose_mass-Varianz hoch + feed_rate driftet) ab t*=4d und
+#   B5 Pneumatik-Schaltzeit-Verschleiss (switch_time steigt) ab t*=10d.
+# Ketten-Kopf der D-Kette: die Dosis-Streuung (Unterdosierung im Streu-Tief) ist
+#   die ZEITLICHE Ursache fuer PR-02 (Unterfuellung) -> VS-01 (Ausschuss). Die
+#   Verknuepfung ist zeitliche Folge, KEINE behauptete Kausalitaet — F6
+#   rekonstruiert sie on-demand aus den Ereignissen mehrerer Maschinen in der DB.
+# Beobachtungsgrenze: der GRUND (Foerderschnecken-/Ventilverschleiss) lebt nur in
+#   description + ground_truth, NIE als Datenpunkt.
+# =============================================================================
+schema_version: 1
+
+scenario:
+  name: park_fd02
+  title: "Montagelinie 1 / FD-02 Teilezufuehrung B — Dosis-Streuung (Ketten-Kopf) + Pneumatik-Verschleiss"
+  description: >
+    Teilezufuehrung B der Montagelinie 1. Ab Tag 4 (Freitag) beginnt die
+    Foerderschnecke zu verschleissen: die Dosiermasse streut zunehmend (einzelne
+    Dosen liegen unter Sollwert = Unterdosierung), die Foerderrate sinkt langsam.
+    Noch am selben Freitag werden die unterfuellten Teile stromabwaerts sichtbar
+    (PR-02 -> VS-01). Zusaetzlich altert ab Tag 10 der Klemmzylinder (Schaltzeit
+    steigt) — ein zweiter, unabhaengiger Pneumatik-Verschleiss.
+  start: "2026-06-01T06:00:00+02:00"
+  duration: "21d"
+  sample_interval: "10m"
+
+line:
+  label: "Montagelinie 1"
+  location: "Halle West"
+
+machine:
+  external_id: "FD-02"
+  label: "Teilezufuehrung B"
+  machine_class: "feeder"
+  manufacturer: "SimWerk"
+  location: "Halle West / Montagelinie 1 / Pos. 11"
+
+components:
+  - key: feeder_drive
+    label: "Foerderantrieb"
+    component_type: drive
+  - key: hopper
+    label: "Dosiertrichter mit Klemmzylinder"
+    component_type: actuator
+
+seasonality:
+  shifts:
+    frueh:  { from: "06:00", to: "14:00", load_factor: 1.00 }
+    spaet:  { from: "14:00", to: "22:00", load_factor: 1.00 }
+    nacht:  { from: "22:00", to: "06:00", load_factor: 0.95 }
+  weekend: idle
+
+data_points:
+  - key: machine_state
+    name: "machine_running"
+    machine_level: true
+    kind: digital
+    measurement_type: signal
+    unit: "bool"
+    source: simulation
+    normal_min: 0
+    normal_max: 1
+    baseline: { driven_by: shift_schedule }
+
+  - key: feed_rate
+    name: "feed_rate"
+    component: feeder_drive
+    kind: analog
+    measurement_type: signal
+    unit: "1/min"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 120.0
+    baseline: { mean: 100.0, noise_std: 2.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "4d"                       # t* = beginnender Foerderschnecken-Verschleiss (Fr)
+      end: "21d"
+      target_delta: -8.0                # Foerderrate sinkt langsam (~100 -> ~92 1/min)
+
+  - key: dose_mass
+    name: "dose_mass"
+    component: feeder_drive
+    kind: analog
+    measurement_type: signal
+    unit: "g"
+    source: simulation
+    normal_min: 40.0
+    normal_max: 60.0
+    baseline: { mean: 50.0, noise_std: 0.5, gated_by: machine_state }
+    drift:
+      type: variance                    # Dosis-Streuung: Mischreibung/Verschleiss
+      start: "4d"                        # t* = Streuung beginnt (Fr), Unterdosis im Streu-Tief
+      std_multiplier: 3.0               # Streuung verdreifacht (0.5 -> 1.5 g): einzelne Dosen < Soll
+
+  - key: feeder_current
+    name: "feeder_motor_current"
+    component: feeder_drive
+    kind: analog
+    measurement_type: current
+    unit: "A"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 12.0
+    baseline: { mean: 6.2, noise_std: 0.3, gated_by: machine_state }
+
+  - key: switch_time
+    name: "clamp_switch_time"
+    component: hopper
+    kind: analog
+    measurement_type: signal
+    unit: "ms"
+    source: simulation
+    normal_min: 80.0
+    normal_max: 200.0
+    baseline: { mean: 120.0, noise_std: 4.0, gated_by: machine_state }
+    drift:
+      type: ramp
+      start: "10d"                      # t* = Ventil-/Dichtungsverschleiss Klemmzylinder
+      end: "21d"
+      target_delta: 60.0                # Schaltzeit steigt 120 -> ~180 ms (Richtung Grenzwert 200)
+      shape: progressive
+
+  - key: target_dose
+    name: "target_dose"
+    component: feeder_drive
+    kind: setpoint
+    measurement_type: signal
+    unit: "g"
+    source: simulation
+    normal_min: 0.0
+    normal_max: 100.0
+    # Sollwert: NICHT gegated (sonst Sprung auf 0 im Stillstand) — konstante Baseline.
+    baseline: { mean: 50.0, noise_std: 0.0 }
+
+maintenance_events:
+  - offset: "1d09h"
+    component: feeder_drive
+    type: inspection
+    description: >
+      Routine-Inspektion Teilezufuehrung B: Foerderschnecke und Klemmzylinder
+      sichtgeprueft, leichtes Spiel an der Schnecke notiert, noch im Toleranzband
+      belassen (kein Teiletausch). Naechste Pruefung im Regelintervall.
+    performed_by: "PSEUDO_M03"
+
+worker_notes:
+  - offset: "4d13h"                      # Freitag Frueh (Tag 4) — KETTEN-KOPF
+    shift: frueh
+    author: "PSEUDO_W02"
+    text: >
+      FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein
+      paar Teile kommen zu leicht raus. Schnecke beobachten.
+  - offset: "13d22h"
+    shift: nacht
+    author: "PSEUDO_W05"
+    text: >
+      FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter.
+      Pneumatik mal pruefen lassen.
+
+alarms: []
+
+ground_truth:
+  drift_present: true
+  primary_drift:
+    data_point: dose_mass
+    type: variance
+    t_star: "4d"
+    expected_detection_window: ["4d", "8d"]
+  secondary_confirmation:
+    - { data_point: feed_rate, onset: "4d", role: "Foerderrate sinkt langsam (ramp)" }
+    - { data_point: switch_time, onset: "10d", role: "unabhaengiger Pneumatik-Verschleiss (B5, ramp progressiv)" }
+  expected_false_alarms: 0
+  sibling_role: "kranke Schwester der Klasse feeder (Kontrolle: FD-01)"
+  chain_role:
+    position: head
+    chain_id: "underfill_chain"
+    downstream: ["PR-02", "VS-01"]
+    note: "ZEITLICHE Folge am Betriebstag Freitag (Dosis-Streuung t*=4d -> FD-02-Notiz 4d13h -> PR-02 Unterfuellung 4d14h -> VS-01 Ausschuss 4d15h/16h), keine behauptete Kausalitaet; F6 rekonstruiert on-demand."
+  maintenance_causal:
+    pattern: wear_not_maintenance_caused
+    regime: "maessig (Inspektion erkannte Schnecken-Spiel, Teil nicht getauscht)"
+    cause: "Foerderschnecken-Verschleiss (Dosis-Streuung) + Klemmzylinder-Ventilverschleiss"
+    affected: "FD-02 (dose_mass-Varianz ab 4d, feed_rate ab 4d, switch_time ab 10d)"
+    control: ["FD-01"]
+    expected_finding: "Degradation ist Verschleiss, NICHT durch falsche/fehlende Wartung verursacht — Abgrenzung zu P2/P4"
+    expected_false_findings: 0
+  narrative_anchor: >
+    Ketten-Kopf der Unterfuellungs-Kette und Beispiel fuer reinen Verschleiss
+    ohne Wartungsfehler. Der Grund (Schnecken-/Ventilverschleiss) steht nur im
+    Wartungs-/Notiz-Text und hier — nie als Sensor.
