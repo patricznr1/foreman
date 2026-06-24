@@ -35,8 +35,8 @@ describe("buildPriorityEntries", () => {
       machine({ id: 2, status: "open_warning", open_alarm_count: 1, open_by_severity: { critical: 1 } }),
     ]);
     expect(entries[0]!.machineId).toBe(2); // kritisch zuerst
-    expect(entries[0]!.target).toBe("alarms");
-    expect(entries[0]!.href).toBe("/alarms");
+    expect(entries[0]!.target).toBe("machine");
+    expect(entries[0]!.href).toBe("/machines/2");
   });
 
   it("Drift ohne kritischen Alarm → Ausfallvorhersage (E)", () => {

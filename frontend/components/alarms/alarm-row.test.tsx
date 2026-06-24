@@ -68,7 +68,7 @@ describe("AlarmRow", () => {
     render(<AlarmRow vm={vm({ machine_id: 1, severity: "alarm" })} {...props} />);
     expect(screen.getByRole("link", { name: "Maschine" })).toHaveAttribute(
       "href",
-      "/machines?machine=1",
+      "/machines/1",
     );
     expect(screen.getByRole("link", { name: "Kette" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ausfall?" })).toBeInTheDocument();
