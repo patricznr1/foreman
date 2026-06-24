@@ -29,6 +29,8 @@ export interface AcknowledgeActionProps {
   online: boolean;
   /** Nach erfolgreicher Quittierung (löst die Nachladung der Liste aus). */
   onAcknowledged: () => void;
+  /** Zusätzliche Klassen am Wurzelelement (z. B. Stacking über dem Zeilen-Link). */
+  className?: string;
 }
 
 export function AcknowledgeAction({
@@ -36,6 +38,7 @@ export function AcknowledgeAction({
   canAcknowledge,
   online,
   onAcknowledged,
+  className,
 }: AcknowledgeActionProps) {
   const { acknowledge, pending } = useAcknowledge();
   const [open, setOpen] = useState(false);
@@ -78,7 +81,7 @@ export function AcknowledgeAction({
   // Bereits quittiert/geklärt → Status statt Aktion (Puls ist aus, Häkchen + „von …").
   if (vm.lifecycle === "acknowledged" || vm.lifecycle === "cleared") {
     return (
-      <span className="inline-flex items-center gap-2 text-caption text-fg-secondary">
+      <span className={cx("inline-flex items-center gap-2 text-caption text-fg-secondary", className)}>
         <span aria-hidden="true" className="text-state-ok">
           ✓
         </span>
@@ -98,7 +101,7 @@ export function AcknowledgeAction({
   if (disabled !== null) {
     return (
       <span
-        className="inline-flex max-w-44 items-center text-caption text-fg-muted"
+        className={cx("inline-flex max-w-44 items-center text-caption text-fg-muted", className)}
         title={ACK_DISABLED_TEXT[disabled]}
       >
         {ACK_DISABLED_TEXT[disabled]}
@@ -125,7 +128,7 @@ export function AcknowledgeAction({
   }
 
   return (
-    <div className="relative">
+    <div className={cx("relative", className)}>
       <button
         ref={triggerRef}
         type="button"

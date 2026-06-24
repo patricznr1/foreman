@@ -88,6 +88,7 @@ export function MachineAlarms({
                     onAcknowledged={refetch}
                     onShelve={onShelve}
                     onUnshelve={onUnshelve}
+                    fullMessage
                   />
                 ))}
               </ul>
