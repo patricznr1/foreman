@@ -1,7 +1,7 @@
 // ============================================================
 //  FOREMAN Frontend — components/cockpit/priority-column.test.tsx
 //  Zweck: Sichert die „braucht Blick jetzt"-Spalte (§4A): reale Querlink-Ziele
-//         (kritisch → C, Drift → E, sonst → B), mehrkanalige Einträge, Leerzustand.
+//         (kritisch → B Maschine, Drift → E, sonst → B), mehrkanalige Einträge, Leerzustand.
 // ============================================================
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -34,7 +34,7 @@ describe("PriorityColumn", () => {
     ]);
     render(<PriorityColumn entries={entries} />);
     expect(screen.getByRole("region", { name: "Braucht Blick jetzt" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Presse 1/ })).toHaveAttribute("href", "/alarms"); // kritisch → C
+    expect(screen.getByRole("link", { name: /Presse 1/ })).toHaveAttribute("href", "/machines/1"); // kritisch → B (Maschine im Kontext)
     expect(screen.getByRole("link", { name: /Spindel 5/ })).toHaveAttribute("href", "/insights/prediction?machine=5"); // Drift → E
     expect(screen.getByRole("link", { name: /Bohrer 9/ })).toHaveAttribute("href", "/machines/9"); // sonst → B
   });
