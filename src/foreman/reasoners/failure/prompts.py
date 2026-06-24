@@ -7,10 +7,14 @@
 #         Faktoren — und schaltet/aktoriert nichts.
 #  Architektur-Einordnung: Reasoning-Schicht (F-REC). Reine Funktionen (testbar).
 #  Sicherheit: Zahlen kommen NIE aus dem LLM (Invariante I) — der System-Prompt
-#         instruiert das Modell ausdrücklich, keine eigenen Zahlen einzuführen und
-#         nichts umzurechnen; die autoritativen Kennzahlen liegen in den (trusted)
-#         Quellen. Der untrusted Recall-Freitext kommt nur gespotlightet über die
-#         Grounding-Quellen, nie inline in den User-Prompt.
+#         instruiert das Modell, GAR KEINE Ziffern zu nennen (rein qualitativ). Grund:
+#         der numerische Grounding-Post-Check (§13.3) verlangt EXAKTE Übereinstimmung
+#         mit den Quellzahlen; ein echtes Modell rundet die hochpräzisen Quellwerte
+#         (z. B. 451.328363 → „451,3") oder rechnet um (336 h → „14 Tage") und fällt
+#         damit fail-closed durch — eine zahlenfreie Empfehlung besteht den Guard
+#         zuverlässig. Die konkreten Kennzahlen zeigt das Frontend separat (Vorhersage-
+#         Karte) aus den (trusted) Quellen; der untrusted Recall-Freitext kommt nur
+#         gespotlightet über die Grounding-Quellen, nie inline in den User-Prompt.
 # ============================================================
 from __future__ import annotations
 
@@ -25,8 +29,12 @@ RECOMMENDATION_SYSTEM_PROMPT = (
     "Regeln:\n"
     "1. Stütze JEDE Aussage ausschließlich auf die gelisteten Quellen und zitiere sie "
     "als [source_id] (z. B. [pred:12], [factor:vibration_rms_velocity_spindle_bearing]).\n"
-    "2. Führe KEINE eigenen Zahlen ein und rechne nichts um — nenne Wahrscheinlichkeit "
-    "und Horizont nur exakt so, wie sie in den Quellen stehen.\n"
+    "2. Nenne KEINE Ziffern oder Zahlen — weder Messwerte, SHAP-Beiträge, "
+    "Wahrscheinlichkeiten, Schwellwerte noch Stunden-/Tagesangaben. Beschreibe Risiko "
+    "und Faktoren rein qualitativ in Worten (etwa: sehr hohe Ausfallwahrscheinlichkeit, "
+    "lange Zeit seit der letzten Wartung, erhöhte Schwankung im Laufzustand). Rechne "
+    "nichts um und runde nichts; die konkreten Zahlen zeigt das System separat in der "
+    "Vorhersage-Karte.\n"
     "3. Gib GENAU EINE konkrete, naheliegende Handlungsempfehlung mit kurzer Begründung "
     "über die treibenden Faktoren.\n"
     "4. Benenne ausdrücklich, dass die Einschätzung auf simulierten Verläufen beruht und "
