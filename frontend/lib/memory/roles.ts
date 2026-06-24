@@ -47,13 +47,14 @@ const ROLE_VIEW: Record<Role, MemoryRoleView> = {
     largeCards: false,
     jumpToDiagnosis: true,
   },
-  // Manager: aggregierte Muster (welche Probleme haeufen sich), weniger Einzelfall.
+  // Manager = Werksleiter-/Vorführ-Vollzugriff (§21.12): aggregierte Muster zuerst,
+  // aber voller Zugang inkl. Sprung in die Diagnose (keine Sackgasse).
   manager: {
     canFilter: true,
     showRelations: true,
     aggregateFirst: true,
     largeCards: false,
-    jumpToDiagnosis: false,
+    jumpToDiagnosis: true,
   },
 };
 
