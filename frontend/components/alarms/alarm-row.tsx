@@ -46,9 +46,10 @@ export function AlarmRow({
   onUnshelve,
   nested = false,
 }: AlarmRowProps) {
-  // Querlinks (Kontextnavigation §4C/§3.3): vorbereitete Deep-Links auf bestehende
-  // Routen — die Zielsektionen konsumieren die Parameter, sobald sie stehen.
-  const machineHref = `/machines?machine=${vm.machineId}`;
+  // Querlinks (Kontextnavigation §4C/§3.3): Deep-Links auf bestehende Routen.
+  // Maschine → Detailseite (Sektion B), die den Alarm im Kontext zeigt (Trend,
+  // Komponenten, offene Alarme der Maschine).
+  const machineHref = `/machines/${vm.machineId}`;
   // Sektion D ist gebaut: der Alarm IST der Anker der Rekonstruktion (real, §21-D).
   const chainHref = `/insights/chains?anchor=${vm.id}`;
   const predictHref = `/insights?section=E&machine=${vm.machineId}`;

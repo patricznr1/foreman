@@ -2,8 +2,9 @@
 //  FOREMAN Frontend — lib/cockpit/priority.ts
 //  Zweck: Die rechte „braucht Blick jetzt"-Spalte (§4A): die 3–5 dringendsten
 //         Einstiege, nach Dringlichkeit geordnet (ISA-18.2-Priorisierung). Jeder
-//         Eintrag trägt sein REALES Querlink-Ziel: kritische Alarme → C, Drift →
-//         E (Ausfallrisiko), sonst → B (Maschine). HITL: nur Navigation, keine Aktorik.
+//         Eintrag trägt sein REALES Querlink-Ziel: kritische Alarme/Warnungen → B
+//         (Maschine, Alarm im Kontext: Trend, Komponenten, offene Alarme), Drift → E
+//         (Ausfallrisiko). HITL: nur Navigation, keine Aktorik.
 //  Architektur-Einordnung: View-State (Schicht 2, rein, testbar).
 // ============================================================
 import type { MachineStatusOut } from "@/lib/api/contracts";
@@ -11,7 +12,7 @@ import type { Fcsm } from "@/lib/ui/wording";
 
 import { toHeatmapCell } from "./deviation";
 import type { CellKind, DeviationLevel } from "./types";
-import { alarmsHref, machineHref, predictionHref } from "./url";
+import { machineHref, predictionHref } from "./url";
 
 /** Höchstens so viele Einstiege (Studie §4A: 3–5 dringendste). */
 export const PRIORITY_MAX = 5;
@@ -83,8 +84,10 @@ export function buildPriorityEntries(
     let target: PriorityTarget;
     let href: string;
     if (cell.criticalCount > 0) {
-      target = "alarms";
-      href = alarmsHref();
+      // Kritischer Alarm → direkt zur auslösenden Maschine (Sektion B): dort steht der
+      // Alarm im Kontext (Trend, Komponenten, offene Alarme) statt in der flachen Liste.
+      target = "machine";
+      href = machineHref(cell.machineId);
     } else if (cell.kind === "drift") {
       target = "prediction";
       href = predictionHref(cell.machineId);
