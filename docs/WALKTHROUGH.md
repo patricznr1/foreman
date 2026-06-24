@@ -163,6 +163,14 @@ Spricht das externe Gedächtnis-Substrat (NEXUS) über HTTP an und prüft beim S
 **Warum existiert es / wo sitzt es?**
 Die Brücke zum Langzeitgedächtnis. Bewusst dünn gehalten — keine internen Substrat-Mechanismen im Code. Schlägt der Test fehl, läuft die Datenaufnahme trotzdem weiter; nur das spätere Reasoning wäre eingeschränkt.
 
+### Substrat-Backfill (`substrate/backfill.py`)
+
+**Was tut es?**
+Holt den best-effort ausgefallenen Dual-Write nachträglich nach: spiegelt `semantic_events`-Zeilen mit `substrate_ref IS NULL` ins Gedächtnis-Substrat und persistiert die Referenz. CLI `python -m foreman.substrate.backfill` (`--batch-size`/`--limit`/`--max-attempts`/`--retry-delay`/`--dry-run`).
+
+**Warum existiert es / wo sitzt es?**
+Wird der Park bei leerem Substrat geseedet, landen die Ereignisse nur in der DB (Referenz NULL) — die „hatten wir das schon mal?"-Recall bliebe leer. Der Backfill macht das einmalig additiv und idempotent nach (nur NULL-refs, Commit pro Zeile, namespace-isoliert, Cold-Start-fest mit Retry). Der gesendete Text wird **wortgleich** aus `event_type` + `payload` rekonstruiert wie beim ursprünglichen Dual-Write — kein neuer Text. Analog zum Embedding-Backfill (`embeddings/backfill.py`).
+
 ### App-Zusammenbau (`main.py`)
 
 **Was tut es?**
