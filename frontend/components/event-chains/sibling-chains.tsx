@@ -54,7 +54,13 @@ export function SiblingChains({ siblings, onOpen }: SiblingChainsProps) {
               ) : (
                 <div className="flex flex-col gap-1 rounded-lg border border-line-subtle bg-surface-raised p-3">
                   {inner}
-                  <span className="text-caption text-fg-muted">
+                  {/* Klar gekennzeichnet, dass dieser Verweis NICHT anspringbar ist
+                      (Icon + Tooltip) — kein toter Klick, keine stille Sackgasse. */}
+                  <span
+                    className="inline-flex items-center gap-1.5 text-caption text-fg-muted"
+                    title="Noch keine gespeicherte Kette zum Anspringen — nur als ähnlicher Fall vermerkt."
+                  >
+                    <span aria-hidden="true">◷</span>
                     Keine gespeicherte Kette zum Anspringen — nur als ähnlicher Fall vermerkt.
                   </span>
                 </div>
