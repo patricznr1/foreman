@@ -132,3 +132,14 @@ async def test_recommendation_technician_ist_403(
     tech = await auth_headers_for("rbac-rec2-tech@x.de", "technician")
     resp = await client.post("/api/v1/reasoners/failure/predictions/1/recommendation", headers=tech)
     assert resp.status_code == 403
+
+
+async def test_recommendation_manager_kommt_durch_guard(
+    client: AsyncClient, auth_headers_for: AuthFor
+) -> None:
+    manager = await auth_headers_for("rbac-rec2-mgr@x.de", "manager")
+    resp = await client.post(
+        "/api/v1/reasoners/failure/predictions/999999/recommendation", headers=manager
+    )
+    # Rolle erlaubt → KEIN 403; die Vorhersage existiert nicht → 404 (Endpunkt-Logik).
+    assert resp.status_code == 404
