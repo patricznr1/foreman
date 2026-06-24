@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -49,6 +50,7 @@ async def run_park(
     *,
     mode: str = "backfill",
     seed: int | None = None,
+    end_anchor: datetime | None = None,
     speed: float = DEFAULT_LIVE_SPEED,
     batch_size: int = 5000,
     pseudonymizer: Pseudonymizer,
@@ -69,7 +71,9 @@ async def run_park(
         )
     results: dict[str, IngestStats] = {}
     for path in paths:
-        adapter = SimulationAdapter.from_config(scenario_path=str(path), seed=seed)
+        adapter = SimulationAdapter.from_config(
+            scenario_path=str(path), seed=seed, end_anchor=end_anchor
+        )
         logger.info("🏭 Park-Szenario %s -> Linie %r", path.stem, PARK_LINE_LABEL)
         results[path.stem] = await run_ingestion(
             session,
@@ -107,6 +111,12 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--db-url", default=None, help="Override der Datenbank-URL (sonst aus .env)."
     )
+    parser.add_argument(
+        "--anchor-now",
+        action="store_true",
+        help="Backfill-Ende auf 'jetzt' (UTC) verschieben statt fester Szenario-Zeit — "
+        "haelt die Demo-Daten frisch. Erhaelt die relative Struktur (Offsets/Saisonalitaet).",
+    )
     return parser
 
 
@@ -120,6 +130,7 @@ async def amain(
     args = build_argparser().parse_args(argv)
     cfg = settings or get_settings()
     database_url = args.db_url or cfg.database_url
+    end_anchor = datetime.now(UTC) if args.anchor_now else None
 
     pseudonymizer = build_pseudonymizer(cfg)
     used_redactor = redactor or build_redactor()
@@ -129,11 +140,17 @@ async def amain(
     maker = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
     try:
         async with maker() as session:
-            logger.info("🔄 Starte Park-Ingestion (mode=%s, seed=%s)", args.mode, args.seed)
+            logger.info(
+                "🔄 Starte Park-Ingestion (mode=%s, seed=%s, anchor_now=%s)",
+                args.mode,
+                args.seed,
+                args.anchor_now,
+            )
             results = await run_park(
                 session,
                 mode=args.mode,
                 seed=args.seed,
+                end_anchor=end_anchor,
                 speed=args.speed,
                 batch_size=args.batch_size,
                 pseudonymizer=pseudonymizer,
