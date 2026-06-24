@@ -220,7 +220,7 @@ if (user.role === "manager") return <ManagerPredictionView roleView={roleView} /
 - [ ] Hidden-Term-Scan über sichtbare Quelle → sauber
 
 ### Task E3: Browser-Durchklick als manager (Playwright/MCP)
-- [ ] Login `chef@foreman.de` / `ForemanDemo2026!` (manager).
+- [ ] Login als Rolle **manager** (Zugangsdaten nicht im Repo — Secret-Store/separater Kanal).
 - [ ] Verifizieren: Alarme = volle Liste mit Lagebild-Kopf; Alarmzeile klickbar → Maschine; in der Maschine Alarm-Volltext lesbar; Ketten = volle Erzählung + „rekonstruieren" auslösbar; Vorhersage = Maschine wählbar + „anfordern" auslösbar; keine toten Klick-Erwartungen mehr in C/B/D/E.
 
 ### Task E4: PR (nicht mergen)

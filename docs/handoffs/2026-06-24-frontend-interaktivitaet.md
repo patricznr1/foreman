@@ -1,7 +1,7 @@
 # Hand-off — FOREMAN Frontend-Interaktivitäts-Sprint — 2026-06-24
 
 ## Kontext
-FOREMAN ist live auf Railway (main `4600388`, alle Services SUCCESS, Login `chef@foreman.de` / `ForemanDemo2026!`, Rolle manager). Beim Durchklicken fällt durchgängig auf: die Sichten zeigen Daten an, sind aber **nicht explorierbar** — man will intuitiv klicken (Alarmzeile, Aggregat-Einträge, Ketten-Summaries) und wird nirgends hingeleitet, oder Texte sind abgeschnitten ohne Volltext-Zugang. Frühere Fixes (PR #40 Cockpit-Drill-Down, #42 Sensor-Default) waren punktuell und lösen das **nicht**.
+FOREMAN ist live auf Railway (main `4600388`, alle Services SUCCESS, Login als Rolle **manager** — Zugangsdaten nicht im Repo, siehe Secret-Store/separaten Kanal). Beim Durchklicken fällt durchgängig auf: die Sichten zeigen Daten an, sind aber **nicht explorierbar** — man will intuitiv klicken (Alarmzeile, Aggregat-Einträge, Ketten-Summaries) und wird nirgends hingeleitet, oder Texte sind abgeschnitten ohne Volltext-Zugang. Frühere Fixes (PR #40 Cockpit-Drill-Down, #42 Sensor-Default) waren punktuell und lösen das **nicht**.
 
 **Schlüssel-Einsicht:** Der Manager hat `aggregateOnly` (lib/machine/roles.ts) und bekommt deshalb die **Aggregat-Varianten** der Sichten (AlarmAggregate „Häufigste Quellen", ChainsAggregate 1-Satz-Summaries) — und genau die sind als Sackgassen gebaut (Anzeige ohne Drill-Down). Dazu die generellen AlarmRow-Lücken (Zeile nicht klickbar, Message truncated).
 
@@ -57,7 +57,7 @@ Siehe `GROUND_TRUTH.md` (§21 Frontend, §4/§5 Verträge) + Designstudie `docs/
 ---
 
 ## Claude-Code-Prompt (kopierbereit)
-```
+```text
 Lies docs/handoffs/2026-06-24-frontend-interaktivitaet.md komplett.
 Lies GROUND_TRUTH.md (§21 Frontend) und überfliege docs/research/FOREMAN_Designstudie_Frontend.md.
 

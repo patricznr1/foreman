@@ -64,12 +64,14 @@ describe("AlarmRow", () => {
     expect(screen.getByLabelText(/Außerhalb Spezifikation/)).toBeInTheDocument();
   });
 
-  it("ganze Zeile ist klickbar → Maschine (zeilenspezifischer Accessible Name)", () => {
-    render(<AlarmRow vm={vm({ machine_id: 1, message: "Lager heiß" })} {...props} />);
+  it("ganze Zeile ist klickbar → Maschine (Name + Volltext-Tooltip am Overlay-Link)", () => {
+    render(<AlarmRow vm={vm({ machine_id: 1, message: "Lager heiß, Geräusch seit Frühschicht" })} {...props} />);
     // Stretched-Link über die ganze Zeile; Name trägt den Maschinenbezug, damit
-    // mehrere Zeilen unterscheidbar bleiben.
+    // mehrere Zeilen unterscheidbar bleiben. Der Overlay-Link trägt zudem den
+    // Volltext als title — sonst verdeckt er den Tooltip des Meldungs-divs.
     const rowLink = screen.getByRole("link", { name: /Presse 1 öffnen/ });
     expect(rowLink).toHaveAttribute("href", "/machines/1");
+    expect(rowLink).toHaveAttribute("title", "Lager heiß, Geräusch seit Frühschicht");
   });
 
   it("Querlinks → Kette/Ausfall bleiben eigenständig (nicht im Zeilen-Link verschachtelt)", () => {

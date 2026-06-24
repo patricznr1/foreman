@@ -86,6 +86,9 @@ export function AlarmRow({
         <Link
           href={machineHref}
           aria-label={`${vm.machineLabel} öffnen`}
+          // Der Overlay-Link überdeckt den Meldungs-`title` → er trägt den Volltext
+          // selbst, damit der Hover-Zugang über die ganze Zeile erhalten bleibt.
+          title={vm.message}
           className="absolute inset-0 z-[1] rounded focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
         />
       ) : null}

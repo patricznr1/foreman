@@ -8,7 +8,7 @@
 // ============================================================
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CurrentUser } from "@/lib/api/contracts";
 import { type PredictionRoleView, predictionRoleView } from "@/lib/prediction/roles";
 import { useFleetMachines } from "@/lib/prediction/use-fleet-machines";
@@ -34,18 +34,14 @@ export function PredictionView({ user }: { user: CurrentUser }) {
  *  Anfordern (Trigger) und Entscheiden (HITL) erlaubt; KEINE Anlagen-Aktorik. */
 function ManagerPredictionView({ roleView }: { roleView: PredictionRoleView }) {
   const fleet = useFleetMachines();
-  const [selected, setSelected] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (fleet.kind === "ready" && selected === null) {
-      setSelected(fleet.machines[0]?.id ?? null);
-    }
-  }, [fleet, selected]);
-
+  // Explizite Nutzer-Wahl; ohne sie die erste Maschine der geladenen Flotte. Die
+  // effektive Auswahl wird WÄHREND des Renders abgeleitet (kein useEffect) — sonst
+  // zeigt der erste Render fälschlich „Keine Maschinen vorhanden" (Flackern).
+  const [picked, setPicked] = useState<number | null>(null);
+  const machines = fleet.kind === "ready" ? fleet.machines : [];
+  const selected = picked ?? machines[0]?.id ?? null;
   const selectedLabel =
-    fleet.kind === "ready"
-      ? (fleet.machines.find((machine) => machine.id === selected)?.label ?? `Maschine ${selected}`)
-      : `Maschine ${selected}`;
+    machines.find((machine) => machine.id === selected)?.label ?? `Maschine ${selected}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,7 +63,7 @@ function ManagerPredictionView({ roleView }: { roleView: PredictionRoleView }) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {fleet.machines.length > 1 ? (
+          {machines.length > 1 ? (
             <div className="flex flex-wrap items-center gap-2">
               <label htmlFor="prediction-machine" className="text-caption text-fg-muted">
                 Maschine
@@ -75,10 +71,10 @@ function ManagerPredictionView({ roleView }: { roleView: PredictionRoleView }) {
               <select
                 id="prediction-machine"
                 value={selected}
-                onChange={(event) => setSelected(Number(event.target.value))}
+                onChange={(event) => setPicked(Number(event.target.value))}
                 className="min-h-[var(--touch-min)] rounded-md border border-line-strong bg-surface-overlay px-3 text-body text-fg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
               >
-                {fleet.machines.map((machine) => (
+                {machines.map((machine) => (
                   <option key={machine.id} value={machine.id}>
                     {machine.label}
                   </option>
