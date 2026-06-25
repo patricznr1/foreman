@@ -133,7 +133,10 @@ def test_cap_resume_anchor_ohne_deckel_fuellt_die_luecke() -> None:
     # Default (None): kein Deckel → der echte letzte Stempel bleibt Anker (kein Gap).
     now = datetime(2026, 6, 25, 12, 0, 0, tzinfo=UTC)
     last = now - timedelta(days=30)  # riesige Lücke
-    assert cap_resume_anchor(last, now=now, interval=timedelta(seconds=60), max_catchup_ticks=None) == last
+    assert (
+        cap_resume_anchor(last, now=now, interval=timedelta(seconds=60), max_catchup_ticks=None)
+        == last
+    )
 
 
 def test_cap_resume_anchor_innerhalb_des_deckels_unveraendert() -> None:
