@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import math
 import random
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -208,45 +208,88 @@ class SimulationAdapter(SourceAdapter):
     def _offset_to_utc(self, offset: str) -> datetime:
         return self._scenario.start_utc + self._time_shift + parse_duration(offset)
 
-    # --- normalisierte Ausgabe ---
+    # --- wiederverwendbare Erzeugungs-Nähte (Backfill UND Live-Worker) ---
+    def new_rngs(self) -> dict[str, random.Random]:
+        """Frische, deterministische RNGs je Datenpunkt für EINEN Erzeugungslauf.
+
+        Einmal pro Lauf bauen und über die Ticks fortschreiben — so bleibt der
+        Rauschstrom reproduzierbar (gleicher Seed → gleiche Werte)."""
+        return {plan.key: random.Random(f"{self._seed}:{plan.key}") for plan in self._plans}
+
+    @property
+    def local_timezone(self) -> tzinfo:
+        """Zeitzone der Szenario-Schichtzeit (Wall-Clock-UTC → Lokal für die Saisonalität)."""
+        tz = self._scenario.scenario.start.tzinfo
+        assert tz is not None  # scenario.start ist per Validator tz-aware
+        return tz
+
+    def end_elapsed_s(self) -> float:
+        """Verstrichene Sim-Sekunden am LETZTEN Backfill-Tick — der Plateau-Anker.
+
+        Der Live-Worker führt die Drift ab hier als Plateau fort (konstant statt
+        weiterlaufend), damit ein kranker Zustand am Ende der Historie gehalten,
+        aber nicht ins Absurde getrieben wird."""
+        interval_s = self._scenario.interval_delta.total_seconds()
+        return max(self._tick_count() - 1, 0) * interval_s
+
+    def tick_readings(
+        self,
+        *,
+        utc_time: datetime,
+        local_dt: datetime,
+        elapsed_s: float,
+        rngs: Mapping[str, random.Random],
+        data_point_ids: Mapping[str, int],
+    ) -> Iterator[NormalizedReading]:
+        """Erzeugt die Readings EINES Ticks (alle Datenpunkte) zum Stempel `utc_time`.
+
+        Der gemeinsame Kern von Backfill und Live-Lauf — der einzige Unterschied
+        ist die Zeitquelle (Szenario-Sim-Zeit vs. Wall-Clock) und `elapsed_s`
+        (laufend im Backfill, Plateau im Live-Lauf). `utc_time` wird unverändert
+        als Stempel getragen."""
+        for plan in self._plans:
+            data_point_id = data_point_ids[plan.key]
+            rng = rngs[plan.key]
+            if plan.is_state:
+                yield NormalizedReading(
+                    time=utc_time,
+                    data_point_id=data_point_id,
+                    value=machine_state_value(self._seasonality, local_dt),
+                    quality=None,
+                )
+                continue
+            assert plan.profile is not None  # durch __init__ garantiert
+            quality = sample_quality(plan.quality, rng)
+            if quality == "missing":
+                continue  # fehlendes Intervall: NICHT als 0 schreiben (ausgelassen)
+            value = sample_value(plan.profile, self._seasonality, local_dt, elapsed_s, rng)
+            yield NormalizedReading(
+                time=utc_time,
+                data_point_id=data_point_id,
+                value=value,
+                quality=quality,
+            )
+
+    # --- normalisierte Ausgabe (Backfill) ---
     def readings(self) -> Iterator[NormalizedReading]:
-        """Erzeugt die Messwerte tick-für-tick (zeitlich sortiert)."""
-        topology = self.topology
+        """Erzeugt die Messwerte tick-für-tick über die Szenario-Zeitachse (sortiert)."""
+        rngs = self.new_rngs()
+        data_point_ids = self.topology.data_point_ids
         start_local = self._scenario.scenario.start  # tz-aware (lokale Schichtzeit)
-        interval = self._scenario.interval_delta
-        interval_s = interval.total_seconds()
-        # Frische, deterministische RNGs pro Datenpunkt → readings() ist wiederholbar.
-        rngs = {plan.key: random.Random(f"{self._seed}:{plan.key}") for plan in self._plans}
-        dp_ids = topology.data_point_ids
+        interval_s = self._scenario.interval_delta.total_seconds()
 
         for i in range(self._tick_count()):
             # local_dt: lokale Schicht-Wandzeit (für Saisonalität/Schichtlogik).
             # utc_dt: derselbe Instant in UTC — der Normalform-Vertrag (§12) emittiert UTC.
             local_dt = start_local + self._time_shift + timedelta(seconds=i * interval_s)
             utc_dt = self._scenario.start_utc + self._time_shift + timedelta(seconds=i * interval_s)
-            elapsed_s = i * interval_s
-            for plan in self._plans:
-                data_point_id = dp_ids[plan.key]
-                rng = rngs[plan.key]
-                if plan.is_state:
-                    yield NormalizedReading(
-                        time=utc_dt,
-                        data_point_id=data_point_id,
-                        value=machine_state_value(self._seasonality, local_dt),
-                        quality=None,
-                    )
-                    continue
-                assert plan.profile is not None  # durch __init__ garantiert
-                quality = sample_quality(plan.quality, rng)
-                if quality == "missing":
-                    continue  # fehlendes Intervall: NICHT als 0 schreiben (ausgelassen)
-                value = sample_value(plan.profile, self._seasonality, local_dt, elapsed_s, rng)
-                yield NormalizedReading(
-                    time=utc_dt,
-                    data_point_id=data_point_id,
-                    value=value,
-                    quality=quality,
-                )
+            yield from self.tick_readings(
+                utc_time=utc_dt,
+                local_dt=local_dt,
+                elapsed_s=i * interval_s,
+                rngs=rngs,
+                data_point_ids=data_point_ids,
+            )
 
     def events(self) -> Iterator[NormalizedEvent]:
         """Erzeugt die diskreten Ereignisse (Alarme/Produktionsläufe/Wartung/Notizen),

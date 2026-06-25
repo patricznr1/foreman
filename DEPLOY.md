@@ -231,3 +231,76 @@ sauber dazu:
   H-Sektion/Gedächtnis verlässt den Fallback.
 
 Details bei Erreichen von Etappe 2.
+
+---
+
+## 8. Etappe 3 — Live-Daten-Stream-Worker (scharf schalten)
+
+**Ziel:** Das Dashboard **lebt** — neue Readings ticken fortlaufend mit **aktuellen
+Zeitstempeln** rein, statt dass die 21-Tage-Historie altert. Der Worker setzt den
+Generator am **Ende der Backfill-Historie** an und schreibt mit Wall-Clock-Stempeln
+weiter (Details/Architektur: GROUND_TRUTH §12.6). Er nutzt den **unveränderten**
+Schreibpfad (COPY + NOTIFY/WS-Push) — kein zweiter Weg.
+
+> ⚠️ **Sicherheit — Reihenfolge beachten.** Ein fehlerhafter Dauer-Schreiber auf der
+> öffentlichen Live-DB ist ein Risiko. Erst der **Trockenlauf** (`--max-ticks`), Blick
+> drauf, **dann** scharf (unbegrenzt). Code + Tests sind autonom gegen eine Test-DB
+> verifiziert; das Scharfschalten auf Railway ist ein **bewusster manueller Schritt**.
+
+### 8.1 Vorbedingung: Historie an „jetzt" verankern (empfohlen)
+
+Damit der Live-Strom **ohne große Lücke** an der Historie ansetzt, den Park-Backfill
+mit **`--anchor-now`** (neu) re-seeden — das verschiebt das Historien-Ende auf „jetzt":
+
+```bash
+# Verschiebt das Szenario-Fenster so, dass das Historien-Ende ≈ jetzt liegt.
+railway run --service backend python -m foreman.adapters.simulation.park --mode backfill --anchor-now
+```
+
+> Ohne `--anchor-now` setzt der Worker trotzdem korrekt am letzten Stempel an, füllt
+> die Lücke aber erst im Aufhol-Takt (kann je nach Alter der Historie viele Ticks sein).
+> Für sehr alte Historie: `--max-catchup-ticks N` kappt die Aufhol-Phase und setzt bei
+> „jetzt" an (bewusste, geloggte Lücke statt Boot-Storm).
+
+### 8.2 Trockenlauf (Blick drauf, NICHT scharf)
+
+```bash
+# Begrenzter Lauf gegen die Live-DB: schreibt nur N Ticks, dann Ende.
+railway run --service backend python -m foreman.adapters.simulation.live_worker --max-ticks 5 --interval-seconds 10
+```
+
+Prüfen: kommen Readings mit **aktuellen** Zeitstempeln rein (`max(time)` ≈ jetzt), ohne
+Doppel, und feuert das Dashboard-Live-Update? Erst wenn das passt → 8.3.
+
+### 8.3 Eigener Worker-Service (Dauerlauf)
+
+Der Worker ist ein **eigener Railway-Service** auf demselben Repo/Image wie das
+Backend — nur mit anderem Start-Command. **Kein** `alembic`, **kein** Healthcheck
+(Worker, kein Web-Service):
+
+1. **New Service** → **GitHub Repo** (dasselbe `foreman`-Repo) bzw. „Empty Service"
+   + dasselbe Image. Root-Directory = Repo-Root.
+2. **Start Command** (Service-Settings → Deploy):
+   ```
+   python -m foreman.adapters.simulation.live_worker --interval-seconds 60
+   ```
+   Vorführung dichter (`--interval-seconds 5`); historientreu `600`.
+3. **Variables** (wie Backend): `DATABASE_URL` als **Service-Referenz** auf den
+   TimescaleDB-Service (`${{TimescaleDB.DATABASE_URL}}`, mit `+asyncpg`),
+   `FOREMAN_PSEUDO_KEY_VERSION`/`_VERSIONS`/`FOREMAN_PSEUDO_KEY_v1` (identisch zum
+   Backend). Substrat optional (`SUBSTRATE_*`, sonst Fallback) — der Produzent
+   schreibt nur Readings, spiegelt also nichts ans Substrat.
+4. **Healthcheck**: keiner. **Restart Policy**: `ON_FAILURE` — bei Absturz/Stop
+   startet Railway neu; der Worker liest den Anker **frisch aus der DB** und setzt
+   ohne Doppeln/Lücke fort (neustart-fest, GROUND_TRUTH §12.6).
+5. **Genau EINE** Worker-Instanz laufen lassen (zwei Schreiber auf demselben Grid
+   würden um Stempel konkurrieren — der PK schützt vor Dubletten, aber nicht vor
+   Reibung). Keine Replicas.
+
+### 8.4 Verifikation (scharf)
+
+- [ ] `8.2`-Trockenlauf grün (aktuelle Stempel, keine Doppel, Live-Update sichtbar)
+- [ ] Worker-Service läuft, Logs zeigen `🔴 Live-Daten-Stream startet` + periodische Commits
+- [ ] `max(time)` der `readings` wandert mit der Wall-Clock mit
+- [ ] Nach manuellem Restart des Service: kein Doppel, lückenlose Fortsetzung
+- [ ] DB-**Historie unangetastet** (alte Stempel unverändert)
