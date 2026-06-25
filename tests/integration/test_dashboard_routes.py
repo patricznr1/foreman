@@ -139,6 +139,106 @@ async def test_machine_trend_returns_profile_band_for_manager(
     )
 
 
+# --------------------------------------------------------------------------- #
+#  Kanonische lebende Maschinenkarte: Detail-Erstbild, Grid, WS-Snapshot
+# --------------------------------------------------------------------------- #
+async def test_machine_card_returns_steifbrief_and_datapoints_for_manager(
+    client: AsyncClient,
+) -> None:
+    auth = await _auth(client, "card-mgr@x.de", "manager")
+    machine_id, _ = await _seed_machine_with_data_point(client, auth)
+
+    response = await client.get(f"/api/v1/machines/{machine_id}/card", headers=auth)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["id"] == machine_id
+    assert isinstance(body["components"], list)
+    point = next(dp for dp in body["data_points"] if dp["name"] == "vib")
+    # Ohne Readings: ehrlich unbekannt, kein erfundener Wert.
+    assert point["last_value"] is None
+    assert point["status"] == "unknown"
+    assert "stream" in body
+
+
+async def test_machine_card_forbidden_for_worker(client: AsyncClient) -> None:
+    manager_auth = await _auth(client, "card-mgr2@x.de", "manager")
+    machine_id, _ = await _seed_machine_with_data_point(client, manager_auth)
+    worker_auth = await _auth(client, "card-wrk@x.de", "worker")
+
+    response = await client.get(f"/api/v1/machines/{machine_id}/card", headers=worker_auth)
+    assert response.status_code == 403
+
+
+async def test_machine_card_unknown_machine_404(client: AsyncClient) -> None:
+    auth = await _auth(client, "card-mgr3@x.de", "manager")
+    response = await client.get("/api/v1/machines/999999/card", headers=auth)
+    assert response.status_code == 404
+
+
+async def test_machine_card_requires_auth(client: AsyncClient) -> None:
+    response = await client.get("/api/v1/machines/1/card")
+    assert response.status_code == 401
+
+
+async def test_cards_returns_fleet_for_manager(client: AsyncClient) -> None:
+    auth = await _auth(client, "cards-mgr@x.de", "manager")
+    machine_id, _ = await _seed_machine_with_data_point(client, auth)
+
+    response = await client.get("/api/v1/cards", headers=auth)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert isinstance(body, list)
+    assert any(card["id"] == machine_id for card in body)
+
+
+async def test_cards_empty_scope_for_unassigned_worker(client: AsyncClient) -> None:
+    manager_auth = await _auth(client, "cards-mgr2@x.de", "manager")
+    await _seed_machine_with_data_point(client, manager_auth)
+    worker_auth = await _auth(client, "cards-wrk@x.de", "worker")
+
+    response = await client.get("/api/v1/cards", headers=worker_auth)
+
+    assert response.status_code == 200, response.text
+    # Werker ohne zugewiesene Maschinen sieht ehrlich nichts (kein fremdes Lagebild).
+    assert response.json() == []
+
+
+async def test_ws_machine_snapshot_carries_living_card(
+    db_session: object, raw_conn: object
+) -> None:
+    # WS-Einstieg: der machine:{id}-Snapshot trägt jetzt die ganze lebende Karte
+    # (Steckbrief + Datenpunkte mit Wert + Status), nicht nur den Status — dieselbe
+    # Quelle wie das HTTP-Erstbild.
+    from datetime import UTC, datetime
+
+    from foreman.db.models import DataPoint, Machine, User
+    from foreman.ingestion.service import copy_readings
+    from foreman.realtime.topics import machine_topic
+    from foreman.realtime.ws import _load_topic
+
+    machine = Machine(label="PR-02", machine_class="servo_press")
+    db_session.add(machine)  # type: ignore[attr-defined]
+    await db_session.flush()  # type: ignore[attr-defined]
+    data_point = DataPoint(machine_id=machine.id, name="press_force", kind="analog", unit="kN")
+    db_session.add(data_point)  # type: ignore[attr-defined]
+    await db_session.flush()  # type: ignore[attr-defined]
+    now = datetime.now(UTC).replace(second=0, microsecond=0)
+    manager = User(email="ws-card@x.de", password_hash="x", role="manager")
+    db_session.add(manager)  # type: ignore[attr-defined]
+    await copy_readings(db_session, [(now, data_point.id, 212.0, None)])  # type: ignore[arg-type]
+    await db_session.commit()  # type: ignore[attr-defined]
+
+    payload = await _load_topic(db_session, manager, machine_topic(machine.id))  # type: ignore[arg-type]
+
+    assert payload is not None
+    assert payload["label"] == "PR-02"
+    assert payload["data_points"][0]["name"] == "press_force"
+    assert payload["data_points"][0]["last_value"] == 212.0
+    assert "stream" in payload
+
+
 async def test_ws_trend_snapshot_carries_profile_band(db_session: object, raw_conn: object) -> None:
     # WS-Einstieg: der Snapshot beim Abo (echter Pfad _load_topic -> build_trend_by_id)
     # trägt dasselbe Band wie der HTTP-Einstieg — EINE Wahrheit für beide Transporte.

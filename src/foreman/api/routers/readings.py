@@ -16,6 +16,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from foreman.api.deps import SessionDep
 from foreman.ingestion.service import ReadingRow, copy_readings
+from foreman.reads.queries import machines_for_data_points
 from foreman.realtime.channels import ChangeSet
 from foreman.realtime.notify import notify_changes
 from foreman.schemas.readings import ReadingBatch, ReadingBatchResult
@@ -56,12 +57,17 @@ async def ingest_readings(body: ReadingBatch, session: SessionDep) -> ReadingBat
         ) from exc
 
     # Live-Push (F5): ein NOTIFY pro Batch (Vorgabe 4) — transaktional auf den
-    # Commit der Request-Session; der Hub debounct und lädt nach.
+    # Commit der Request-Session; der Hub debounct und lädt nach. Die berührten
+    # Maschinen reisen mit, damit auch die lebende Karte (machine:{id}) + das Cockpit
+    # (overview) nachrücken, nicht nur das Trend-Thema.
     if body.readings:
+        data_point_ids = frozenset(r.data_point_id for r in body.readings)
+        machines = await machines_for_data_points(session, list(data_point_ids))
         await notify_changes(
             session,
             ChangeSet(
-                data_points=frozenset(r.data_point_id for r in body.readings),
+                machines=frozenset(machines),
+                data_points=data_point_ids,
                 kinds=frozenset({"reading"}),
             ),
         )

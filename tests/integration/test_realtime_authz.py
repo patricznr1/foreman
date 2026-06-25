@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 from foreman.db.models import DataPoint, Line, Machine, User
-from foreman.realtime.authz import can_subscribe
+from foreman.realtime.authz import can_subscribe, visible_machine_scope
 from foreman.realtime.topics import OVERVIEW_TOPIC, machine_topic, trend_topic
 from foreman.realtime.ws import _authorized_payload
 
@@ -152,3 +152,45 @@ async def test_push_reauthorization_reflects_revoked_scope(db_session: object) -
         machine_topic(machine.id),
     )
     assert allowed_after is False
+
+
+# --------------------------------------------------------------------------- #
+#  visible_machine_scope — rollenweiter Scope für das Karten-Grid (GET /cards)
+# --------------------------------------------------------------------------- #
+async def test_visible_scope_manager_and_technician_unrestricted(db_session: object) -> None:
+    manager = await _user(db_session, email="vs-mgr@x.de", role="manager")
+    technician = await _user(db_session, email="vs-tech@x.de", role="technician")
+    assert await visible_machine_scope(db_session, manager) is None  # type: ignore[arg-type]
+    assert await visible_machine_scope(db_session, technician) is None  # type: ignore[arg-type]
+
+
+async def test_visible_scope_worker_sees_only_assigned_machines(db_session: object) -> None:
+    mine = await _machine(db_session, label="mine")
+    await _machine(db_session, label="foreign")
+    worker = await _user(db_session, email="vs-wrk@x.de", role="worker", machines=(mine.id,))
+    assert await visible_machine_scope(db_session, worker) == [mine.id]  # type: ignore[arg-type]
+
+
+async def test_visible_scope_shift_lead_sees_only_his_line_machines(db_session: object) -> None:
+    my_line = await _line(db_session, label="mine")
+    other_line = await _line(db_session, label="other")
+    a = await _machine(db_session, line=my_line, label="a")
+    b = await _machine(db_session, line=my_line, label="b")
+    await _machine(db_session, line=other_line, label="foreign")
+    shift_lead = await _user(db_session, email="vs-sl@x.de", role="shift_lead", lines=(my_line.id,))
+
+    scope = await visible_machine_scope(db_session, shift_lead)  # type: ignore[arg-type]
+
+    assert scope is not None
+    assert set(scope) == {a.id, b.id}
+
+
+async def test_visible_scope_shift_lead_without_lines_is_empty(db_session: object) -> None:
+    await _machine(db_session, line=await _line(db_session))
+    shift_lead = await _user(db_session, email="vs-sl0@x.de", role="shift_lead")
+    assert await visible_machine_scope(db_session, shift_lead) == []  # type: ignore[arg-type]
+
+
+async def test_visible_scope_unknown_role_is_empty(db_session: object) -> None:
+    ghost = await _user(db_session, email="vs-ghost@x.de", role="ghost")
+    assert await visible_machine_scope(db_session, ghost) == []  # type: ignore[arg-type]

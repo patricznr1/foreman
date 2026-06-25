@@ -124,6 +124,54 @@ def test_ws_live_push_on_new_reading(test_settings: Settings, _migrated_db: None
             assert push["topic"] == topic
 
 
+def test_ws_new_reading_refreshes_living_machine_card(
+    test_settings: Settings, _migrated_db: None
+) -> None:
+    # Akzeptanz der lebenden Karte: ein neues Reading lässt nicht nur das Trend-Thema,
+    # sondern auch das machine:{id}-Thema (die ganze Karte) live nachrücken —
+    # konsumentenseitige Fächerung über die NOTIFY-Anreicherung (dp → Maschine).
+    with TestClient(_app(test_settings)) as client:  # type: ignore[arg-type]
+        token = _register_login(client, "ws-card-live@x.de", "manager")
+        auth = {"Authorization": f"Bearer {token}"}
+        line = client.post("/api/v1/lines", json={"label": "L"}, headers=auth).json()
+        machine = client.post(
+            "/api/v1/machines", json={"label": "M", "line_id": line["id"]}, headers=auth
+        ).json()
+        data_point = client.post(
+            "/api/v1/data_points",
+            json={"machine_id": machine["id"], "name": "vib", "kind": "analog"},
+            headers=auth,
+        ).json()
+        topic = machine_topic(int(machine["id"]))
+
+        with client.websocket_connect(f"/api/v1/ws?token={token}") as ws:
+            ws.send_json({"action": "subscribe", "topic": topic})
+            snapshot = ws.receive_json()
+            assert snapshot["type"] == "update"
+            assert snapshot["topic"] == topic
+
+            posted = client.post(
+                "/api/v1/readings",
+                json={
+                    "readings": [
+                        {
+                            "data_point_id": data_point["id"],
+                            "time": "2026-06-16T10:00:00+00:00",
+                            "value": 2.5,
+                        }
+                    ]
+                },
+                headers=auth,
+            )
+            assert posted.status_code == 201, posted.text
+
+            push = ws.receive_json()
+            assert push["type"] == "update"
+            assert push["topic"] == topic
+            # Der Push trägt die ganze Karte (Datenpunkte), nicht nur den Status.
+            assert any(dp["name"] == "vib" for dp in push["data"]["data_points"])
+
+
 def test_ws_rejects_token_with_non_integer_subject(
     test_settings: Settings, _migrated_db: None
 ) -> None:

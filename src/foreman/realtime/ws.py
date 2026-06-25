@@ -37,13 +37,14 @@ from foreman.core.security import decode_ws_token
 from foreman.db.models import User
 from foreman.db.session import get_sessionmaker
 from foreman.logging_setup import ALERT, get_logger
+from foreman.reads.card import build_machine_card
 from foreman.reads.overview import build_fleet_overview
 from foreman.reads.trend import build_trend_by_id
 from foreman.realtime.authz import can_subscribe, overview_scope
 from foreman.realtime.hub import DashboardHub, Subscription
 from foreman.realtime.topics import parse_topic
 from foreman.realtime.wiring import get_hub
-from foreman.schemas.dashboard import FleetOverviewOut, MachineStatusOut, MachineTrendOut
+from foreman.schemas.dashboard import FleetOverviewOut, MachineCardOut, MachineTrendOut
 
 logger = get_logger("foreman.realtime.ws")
 router = APIRouter()
@@ -206,10 +207,13 @@ async def _load_topic(session: AsyncSession, user: User, topic: str) -> dict[str
         overview = await build_fleet_overview(session, machine_ids=scope)
         return FleetOverviewOut.model_validate(overview).model_dump(mode="json")
     if kind == "machine" and entity_id is not None:
-        overview = await build_fleet_overview(session, machine_ids=[entity_id])
-        if not overview.machines:
+        # Der machine:{id}-Snapshot trägt die ganze lebende Karte (Steckbrief +
+        # Datenpunkte mit Wert + Status), nicht nur den Status — dieselbe Read-Core-
+        # Quelle wie das HTTP-Detail-Erstbild (/machines/{id}/card).
+        card = await build_machine_card(session, entity_id)
+        if card is None:
             return None
-        return MachineStatusOut.model_validate(overview.machines[0]).model_dump(mode="json")
+        return MachineCardOut.model_validate(card).model_dump(mode="json")
     if kind == "trend" and entity_id is not None:
         end = datetime.now(UTC)
         trend = await build_trend_by_id(session, entity_id, start=end - _TREND_WINDOW, end=end)

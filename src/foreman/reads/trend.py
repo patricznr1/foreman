@@ -38,7 +38,7 @@ from foreman.reads.queries import (
     load_readings,
     resolve_data_point,
 )
-from foreman.reasoners.drift.baseline import state_key_for
+from foreman.reasoners.drift.baseline import corridor_at
 
 
 @dataclass(frozen=True)
@@ -95,21 +95,15 @@ def expand_profile_band(
     """
     if profile is None:
         return None
-    half = profile.effect_size_k * profile.noise_sigma
     band_points: list[ProfileBandPoint] = []
     for point in points:
-        entry = profile.state_medians.get(str(state_key_for(point.bucket)))
-        if entry is None:
-            continue
-        median_value = float(entry["median"])
-        band_points.append(
-            ProfileBandPoint(
-                bucket=point.bucket,
-                lower=median_value - half,
-                mid=median_value,
-                upper=median_value + half,
-            )
+        band = corridor_at(
+            profile.state_medians, profile.noise_sigma, profile.effect_size_k, point.bucket
         )
+        if band is None:
+            continue
+        lower, mid, upper = band
+        band_points.append(ProfileBandPoint(bucket=point.bucket, lower=lower, mid=mid, upper=upper))
     if not band_points:
         return None
     return ProfileBand(

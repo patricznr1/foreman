@@ -11,7 +11,7 @@
 
 import { KpiTile } from "@/components/atoms/kpi-tile";
 import { StatusIndicator } from "@/components/atoms/status-indicator";
-import type { MachineRead, MachineStatusOut } from "@/lib/api/contracts";
+import type { MachineCardOut, MachineRead } from "@/lib/api/contracts";
 import type { MachineRoleView } from "@/lib/machine/roles";
 import { useRealtimeStore } from "@/lib/realtime/realtime-context";
 import { useTopicState } from "@/lib/state/use-topic";
@@ -27,7 +27,9 @@ export interface MachineHeaderProps {
 
 export function MachineHeader({ machine, roleView }: MachineHeaderProps) {
   const store = useRealtimeStore();
-  const statusState = useTopicState<MachineStatusOut>(store, `machine:${machine.id}`);
+  // Das machine:{id}-Thema trägt die ganze lebende Karte (MachineCardOut); der Kopf
+  // liest daraus nur den Status-/Alarm-Teil (Superset des früheren MachineStatusOut).
+  const statusState = useTopicState<MachineCardOut>(store, `machine:${machine.id}`);
 
   const identity = [
     machine.machine_class,
