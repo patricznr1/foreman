@@ -90,10 +90,8 @@ def _content_maintenance_performed(payload: Mapping[str, Any]) -> str:
 
 def _content_drift_detected(payload: Mapping[str, Any]) -> str:
     # Quelle: reasoners/drift/service.py (_emit_drift_event, DRIFT_EVENT_TYPE="drift_detected").
-    # Hinweis: der Originaltext nutzte effect_size:.2f des UNgerundeten Werts; die
-    # payload trägt round(effect_size, 4). Aus dem gespeicherten Wert ist dies die
-    # bestmögliche (praktisch identische) Rekonstruktion — der Rohwert ist nicht
-    # persistiert. (Drift-Ereignisse entstehen on-demand, nicht im Park-Seed.)
+    # Byte-genau: der Reasoner formatiert seinen Content selbst aus dem in der payload
+    # gespeicherten round(effect_size, 4) (:.2f) — diese Rekonstruktion trifft ihn exakt.
     return (
         f"Verhaltens-Drift an Datenpunkt {payload['data_point_id']} erkannt "
         f"(Effektgröße {float(payload['effect_size']):.2f})."
@@ -398,6 +396,22 @@ async def backfill_semantic_events(
 # ------------------------------------------------------------
 #  CLI
 # ------------------------------------------------------------
+def _positive_int(value: str) -> int:
+    """argparse-Typ: erzwingt eine positive Ganzzahl (> 0) — fängt No-op-/Unsinn-Werte."""
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"muss eine positive Ganzzahl sein, war {value!r}")
+    return ivalue
+
+
+def _nonneg_float(value: str) -> float:
+    """argparse-Typ: erzwingt eine nichtnegative Zahl (>= 0) — kein negativer Backoff."""
+    fvalue = float(value)
+    if fvalue < 0:
+        raise argparse.ArgumentTypeError(f"darf nicht negativ sein, war {value!r}")
+    return fvalue
+
+
 def build_argparser() -> argparse.ArgumentParser:
     """Baut den CLI-Parser für den Substrat-Backfill."""
     parser = argparse.ArgumentParser(
@@ -410,25 +424,25 @@ def build_argparser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--batch-size",
-        type=int,
+        type=_positive_int,
         default=50,
         help="Zeilen je DB-Fetch-Seite (Keyset-Pagination). Commit erfolgt pro Zeile.",
     )
     parser.add_argument(
         "--limit",
-        type=int,
+        type=_positive_int,
         default=None,
         help="Höchstzahl zu verarbeitender Zeilen (sonst alle NULL-refs).",
     )
     parser.add_argument(
         "--max-attempts",
-        type=int,
+        type=_positive_int,
         default=3,
         help="remember-Versuche je Zeile (Cold-Start-/Timeout-fest).",
     )
     parser.add_argument(
         "--retry-delay",
-        type=float,
+        type=_nonneg_float,
         default=2.0,
         help="Basis-Wartezeit (s) für den linearen Backoff zwischen Versuchen.",
     )

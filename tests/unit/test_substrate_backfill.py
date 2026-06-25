@@ -708,3 +708,20 @@ def test_argparser_flags() -> None:
     assert args.limit == 5
     assert args.max_attempts == 7
     assert args.dry_run is True
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--batch-size", "0"],  # No-op-Lauf
+        ["--batch-size", "-1"],
+        ["--limit", "0"],
+        ["--max-attempts", "0"],  # überspränge remember komplett
+        ["--retry-delay", "-1"],  # negativer Backoff
+        ["--batch-size", "abc"],  # nicht-numerisch
+    ],
+)
+def test_argparser_lehnt_ungueltige_werte_ab(argv: list[str]) -> None:
+    # argparse beendet bei Typ-/Wertfehler mit SystemExit(2) — kein No-op/Unsinn-Lauf.
+    with pytest.raises(SystemExit):
+        build_argparser().parse_args(argv)
