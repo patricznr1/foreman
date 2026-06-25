@@ -25,7 +25,11 @@ export function MachineCardGrid({ cards }: MachineCardGridProps) {
   return (
     <div className="flex flex-col gap-8">
       {groups.map((group) => (
-        <section key={group.stage} aria-label={group.stage} className="flex flex-col gap-3">
+        <section
+          key={group.machineClass ?? "__none__"}
+          aria-label={group.stage}
+          className="flex flex-col gap-3"
+        >
           <h2 className="text-caption font-semibold uppercase tracking-wide text-fg-muted">
             {group.stage}
           </h2>

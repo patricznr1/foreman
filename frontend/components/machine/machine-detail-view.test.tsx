@@ -15,6 +15,7 @@ import type {
   MachineTrendOut,
   Role,
 } from "@/lib/api/contracts";
+import { makeMachineCard } from "@/lib/machine/testing/card-fixture";
 import { RealtimeProvider } from "@/lib/realtime/realtime-context";
 import { RealtimeStore } from "@/lib/realtime/realtime-store";
 import { FakeTransport } from "@/lib/realtime/testing/fake-transport";
@@ -49,7 +50,7 @@ const dataPoints: DataPointRead[] = [
   },
 ];
 
-const card: MachineCardOut = {
+const card: MachineCardOut = makeMachineCard({
   id: 7,
   label: "CNC-Fräse 7",
   line_id: 3,
@@ -57,10 +58,6 @@ const card: MachineCardOut = {
   manufacturer: "DMG",
   external_id: "EXT-7",
   location: "Halle A",
-  status: "healthy",
-  open_alarm_count: 0,
-  open_by_severity: {},
-  last_alarm_at: null,
   components: [{ id: 1, label: "Spindel", component_type: "spindle" }],
   data_points: [
     {
@@ -78,7 +75,7 @@ const card: MachineCardOut = {
     },
   ],
   stream: { active: true, last_reading_at: "2026-06-17T10:00:00Z" },
-};
+});
 
 const trendData: MachineTrendOut = {
   machine_id: 7,

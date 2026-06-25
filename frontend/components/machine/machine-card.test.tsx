@@ -8,6 +8,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { MachineCardOut } from "@/lib/api/contracts";
+import { makeMachineCard } from "@/lib/machine/testing/card-fixture";
 import { RealtimeProvider } from "@/lib/realtime/realtime-context";
 import { RealtimeStore } from "@/lib/realtime/realtime-store";
 import { FakeTransport } from "@/lib/realtime/testing/fake-transport";
@@ -15,18 +16,12 @@ import { FakeTransport } from "@/lib/realtime/testing/fake-transport";
 import { MachineCard } from "./machine-card";
 
 function makeCard(overrides: Partial<MachineCardOut> = {}): MachineCardOut {
-  return {
+  return makeMachineCard({
     id: 7,
     label: "PR-02",
-    line_id: 1,
-    machine_class: "servo_press",
     manufacturer: "Bosch Rexroth",
     external_id: "PR-02",
     location: "Halle West",
-    status: "healthy",
-    open_alarm_count: 0,
-    open_by_severity: {},
-    last_alarm_at: null,
     components: [{ id: 1, label: "Werkzeug", component_type: "tool" }],
     data_points: [
       {
@@ -45,7 +40,7 @@ function makeCard(overrides: Partial<MachineCardOut> = {}): MachineCardOut {
     ],
     stream: { active: true, last_reading_at: "2026-06-25T11:59:00Z" },
     ...overrides,
-  };
+  });
 }
 
 function renderCard(initial: MachineCardOut, density?: "compact" | "full") {

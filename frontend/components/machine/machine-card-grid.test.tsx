@@ -8,6 +8,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import type { MachineCardOut } from "@/lib/api/contracts";
+import { makeMachineCard } from "@/lib/machine/testing/card-fixture";
 import { RealtimeProvider } from "@/lib/realtime/realtime-context";
 import { RealtimeStore } from "@/lib/realtime/realtime-store";
 import { FakeTransport } from "@/lib/realtime/testing/fake-transport";
@@ -15,22 +16,7 @@ import { FakeTransport } from "@/lib/realtime/testing/fake-transport";
 import { MachineCardGrid } from "./machine-card-grid";
 
 function card(id: number, machineClass: string, label: string): MachineCardOut {
-  return {
-    id,
-    label,
-    line_id: 1,
-    machine_class: machineClass,
-    manufacturer: null,
-    external_id: label,
-    location: null,
-    status: "healthy",
-    open_alarm_count: 0,
-    open_by_severity: {},
-    last_alarm_at: null,
-    components: [],
-    data_points: [],
-    stream: { active: true, last_reading_at: null },
-  };
+  return makeMachineCard({ id, label, machine_class: machineClass, external_id: label });
 }
 
 function renderGrid(cards: MachineCardOut[]) {

@@ -25,10 +25,16 @@ async function fetchCard(machineId: number): Promise<MachineCardOut | null> {
       cache: "no-store",
     });
     if (!response.ok) {
+      // 404/403 sind erwartbar (fehlend/out-of-scope) und führen zum freundlichen
+      // Hinweis; alles andere serverseitig loggen, damit ein Ausfall sichtbar bleibt.
+      if (response.status !== 404 && response.status !== 403) {
+        console.error(`Maschinenkarte ${machineId}: /card antwortete mit ${response.status}`);
+      }
       return null;
     }
     return (await response.json()) as MachineCardOut;
-  } catch {
+  } catch (error) {
+    console.error(`Maschinenkarte ${machineId}: Anfrage an /card fehlgeschlagen`, error);
     return null;
   }
 }

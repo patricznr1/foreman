@@ -8,26 +8,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { MachineCardOut } from "@/lib/api/contracts";
+import { makeMachineCard } from "@/lib/machine/testing/card-fixture";
 
 import { groupByStage, stageLabel } from "./grouping";
 
 function card(id: number, machineClass: string | null, label = `M-${id}`): MachineCardOut {
-  return {
-    id,
-    label,
-    line_id: 1,
-    machine_class: machineClass,
-    manufacturer: null,
-    external_id: label,
-    location: null,
-    status: "healthy",
-    open_alarm_count: 0,
-    open_by_severity: {},
-    last_alarm_at: null,
-    components: [],
-    data_points: [],
-    stream: { active: true, last_reading_at: null },
-  };
+  return makeMachineCard({ id, label, machine_class: machineClass, external_id: label });
 }
 
 describe("stageLabel", () => {

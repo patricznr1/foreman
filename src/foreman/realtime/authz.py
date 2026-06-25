@@ -69,6 +69,15 @@ async def _machine_of_data_point(session: AsyncSession, data_point_id: int) -> i
     return data_point.machine_id if data_point is not None else None
 
 
+async def _machines_of_user_lines(session: AsyncSession, user: User) -> list[int]:
+    """Maschinen-IDs der dem Nutzer zugewiesenen Linien (eine Linien-Auflösung,
+    geteilt von `overview_scope` und `visible_machine_scope`)."""
+    result = await session.scalars(
+        select(Machine.id).where(Machine.line_id.in_(user.assigned_line_ids))
+    )
+    return list(result.all())
+
+
 async def overview_scope(session: AsyncSession, user: User) -> list[int] | None:
     """Maschinen-Scope des Overview-Themas (geteilt von WS-Push + HTTP-Route).
 
@@ -77,10 +86,7 @@ async def overview_scope(session: AsyncSession, user: User) -> list[int] | None:
     """
     if user.role == ROLE_MANAGER:
         return None
-    result = await session.scalars(
-        select(Machine.id).where(Machine.line_id.in_(user.assigned_line_ids))
-    )
-    return list(result.all())
+    return await _machines_of_user_lines(session, user)
 
 
 async def visible_machine_scope(session: AsyncSession, user: User) -> list[int] | None:
@@ -98,8 +104,5 @@ async def visible_machine_scope(session: AsyncSession, user: User) -> list[int] 
     if user.role == ROLE_WORKER:
         return list(user.assigned_machine_ids)
     if user.role == ROLE_SHIFT_LEAD:
-        result = await session.scalars(
-            select(Machine.id).where(Machine.line_id.in_(user.assigned_line_ids))
-        )
-        return list(result.all())
+        return await _machines_of_user_lines(session, user)
     return []

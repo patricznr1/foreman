@@ -23,10 +23,14 @@ async function fetchCards(): Promise<MachineCardOut[]> {
       cache: "no-store",
     });
     if (!response.ok) {
+      // Ehrlich: ein Backend-Fehler ist KEIN leerer Scope — serverseitig loggen,
+      // damit „keine Maschinen" nicht stillschweigend einen Ausfall verdeckt.
+      console.error(`Kartenliste: /api/v1/cards antwortete mit ${response.status}`);
       return [];
     }
     return (await response.json()) as MachineCardOut[];
-  } catch {
+  } catch (error) {
+    console.error("Kartenliste: Anfrage an /api/v1/cards fehlgeschlagen", error);
     return [];
   }
 }
