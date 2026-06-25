@@ -160,7 +160,7 @@ class OllamaBackend:
         return _coerce_vectors(embeddings, expected_count=len(texts))
 
 
-def _extract_openai_embeddings(data: Any) -> Any:
+def _extract_openai_embeddings(data: Any, *, expected_count: int) -> Any:
     """Zieht die Embeddings aus einer OpenAI-`/embeddings`-Antwort und stellt die
     INPUT-Reihenfolge über `data[].index` wieder her.
 
@@ -179,12 +179,22 @@ def _extract_openai_embeddings(data: Any) -> Any:
         )
     try:
         ordered = sorted(items, key=lambda item: item["index"])
-        return [item["embedding"] for item in ordered]
+        indices = [item["index"] for item in ordered]
+        embeddings = [item["embedding"] for item in ordered]
     except (KeyError, TypeError) as exc:
         raise ProviderUnavailable(
             "❌ Embedding-Backend 'openai' lieferte eine unverwertbare Antwort.",
             attempted=(OPENAI_BACKEND,),
         ) from exc
+    # `data[].index` muss eine dichte 0..n-1-Permutation sein — doppelte/lückenhafte/
+    # nicht-ganzzahlige Indizes (gleiche Anzahl, falsche Zuordnung) würden sonst still
+    # durchrutschen und ein Embedding dem falschen Eingabetext zuordnen.
+    if indices != list(range(expected_count)):
+        raise ProviderUnavailable(
+            "❌ Embedding-Backend 'openai' lieferte inkonsistente data[].index-Werte.",
+            attempted=(OPENAI_BACKEND,),
+        )
+    return embeddings
 
 
 class OpenAIBackend:
@@ -230,6 +240,7 @@ class OpenAIBackend:
                     "dimensions": self._dimensions,
                     "encoding_format": "float",
                 },
+                timeout=timeout_s,
             )
             response.raise_for_status()
             data: Any = response.json()
@@ -247,7 +258,10 @@ class OpenAIBackend:
             if owns_client:
                 await client.aclose()
 
-        return _coerce_vectors(_extract_openai_embeddings(data), expected_count=len(texts))
+        return _coerce_vectors(
+            _extract_openai_embeddings(data, expected_count=len(texts)),
+            expected_count=len(texts),
+        )
 
 
 class SentenceTransformersBackend:

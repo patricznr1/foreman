@@ -134,17 +134,23 @@ class LocalEmbeddingProvider:
             )
         if OPENAI_BACKEND in needed:
             # Cloud-Demo-Pfad: Key als SecretStr durchreichen (nie im Klartext).
-            # Fehlt der Key (Pfad nicht scharf geschaltet), bleibt er leer — ein 401
-            # wird beim echten Call zu ProviderUnavailable, statt hier hart zu crashen.
-            api_key = settings.openai_api_key
-            backends.append(
-                OpenAIBackend(
-                    base_url=settings.openai_base_url,
-                    model=settings.openai_model,
-                    api_key=api_key.get_secret_value() if api_key is not None else "",
-                    dimensions=settings.dimension,
-                )
+            # Fehlt der Key (Pfad nicht scharf geschaltet), wird KEIN Backend gebaut —
+            # from_settings crasht nicht, aber embed() degradiert lokal zu
+            # ProviderUnavailable, OHNE dass Notiz-Text Richtung US-Cloud abgeht (§8/§18).
+            api_key = (
+                settings.openai_api_key.get_secret_value()
+                if settings.openai_api_key is not None
+                else None
             )
+            if api_key:
+                backends.append(
+                    OpenAIBackend(
+                        base_url=settings.openai_base_url,
+                        model=settings.openai_model,
+                        api_key=api_key,
+                        dimensions=settings.dimension,
+                    )
+                )
         return cls(
             backends=backends,
             priority=settings.priority,

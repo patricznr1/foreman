@@ -232,16 +232,63 @@ async def test_openai_nicht_json_body_wird_provider_unavailable() -> None:
     # ✅ Pass: nicht-JSON-Body → ProviderUnavailable statt roher ValueError.
 
 
-def test_from_settings_ohne_key_degradiert_ehrlich() -> None:
-    # Kein Key gesetzt (Cloud-Pfad nicht scharf): from_settings baut das Backend
-    # trotzdem (kein Crash) — ein leerer Bearer führt beim echten Call zu 401 →
-    # ProviderUnavailable (ehrliche Degradation statt Crash beim Provider-Bau).
+async def test_from_settings_ohne_key_baut_kein_backend() -> None:
+    # Kein Key gesetzt (Cloud-Pfad nicht scharf): from_settings crasht nicht, baut
+    # aber KEIN OpenAI-Backend → embed() degradiert lokal zu ProviderUnavailable,
+    # OHNE dass (NER-maskierter) Notiz-Text das System Richtung US-Cloud verlässt
+    # (§8/§18 — keine Text-Exfiltration ohne echten Key).
     settings = EmbeddingSettings(
         _env_file=None,  # type: ignore[call-arg]
         priority="openai_only",
     )
     provider = LocalEmbeddingProvider.from_settings(settings)
-    built = provider._backends[OPENAI_BACKEND]
-    assert isinstance(built, OpenAIBackend), "❌ Fail: OpenAIBackend erwartet"
-    assert built._api_key == "", "❌ Fail: fehlender Key → leerer Bearer (kein Crash)"
-    # ✅ Pass: openai_only ohne Key baut sauber, statt beim Provider-Bau zu crashen.
+    assert OPENAI_BACKEND not in provider._backends, "❌ Fail: ohne Key kein OpenAI-Backend"
+    with pytest.raises(ProviderUnavailable):
+        await provider.embed(["x"])  # lokale Degradation, KEIN externer Request
+    # ✅ Pass: ohne Key kein Backend → lokale Degradation statt Cloud-Request.
+
+
+@pytest.mark.parametrize(
+    "data_items",
+    [
+        [{"embedding": [0.1] * 4}],  # index fehlt
+        [{"index": "0", "embedding": [0.1] * 4}],  # index nicht-ganzzahlig
+        [{"index": 5, "embedding": [0.1] * 4}],  # index nicht in 0..n-1 (n=1)
+        [  # doppelter index für zwei Texte (n=2) → keine dichte Permutation
+            {"index": 0, "embedding": [0.1] * 4},
+            {"index": 0, "embedding": [0.2] * 4},
+        ],
+    ],
+)
+async def test_openai_defekter_index_wird_provider_unavailable(
+    data_items: list[dict[str, object]],
+) -> None:
+    # data[].index MUSS eine dichte 0..n-1-Permutation sein — fehlende/doppelte/
+    # nicht-ganzzahlige Indizes dürfen NICHT still zu falscher Zuordnung führen.
+    texts = ["a", "b"] if len(data_items) > 1 else ["a"]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"data": data_items})
+
+    backend = _openai(handler)
+    with pytest.raises(ProviderUnavailable):
+        await backend.embed_batch(texts, timeout_s=5.0)
+    # ✅ Pass: inkonsistente data[].index-Werte → ProviderUnavailable.
+
+
+async def test_openai_reicht_timeout_pro_request_durch() -> None:
+    # Der Methoden-Timeout muss PRO Request gesetzt werden — auch bei injiziertem
+    # Client, dessen Default-Timeout abweicht (12.5 ≠ httpx-Default 5.0s).
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["timeout"] = request.extensions.get("timeout")
+        return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.1] * 4}]})
+
+    backend = _openai(handler)
+    await backend.embed_batch(["x"], timeout_s=12.5)
+    timeout = seen["timeout"]
+    assert isinstance(timeout, dict) and timeout.get("read") == 12.5, (
+        "❌ Fail: timeout_s wird nicht pro Request durchgereicht"
+    )
+    # ✅ Pass: timeout_s wird an client.post weitergereicht.
