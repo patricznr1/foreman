@@ -353,12 +353,17 @@ class DriftService:
     async def _emit_drift_event(self, finding: DriftFinding, machine_id: int) -> Alarm:
         """Persistiert ein Drift-Ereignis: semantic_event (best-effort Dual-Write)
         + operatorseitige alarms-Warnung. KEINE Aktorik."""
+        # effect_size auf 4 Stellen gerundet persistieren (der Ausfall-Reasoner liest den
+        # Wert aus der payload). Der Content formatiert AUS DEM GESPEICHERTEN Wert (:.2f) —
+        # nicht aus dem Rohwert —, damit der Substrat-Backfill (substrate/backfill.py)
+        # das Ereignis byte-genau allein aus der payload rekonstruieren kann.
+        effect_size = round(finding.effect_size, 4)
         payload = {
             "reasoner": "drift",
             "machine_id": machine_id,
             "data_point_id": finding.data_point_id,
             "detected_at": finding.detected_at.isoformat(),
-            "effect_size": round(finding.effect_size, 4),
+            "effect_size": effect_size,
         }
         await record_semantic_event(
             self.session,
@@ -367,7 +372,7 @@ class DriftService:
             payload=payload,
             content=(
                 f"Verhaltens-Drift an Datenpunkt {finding.data_point_id} erkannt "
-                f"(Effektgröße {finding.effect_size:.2f})."
+                f"(Effektgröße {effect_size:.2f})."
             ),
             substrate=self.substrate,
         )

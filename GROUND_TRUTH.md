@@ -369,6 +369,7 @@ Die protokoll-agnostische Ingestion-Schicht unter `src/foreman/ingestion/` plus 
 ### 12.4 Dual-Write ans Substrat (`ingestion/semantic.py`, §9-Fallback)
 
 - `record_semantic_event(...)` schreibt **immer** eine `semantic_events`-Zeile (`event_type`, `payload` jsonb, `machine_id`) und versucht best-effort `SubstrateClient.remember`. Erfolg → `substrate_ref` gesetzt; Fehlschlag/kein Substrat → `substrate_ref = NULL` + Log (Emoji). **Nicht-blockierend:** Substrat-Ausfall blockiert den DB-Schreibpfad nie. Nur diskrete Ereignisse (Alarm/Produktionslauf/Wartung) werden gespiegelt — Werker-Notizen und rohe Readings nicht.
+- **Backfill (`substrate/backfill.py`, CLI `python -m foreman.substrate.backfill`):** Holt den ausgefallenen Dual-Write nachträglich nach — für Zeilen mit `substrate_ref IS NULL` (z. B. der Park-Seed, der bei leerem Substrat lief). **Additiv** (einzige DB-Schreibung ist `substrate_ref`), **idempotent** (nur NULL-refs; pro gesetzter Referenz sofortiger Commit → Duplikat-Fenster ≤ 1 Erinnerung), **namespace-isoliert** (`SubstrateClient`-Namespace, fail-closed ohne `SUBSTRATE_BASE_URL`), **Cold-Start-fest** (Retry mit linearem Backoff). Der gesendete Content wird **wortgleich** zur ursprünglichen Aufrufer-Formulierung aus `event_type` + `payload` rekonstruiert (unbekannte/unvollständige Zeilen werden übersprungen, **kein erfundener Text**). Flags: `--batch-size`/`--limit`/`--max-attempts`/`--retry-delay`/`--dry-run`.
 
 ### 12.5 Simulations-Adapter (`adapters/simulation/`)
 
