@@ -8,11 +8,17 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from foreman.reads.card import ComponentCard, DataPointCard, MachineCard
 from foreman.reads.overview import FleetOverview, MachineOverview
 from foreman.reads.queries import ReadingBucket
 from foreman.reads.stream import StreamStatus
 from foreman.reads.trend import MachineTrend, ProfileBand, ProfileBandPoint
-from foreman.schemas.dashboard import FleetOverviewOut, MachineStatusOut, MachineTrendOut
+from foreman.schemas.dashboard import (
+    FleetOverviewOut,
+    MachineCardOut,
+    MachineStatusOut,
+    MachineTrendOut,
+)
 
 
 def test_fleet_overview_out_serializes_from_dataclass() -> None:
@@ -108,6 +114,94 @@ def test_machine_trend_out_serializes_points_and_reserves_profile_band() -> None
     assert payload["points"][0]["bucket"].startswith("2026-06-16T12:00:00")
     # Ohne persistiertes Profil bleibt das Eigenprofil-Band null (graceful).
     assert payload["profile_band"] is None
+
+
+def test_machine_card_out_serializes_steifbrief_datapoints_and_stream() -> None:
+    card = MachineCard(
+        id=1,
+        label="PR-02",
+        line_id=3,
+        machine_class="servo_press",
+        manufacturer="Bosch Rexroth",
+        external_id="PR-02",
+        location="Halle West",
+        status="drift_active",
+        open_alarm_count=1,
+        open_by_severity={"warning": 1},
+        last_alarm_at=datetime(2026, 6, 25, 12, 0, tzinfo=UTC),
+        components=(ComponentCard(id=10, label="Werkzeug", component_type="tool"),),
+        data_points=(
+            DataPointCard(
+                id=20,
+                component_id=10,
+                name="press_force",
+                kind="analog",
+                measurement_type="force",
+                unit="kN",
+                normal_min=0.0,
+                normal_max=250.0,
+                last_value=212.4,
+                last_value_at=datetime(2026, 6, 25, 11, 59, tzinfo=UTC),
+                status="out_of_band",
+            ),
+        ),
+        stream=StreamStatus(active=True, last_reading_at=datetime(2026, 6, 25, 11, 59, tzinfo=UTC)),
+    )
+
+    payload = MachineCardOut.model_validate(card).model_dump(mode="json")
+
+    assert payload["label"] == "PR-02"
+    assert payload["manufacturer"] == "Bosch Rexroth"
+    assert payload["external_id"] == "PR-02"
+    assert payload["location"] == "Halle West"
+    assert payload["status"] == "drift_active"
+    assert payload["components"][0]["label"] == "Werkzeug"
+    point = payload["data_points"][0]
+    assert point["name"] == "press_force"
+    assert point["last_value"] == 212.4
+    assert point["last_value_at"].startswith("2026-06-25T11:59:00")
+    assert point["status"] == "out_of_band"
+    assert payload["stream"]["active"] is True
+
+
+def test_machine_card_out_datapoint_without_value_is_null() -> None:
+    card = MachineCard(
+        id=1,
+        label="M1",
+        line_id=None,
+        machine_class=None,
+        manufacturer=None,
+        external_id=None,
+        location=None,
+        status="healthy",
+        open_alarm_count=0,
+        open_by_severity={},
+        last_alarm_at=None,
+        components=(),
+        data_points=(
+            DataPointCard(
+                id=20,
+                component_id=None,
+                name="idle",
+                kind="analog",
+                measurement_type=None,
+                unit=None,
+                normal_min=None,
+                normal_max=None,
+                last_value=None,
+                last_value_at=None,
+                status="unknown",
+            ),
+        ),
+        stream=StreamStatus(active=False, last_reading_at=None),
+    )
+
+    payload = MachineCardOut.model_validate(card).model_dump(mode="json")
+
+    point = payload["data_points"][0]
+    assert point["last_value"] is None
+    assert point["last_value_at"] is None
+    assert point["status"] == "unknown"
 
 
 def test_machine_trend_out_serializes_profile_band() -> None:

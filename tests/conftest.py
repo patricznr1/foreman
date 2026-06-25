@@ -20,7 +20,7 @@ from alembic.config import Config
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from foreman.api.deps import get_embedding_provider, get_redactor
@@ -43,6 +43,31 @@ _TRUNCATE_SQL = text(
     "alarms, data_points, components, semantic_events, machines, audit_logs, "
     "lines, users RESTART IDENTITY CASCADE;"
 )
+
+# Nur readings_1m wird in der Suite gelesen (load_readings/latest_values); die 1h/1d-
+# Aggregate liest kein Code-Pfad → kein Reset nötig (spart den Refresh-Overhead).
+_RESET_CAGGS = ("readings_1m",)
+
+
+async def _reset_caggs(engine: AsyncEngine) -> None:
+    """Räumt die materialisierten CAGG-Buckets nach dem TRUNCATE ab (Test-Isolation).
+
+    TRUNCATE der `readings`-Quelle invalidiert die Continuous Aggregates NICHT —
+    materialisierte Buckets bleiben stehen und tauchen bei data_point_id-Wieder-
+    verwendung (RESTART IDENTITY) als „Geister-Werte" eines fremden Datenpunkts auf
+    (z. B. ein latest_value-Read über readings_1m ohne Zeitfenster). Ein Refresh über
+    die nun leere Quelle entfernt die materialisierten Buckets. `refresh_continuous_
+    aggregate` darf NICHT in einer Transaktion laufen → AUTOCOMMIT.
+    """
+    async with engine.connect() as conn:
+        await conn.execution_options(isolation_level="AUTOCOMMIT")
+        for cagg in _RESET_CAGGS:
+            await conn.execute(
+                text(
+                    f"CALL refresh_continuous_aggregate('{cagg}'::regclass, "
+                    "NULL::timestamptz, NULL::timestamptz)"
+                )
+            )
 
 
 def _db_reachable(database_url: str) -> bool:
@@ -133,6 +158,7 @@ async def app(test_settings: Settings, _migrated_db: None) -> AsyncIterator[Fast
     # Isolation: vor jedem Test leeren.
     async with engine.begin() as conn:
         await conn.execute(_TRUNCATE_SQL)
+    await _reset_caggs(engine)
 
     application = create_app(test_settings)
 
@@ -180,6 +206,7 @@ async def clean_db(test_settings: Settings, _migrated_db: None) -> AsyncIterator
     engine = create_async_engine(test_settings.database_url, poolclass=NullPool)
     async with engine.begin() as conn:
         await conn.execute(_TRUNCATE_SQL)
+    await _reset_caggs(engine)
     await engine.dispose()
     yield
 

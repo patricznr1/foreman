@@ -15,11 +15,11 @@
 from __future__ import annotations
 
 from collections import deque
-from collections.abc import Hashable
+from collections.abc import Hashable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from statistics import median
-from typing import Final
+from typing import Any, Final
 
 # Gleitendes Baseline-Fenster: 1440 Min = 24 h bei 1 Sample/Minute (Research §6.1).
 BASELINE_WINDOW: Final = 1440
@@ -34,6 +34,31 @@ def state_key_for(moment: datetime) -> int:
     den Korridor des falschen Zustands.
     """
     return moment.hour
+
+
+def corridor_at(
+    state_medians: Mapping[str, Any],
+    noise_sigma: float,
+    effect_size_k: float,
+    moment: datetime,
+) -> tuple[float, float, float] | None:
+    """Korridor `(lower, mid, upper)` des zum Zeitpunkt `moment` geltenden Zustands.
+
+    `mid` ist der gleitende Zustands-Median, die Halbbreite `effect_size_k *
+    noise_sigma` ist genau die Schwelle, ab der der Detektor das Residuum als relevant
+    wertet — die ECHTE Detektor-Bewertungsbasis, kein neu erfundener Schwellwert. Der
+    Zustand wird über `state_key_for(moment)` bestimmt (DIESELBE Funktion wie der
+    Detektor-Lauf). None, wenn der Zustand kein Profil hat (zu wenig Samples) → dann
+    ist keine ehrliche Korridor-Aussage möglich. EINE Quelle für das Trend-Band-Overlay
+    (`reads.trend.expand_profile_band`) UND die Datenpunkt-Status-Ableitung
+    (`reads.datapoint_status`) — nie zweimal getrennt berechnet.
+    """
+    entry = state_medians.get(str(state_key_for(moment)))
+    if entry is None:
+        return None
+    median_value = float(entry["median"])
+    half = effect_size_k * noise_sigma
+    return (median_value - half, median_value, median_value + half)
 
 
 @dataclass

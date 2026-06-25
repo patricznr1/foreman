@@ -54,6 +54,19 @@ class ReadingBucket:
     last: float | None
 
 
+@dataclass(frozen=True)
+class LatestValue:
+    """Der jüngste aggregierte Wert eines Datenpunkts (für die lebende Karte).
+
+    `value` ist `last_value` des neuesten readings_1m-Buckets (der zuletzt gesehene
+    Rohwert dieser Minute), `at` der Bucket-Zeitstempel — die Grundlage von
+    `last_value`/`last_value_at` der Maschinenkarte und der ehrlichen Stale-Anzeige.
+    """
+
+    value: float | None
+    at: datetime
+
+
 # ============================================================
 #  Stammdaten + Status-Komposition
 # ============================================================
@@ -93,6 +106,23 @@ async def open_alarms_for_machines(
     for alarm in result:
         grouped.setdefault(alarm.machine_id, []).append(alarm)
     return grouped
+
+
+async def machines_for_data_points(
+    session: AsyncSession, data_point_ids: Sequence[int]
+) -> set[int]:
+    """Die Maschinen der gegebenen Datenpunkte (für die Live-Push-NOTIFY-Anreicherung).
+
+    Ein Reading-Change an einem Datenpunkt ist zugleich ein Change der lebenden Karte
+    seiner Maschine — der Produzent reichert den ChangeSet damit an, sodass das pure
+    `topics_for_change` die Themen `machine:{id}` (+ overview) automatisch mitzieht.
+    """
+    if not data_point_ids:
+        return set()
+    result = await session.scalars(
+        select(DataPoint.machine_id).where(DataPoint.id.in_(data_point_ids)).distinct()
+    )
+    return set(result.all())
 
 
 # ============================================================
@@ -230,6 +260,46 @@ async def load_drift_profile(session: AsyncSession, data_point_id: int) -> Drift
     je Trend-Bucket den Zustands-Korridor (`reads.trend.expand_profile_band`)."""
     stmt = select(DriftProfile).where(DriftProfile.data_point_id == data_point_id)
     return (await session.scalars(stmt)).first()
+
+
+async def load_drift_profiles_for_data_points(
+    session: AsyncSession, data_point_ids: Sequence[int]
+) -> dict[int, DriftProfile]:
+    """Lädt die Eigenprofile mehrerer Datenpunkte in EINER Abfrage (kein N+1).
+
+    Für die Status-Ableitung der lebenden Maschinenkarte über eine ganze Maschine/
+    Flotte — je Datenpunkt höchstens ein Profil (UNIQUE data_point_id, §5)."""
+    if not data_point_ids:
+        return {}
+    result = await session.scalars(
+        select(DriftProfile).where(DriftProfile.data_point_id.in_(data_point_ids))
+    )
+    return {profile.data_point_id: profile for profile in result}
+
+
+async def latest_values_for_data_points(
+    session: AsyncSession, data_point_ids: Sequence[int]
+) -> dict[int, LatestValue]:
+    """Jüngster Wert JE DATENPUNKT (last_value des neuesten readings_1m-Buckets).
+
+    EINE Abfrage über die Minuten-Aggregat-Sicht (`DISTINCT ON` je Datenpunkt, neuester
+    Bucket zuerst) — günstig, kein Full-Scan, kein N+1 für eine ganze Maschine/Flotte.
+    Datenpunkte ohne Readings fehlen im Ergebnis (ehrlich leer — die Karte zeigt dann
+    keinen Wert, statt einen zu erfinden).
+    """
+    if not data_point_ids:
+        return {}
+    stmt = text(
+        "SELECT DISTINCT ON (data_point_id) data_point_id, bucket, last_value "
+        "FROM readings_1m "
+        "WHERE data_point_id = ANY(:dp_ids) "
+        "ORDER BY data_point_id, bucket DESC"
+    )
+    rows = (await session.execute(stmt, {"dp_ids": list(data_point_ids)})).all()
+    return {
+        data_point_id: LatestValue(value=last_value, at=ensure_utc(bucket))
+        for data_point_id, bucket, last_value in rows
+    }
 
 
 async def load_readings(

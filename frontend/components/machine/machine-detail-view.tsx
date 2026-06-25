@@ -14,14 +14,14 @@
 
 import { useState } from "react";
 
-import type { ComponentRead, CurrentUser, DataPointRead, MachineRead } from "@/lib/api/contracts";
+import type { CurrentUser, DataPointRead, MachineCardOut, MachineRead } from "@/lib/api/contracts";
 import { machineRoleView } from "@/lib/machine/roles";
 import { DEFAULT_TIME_WINDOW, type TimeWindowId, timeWindow } from "@/lib/machine/time-window";
 
 import { MachineAlarms } from "./machine-alarms";
+import { MachineCard } from "./machine-card";
 import { MachineHeader } from "./machine-header";
 import { MachineHistory } from "./machine-history";
-import { MachineSpecs } from "./machine-specs";
 import { PinnedChains } from "./pinned-chains";
 import { MachineTrendPanel } from "./machine-trend-panel";
 import { SensorPicker } from "./sensor-picker";
@@ -30,11 +30,12 @@ import { TimeWindowPicker } from "./time-window-picker";
 export interface MachineDetailViewProps {
   user: CurrentUser;
   machine: MachineRead;
-  components: ComponentRead[];
   dataPoints: DataPointRead[];
+  /** Die lebende Maschinenkarte (Stammdaten + Datenpunkte mit Wert + Status). */
+  card: MachineCardOut;
 }
 
-export function MachineDetailView({ user, machine, components, dataPoints }: MachineDetailViewProps) {
+export function MachineDetailView({ user, machine, dataPoints, card }: MachineDetailViewProps) {
   const roleView = machineRoleView(user.role);
   const reduced = roleView.sensorDetail === "reduced";
   const maxSensors = reduced ? 1 : 4;
@@ -104,7 +105,9 @@ export function MachineDetailView({ user, machine, components, dataPoints }: Mac
       </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <MachineSpecs machine={machine} components={components} dataPoints={dataPoints} />
+        {/* Die lebende Maschinenkarte trägt die Stammdaten-Sicht (ersetzt machine-specs):
+            Steckbrief + Datenpunkte mit aktuellem Wert + Status, live über machine:{id}. */}
+        <MachineCard initial={card} density="full" />
         <MachineAlarms
           machineId={machine.id}
           machineLabel={machine.label}

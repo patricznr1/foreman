@@ -15,11 +15,12 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, HTTPException, status
 
 from foreman.api.deps import CurrentUser, SessionDep
+from foreman.reads.card import build_fleet_cards, build_machine_card
 from foreman.reads.overview import build_fleet_overview
 from foreman.reads.trend import build_trend
-from foreman.realtime.authz import can_subscribe, overview_scope
+from foreman.realtime.authz import can_subscribe, overview_scope, visible_machine_scope
 from foreman.realtime.topics import OVERVIEW_TOPIC, machine_topic
-from foreman.schemas.dashboard import FleetOverviewOut, MachineTrendOut
+from foreman.schemas.dashboard import FleetOverviewOut, MachineCardOut, MachineTrendOut
 
 router = APIRouter(tags=["dashboard"])
 
@@ -71,3 +72,36 @@ async def get_machine_trend(
             detail=f"Datenpunkt '{datapoint}' an Maschine {machine_id} nicht gefunden",
         )
     return MachineTrendOut.model_validate(trend)
+
+
+@router.get("/cards", response_model=list[MachineCardOut])
+async def get_machine_cards(session: SessionDep, user: CurrentUser) -> list[MachineCardOut]:
+    """Lebende Maschinenkarten der Flotte (Erstbild des Karten-Grids unter „Linie &
+    Maschinen") — scope-gefiltert nach Rolle (jede Rolle sieht ihren autorisierten
+    Satz; Live-Aktualisierung läuft je Karte über das WS-Thema machine:{id}). EINE
+    Quelle der Wahrheit mit der Detail-Karte (derselbe Read-Core-Builder).
+    """
+    scope = await visible_machine_scope(session, user)
+    cards = await build_fleet_cards(session, machine_ids=scope)
+    return [MachineCardOut.model_validate(card) for card in cards]
+
+
+@router.get("/machines/{machine_id}/card", response_model=MachineCardOut)
+async def get_machine_card(
+    machine_id: int, session: SessionDep, user: CurrentUser
+) -> MachineCardOut:
+    """Lebende Maschinenkarte einer Maschine (Detail-/Stammdaten-Erstbild).
+
+    Gleiche Maschinen-Scope-Autorisierung wie das WS-`machine`-Thema (403 außerhalb
+    des Scopes); 404, wenn die Maschine nicht existiert.
+    """
+    if not await can_subscribe(session, user, machine_topic(machine_id)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Kein Zugriff auf diese Maschine"
+        )
+    card = await build_machine_card(session, machine_id)
+    if card is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Maschine {machine_id} nicht gefunden"
+        )
+    return MachineCardOut.model_validate(card)

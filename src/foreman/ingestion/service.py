@@ -40,6 +40,7 @@ from foreman.ingestion.normalized import (
     WorkerNoteRecord,
 )
 from foreman.ingestion.semantic import record_semantic_event
+from foreman.reads.queries import machines_for_data_points
 from foreman.realtime.channels import ChangeSet
 from foreman.realtime.notify import notify_changes
 from foreman.substrate.client import SubstrateClient
@@ -184,11 +185,19 @@ class IngestionService:
         und lädt danach konsolidiert über den Read-Core nach. Signalisiert nur
         live-relevante Änderungen (Readings → Trend/Status, Alarme → Status/Alarme);
         nicht-live Ereignisse (Wartung, Läufe, Notizen) lösen keinen Push aus.
+
+        Die Maschinen der berührten Datenpunkte reisen mit, sodass ein reiner
+        Readings-Tick auch die lebende Karte (machine:{id}) + das Cockpit (overview)
+        nachzieht — nicht nur das Trend-Thema (kanonische Karte, §20/§21.11).
         """
+        changed_machines = set(self._changed_machines)
+        changed_machines |= await machines_for_data_points(
+            self.session, list(self._changed_data_points)
+        )
         await notify_changes(
             self.session,
             ChangeSet(
-                machines=frozenset(self._changed_machines),
+                machines=frozenset(changed_machines),
                 data_points=frozenset(self._changed_data_points),
                 kinds=frozenset(self._changed_kinds),
             ),

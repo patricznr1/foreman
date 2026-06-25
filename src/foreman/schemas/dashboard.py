@@ -14,6 +14,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from foreman.reads.datapoint_status import DataPointStatus
 from foreman.reads.status import MachineStatus
 
 
@@ -105,3 +106,56 @@ class MachineTrendOut(_Out):
     # Zustandsspezifisches F4-Eigenprofil-Band (gegateter Replay, persistiert in
     # drift_profiles); null, wenn kein/zu junges Profil vorliegt (graceful).
     profile_band: ProfileBandOut | None = None
+
+
+class ComponentCardOut(_Out):
+    """Eine Komponente im Steckbrief der lebenden Maschinenkarte."""
+
+    id: int
+    label: str
+    component_type: str | None
+
+
+class DataPointCardOut(_Out):
+    """Ein Datenpunkt der Karte: Stammdaten + aktueller Wert + ehrlicher Status.
+
+    Erweitert den Datenpunkt-Stammdatenvertrag (DataPointRead) um `last_value`/
+    `last_value_at` (jüngster readings_1m-Wert; null ohne Readings) und `status`
+    (aus bestehenden Signalen abgeleitet, §20.5/§21.11 — kein erfundener Schwellwert).
+    """
+
+    id: int
+    component_id: int | None
+    name: str
+    kind: str
+    measurement_type: str | None
+    unit: str | None
+    normal_min: float | None
+    normal_max: float | None
+    last_value: float | None
+    last_value_at: datetime | None
+    status: DataPointStatus
+
+
+class MachineCardOut(_Out):
+    """Die kanonische lebende Maschinenkarte (HTTP-Erstbild + WS-Thema machine:{id}).
+
+    Steckbrief + Maschinen-Status-Badge (FCSM-mappbar) + Komponenten + Datenpunkte
+    mit aktuellem Wert und Status + Eingangs-Stream-Status (ehrliche Live/Stale-
+    Anzeige). EIN Vertrag für Grid- und Detail-Sicht (eine Quelle der Wahrheit).
+    """
+
+    id: int
+    label: str
+    line_id: int | None
+    machine_class: str | None
+    manufacturer: str | None
+    external_id: str | None
+    location: str | None
+    status: MachineStatus
+    open_alarm_count: int
+    open_by_severity: dict[str, int]
+    last_alarm_at: datetime | None
+    components: list[ComponentCardOut]
+    data_points: list[DataPointCardOut]
+    stream: StreamStatusOut

@@ -42,6 +42,68 @@ export interface FleetOverviewOut {
   stream: StreamStatusOut;
 }
 
+/**
+ * Ehrlicher Status je Datenpunkt (reads/datapoint_status.py). Verdikt-Stufen
+ * (drift_alarm/alarm) stammen aus gemeldeten Alarmen, Beobachtungs-Stufen
+ * (out_of_band/out_of_spec) aus dem Wert gegen ein bestehendes Band; `unknown` =
+ * keine ehrliche Aussage möglich. KEIN neu erfundener Schwellwert.
+ */
+export type DataPointStatus =
+  | "ok"
+  | "out_of_band"
+  | "out_of_spec"
+  | "drift_alarm"
+  | "alarm"
+  | "unknown";
+
+/** Eine Komponente im Steckbrief der lebenden Karte (schemas/dashboard.py). */
+export interface ComponentCardOut {
+  id: number;
+  label: string;
+  component_type: string | null;
+}
+
+/**
+ * Ein Datenpunkt der lebenden Karte: Stammdaten + aktueller Wert + Status
+ * (schemas/dashboard.py DataPointCardOut). `last_value`/`last_value_at` aus dem
+ * jüngsten readings_1m-Bucket; null ohne Readings (kein erfundener Wert).
+ */
+export interface DataPointCardOut {
+  id: number;
+  component_id: number | null;
+  name: string;
+  kind: string;
+  measurement_type: string | null;
+  unit: string | null;
+  normal_min: number | null;
+  normal_max: number | null;
+  last_value: number | null;
+  last_value_at: string | null; // ISO 8601
+  status: DataPointStatus;
+}
+
+/**
+ * Die kanonische lebende Maschinenkarte (GET /api/v1/cards · /machines/{id}/card ·
+ * WS-Thema machine:{id}, schemas/dashboard.py MachineCardOut). EIN Vertrag für Grid-
+ * und Detail-Sicht — Steckbrief + Status-Badge + Datenpunkte mit Werten + Stream.
+ */
+export interface MachineCardOut {
+  id: number;
+  label: string;
+  line_id: number | null;
+  machine_class: string | null;
+  manufacturer: string | null;
+  external_id: string | null;
+  location: string | null;
+  status: MachineStatus;
+  open_alarm_count: number;
+  open_by_severity: Record<string, number>;
+  last_alarm_at: string | null; // ISO 8601
+  components: ComponentCardOut[];
+  data_points: DataPointCardOut[];
+  stream: StreamStatusOut;
+}
+
 export interface TrendPointOut {
   bucket: string; // ISO 8601, Minuten-Bucket
   avg: number;

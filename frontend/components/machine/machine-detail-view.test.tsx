@@ -7,7 +7,14 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ComponentRead, CurrentUser, DataPointRead, MachineRead, MachineTrendOut, Role } from "@/lib/api/contracts";
+import type {
+  CurrentUser,
+  DataPointRead,
+  MachineCardOut,
+  MachineRead,
+  MachineTrendOut,
+  Role,
+} from "@/lib/api/contracts";
 import { RealtimeProvider } from "@/lib/realtime/realtime-context";
 import { RealtimeStore } from "@/lib/realtime/realtime-store";
 import { FakeTransport } from "@/lib/realtime/testing/fake-transport";
@@ -42,9 +49,36 @@ const dataPoints: DataPointRead[] = [
   },
 ];
 
-const components: ComponentRead[] = [
-  { id: 1, machine_id: 7, label: "Spindel", component_type: "spindle", created_at: "2026-06-01T00:00:00Z" },
-];
+const card: MachineCardOut = {
+  id: 7,
+  label: "CNC-Fräse 7",
+  line_id: 3,
+  machine_class: "cnc",
+  manufacturer: "DMG",
+  external_id: "EXT-7",
+  location: "Halle A",
+  status: "healthy",
+  open_alarm_count: 0,
+  open_by_severity: {},
+  last_alarm_at: null,
+  components: [{ id: 1, label: "Spindel", component_type: "spindle" }],
+  data_points: [
+    {
+      id: 42,
+      component_id: null,
+      name: "spindle_temp",
+      kind: "analog",
+      measurement_type: "temperature",
+      unit: "°C",
+      normal_min: 10,
+      normal_max: 20,
+      last_value: 15,
+      last_value_at: "2026-06-17T10:00:00Z",
+      status: "ok",
+    },
+  ],
+  stream: { active: true, last_reading_at: "2026-06-17T10:00:00Z" },
+};
 
 const trendData: MachineTrendOut = {
   machine_id: 7,
@@ -82,7 +116,7 @@ function renderDetail(role: Role) {
   const store = new RealtimeStore(new FakeTransport());
   return render(
     <RealtimeProvider store={store}>
-      <MachineDetailView user={user} machine={machine} components={components} dataPoints={dataPoints} />
+      <MachineDetailView user={user} machine={machine} dataPoints={dataPoints} card={card} />
     </RealtimeProvider>,
   );
 }
@@ -97,7 +131,8 @@ describe("MachineDetailView", () => {
     renderDetail("worker");
     expect(screen.getByRole("heading", { name: /CNC-Fräse 7/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Sensortrend" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Stammdaten" })).toBeInTheDocument();
+    // Die lebende Maschinenkarte trägt die Stammdaten-Sicht (ersetzt machine-specs).
+    expect(screen.getByRole("region", { name: "Maschinenkarte CNC-Fräse 7" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Historie" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Offene Alarme" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Notiz/ })).toBeInTheDocument();

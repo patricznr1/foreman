@@ -81,3 +81,25 @@ async def overview_scope(session: AsyncSession, user: User) -> list[int] | None:
         select(Machine.id).where(Machine.line_id.in_(user.assigned_line_ids))
     )
     return list(result.all())
+
+
+async def visible_machine_scope(session: AsyncSession, user: User) -> list[int] | None:
+    """Maschinen-Scope einer Rolle für lesende Flotten-Sichten (Karten-Grid).
+
+    Anders als `overview_scope` (nur manager/shift_lead) liefert dieser Resolver JEDER
+    Rolle ihren eigenen Scope für das Maschinenkarten-Grid (`/machines`-Landing):
+    unrestricted (manager/technician) → None (kein Filter); `shift_lead` → Maschinen
+    seiner Linien; `worker` → seine zugewiesenen Maschinen. Eine unbekannte Rolle
+    bekommt einen leeren Scope (default-deny). So bleiben die Sensorwerte je Karte
+    innerhalb der autorisierten Maschinen — der WS-/Detail-Pfad zieht denselben Strich.
+    """
+    if user.role in _UNRESTRICTED_ROLES:
+        return None
+    if user.role == ROLE_WORKER:
+        return list(user.assigned_machine_ids)
+    if user.role == ROLE_SHIFT_LEAD:
+        result = await session.scalars(
+            select(Machine.id).where(Machine.line_id.in_(user.assigned_line_ids))
+        )
+        return list(result.all())
+    return []
