@@ -69,6 +69,15 @@ def test_map_recall_response_results_liste() -> None:
     assert items[1].ref is None
 
 
+def test_map_recall_response_erkennt_result_als_referenz() -> None:
+    # recall nutzt jetzt die kanonische extract_substrate_ref → der entry-Key
+    # "result" (vormals in recall.py nicht erkannt) wird als Referenz gezogen.
+    data = {"results": [{"content": "Lagerschaden", "result": "r-9"}]}
+    items = map_recall_response(data, max_results=5)
+    assert len(items) == 1
+    assert items[0].ref == "r-9"
+
+
 def test_map_recall_response_kappt_auf_max_results() -> None:
     data = {"memories": [f"Vorfall {i}" for i in range(10)]}
     items = map_recall_response(data, max_results=3)
