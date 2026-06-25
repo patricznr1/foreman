@@ -177,6 +177,10 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    // Klick von Kamera-Drag trennen: Position bei pointerdown merken, beim Klick die
+    // zurückgelegte Distanz prüfen (eine OrbitControls-Rotation darf nicht selektieren).
+    const DRAG_THRESHOLD_PX = 6;
+    let pointerDownAt: { x: number; y: number } | null = null;
 
     const updatePointer = (event: MouseEvent): boolean => {
       const rect = canvas.getBoundingClientRect();
@@ -199,7 +203,20 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
       return typeof raw === "number" ? raw : null;
     };
 
+    const handlePointerDown = (event: PointerEvent): void => {
+      pointerDownAt = { x: event.clientX, y: event.clientY };
+    };
+
     const handleClick = (event: MouseEvent): void => {
+      const down = pointerDownAt;
+      pointerDownAt = null;
+      if (down !== null) {
+        const dx = event.clientX - down.x;
+        const dy = event.clientY - down.y;
+        if (dx * dx + dy * dy > DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) {
+          return; // war ein Kamera-Drag, kein echter Klick → nicht selektieren
+        }
+      }
       if (!updatePointer(event)) {
         return;
       }
@@ -245,6 +262,7 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
       setHover(null);
     };
 
+    canvas.addEventListener("pointerdown", handlePointerDown);
     canvas.addEventListener("click", handleClick);
     canvas.addEventListener("pointermove", handleMove);
     canvas.addEventListener("pointerleave", handleLeave);
@@ -267,6 +285,7 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
     return () => {
       renderer.setAnimationLoop(null);
       resizeObserver.disconnect();
+      canvas.removeEventListener("pointerdown", handlePointerDown);
       canvas.removeEventListener("click", handleClick);
       canvas.removeEventListener("pointermove", handleMove);
       canvas.removeEventListener("pointerleave", handleLeave);

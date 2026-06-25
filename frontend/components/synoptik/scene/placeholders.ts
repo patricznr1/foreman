@@ -103,6 +103,7 @@ export function buildPlaceholder(proportions: PlaceholderProportions): Placehold
   ring.rotation.x = -Math.PI / 2;
   ring.position.set(0, 0.02, 0);
   group.add(ring);
+  pickTargets.push(ring); // sichtbare Statusfläche bleibt klick-/hoverbar
 
   return {
     group,

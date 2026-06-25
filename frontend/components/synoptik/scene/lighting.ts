@@ -30,14 +30,16 @@ export function setupLighting(scene: THREE.Scene, renderer: THREE.WebGLRenderer)
   // (späteren) Modelle hinweg. Aus einer PMREM-Map der RoomEnvironment.
   const pmrem = new THREE.PMREMGenerator(renderer);
   const room = new RoomEnvironment();
-  const envTexture = pmrem.fromScene(room, 0.04).texture;
-  scene.environment = envTexture;
+  // fromScene liefert ein WebGLRenderTarget — das Target selbst halten und freigeben,
+  // sonst bleiben Framebuffer/Renderbuffer liegen (nur .texture reicht nicht).
+  const envTarget = pmrem.fromScene(room, 0.04);
+  scene.environment = envTarget.texture;
 
   return {
     dispose() {
       scene.remove(ambient, key, fill);
       scene.environment = null;
-      envTexture.dispose();
+      envTarget.dispose(); // Texture + Framebuffer/Renderbuffer des Targets
       pmrem.dispose();
       room.dispose(); // RoomEnvironment-Geometrien/Materialien freigeben
     },

@@ -32,7 +32,9 @@ interface ParkSpec {
 // Der reale Twin-Park (12 Maschinen, alle „Montagelinie 1"). IDs in der Seed-
 // Reihenfolge (alphabetische park_*.yaml: ax01–ax04 → 1–4, fd → 5/6, pr → 7–9,
 // rb → 10/11, vs → 12) — so spiegelt id-Sortierung je Klasse die external-id-Folge.
-// Drift-Maschinen wie im Szenario: FD-02, PR-01, PR-02, AX-02, AX-03, VS-01.
+// Auffällig (nicht gesund) ist das Szenario-Drift-Set FD-02, PR-01, PR-02, AX-02,
+// AX-03, VS-01 — hier bewusst gemischt als „drift_active" (FD-02, PR-01, AX-02, AX-03)
+// und „open_warning" (PR-02, VS-01), damit beide Status→Farbe-Pfade abgedeckt sind.
 const PARK: readonly ParkSpec[] = [
   { id: 1, label: "Handling-Achse X", machineClass: "servo_axis", status: "healthy" },
   { id: 2, label: "Handling-Achse Y", machineClass: "servo_axis", status: "drift_active" },

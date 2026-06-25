@@ -20,6 +20,9 @@ export async function fetchOverviewSnapshot(): Promise<FleetOverviewOut | undefi
     const response = await fetch(`${backendUrl()}/api/v1/overview`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
+      // Hartes Zeitlimit: ein hängendes Backend darf das SSR-Rendering nicht blockieren
+      // (Node ≥ 20). Timeout/Abort fällt unten in den catch → undefined → FiveState.
+      signal: AbortSignal.timeout(5_000),
     });
     if (!response.ok) {
       return undefined;
