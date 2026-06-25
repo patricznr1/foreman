@@ -48,9 +48,12 @@ ENV PORT=3000
 USER node
 
 # Standalone-Bundle (server.js + minimale node_modules) und statische Assets
-# übernehmen. Das Repo hat KEIN public/-Verzeichnis → wird nicht kopiert.
+# übernehmen. public/ wird vom Next-Standalone-Output NICHT automatisch mitgenommen
+# und muss explizit kopiert werden — sonst 404 auf alle public/-Assets (z. B. die
+# Synoptik-GLBs und den Draco-Decoder).
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/public ./public
 
 EXPOSE 3000
 
