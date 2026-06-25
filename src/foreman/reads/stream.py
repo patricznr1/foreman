@@ -60,8 +60,10 @@ def classify_stream(
     """
     if last_reading_at is None:
         return False
-    stamp = last_reading_at if last_reading_at.tzinfo is not None else last_reading_at.replace(
-        tzinfo=UTC
+    stamp = (
+        last_reading_at
+        if last_reading_at.tzinfo is not None
+        else last_reading_at.replace(tzinfo=UTC)
     )
     return stamp >= now - fresh_window
 
