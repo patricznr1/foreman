@@ -22,9 +22,10 @@ import { cx } from "@/lib/ui/cx";
 
 import { type StatusColors, readStatusColors } from "./scene/colors";
 import { type FloorHandle, buildFloor } from "./scene/floor";
+import { placeGlb } from "./scene/glb";
 import { type LightingHandle, setupLighting } from "./scene/lighting";
 import { type ModelLoader, createModelLoader } from "./scene/loaders";
-import { type PlaceholderHandle, buildPlaceholder } from "./scene/placeholders";
+import { type PlaceholderHandle, buildPlaceholder, disposeObject3D } from "./scene/placeholders";
 
 export interface SynoptikSceneProps {
   placements: MachinePlacement[];
@@ -45,34 +46,38 @@ interface HoverState {
 }
 
 /**
- * GLB-Swap-Naht (heute ruhend): lädt das optimierte Modell, richtet es nach dem
- * ModelTransform aus, blendet die Platzhalter-Körper aus und behält das Status-
- * Beacon. Kein Renderer-Umbau beim Swap — nur der Manifest-Eintrag ändert sich.
- *
- * TODO (beim Aktivieren des ersten GLB, siehe manifest.ts „OFFENE PUNKTE"): das
- * geladene Modell disposen + gegen Unmount/Rebuild-Race absichern; die GLB-Meshes
- * mit group.userData.machineId als Raycast-Ziele registrieren (sonst kein Klick);
- * Beacon/Ring an die echte GLB-Höhe/Grundfläche nachführen.
+ * GLB-Swap: lädt das optimierte Modell, normalisiert es auf die Klassen-Höhe am
+ * Boden-Zentrum (placeGlb — die nativen Modelle kommen in verschiedenen Einheiten),
+ * setzt es in die Maschinen-Gruppe ein (Platzhalter-Körper verbergen, Status-Beacon
+ * bleibt) und registriert die GLB-Meshes als Raycast-Ziele (machineId → der Klick-
+ * Vertrag zur kanonischen Karte bleibt erhalten). Gegen Unmount/Rebuild-Race
+ * abgesichert: wird die Szene vor dem Laden abgebaut, wird das frische Modell sofort
+ * wieder freigegeben statt an eine tote Gruppe gehängt.
  */
-async function mountGlbModel(
+async function loadGlbForMachine(
   loader: ModelLoader,
   source: Extract<ModelSource, { kind: "glb" }>,
-  group: THREE.Group,
+  placement: MachinePlacement,
+  handle: PlaceholderHandle,
+  registerPickables: (meshes: THREE.Mesh[]) => void,
+  isDisposed: () => boolean,
 ): Promise<void> {
+  let model: THREE.Group;
   try {
-    const model = await loader.loadGlb(source.url);
-    model.scale.setScalar(source.transform.scale);
-    model.rotation.y = source.transform.rotationY;
-    model.position.set(source.transform.offset.x, source.transform.offset.y, source.transform.offset.z);
-    for (const child of group.children) {
-      if (child.userData.isPlaceholderBody === true) {
-        child.visible = false;
-      }
-    }
-    group.add(model);
+    model = await loader.loadGlb(source.url);
   } catch {
-    // GLB-Ladefehler → Platzhalter bleibt stehen (ehrliche Degradation).
+    return; // Ladefehler → Platzhalter bleibt stehen (ehrliche Degradation).
   }
+  if (isDisposed()) {
+    disposeObject3D(model); // Race: Szene schon abgebaut → Modell sofort freigeben.
+    return;
+  }
+  placeGlb(model, placement.proportions.height, source.transform);
+  const meshes = handle.attachGlb(model);
+  for (const mesh of meshes) {
+    mesh.userData.machineId = placement.machineId;
+  }
+  registerPickables(meshes);
 }
 
 export function SynoptikScene({ placements, onSelectMachine, className }: SynoptikSceneProps) {
@@ -102,6 +107,9 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
       return;
     }
     const placementsNow = dataRef.current.placements;
+    // Race-Guard: wird die Szene abgebaut, während ein GLB noch lädt, darf das
+    // fertige Modell nicht mehr an die (dann tote) Gruppe gehängt werden.
+    let disposed = false;
 
     let renderer: THREE.WebGLRenderer;
     try {
@@ -149,7 +157,7 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
     const lighting: LightingHandle = setupLighting(scene, renderer);
     const floor: FloorHandle = buildFloor(lineLength + 6);
     scene.add(floor.object);
-    const loader: ModelLoader = createModelLoader(renderer); // verdrahtet, heute ruhend
+    const loader: ModelLoader = createModelLoader(renderer); // GLTFLoader + Draco/KTX2/meshopt
     const statusColors = readStatusColors(container);
 
     const nodes = new Map<number, MachineNode>();
@@ -166,9 +174,17 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
       }
       scene.add(handle.group);
       nodes.set(placement.machineId, { handle, status: placement.status });
-      // Swap-Naht: heute nie betreten (Manifest = nur Platzhalter).
+      // Swap-Naht: Manifest-Eintrag entscheidet Platzhalter vs. GLB. Der Platzhalter
+      // steht sofort; ein GLB lädt asynchron und ersetzt den Körper, sobald da.
       if (source.kind === "glb") {
-        void mountGlbModel(loader, source, handle.group);
+        void loadGlbForMachine(
+          loader,
+          source,
+          placement,
+          handle,
+          (meshes) => pickables.push(...meshes),
+          () => disposed,
+        );
       }
     }
 
@@ -283,6 +299,7 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
     });
 
     return () => {
+      disposed = true; // noch ladende GLBs nicht mehr anhängen (Race)
       renderer.setAnimationLoop(null);
       resizeObserver.disconnect();
       canvas.removeEventListener("pointerdown", handlePointerDown);
@@ -291,7 +308,7 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
       canvas.removeEventListener("pointerleave", handleLeave);
       controls.dispose();
       for (const node of nodes.values()) {
-        node.handle.dispose();
+        node.handle.dispose(); // disposed jetzt auch ein evtl. angehängtes GLB
       }
       floor.dispose();
       lighting.dispose();

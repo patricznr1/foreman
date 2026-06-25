@@ -1,3 +1,7 @@
 # LightGBM-Modell ist Text, aber CRLF-empfindlich (LightGBM parst Zeilen) — nie
 # konvertieren, sonst "Model format error, expect a tree here" beim Laden (Crash).
 src/foreman/reasoners/failure/artifacts/** -text
+
+# 3D-Assets der Synoptik-Linie + Draco-Decoder: binär, nie Zeilenenden normalisieren.
+*.glb binary
+*.wasm binary

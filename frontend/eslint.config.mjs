@@ -20,6 +20,7 @@ const eslintConfig = [
       "node_modules/**",
       "next-env.d.ts",
       "app/styles/tokens.generated.css",
+      "public/**", // statische Assets (u. a. vendorter Draco-Decoder) — nicht zu linten
     ],
   },
   {

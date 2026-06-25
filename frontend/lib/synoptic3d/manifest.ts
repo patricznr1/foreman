@@ -13,17 +13,16 @@
 //  Reale Abweichungen einzelner Hersteller-Modelle werden NICHT am Asset, sondern
 //  hier über ModelTransform (scale / rotationY / offset) je Klasse ausgeglichen.
 //
-//  OFFENE PUNKTE BEIM AKTIVIEREN (vom Platzhalter-PR bewusst in die Swap-Phase
-//  verschoben, da der GLB-Pfad heute ruht — siehe synoptik-scene.tsx mountGlbModel):
-//    • Das geladene GLB muss disposed werden (Geometrien/Materialien/Texturen) und
-//      vor Unmount/Rebuild gegen eine Race abgesichert sein.
-//    • Die GLB-Meshes müssen als Raycast-Ziele (machineId) registriert werden, sonst
-//      bricht der Klick-Vertrag (machine_id → kanonische Karte).
-//    • Status-Beacon/Boden-Ring sind aus den Platzhalter-Proportionen abgeleitet
-//      (y = h + 0.3 bzw. Grundfläche aus w/d). Sie überleben den Swap bewusst, werden
-//      aber NICHT automatisch an die echte GLB-Höhe/Grundfläche angepasst → den
-//      ModelTransform.scale so wählen, dass die effektive GLB-Höhe nahe der Klassen-`h`
-//      liegt (sonst sitzt das Beacon falsch).
+//  NORMALISIERUNG (Renderer): die nativen Hersteller-GLBs kommen in völlig
+//  verschiedenen Einheiten/Pivots (cm/mm/„units", zentriert vs. schwebend). placeGlb
+//  (scene/glb.ts) skaliert daher jedes Modell UNIFORM auf die Klassen-Zielhöhe
+//  (placeholder-proportions) und verankert es am Boden-Zentrum — der eigentliche
+//  Render-Kohärenz-Schritt. Weil die effektive Höhe == Klassen-`h` ist, sitzt das
+//  Status-Beacon (h + 0.3) automatisch richtig. GLB-Disposal, Unmount-Race-Schutz und
+//  die Raycast-Registrierung der GLB-Meshes (Klick-Vertrag) übernimmt der Renderer
+//  (synoptik-scene.tsx loadGlbForMachine). ModelTransform.rotationY/offset/scale
+//  bleiben für visuelle Feinjustage je Modell (Ausrichtung in Flussrichtung etc.) —
+//  Default Identität.
 //
 //  Architektur-Einordnung: View-State (Schicht 2), ohne THREE/DOM testbar.
 // ============================================================
@@ -54,16 +53,22 @@ export const IDENTITY_TRANSFORM: ModelTransform = {
 /** Geteilte Platzhalter-Quelle (alle Klassen heute). */
 export const PLACEHOLDER_SOURCE: ModelSource = { kind: "placeholder" };
 
+/** GLB-Quelle unter /public/synoptik/models/ (Draco, plain-Variante — die KTX2-
+ *  Varianten werden bewusst nicht genutzt, daher kein Basis-Transcoder nötig). */
+function glbModel(file: string): ModelSource {
+  return { kind: "glb", url: `/synoptik/models/${file}`, transform: IDENTITY_TRANSFORM };
+}
+
 /**
- * Klasse → Modellquelle. HEUTE alle „placeholder". Späteres Einhängen:
- * z. B. `feeder: { kind: "glb", url: "/synoptik/models/feeder.glb", transform: … }`.
+ * Klasse → Modellquelle. Die fünf Hauptklassen tragen echte GLBs; `mixing_unit` hat
+ * kein Asset und bleibt Platzhalter (kommt im 12-Maschinen-Park ohnehin nicht vor).
  */
 export const CLASS_MODEL_MANIFEST: Record<string, ModelSource> = {
-  feeder: PLACEHOLDER_SOURCE,
-  servo_press: PLACEHOLDER_SOURCE,
-  servo_axis: PLACEHOLDER_SOURCE,
-  robot: PLACEHOLDER_SOURCE,
-  vision: PLACEHOLDER_SOURCE,
+  feeder: glbModel("feeder.glb"),
+  servo_press: glbModel("servo_press.glb"),
+  servo_axis: glbModel("servo_axis.glb"),
+  robot: glbModel("robot.glb"),
+  vision: glbModel("vision_station.glb"),
   mixing_unit: PLACEHOLDER_SOURCE,
 };
 
