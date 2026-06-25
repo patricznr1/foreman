@@ -75,7 +75,7 @@ export function cellKind(machine: MachineStatusOut): CellKind {
   if (machine.status === "drift_active") {
     return "drift";
   }
-  if (machine.status === "open_warning") {
+  if (machine.status === "open_warning" || machine.status === "critical") {
     return "warning";
   }
   return "healthy";

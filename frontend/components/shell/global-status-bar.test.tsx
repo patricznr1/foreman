@@ -34,7 +34,7 @@ const MANAGER: CurrentUser = {
 function overviewWithStream(active: boolean, lastReadingAt: string | null): FleetOverviewOut {
   return {
     machines: [],
-    by_status: { healthy: 0, drift_active: 0, open_warning: 0 },
+    by_status: { healthy: 0, drift_active: 0, open_warning: 0, critical: 0 },
     open_alarm_total: 0,
     stream: { active, last_reading_at: lastReadingAt },
   };

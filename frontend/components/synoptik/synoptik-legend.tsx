@@ -9,8 +9,9 @@ import { StatusIndicator } from "@/components/atoms/status-indicator";
 import type { MachineStatus } from "@/lib/api/contracts";
 import { MACHINE_STATUS_LABEL, MACHINE_STATUS_TO_FCSM } from "@/lib/ui/wording";
 
-// Nur die im Flotten-Status erreichbaren Zustände (kein erfundenes M/F auf gesunden Maschinen).
-const STATUSES: readonly MachineStatus[] = ["healthy", "drift_active", "open_warning"];
+// Die im Flotten-Status erreichbaren Zustände (inkl. „critical" → rot bei
+// kritischer/Notfall-Severity). Wartung (M) bleibt im /overview-Pfad ungenutzt.
+const STATUSES: readonly MachineStatus[] = ["healthy", "drift_active", "open_warning", "critical"];
 
 export function SynoptikLegend() {
   return (

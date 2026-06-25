@@ -44,7 +44,12 @@ function overview(machines: Partial<MachineStatusOut>[]): FleetOverviewOut {
     last_alarm_at: null,
     ...m,
   }));
-  const byStatus: Record<MachineStatus, number> = { healthy: 0, drift_active: 0, open_warning: 0 };
+  const byStatus: Record<MachineStatus, number> = {
+    healthy: 0,
+    drift_active: 0,
+    open_warning: 0,
+    critical: 0,
+  };
   for (const m of full) {
     byStatus[m.status] += 1;
   }

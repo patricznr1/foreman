@@ -33,6 +33,9 @@ const DEFAULT_SCOPE: ScopeCrumb[] = [{ label: "Flotte", href: "/overview" }];
  * irreführendes FCSM-Wording, Review-Fix).
  */
 function worstMachineStatus(overview: FleetOverviewOut): MachineStatus {
+  if ((overview.by_status.critical ?? 0) > 0) {
+    return "critical";
+  }
   if ((overview.by_status.open_warning ?? 0) > 0) {
     return "open_warning";
   }

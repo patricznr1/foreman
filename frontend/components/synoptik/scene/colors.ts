@@ -41,6 +41,7 @@ export function readStatusColors(root: HTMLElement): StatusColors {
     healthy: resolve("healthy"),
     drift_active: resolve("drift_active"),
     open_warning: resolve("open_warning"),
+    critical: resolve("critical"),
   };
 
   root.removeChild(probe);
