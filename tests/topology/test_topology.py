@@ -102,6 +102,51 @@ async def test_simulation_source_marked_internal(db_session: AsyncSession) -> No
     assert _by_id(view)["source:simulation"].internal is True
 
 
+async def test_simulation_source_active_within_stream_window(db_session: AsyncSession) -> None:
+    # Jüngstes Sim-Reading im engen Stream-Fenster (< 5 min) → verbunden (aktiv tickend).
+    await _seed_source(db_session, source="simulation", reading_age=timedelta(minutes=2))
+    view = await build_topology(
+        db_session,
+        substrate_client=None,
+        mcp_token_configured=False,
+        fresh_window=_FRESH,
+        probe_substrate=False,
+        include_audit=True,
+    )
+    assert _by_id(view)["source:simulation"].status == "verbunden"
+
+
+async def test_simulation_source_uses_stream_window_not_generic(db_session: AsyncSession) -> None:
+    # Sim-Reading älter als das enge Stream-Fenster (5 min), aber JÜNGER als das
+    # generische 1h-Fenster → trotzdem inaktiv. So bleibt die Kachel mit dem Live-
+    # Badge konsistent (beide messen den Sim-Stream gegen dieselbe enge Schwelle).
+    await _seed_source(db_session, source="simulation", reading_age=timedelta(minutes=10))
+    view = await build_topology(
+        db_session,
+        substrate_client=None,
+        mcp_token_configured=False,
+        fresh_window=_FRESH,
+        probe_substrate=False,
+        include_audit=True,
+    )
+    assert _by_id(view)["source:simulation"].status == "inaktiv"
+
+
+async def test_external_source_keeps_generic_fresh_window(db_session: AsyncSession) -> None:
+    # Nur die interne Sim nutzt das enge Stream-Fenster — eine externe Quelle 10 min
+    # alt bleibt unter dem generischen 1h-Fenster „verbunden" (keine Sonderbehandlung).
+    await _seed_source(db_session, source="opcua", reading_age=timedelta(minutes=10))
+    view = await build_topology(
+        db_session,
+        substrate_client=None,
+        mcp_token_configured=False,
+        fresh_window=_FRESH,
+        probe_substrate=False,
+        include_audit=True,
+    )
+    assert _by_id(view)["source:opcua"].status == "verbunden"
+
+
 async def test_unconfigured_substrate_is_inactive(db_session: AsyncSession) -> None:
     view = await build_topology(
         db_session,

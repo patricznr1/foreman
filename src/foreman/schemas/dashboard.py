@@ -36,12 +36,26 @@ class MachineStatusOut(_Out):
     last_alarm_at: datetime | None
 
 
+class StreamStatusOut(_Out):
+    """Zustand des Eingangs-Live-Streams (Zwilling als Datenquelle, §12.6/§22.2).
+
+    `active=True` = der Live-Worker tickt fortlaufend frische Wall-Clock-Readings;
+    `last_reading_at` ist der jüngste Reading-Stempel der Simulationsquelle (Stand)
+    oder null. Speist das globale „Live"-Badge ehrlich (kein Live-Etikett über
+    statischer Historie).
+    """
+
+    active: bool
+    last_reading_at: datetime | None
+
+
 class FleetOverviewOut(_Out):
     """Flotten-Lagebild (Thema overview)."""
 
     machines: list[MachineStatusOut]
     by_status: dict[MachineStatus, int]
     open_alarm_total: int
+    stream: StreamStatusOut
 
 
 class TrendPointOut(_Out):

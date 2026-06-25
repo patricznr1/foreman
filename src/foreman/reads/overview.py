@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from foreman.db.models import Alarm, Machine
 from foreman.reads.queries import open_alarms_for_machines
 from foreman.reads.status import MachineStatus, compose_status
+from foreman.reads.stream import StreamStatus, build_stream_status
 
 
 @dataclass(frozen=True)
@@ -42,11 +43,18 @@ class MachineOverview:
 
 @dataclass(frozen=True)
 class FleetOverview:
-    """Flotten-Lagebild: je Maschine ein Eintrag plus Status-Rollup."""
+    """Flotten-Lagebild: je Maschine ein Eintrag plus Status-Rollup.
+
+    `stream` trägt den Zustand des Eingangs-Live-Streams (Zwilling als Datenquelle)
+    — scope-unabhängig, denn der Stream gehört der Plattform, nicht einer Rolle. Er
+    speist das globale „Live"-Badge ehrlich (kein Live-Etikett über statischer
+    Historie) und bleibt mit der Topologie-Kachel konsistent (gemeinsame Wahrheit).
+    """
 
     machines: tuple[MachineOverview, ...]
     by_status: dict[MachineStatus, int]
     open_alarm_total: int
+    stream: StreamStatus
 
 
 async def _load_machines(
@@ -77,15 +85,20 @@ def _machine_overview(machine: Machine, open_alarm_list: Sequence[Alarm]) -> Mac
 
 
 async def build_fleet_overview(
-    session: AsyncSession, *, machine_ids: Sequence[int] | None = None
+    session: AsyncSession,
+    *,
+    machine_ids: Sequence[int] | None = None,
+    now: datetime | None = None,
 ) -> FleetOverview:
     """Baut das Flotten-Lagebild über alle (oder die scope-begrenzten) Maschinen.
 
     EINE Alarm-Abfrage für alle Maschinen (kein N+1, reads.open_alarms_for_machines),
     Status pro Maschine über die kanonische Komposition (reads.status). `machine_ids`
     begrenzt den Scope — die Autorisierungs-Schicht (F5) reicht hier die für die
-    Rolle sichtbaren Maschinen durch.
+    Rolle sichtbaren Maschinen durch. `now` ist injizierbar (Tests); der Eingangs-
+    Stream-Status wird scope-unabhängig dagegen gemessen.
     """
+    resolved_now = now if now is not None else datetime.now(UTC)
     machines = await _load_machines(session, machine_ids)
     open_map = await open_alarms_for_machines(session, [machine.id for machine in machines])
     entries = tuple(
@@ -93,8 +106,10 @@ async def build_fleet_overview(
     )
     by_status: Counter[MachineStatus] = Counter(entry.status for entry in entries)
     open_alarm_total = sum(entry.open_alarm_count for entry in entries)
+    stream = await build_stream_status(session, now=resolved_now)
     return FleetOverview(
         machines=entries,
         by_status=dict(by_status),
         open_alarm_total=open_alarm_total,
+        stream=stream,
     )

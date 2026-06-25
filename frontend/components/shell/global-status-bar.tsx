@@ -18,6 +18,7 @@ import { canAccessSection } from "@/lib/auth/roles";
 import { useSession } from "@/lib/auth/use-session";
 import { useRealtimeStore } from "@/lib/realtime/realtime-context";
 import { useTopicState } from "@/lib/state/use-topic";
+import { streamBadgeFreshness } from "@/lib/ui/stream-freshness";
 import { MACHINE_STATUS_LABEL, MACHINE_STATUS_TO_FCSM } from "@/lib/ui/wording";
 import { CommandPalette } from "./command-palette";
 import { type ScopeCrumb, ScopeBreadcrumb } from "./scope-breadcrumb";
@@ -52,6 +53,10 @@ function FleetLiveBadge() {
     // Eskalations-Verschärfung (Studie §4C): offene kritische Alarme verschärfen
     // ihre Präsenz in die globale Leiste (assertiv, mit Sprung zur Alarm-Sicht).
     const criticalCount = countByPriorityFromOverview(overview).critical;
+    // „Live" NUR, wenn die Verbindung steht UND der Eingangs-Stream wirklich tickt —
+    // sonst „Verlauf" (Historie) statt eines Live-Etiketts über statischen Daten.
+    // DIESELBE Wahrheit wie die Topologie-Kachel „Simulation (intern)".
+    const freshness = streamBadgeFreshness(state.kind === "live", overview.stream.active);
     return (
       <div className="flex items-center gap-3" aria-live="polite">
         {criticalCount > 0 ? (
@@ -72,7 +77,7 @@ function FleetLiveBadge() {
         <span className="text-caption tabular-nums text-fg-secondary">
           {overview.open_alarm_total} offene Alarme
         </span>
-        <ProvenanceStamp freshness={state.kind === "live" ? "live" : "cached"} />
+        <ProvenanceStamp freshness={freshness} stampedAt={overview.stream.last_reading_at} />
       </div>
     );
   }

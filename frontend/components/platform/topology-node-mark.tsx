@@ -10,7 +10,12 @@
 //  Architektur-Einordnung: bespoke SVG-Atom + Knoten-Karte (Schicht 2, client).
 // ============================================================
 import { cx } from "@/lib/ui/cx";
-import { directionPresentation, statusPresentation, type StatusGlyph as Glyph } from "@/lib/platform/status";
+import {
+  connectionStatusLabel,
+  directionPresentation,
+  statusPresentation,
+  type StatusGlyph as Glyph,
+} from "@/lib/platform/status";
 import { nodeDetailChips } from "@/lib/platform/topology-view-model";
 import type { TopologyNodeModel } from "@/lib/platform/types";
 
@@ -163,7 +168,9 @@ export function TopologyNodeMark({ node }: TopologyNodeMarkProps) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-fg-secondary">
         <span className="inline-flex items-center gap-1.5">
           <span className="text-fg-muted">Status:</span>
-          <span title={status.description}>{status.label}</span>
+          <span title={status.description}>
+            {connectionStatusLabel(node.status, node.internal)}
+          </span>
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="text-fg-muted">Richtung:</span>

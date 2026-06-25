@@ -37,6 +37,24 @@ describe("TopologyGraph", () => {
     );
     expect(screen.queryByTestId("vision-zone")).toBeNull();
   });
+
+  it("spricht die aktive interne Quelle auch im Lagebild 'aktiv'", () => {
+    render(
+      <TopologyGraph
+        model={assembleTopology(
+          makeTopologyView({
+            nodes: [
+              makeNode({ internal: true, status: "verbunden", label: "Simulation (intern)" }),
+            ],
+            vision: [],
+          }),
+        )}
+      />,
+    );
+    const graph = screen.getByTestId("topology-graph");
+    expect(within(graph).getByText(/aktiv · liefert/)).toBeInTheDocument();
+    expect(within(graph).queryByText(/verbunden/)).toBeNull();
+  });
 });
 
 describe("TopologyNodeMark", () => {
@@ -58,6 +76,18 @@ describe("TopologyNodeMark", () => {
     ).inputs;
     render(<TopologyNodeMark node={node!} />);
     expect(screen.getByText("intern")).toBeInTheDocument();
+  });
+
+  it("spricht eine aktive interne Quelle ehrlich 'aktiv' statt 'verbunden'", () => {
+    const [node] = assembleTopology(
+      makeTopologyView({
+        nodes: [makeNode({ internal: true, status: "verbunden", label: "Simulation (intern)" })],
+        vision: [],
+      }),
+    ).inputs;
+    render(<TopologyNodeMark node={node!} />);
+    expect(screen.getByText("aktiv")).toBeInTheDocument();
+    expect(screen.queryByText("verbunden")).toBeNull();
   });
 
   it("markiert einen Vision-Knoten als nicht verbunden", () => {

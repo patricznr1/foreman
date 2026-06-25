@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 
 from foreman.reads.overview import FleetOverview, MachineOverview
 from foreman.reads.queries import ReadingBucket
+from foreman.reads.stream import StreamStatus
 from foreman.reads.trend import MachineTrend, ProfileBand, ProfileBandPoint
 from foreman.schemas.dashboard import FleetOverviewOut, MachineStatusOut, MachineTrendOut
 
@@ -30,6 +31,7 @@ def test_fleet_overview_out_serializes_from_dataclass() -> None:
         ),
         by_status={"drift_active": 1},
         open_alarm_total=3,
+        stream=StreamStatus(active=True, last_reading_at=datetime(2026, 6, 25, 12, 0, tzinfo=UTC)),
     )
 
     payload = FleetOverviewOut.model_validate(overview).model_dump(mode="json")
@@ -41,6 +43,23 @@ def test_fleet_overview_out_serializes_from_dataclass() -> None:
     assert entry["open_by_severity"] == {"warning": 2, "critical": 1}
     assert isinstance(entry["last_alarm_at"], str)
     assert entry["last_alarm_at"].startswith("2026-06-16T12:00:00")
+    # Der Eingangs-Stream-Status reist im selben Vertrag mit (HTTP + WS).
+    assert payload["stream"]["active"] is True
+    assert payload["stream"]["last_reading_at"].startswith("2026-06-25T12:00:00")
+
+
+def test_fleet_overview_out_serializes_inactive_stream_without_stamp() -> None:
+    # Kein laufender Stream → active False, Stand null (ehrlich, JSON-sicher).
+    overview = FleetOverview(
+        machines=(),
+        by_status={},
+        open_alarm_total=0,
+        stream=StreamStatus(active=False, last_reading_at=None),
+    )
+
+    payload = FleetOverviewOut.model_validate(overview).model_dump(mode="json")
+
+    assert payload["stream"] == {"active": False, "last_reading_at": None}
 
 
 def test_machine_status_out_handles_null_last_alarm() -> None:

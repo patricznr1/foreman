@@ -6,6 +6,7 @@
 // ============================================================
 import { describe, expect, it } from "vitest";
 import {
+  connectionStatusLabel,
   directionPresentation,
   normalizeDirection,
   normalizeStatus,
@@ -66,5 +67,21 @@ describe("normalizeDirection / directionPresentation", () => {
     expect(normalizeDirection("bidirektional")).toBe("keine");
     expect(normalizeDirection(null)).toBe("keine");
     expect(directionPresentation("xyz").arrow).toBe("none");
+  });
+});
+
+describe("connectionStatusLabel — interne Quelle spricht ehrlich 'aktiv'", () => {
+  it("nennt eine aktive interne Quelle 'aktiv' (intern getickt, kein externer Peer)", () => {
+    expect(connectionStatusLabel("verbunden", true)).toBe("aktiv");
+  });
+
+  it("lässt 'verbunden' für externe Quellen unverändert", () => {
+    expect(connectionStatusLabel("verbunden", false)).toBe("verbunden");
+  });
+
+  it("lässt inaktiv/unbekannt/gestört auch intern beim ehrlichen Wort", () => {
+    expect(connectionStatusLabel("inaktiv", true)).toBe("inaktiv");
+    expect(connectionStatusLabel("unbekannt", true)).toBe("unbekannt");
+    expect(connectionStatusLabel("gestört", true)).toBe("gestört");
   });
 });

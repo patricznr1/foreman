@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.audit.writer import ACTION_MCP_RETRIEVAL
 from foreman.db.models import AuditLog, DataPoint, Reading
+from foreman.reads.stream import SIM_SOURCE, STREAM_FRESH_WINDOW
 from foreman.substrate.client import SubstrateClient
 from foreman.substrate.smoke import run_substrate_smoke
 from foreman.topology.schemas import TopologyNode, TopologyView
@@ -63,10 +64,15 @@ async def _source_nodes(
     )
     nodes: list[TopologyNode] = []
     for source, last_activity in (await session.execute(stmt)).all():
+        # Die interne Simulationsquelle IST der Eingangs-Live-Stream (Zwilling als
+        # Datenquelle): gegen das ENGE Stream-Fenster gemessen — dieselbe Wahrheit,
+        # die das globale „Live"-Badge trägt (§12.6), sodass Kachel und Badge nie
+        # auseinanderlaufen. Externe Protokolle behalten das generische Frischefenster.
+        window = STREAM_FRESH_WINDOW if source == SIM_SOURCE else fresh_window
         if last_activity is None:
             # Datenpunkte vorhanden, aber nie Daten geflossen → ehrlich unbekannt.
             status = STATUS_UNKNOWN
-        elif last_activity >= now - fresh_window:
+        elif last_activity >= now - window:
             status = STATUS_CONNECTED
         else:
             status = STATUS_INACTIVE
@@ -78,7 +84,7 @@ async def _source_nodes(
                 direction=DIR_INBOUND,
                 status=status,
                 last_activity=last_activity,
-                internal=(source == "simulation"),
+                internal=(source == SIM_SOURCE),
                 detail={"protocol": source},
             )
         )

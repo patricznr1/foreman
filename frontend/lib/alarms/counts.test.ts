@@ -55,6 +55,7 @@ describe("countByPriorityFromOverview — Live-Zähler aus dem Aggregat", () => 
     ],
     by_status: { healthy: 0, drift_active: 0, open_warning: 2 },
     open_alarm_total: 4,
+    stream: { active: false, last_reading_at: null },
   };
 
   it("summiert open_by_severity und mappt auf Tiers", () => {

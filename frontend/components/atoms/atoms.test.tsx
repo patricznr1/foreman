@@ -48,4 +48,13 @@ describe("ProvenanceStamp — Herkunft/Frische + AI-Act-Kennzeichnung", () => {
     render(<ProvenanceStamp freshness="live" aiGenerated />);
     expect(screen.getByText("KI-erzeugt")).toBeInTheDocument();
   });
+
+  it("zeigt 'Verlauf' mit Stand (kein Live), wenn nur Historie vorliegt", () => {
+    render(<ProvenanceStamp freshness="history" stampedAt={new Date("2026-06-25T12:30:00Z")} />);
+    const stamp = screen.getByText(/Verlauf/);
+    expect(stamp).toBeInTheDocument();
+    // Ehrlich: kein grüner Live-Punkt über statischer Historie.
+    expect(document.querySelector(".bg-state-ok")).toBeNull();
+    expect(screen.queryByText(/Live/)).toBeNull();
+  });
 });

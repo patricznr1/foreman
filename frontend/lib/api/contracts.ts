@@ -25,10 +25,21 @@ export interface MachineStatusOut {
   last_alarm_at: string | null; // ISO 8601
 }
 
+/**
+ * Zustand des Eingangs-Live-Streams (Zwilling als Datenquelle, schemas/dashboard.py
+ * StreamStatusOut). `active` = der Worker tickt fortlaufend frische Wall-Clock-
+ * Readings; `last_reading_at` ist der jüngste Reading-Stempel (Stand) oder null.
+ */
+export interface StreamStatusOut {
+  active: boolean;
+  last_reading_at: string | null; // ISO 8601
+}
+
 export interface FleetOverviewOut {
   machines: MachineStatusOut[];
   by_status: Record<MachineStatus, number>;
   open_alarm_total: number;
+  stream: StreamStatusOut;
 }
 
 export interface TrendPointOut {
