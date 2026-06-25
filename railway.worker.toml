@@ -1,0 +1,28 @@
+# ============================================================
+#  FOREMAN — railway.worker.toml (Live-Daten-Stream-Worker · config-as-code)
+#  Zweck: Deploy-Config des Live-Stream-Workers (eigener Railway-Service).
+#         Setzt den Twin-Park am Historien-Ende fort (Wall-Clock-Stempel) und
+#         schreibt über den unveränderten Ingestion-/COPY-Pfad inkl. WS-Push.
+#  Architektur-Einordnung: Datenakquise (Schicht 2). KEIN Web-Service:
+#         kein Healthcheck (Worker, kein HTTP), kein alembic (Backend migriert).
+#         Singleton — genau EINE Instanz (replicas=1), sonst Doppel-Schreiber.
+#  Nutzung: Der Worker-Service zeigt via Service-Setting "Config-as-code file"
+#         auf /railway.worker.toml — das Root-railway.toml ist Backend-only
+#         (alembic + uvicorn + Healthcheck /health) und würde den Worker sonst
+#         als zweiten Web-Server starten.
+# ============================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Default-Live-Takt 60s (ein Reading-Satz je Minute, deckt sich mit dem
+# readings_1m-Aggregat). Dichter für die Vorführung (z. B. 5), historientreu 600.
+# Anker = max(time) der Park-Datenpunkte, bei jedem Start frisch aus der DB
+# gelesen → neustart-fest, kein Doppel / keine Lücke (live.py, GROUND_TRUTH §12.6).
+startCommand = "python -m foreman.adapters.simulation.live_worker --interval-seconds 60"
+# KEIN healthcheckPath: Worker, kein HTTP-Server. Bei Absturz/Stop neu starten —
+# der Anker wird beim Neustart frisch gelesen (lückenlose Fortsetzung).
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

@@ -247,60 +247,92 @@ Schreibpfad (COPY + NOTIFY/WS-Push) — kein zweiter Weg.
 > drauf, **dann** scharf (unbegrenzt). Code + Tests sind autonom gegen eine Test-DB
 > verifiziert; das Scharfschalten auf Railway ist ein **bewusster manueller Schritt**.
 
-### 8.1 Vorbedingung: Historie an „jetzt" verankern (empfohlen)
+### 8.1 Vorbedingung: Historie an „jetzt" verankern
 
-Damit der Live-Strom **ohne große Lücke** an der Historie ansetzt, den Park-Backfill
-mit **`--anchor-now`** (neu) re-seeden — das verschiebt das Historien-Ende auf „jetzt":
+Der Worker setzt am letzten Reading-Stempel an. Liegt der weit zurück, gibt es zwei
+Wege, den Strom **ohne Aufhol-Sturm** an „jetzt" zu bringen:
+
+**Weg A — kleine Lücke akzeptieren (nicht-destruktiv, Default):** Den Worker mit
+`--max-catchup-ticks N` starten. Liegt das Historien-Ende mehr als `N` Ticks zurück,
+kappt der Worker den Anker auf „jetzt − interval" (bewusste, **geloggte** Lücke statt
+Boot-Storm). Die Historie bleibt **unangetastet** — der saubere Default.
+
+**Weg B — frisches Re-Seed auf „jetzt" (destruktiv):** Den Park-Backfill mit
+`--anchor-now` neu erzeugen.
+
+> ⚠️ **`--anchor-now` ist ein *additives* Backfill, kein In-Place-Verschieben.** Es
+> schreibt eine komplette neue 21-Tage-Historie mit auf „jetzt" verschobenen Stempeln.
+> Auf einer **bereits geseedeten** DB entstehen dadurch **Doppeldaten** (alte + neue
+> Readings mit überlappenden Stempeln) — der `readings`-Schreibpfad hat **kein**
+> Truncate/Upsert. `--anchor-now` ist nur für eine **frische** DB gedacht, **oder**
+> nach explizitem Leeren der Daten-Ebene (Topologie + `users` + `audit_logs` bleiben;
+> `reasoner_explanations` hängt per FK an `alarms`):
+>
+> ```sql
+> TRUNCATE readings, alarms, production_runs, maintenance_events, worker_notes,
+>          reasoner_explanations, failure_predictions, failure_recommendations,
+>          drift_profiles RESTART IDENTITY;
+> ```
+>
+> Netz vor dem Truncate: `readings` ist eine TimescaleDB-Hypertable — `pg_dump -t
+> readings` sichert sie **nicht** (nur die leere Parent-Hülle). Stattdessen eine
+> Plain-Table-Kopie: `CREATE TABLE readings_preseed_backup AS SELECT * FROM readings;`
+> (nach grünem Re-Seed wieder droppen).
 
 ```bash
-# Verschiebt das Szenario-Fenster so, dass das Historien-Ende ≈ jetzt liegt.
-railway run --service backend python -m foreman.adapters.simulation.park --mode backfill --anchor-now
+# NUR auf frischer / frisch geleerter DB — sonst Doppeldaten. railway ssh (Container),
+# nicht railway run (lokal): die Live-DB ist nur über Private Networking erreichbar.
+railway ssh --service backend python -m foreman.adapters.simulation.park --mode backfill --anchor-now
 ```
-
-> Ohne `--anchor-now` setzt der Worker trotzdem korrekt am letzten Stempel an, füllt
-> die Lücke aber erst im Aufhol-Takt (kann je nach Alter der Historie viele Ticks sein).
-> Für sehr alte Historie: `--max-catchup-ticks N` kappt die Aufhol-Phase und setzt bei
-> „jetzt" an (bewusste, geloggte Lücke statt Boot-Storm).
 
 ### 8.2 Trockenlauf (Blick drauf, NICHT scharf)
 
 ```bash
 # Begrenzter Lauf gegen die Live-DB: schreibt nur N Ticks, dann Ende.
-railway run --service backend python -m foreman.adapters.simulation.live_worker --max-ticks 5 --interval-seconds 10
+# railway ssh (im Container) statt railway run (lokal) — railway.internal ist
+# lokal nicht erreichbar; die Live-DB nur über Private Networking im Container.
+railway ssh --service backend python -m foreman.adapters.simulation.live_worker --max-ticks 5 --interval-seconds 10
 ```
 
 Prüfen: kommen Readings mit **aktuellen** Zeitstempeln rein (`max(time)` ≈ jetzt), ohne
-Doppel, und feuert das Dashboard-Live-Update? Erst wenn das passt → 8.3.
+Doppel (`count(*) = count(DISTINCT (data_point_id, time))`), und feuert das Dashboard-
+Live-Update (`/overview` → `stream.active = true`)? Erst wenn das passt → 8.3.
 
 ### 8.3 Eigener Worker-Service (Dauerlauf)
 
 Der Worker ist ein **eigener Railway-Service** auf demselben Repo/Image wie das
-Backend — nur mit anderem Start-Command. **Kein** `alembic`, **kein** Healthcheck
-(Worker, kein Web-Service):
+Backend — nur mit anderem Start-Command. **Kein** `alembic`, **kein** Healthcheck.
 
-1. **New Service** → **GitHub Repo** (dasselbe `foreman`-Repo) bzw. „Empty Service"
-   + dasselbe Image. Root-Directory = Repo-Root.
-2. **Start Command** (Service-Settings → Deploy):
-   ```
-   python -m foreman.adapters.simulation.live_worker --interval-seconds 60
-   ```
-   Vorführung dichter (`--interval-seconds 5`); historientreu `600`.
+> ⚠️ **Das Root-`railway.toml` ist Backend-only** (`startCommand` = `alembic` +
+> `uvicorn`, Healthcheck `/health`) und **config-as-code überschreibt** Dashboard-/
+> API-Settings. Ein Worker mit Root-Directory = Repo-Root würde damit als **zweiter
+> uvicorn** starten. Lösung: Der Worker-Service zeigt via **„Config-as-code file"**
+> (Service-Settings; GraphQL-Feld `railwayConfigFile`) auf **`/railway.worker.toml`**
+> (Start-Command `live_worker`, kein Healthcheck, Restart `ON_FAILURE`).
+
+1. **New Service** — GitHub-Repo `foreman` **oder** „Empty Service" + `railway up`-Upload.
+2. **Config-as-code file** = `/railway.worker.toml` setzen (Service-Setting). Der
+   Start-Command kommt aus dieser Datei — die CLI (`railway add`/`up`) kann den
+   Start-Command **nicht** direkt setzen, daher config-as-code statt Dashboard-Override.
 3. **Variables** (wie Backend): `DATABASE_URL` als **Service-Referenz** auf den
-   TimescaleDB-Service (`${{TimescaleDB.DATABASE_URL}}`, mit `+asyncpg`),
-   `FOREMAN_PSEUDO_KEY_VERSION`/`_VERSIONS`/`FOREMAN_PSEUDO_KEY_v1` (identisch zum
-   Backend). Substrat optional (`SUBSTRATE_*`, sonst Fallback) — der Produzent
-   schreibt nur Readings, spiegelt also nichts ans Substrat.
+   TimescaleDB-Service (`postgresql+asyncpg://${{timescaledb.POSTGRES_USER}}:…`, mit
+   `+asyncpg`); `FOREMAN_PSEUDO_KEY_VERSION`/`_VERSIONS` = `v1`; `FOREMAN_PSEUDO_KEY_v1`
+   am besten als **Cross-Service-Referenz** `${{backend.FOREMAN_PSEUDO_KEY_v1}}` (kein
+   Secret-Kopieren, konsistente Pseudonyme). Substrat optional (`SUBSTRATE_*`, sonst
+   Fallback) — der Produzent schreibt nur Readings. `JWT_SECRET` braucht der Worker
+   **nicht** (er ruft `require_secure_secrets()` nie).
 4. **Healthcheck**: keiner. **Restart Policy**: `ON_FAILURE` — bei Absturz/Stop
    startet Railway neu; der Worker liest den Anker **frisch aus der DB** und setzt
    ohne Doppeln/Lücke fort (neustart-fest, GROUND_TRUTH §12.6).
-5. **Genau EINE** Worker-Instanz laufen lassen (zwei Schreiber auf demselben Grid
-   würden um Stempel konkurrieren — der PK schützt vor Dubletten, aber nicht vor
-   Reibung). Keine Replicas.
+5. **Genau EINE** Worker-Instanz laufen lassen (`numReplicas = 1`). Zwei Schreiber auf
+   demselben Grid würden um Stempel konkurrieren — der PK schützt vor Dubletten, aber
+   nicht vor Reibung. Keine Replicas.
 
 ### 8.4 Verifikation (scharf)
 
 - [ ] `8.2`-Trockenlauf grün (aktuelle Stempel, keine Doppel, Live-Update sichtbar)
-- [ ] Worker-Service läuft, Logs zeigen `🔴 Live-Daten-Stream startet` + periodische Commits
-- [ ] `max(time)` der `readings` wandert mit der Wall-Clock mit
-- [ ] Nach manuellem Restart des Service: kein Doppel, lückenlose Fortsetzung
-- [ ] DB-**Historie unangetastet** (alte Stempel unverändert)
+- [ ] Worker-Service läuft, Logs zeigen `🔴 Live-Daten-Stream startet` + `⏱️ Live-Anker = …`
+- [ ] `max(time)` der `readings` wandert mit der Wall-Clock mit (Lücke < 1 Tick)
+- [ ] `/overview` → `stream.active = true`, `last_reading_at` ≈ jetzt
+- [ ] Nach manuellem Restart des Service: kein Doppel (`dup = 0`), lückenlose Fortsetzung
+- [ ] DB-**Historie** wie gewollt (unangetastet bei Weg A; frisch auf „jetzt" bei Weg B)
