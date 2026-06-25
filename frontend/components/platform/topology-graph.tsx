@@ -11,7 +11,7 @@
 //         zugängliche Knoten-Liste daneben. Statisch → reduced-motion neutral.
 //  Architektur-Einordnung: bespoke SVG (Schicht 2, client).
 // ============================================================
-import { normalizeStatus } from "@/lib/platform/status";
+import { connectionStatusLabel, normalizeStatus } from "@/lib/platform/status";
 import type { ConnectionStatus, TopologyModel, TopologyNodeModel } from "@/lib/platform/types";
 import { statusShape } from "./topology-node-mark";
 
@@ -77,7 +77,7 @@ function NodeBox({ placed }: { placed: PlacedNode }) {
         {truncate(node.label)}
       </text>
       <text x={x + 40} y={y + 40} fontSize="11.5" fill="var(--color-fg-muted)">
-        {node.status}
+        {connectionStatusLabel(node.status, node.internal)}
         {" · "}
         {node.direction}
       </text>

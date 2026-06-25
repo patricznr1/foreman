@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from foreman.db.models import Alarm, Line, Machine
+from foreman.db.models import Alarm, DataPoint, Line, Machine, Reading
 from foreman.reads.overview import build_fleet_overview
 from foreman.reasoners.drift.service import DRIFT_ALARM_CODE
 
@@ -159,3 +159,33 @@ async def test_scope_filter_limits_to_given_machines(db_session: object) -> None
 
     assert {m.id for m in overview.machines} == {visible.id}
     assert overview.open_alarm_total == 0
+
+
+async def _sim_reading(session: object, *, at: datetime) -> None:
+    """Seedet einen Datenpunkt der internen Simulationsquelle mit einem Reading bei `at`."""
+    machine = await _machine(session, label="sim")
+    dp = DataPoint(machine_id=machine.id, name="dp-sim", kind="analog", source="simulation")
+    session.add(dp)  # type: ignore[attr-defined]
+    await session.flush()  # type: ignore[attr-defined]
+    session.add(Reading(data_point_id=dp.id, time=at, value=1.0))  # type: ignore[attr-defined]
+    await session.flush()  # type: ignore[attr-defined]
+
+
+async def test_overview_carries_active_stream_when_sim_recent(db_session: object) -> None:
+    # Der Worker tickt (frisches Sim-Reading) → das Lagebild trägt stream.active.
+    await _sim_reading(db_session, at=_NOW - timedelta(minutes=1))
+
+    overview = await build_fleet_overview(db_session, now=_NOW)  # type: ignore[arg-type]
+
+    assert overview.stream.active is True
+    assert overview.stream.last_reading_at == _NOW - timedelta(minutes=1)
+
+
+async def test_overview_stream_inactive_without_sim_stream(db_session: object) -> None:
+    # Nur Stammdaten, kein Eingangs-Stream → stream inaktiv, kein Stand (ehrlich).
+    await _machine(db_session)
+
+    overview = await build_fleet_overview(db_session, now=_NOW)  # type: ignore[arg-type]
+
+    assert overview.stream.active is False
+    assert overview.stream.last_reading_at is None

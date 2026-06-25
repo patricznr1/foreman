@@ -8,7 +8,11 @@
 // ============================================================
 import { cx } from "@/lib/ui/cx";
 
-export type Freshness = "live" | "cached";
+// "live"   = Live-Strom (WS offen UND Eingangs-Stream tickt) — grüner Punkt.
+// "cached" = geladen, aber WS-Verbindung weg (eingefrorener Stand).
+// "history"= WS verbunden, aber kein laufender Eingangs-Stream → nur Historie
+//            („Verlauf", kein grüner Live-Punkt). Ehrlich: kein Live-Etikett ohne Strom.
+export type Freshness = "live" | "cached" | "history";
 
 export interface ProvenanceStampProps {
   freshness: Freshness;
@@ -41,7 +45,7 @@ export function ProvenanceStamp({
 }: ProvenanceStampProps) {
   const time = formatStamp(stampedAt);
   const isLive = freshness === "live";
-  const freshnessText = isLive ? "Live" : "Gecacht";
+  const freshnessText = isLive ? "Live" : freshness === "history" ? "Verlauf" : "Gecacht";
   const timeText = time ? (isLive ? ` · aktualisiert ${time}` : ` · Stand ${time}`) : "";
 
   return (

@@ -84,6 +84,21 @@ export function statusPresentation(raw: string | null | undefined): StatusPresen
   return STATUS_PRESENTATION[normalizeStatus(raw)];
 }
 
+/**
+ * Hallensprache des Status für die Anzeige. Für eine INTERNE Quelle (die Eingangs-
+ * Simulation/digitaler Zwilling — kein externer Peer, FOREMAN startet sie selbst)
+ * heißt „verbunden" ehrlicher „aktiv": der Stream tickt gerade. Alle anderen Werte
+ * (inaktiv/gestört/unbekannt) und externe Quellen behalten ihr Verbindungs-
+ * Vokabular unverändert. Reine Funktion — der Backend-Statusvertrag bleibt stabil,
+ * nur die UI-Sprache der internen Kachel wird ehrlicher.
+ */
+export function connectionStatusLabel(status: ConnectionStatus, internal: boolean): string {
+  if (internal && status === "verbunden") {
+    return "aktiv";
+  }
+  return STATUS_PRESENTATION[status].label;
+}
+
 /** Pfeil-Kanal der Datenrichtung (Form, nicht Farbe). */
 export type DirectionArrow = "in" | "out" | "both" | "none";
 

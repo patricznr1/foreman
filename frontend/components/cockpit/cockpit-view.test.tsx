@@ -48,7 +48,12 @@ function overview(machines: Partial<MachineStatusOut>[]): FleetOverviewOut {
   for (const m of full) {
     byStatus[m.status] += 1;
   }
-  return { machines: full, by_status: byStatus, open_alarm_total: full.reduce((s, m) => s + m.open_alarm_count, 0) };
+  return {
+    machines: full,
+    by_status: byStatus,
+    open_alarm_total: full.reduce((s, m) => s + m.open_alarm_count, 0),
+    stream: { active: false, last_reading_at: null },
+  };
 }
 
 function setup(user: CurrentUser, initialData?: FleetOverviewOut, scope: CockpitScope = FLEET) {
