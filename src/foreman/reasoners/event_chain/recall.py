@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from foreman.db.models import Alarm, Machine
+from foreman.ingestion.semantic import extract_substrate_ref
 from foreman.logging_setup import REASON, get_logger
 from foreman.reasoners.event_chain.schema import SiblingReference
 from foreman.substrate.client import SubstrateClient
@@ -27,8 +28,8 @@ logger = get_logger("foreman.reasoners.event_chain.recall")
 _LIST_KEYS = ("results", "memories", "matches", "items", "hits", "data", "result")
 # Schlüssel, unter denen der Inhalt eines Treffers stehen kann.
 _CONTENT_KEYS = ("content", "text", "summary", "memory", "snippet", "value")
-# Schlüssel, unter denen die Referenz/ID eines Treffers stehen kann.
-_REF_KEYS = ("id", "memory_id", "entry_id", "uuid", "ref")
+# Treffer-Referenz/ID: geteilte, kanonische Extraktion (ingestion/semantic.py) —
+# kein Duplikat (deckt id/memory_id/entry_id/uuid/ref/result + int, ohne bool).
 # Verschachtelte Container, in denen strukturierte Metadaten liegen können.
 _META_KEYS = ("metadata", "payload", "meta")
 # Schlüssel für die strukturierten Schwester-Bezüge (falls der Treffer sie trägt).
@@ -136,15 +137,7 @@ def _coerce_item(entry: Any) -> RecallItem | None:
                 break
         if content is None:
             return None
-        ref: str | None = None
-        for key in _REF_KEYS:
-            value = entry.get(key)
-            if isinstance(value, str) and value:
-                ref = value
-                break
-            if isinstance(value, int) and not isinstance(value, bool):
-                ref = str(value)
-                break
+        ref = extract_substrate_ref(entry)
         return RecallItem(
             content=content,
             ref=ref,

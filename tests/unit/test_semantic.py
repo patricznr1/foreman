@@ -33,3 +33,9 @@ def test_extract_ref_none_bei_fehlender_oder_leerer_referenz() -> None:
     assert extract_substrate_ref({}) is None
     assert extract_substrate_ref({"id": ""}) is None  # leerer String zählt nicht
     assert extract_substrate_ref({"foo": "bar"}) is None
+
+
+def test_extract_ref_ignoriert_bool() -> None:
+    # bool ist int-Subtyp — eine True/False-"Referenz" ist Unsinn, wird übersprungen.
+    assert extract_substrate_ref({"id": True}) is None
+    assert extract_substrate_ref({"id": False, "memory_id": "m1"}) == "m1"

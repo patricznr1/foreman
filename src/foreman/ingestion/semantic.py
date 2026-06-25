@@ -33,7 +33,8 @@ def extract_substrate_ref(data: dict[str, Any]) -> str | None:
         value = data.get(key)
         if isinstance(value, str) and value:
             return value
-        if isinstance(value, int):
+        # bool ist int-Subtyp — eine True/False-Referenz ist Unsinn, nie als ID werten.
+        if isinstance(value, int) and not isinstance(value, bool):
             return str(value)
     return None
 
