@@ -13,6 +13,7 @@ describe("statusFcsm", () => {
     expect(statusFcsm("healthy")).toBe("ok");
     expect(statusFcsm("drift_active")).toBe("outofspec");
     expect(statusFcsm("open_warning")).toBe("check");
+    expect(statusFcsm("critical")).toBe("failure");
   });
 });
 
@@ -21,5 +22,6 @@ describe("statusColorVar", () => {
     expect(statusColorVar("healthy")).toBe("--color-state-ok");
     expect(statusColorVar("drift_active")).toBe("--color-state-outofspec");
     expect(statusColorVar("open_warning")).toBe("--color-state-check");
+    expect(statusColorVar("critical")).toBe("--color-state-failure");
   });
 });

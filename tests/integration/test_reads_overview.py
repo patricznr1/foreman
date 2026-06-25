@@ -86,7 +86,7 @@ async def test_open_non_drift_alarm_is_open_warning_with_severity_breakdown(
     db_session: object,
 ) -> None:
     machine = await _machine(db_session)
-    await _alarm(db_session, machine, severity="critical", category="hardware")
+    await _alarm(db_session, machine, severity="alarm", category="hardware")
     await _alarm(db_session, machine, severity="warning", category="process")
 
     overview = await build_fleet_overview(db_session)  # type: ignore[arg-type]
@@ -94,7 +94,16 @@ async def test_open_non_drift_alarm_is_open_warning_with_severity_breakdown(
     entry = overview.machines[0]
     assert entry.status == "open_warning"
     assert entry.open_alarm_count == 2
-    assert entry.open_by_severity == {"critical": 1, "warning": 1}
+    assert entry.open_by_severity == {"alarm": 1, "warning": 1}
+
+
+async def test_critical_severity_alarm_is_critical(db_session: object) -> None:
+    machine = await _machine(db_session)
+    await _alarm(db_session, machine, severity="critical", category="hardware")
+
+    overview = await build_fleet_overview(db_session)  # type: ignore[arg-type]
+
+    assert overview.machines[0].status == "critical"
 
 
 async def test_open_unacknowledged_drift_alarm_is_drift_active(db_session: object) -> None:

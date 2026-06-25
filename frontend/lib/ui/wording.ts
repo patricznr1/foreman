@@ -41,13 +41,15 @@ export const MACHINE_STATUS_LABEL: Record<MachineStatus, string> = {
   healthy: "Normalbetrieb",
   drift_active: "Abweichung erkannt",
   open_warning: "Offene Warnung",
+  critical: "Kritischer Alarm",
 };
 
-/** Komponierter Status → FCSM-Indikator (ruhige Severity-Rampe ok → S → C). */
+/** Komponierter Status → FCSM-Indikator (Severity-Rampe ok → S → C → F). */
 export const MACHINE_STATUS_TO_FCSM: Record<MachineStatus, Fcsm> = {
   healthy: "ok",
   drift_active: "outofspec",
   open_warning: "check",
+  critical: "failure",
 };
 
 /** Alarm-Severity (ISA-18.2) → Hallensprache. */

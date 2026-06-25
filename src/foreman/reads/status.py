@@ -19,17 +19,26 @@ from foreman.db.models import Alarm
 from foreman.reasoners.drift.service import DRIFT_ALARM_CODE
 
 # Aggregierter Gesundheitszustand einer Maschine, komponiert aus offenen Warnungen.
-MachineStatus = Literal["healthy", "drift_active", "open_warning"]
+# `critical` ist der dringlichste Zustand (FE-Mapping → FCSM „failure"/rot).
+MachineStatus = Literal["healthy", "drift_active", "open_warning", "critical"]
+
+# ISA-18.2-Severities, die den Leitstatus auf `critical` (rot) heben.
+CRITICAL_SEVERITIES = frozenset({"critical", "emergency"})
 
 
 def compose_status(open_alarm_list: Sequence[Alarm]) -> tuple[MachineStatus, int]:
     """Komponiert den Maschinen-Status aus den offenen Alarmen.
 
-    `drift_active` bei einer offenen, noch nicht quittierten Drift-Warnung;
-    sonst `open_warning` bei irgendeinem offenen Alarm; sonst `healthy`.
+    Präzedenz (dringlichste zuerst): `critical` bei einem offenen Alarm
+    kritischer/Notfall-Severity; sonst `drift_active` bei einer offenen, noch
+    nicht quittierten Drift-Warnung; sonst `open_warning` bei irgendeinem offenen
+    Alarm; sonst `healthy`.
     """
     if not open_alarm_list:
         return "healthy", 0
+    has_critical = any(alarm.severity in CRITICAL_SEVERITIES for alarm in open_alarm_list)
+    if has_critical:
+        return "critical", len(open_alarm_list)
     unhandled_drift = any(
         alarm.code == DRIFT_ALARM_CODE and alarm.acknowledged_at is None
         for alarm in open_alarm_list

@@ -7,8 +7,9 @@
 //  Quelle: GROUND_TRUTH §4/§20 + schemas/dashboard.py + realtime/ws.py.
 // ============================================================
 
-/** Komponierter Maschinenstatus (reads/status.py:compose_status). */
-export type MachineStatus = "healthy" | "drift_active" | "open_warning";
+/** Komponierter Maschinenstatus (reads/status.py:compose_status). `critical` =
+ *  offener Alarm kritischer/Notfall-Severity (FE-Mapping → FCSM „failure"/rot). */
+export type MachineStatus = "healthy" | "drift_active" | "open_warning" | "critical";
 
 /** Backend-Rollen (DB-IDs englisch). UI-Labels sind deutsch (Hallensprache). */
 export type Role = "worker" | "shift_lead" | "technician" | "manager";

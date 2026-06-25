@@ -38,7 +38,7 @@ function user(role: Role, over: Partial<CurrentUser> = {}): CurrentUser {
 
 const emptyOverview: FleetOverviewOut = {
   machines: [],
-  by_status: { healthy: 0, drift_active: 0, open_warning: 0 },
+  by_status: { healthy: 0, drift_active: 0, open_warning: 0, critical: 0 },
   open_alarm_total: 0,
   stream: { active: false, last_reading_at: null },
 };
