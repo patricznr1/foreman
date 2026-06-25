@@ -21,7 +21,7 @@ from typing import Any, Protocol, runtime_checkable
 
 import httpx
 
-from foreman.embeddings.config import OLLAMA_BACKEND, ST_BACKEND, Priority
+from foreman.embeddings.config import OLLAMA_BACKEND, OPENAI_BACKEND, ST_BACKEND, Priority
 from foreman.embeddings.errors import EmbeddingError, EmbeddingTimeout, ProviderUnavailable
 
 # Rohe (un-normalisierte) Vektoren, wie ein Backend sie liefert — vor Dim-Check/
@@ -43,11 +43,15 @@ class EmbeddingBackend(Protocol):
 
 
 # Priority-Modus → Reihenfolge der Backend-Namen (GROUND_TRUTH §15).
+# Die openai-Modi tragen bewusst KEINEN lokalen Fallback (Cloud-Demo-Image ohne
+# Ollama/sentence-transformers) — beide enthalten nur das Cloud-Backend (§15.2).
 _CHAINS: dict[str, tuple[str, ...]] = {
     "ollama_first": (OLLAMA_BACKEND, ST_BACKEND),
     "st_first": (ST_BACKEND, OLLAMA_BACKEND),
     "ollama_only": (OLLAMA_BACKEND,),
     "st_only": (ST_BACKEND,),
+    "openai_only": (OPENAI_BACKEND,),
+    "openai_first": (OPENAI_BACKEND,),
 }
 
 
@@ -154,6 +158,96 @@ class OllamaBackend:
 
         embeddings = data.get("embeddings") if isinstance(data, dict) else None
         return _coerce_vectors(embeddings, expected_count=len(texts))
+
+
+def _extract_openai_embeddings(data: Any) -> Any:
+    """Zieht die Embeddings aus einer OpenAI-`/embeddings`-Antwort und stellt die
+    INPUT-Reihenfolge über `data[].index` wieder her.
+
+    OpenAI darf die Einträge in beliebiger Reihenfolge liefern; die Vertrags-Garantie
+    „ein Vektor je Text in Eingabe-Reihenfolge" stellt die Sortierung über `index`
+    sicher. Defensiv: jede unerwartete Form (kein `data`-Array, fehlendes `index`/
+    `embedding`) wird zu `ProviderUnavailable` — keine Library-Ausnahme nach oben.
+    Die finale Form-/Längen-/Typprüfung übernimmt anschließend `_coerce_vectors`.
+    """
+    items = data.get("data") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        raise ProviderUnavailable(
+            "❌ Embedding-Backend 'openai' lieferte eine unverwertbare Antwort "
+            "(kein 'data'-Array).",
+            attempted=(OPENAI_BACKEND,),
+        )
+    try:
+        ordered = sorted(items, key=lambda item: item["index"])
+        return [item["embedding"] for item in ordered]
+    except (KeyError, TypeError) as exc:
+        raise ProviderUnavailable(
+            "❌ Embedding-Backend 'openai' lieferte eine unverwertbare Antwort.",
+            attempted=(OPENAI_BACKEND,),
+        ) from exc
+
+
+class OpenAIBackend:
+    """Embedding-Backend über die OpenAI-API (`POST {base_url}/embeddings`).
+
+    Optionaler Cloud-Pfad (Demo, US-Drittland — §15.2/§18): `text-embedding-3-small`
+    mit `dimensions=1024` passt OHNE Migration in `worker_notes.embedding`
+    (`vector(1024)`). Reines httpx wie `OllamaBackend` — KEIN openai-SDK; nichts
+    Library-Spezifisches verlässt das Modul, jede httpx-Ausnahme wird in einen
+    typisierten Embedding-Fehler übersetzt. Der API-Key wird NIE geloggt oder in
+    Fehlern wiedergegeben (§8/§15.7). Ein `httpx.AsyncClient` kann injiziert werden
+    (Tests gegen MockTransport, ohne Netz)."""
+
+    name = OPENAI_BACKEND
+
+    def __init__(
+        self,
+        *,
+        base_url: str,
+        model: str,
+        api_key: str,
+        dimensions: int,
+        client: httpx.AsyncClient | None = None,
+    ) -> None:
+        self.model = model
+        # Vollständiger Endpoint: base_url trägt einen Pfad (`/v1`) → ein relativer
+        # httpx-base_url-Join würde das `/v1` verschlucken, darum explizit bauen.
+        self._endpoint = f"{base_url.rstrip('/')}/embeddings"
+        self._api_key = api_key
+        self._dimensions = dimensions
+        self._client = client
+
+    async def embed_batch(self, texts: Sequence[str], *, timeout_s: float) -> list[RawVector]:
+        owns_client = self._client is None
+        client = self._client or httpx.AsyncClient(timeout=timeout_s)
+        try:
+            response = await client.post(
+                self._endpoint,
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                json={
+                    "model": self.model,
+                    "input": list(texts),
+                    "dimensions": self._dimensions,
+                    "encoding_format": "float",
+                },
+            )
+            response.raise_for_status()
+            data: Any = response.json()
+        except httpx.TimeoutException as exc:
+            raise EmbeddingTimeout(
+                f"❌ Zeitüberschreitung beim Embedding-Backend '{self.name}' (>{timeout_s}s)"
+            ) from exc
+        except (httpx.HTTPError, ValueError) as exc:
+            # ValueError deckt JSONDecodeError (200 mit nicht-JSON-Body) ab — sonst
+            # verließe eine rohe Library-Ausnahme die Architektur-Grenze (§15.2).
+            raise ProviderUnavailable(
+                f"❌ Embedding-Backend '{self.name}' nicht erreichbar", attempted=(self.name,)
+            ) from exc
+        finally:
+            if owns_client:
+                await client.aclose()
+
+        return _coerce_vectors(_extract_openai_embeddings(data), expected_count=len(texts))
 
 
 class SentenceTransformersBackend:

@@ -22,12 +22,19 @@ from typing import Protocol, runtime_checkable
 from foreman.embeddings.backends import (
     EmbeddingBackend,
     OllamaBackend,
+    OpenAIBackend,
     RawVector,
     SentenceTransformersBackend,
     resolve_chain,
     run_with_fallback,
 )
-from foreman.embeddings.config import OLLAMA_BACKEND, ST_BACKEND, EmbeddingSettings, Priority
+from foreman.embeddings.config import (
+    OLLAMA_BACKEND,
+    OPENAI_BACKEND,
+    ST_BACKEND,
+    EmbeddingSettings,
+    Priority,
+)
 from foreman.embeddings.errors import DimensionMismatch, EmbeddingError, ProviderUnavailable
 from foreman.logging_setup import REASON, get_logger
 from foreman.observability.metrics import observe_embedding
@@ -123,6 +130,19 @@ class LocalEmbeddingProvider:
                     model_name=settings.st_model,
                     device=settings.st_device,
                     encode_fn=st_encode_fn,
+                )
+            )
+        if OPENAI_BACKEND in needed:
+            # Cloud-Demo-Pfad: Key als SecretStr durchreichen (nie im Klartext).
+            # Fehlt der Key (Pfad nicht scharf geschaltet), bleibt er leer — ein 401
+            # wird beim echten Call zu ProviderUnavailable, statt hier hart zu crashen.
+            api_key = settings.openai_api_key
+            backends.append(
+                OpenAIBackend(
+                    base_url=settings.openai_base_url,
+                    model=settings.openai_model,
+                    api_key=api_key.get_secret_value() if api_key is not None else "",
+                    dimensions=settings.dimension,
                 )
             )
         return cls(
