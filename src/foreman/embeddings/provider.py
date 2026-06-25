@@ -22,12 +22,19 @@ from typing import Protocol, runtime_checkable
 from foreman.embeddings.backends import (
     EmbeddingBackend,
     OllamaBackend,
+    OpenAIBackend,
     RawVector,
     SentenceTransformersBackend,
     resolve_chain,
     run_with_fallback,
 )
-from foreman.embeddings.config import OLLAMA_BACKEND, ST_BACKEND, EmbeddingSettings, Priority
+from foreman.embeddings.config import (
+    OLLAMA_BACKEND,
+    OPENAI_BACKEND,
+    ST_BACKEND,
+    EmbeddingSettings,
+    Priority,
+)
 from foreman.embeddings.errors import DimensionMismatch, EmbeddingError, ProviderUnavailable
 from foreman.logging_setup import REASON, get_logger
 from foreman.observability.metrics import observe_embedding
@@ -125,6 +132,25 @@ class LocalEmbeddingProvider:
                     encode_fn=st_encode_fn,
                 )
             )
+        if OPENAI_BACKEND in needed:
+            # Cloud-Demo-Pfad: Key als SecretStr durchreichen (nie im Klartext).
+            # Fehlt der Key (Pfad nicht scharf geschaltet), wird KEIN Backend gebaut —
+            # from_settings crasht nicht, aber embed() degradiert lokal zu
+            # ProviderUnavailable, OHNE dass Notiz-Text Richtung US-Cloud abgeht (§8/§18).
+            api_key = (
+                settings.openai_api_key.get_secret_value()
+                if settings.openai_api_key is not None
+                else None
+            )
+            if api_key:
+                backends.append(
+                    OpenAIBackend(
+                        base_url=settings.openai_base_url,
+                        model=settings.openai_model,
+                        api_key=api_key,
+                        dimensions=settings.dimension,
+                    )
+                )
         return cls(
             backends=backends,
             priority=settings.priority,
