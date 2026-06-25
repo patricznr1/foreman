@@ -20,8 +20,9 @@ const STAGE: Record<string, string> = {
 };
 
 // Kanonische Stufen-Reihenfolge entlang der Linie (Montagelinie 1: Zuführung →
-// Pressen → Handling → Bestücken → Endkontrolle).
-const STAGE_ORDER: readonly string[] = [
+// Pressen → Handling → Bestücken → Endkontrolle). Exportiert als Single Source
+// der Linien-Sequenz — auch die 3D-Synoptik ordnet die Maschinen hierüber an.
+export const STAGE_ORDER: readonly string[] = [
   "feeder",
   "servo_press",
   "servo_axis",
@@ -45,7 +46,13 @@ export interface StageGroup {
   cards: MachineCardOut[];
 }
 
-function stageRank(machineClass: string | null): number {
+/**
+ * Rang einer Klasse in der kanonischen Linien-Sequenz: bekannt → Index in
+ * STAGE_ORDER, unbekannt → hinter die bekannten Stufen, fehlend → ganz nach
+ * hinten. Geteilt mit der 3D-Synoptik, damit beide Sichten dieselbe Reihenfolge
+ * sprechen (Single Source).
+ */
+export function stageRank(machineClass: string | null): number {
   if (machineClass === null) {
     return STAGE_ORDER.length + 1; // ohne Klasse ganz nach hinten
   }
