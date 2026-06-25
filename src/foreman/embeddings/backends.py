@@ -140,7 +140,9 @@ class OllamaBackend:
         client = self._client or httpx.AsyncClient(base_url=self._base_url, timeout=timeout_s)
         try:
             response = await client.post(
-                "/api/embed", json={"model": self.model, "input": list(texts)}
+                "/api/embed",
+                json={"model": self.model, "input": list(texts)},
+                timeout=timeout_s,
             )
             response.raise_for_status()
             data: Any = response.json()
@@ -148,7 +150,9 @@ class OllamaBackend:
             raise EmbeddingTimeout(
                 f"❌ Zeitüberschreitung beim Embedding-Backend '{self.name}' (>{timeout_s}s)"
             ) from exc
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, ValueError) as exc:
+            # ValueError deckt JSONDecodeError (200 mit nicht-JSON-Body) ab — sonst
+            # verließe eine rohe Library-Ausnahme die Architektur-Grenze (§15.2).
             raise ProviderUnavailable(
                 f"❌ Embedding-Backend '{self.name}' nicht erreichbar", attempted=(self.name,)
             ) from exc

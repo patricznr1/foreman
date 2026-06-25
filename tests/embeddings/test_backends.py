@@ -157,3 +157,34 @@ async def test_ollama_nicht_numerische_werte_wird_provider_unavailable() -> None
     backend = _ollama(handler)
     with pytest.raises(ProviderUnavailable):
         await backend.embed_batch(["x"], timeout_s=5.0)
+
+
+async def test_ollama_nicht_json_body_wird_provider_unavailable() -> None:
+    # 200, aber kein JSON-Body (z. B. Proxy-HTML/abgeschnittene Antwort) → response.json()
+    # wirft eine ValueError-Subklasse; sie darf die Architektur-Grenze §15.2 NICHT als
+    # rohe Library-Ausnahme verlassen (Such-/Backfill-Pfad propagieren ehrlich, §15.3).
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"<html>kaputt</html>")
+
+    backend = _ollama(handler)
+    with pytest.raises(ProviderUnavailable):
+        await backend.embed_batch(["x"], timeout_s=5.0)
+    # ✅ Pass: nicht-JSON-Body → ProviderUnavailable statt roher ValueError.
+
+
+async def test_ollama_reicht_timeout_pro_request_durch() -> None:
+    # Der Methoden-Timeout muss PRO Request gesetzt werden — auch bei injiziertem
+    # Client, dessen Default-Timeout abweicht (12.5 ≠ httpx-Default 5.0s).
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["timeout"] = request.extensions.get("timeout")
+        return httpx.Response(200, json={"embeddings": [[0.1, 0.2, 0.3]]})
+
+    backend = _ollama(handler)
+    await backend.embed_batch(["x"], timeout_s=12.5)
+    timeout = seen["timeout"]
+    assert isinstance(timeout, dict) and timeout.get("read") == 12.5, (
+        "❌ Fail: timeout_s wird nicht pro Request durchgereicht"
+    )
+    # ✅ Pass: timeout_s wird an client.post weitergereicht.
