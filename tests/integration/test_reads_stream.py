@@ -63,6 +63,19 @@ async def test_inactive_without_stamp_when_no_simulation_source(db_session: Asyn
     assert status.last_reading_at is None
 
 
+async def test_uses_latest_across_multiple_simulation_datapoints(db_session: AsyncSession) -> None:
+    # Der Park hat viele Sim-Datenpunkte: der JÜNGSTE Stempel über ALLE bestimmt den
+    # Stand (MAX, nicht ein beliebiger/erster Datenpunkt). Verriegelt die Aggregat-
+    # Semantik gegen eine versehentliche LIMIT-1-/ORDER-BY-Regression.
+    await _seed_reading(db_session, source="simulation", at=_NOW - timedelta(hours=2))
+    await _seed_reading(db_session, source="simulation", at=_NOW - timedelta(minutes=1))
+
+    status = await build_stream_status(db_session, now=_NOW, fresh_window=_WINDOW)
+
+    assert status.active is True
+    assert status.last_reading_at == _NOW - timedelta(minutes=1)
+
+
 async def test_ignores_other_sources_freshness(db_session: AsyncSession) -> None:
     # Eine frische externe Quelle darf den Sim-Stream NICHT fälschlich aktiv machen.
     await _seed_reading(db_session, source="opcua", at=_NOW - timedelta(seconds=10))
