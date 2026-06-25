@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ProvenanceStamp } from "@/components/atoms/provenance-stamp";
+import { CockpitViewSwitch } from "@/components/cockpit/cockpit-view-switch";
 import type { CurrentUser, FleetOverviewOut } from "@/lib/api/contracts";
 import { detectKipps, snapshotKinds } from "@/lib/cockpit/flip";
 import { pushSample } from "@/lib/cockpit/history";
@@ -63,7 +64,10 @@ export function CockpitView({ user, scope, initialData }: CockpitViewProps) {
     <section aria-label="Flotten-Cockpit" className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <CockpitScopeBar scope={scope} />
-        <h1 className="text-h1 text-fg-primary">Flotten-Cockpit</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-h1 text-fg-primary">Flotten-Cockpit</h1>
+          <CockpitViewSwitch active="heatmap" />
+        </div>
         <p className="text-body text-fg-secondary">{roleSubtitle(user.role)}</p>
       </header>
       <FiveState state={state} label="Cockpit">
