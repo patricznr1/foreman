@@ -21,10 +21,39 @@ export interface PlaceholderHandle {
   setStatusColor(color: THREE.Color): void;
   /** Hover-Hervorhebung an/aus. */
   setHighlighted(on: boolean): void;
+  /**
+   * Setzt ein bereits normalisiertes GLB ein: blendet die Platzhalter-Körper aus,
+   * hängt das Modell an die Gruppe und trackt es fürs Dispose. Status-Beacon/Ring
+   * bleiben (das GLB wird auf die Klassen-Höhe normalisiert, daher passt der Beacon).
+   * Gibt die GLB-Meshes zurück, damit der Aufrufer sie als Raycast-Ziele registriert.
+   */
+  attachGlb(model: THREE.Object3D): THREE.Mesh[];
   dispose(): void;
 }
 
 const BODY_COLOR = 0x8b95a3; // neutrales Stahlgrau (Szenen-Neutralfarbe, kein Status)
+
+/** Gibt einen ganzen Object3D-Teilbaum frei (Geometrien, Materialien, Texturen). */
+export function disposeObject3D(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (mesh.isMesh !== true) {
+      return;
+    }
+    mesh.geometry.dispose();
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of materials) {
+      const standard = material as THREE.MeshStandardMaterial;
+      standard.map?.dispose();
+      standard.normalMap?.dispose();
+      standard.roughnessMap?.dispose();
+      standard.metalnessMap?.dispose();
+      standard.aoMap?.dispose();
+      standard.emissiveMap?.dispose();
+      material.dispose();
+    }
+  });
+}
 
 export function buildPlaceholder(proportions: PlaceholderProportions): PlaceholderHandle {
   const { width: w, height: h, depth: d, shape } = proportions;
@@ -105,6 +134,8 @@ export function buildPlaceholder(proportions: PlaceholderProportions): Placehold
   group.add(ring);
   pickTargets.push(ring); // sichtbare Statusfläche bleibt klick-/hoverbar
 
+  let attachedModel: THREE.Object3D | null = null;
+
   return {
     group,
     pickTargets,
@@ -117,12 +148,34 @@ export function buildPlaceholder(proportions: PlaceholderProportions): Placehold
       body.emissiveIntensity = on ? 0.7 : 0;
       status.emissiveIntensity = on ? 1.7 : 0.9;
     },
+    attachGlb(model: THREE.Object3D): THREE.Mesh[] {
+      // Platzhalter-Körper verbergen (Beacon/Ring bleiben sichtbar), GLB einsetzen.
+      for (const child of group.children) {
+        if (child.userData.isPlaceholderBody === true) {
+          child.visible = false;
+        }
+      }
+      group.add(model);
+      attachedModel = model;
+      const meshes: THREE.Mesh[] = [];
+      model.traverse((object) => {
+        const mesh = object as THREE.Mesh;
+        if (mesh.isMesh === true) {
+          meshes.push(mesh);
+        }
+      });
+      return meshes;
+    },
     dispose(): void {
       for (const geometry of geometries) {
         geometry.dispose();
       }
       body.dispose();
       status.dispose();
+      if (attachedModel !== null) {
+        disposeObject3D(attachedModel);
+        attachedModel = null;
+      }
     },
   };
 }
