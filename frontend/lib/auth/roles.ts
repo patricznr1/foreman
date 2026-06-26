@@ -60,19 +60,36 @@ export interface NavItem {
   id: string;
   /** Deutsches UI-Label (Hallensprache). */
   label: string;
-  href: string;
+  /** Routen-Ziel — `null` für einen sichtbaren, aber DEAKTIVIERTEN Eintrag (kein Link). */
+  href: string | null;
   /** Sichtbar, wenn die Rolle auf MINDESTENS einer dieser Sektionen Zugriff hat. */
   sections: SectionId[];
+  /**
+   * Sichtbar, aber deaktiviert (ausgegraut, kein Routing-Ziel, keine Aktion) — für eine
+   * angekündigte, noch nicht freigeschaltete Funktion. Kein leeres Versprechen: man
+   * gelangt nicht hinein, also keine Enttäuschung.
+   */
+  disabled?: boolean;
 }
 
-/** Primärnavigation (§3.3) — gruppiert, ≤ 7 Einträge. */
+/** Primärnavigation (§3.3) — gruppiert, ≤ 7 begehbare Einträge (+ ggf. deaktivierte Vorschau). */
 export const PRIMARY_NAV: readonly NavItem[] = [
   { id: "cockpit", label: "Cockpit", href: "/overview", sections: ["A"] },
   { id: "machines", label: "Linie & Maschinen", href: "/machines", sections: ["B"] },
   { id: "alarms", label: "Alarme", href: "/alarms", sections: ["C"] },
   // On-Demand-Reasoner unter einem Dach (gleiches Trigger→Provenance→Vorbehalt-Muster).
   { id: "insights", label: "Erkenntnisse", href: "/insights", sections: ["D", "E", "F", "G"] },
-  { id: "memory", label: "Gedächtnis", href: "/memory", sections: ["H"] },
+  // Die WÖRTLICHE Suche (Sektion H, Paket 1c) — ehrlich „Archiv".
+  { id: "archive", label: "Archiv", href: "/archive", sections: ["H"] },
+  // Sichtbar, aber DEAKTIVIERT: die intelligente Verknüpfung folgt mit echter Substanz
+  // (Paket 3). Kein href/Routing-Ziel, keine Aktion — kein leeres Versprechen.
+  {
+    id: "recall",
+    label: "Hatten wir das schon mal",
+    href: null,
+    sections: ["H"],
+    disabled: true,
+  },
   { id: "capture", label: "Erfassung", href: "/capture", sections: ["J"] },
   { id: "platform", label: "Plattform", href: "/platform", sections: ["I"] },
 ];

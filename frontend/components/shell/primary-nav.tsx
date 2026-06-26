@@ -1,7 +1,10 @@
 // ============================================================
 //  FOREMAN Frontend — components/shell/primary-nav.tsx
-//  Zweck: Rollengefilterte Primärnavigation (§3.1/§3.3) — höchstens 7 Einträge,
-//         keiner ohne zugehörige Aktion. Spiegelt die Server-Autorisierung.
+//  Zweck: Rollengefilterte Primärnavigation (§3.1/§3.3) — höchstens 7 begehbare
+//         Einträge, keiner ohne zugehörige Aktion. Spiegelt die Server-
+//         Autorisierung. Ein als `disabled` markierter Eintrag (z. B. eine
+//         angekündigte, noch nicht freigeschaltete Funktion) erscheint sichtbar,
+//         aber ausgegraut und NICHT klickbar (kein Link, kein Routing-Ziel).
 //         Vertikal am Leitstand/Tablet, horizontal als Mobil-Leiste.
 //  Architektur-Einordnung: Persistentes Rahmenelement (Schicht 2, client).
 // ============================================================
@@ -30,11 +33,25 @@ export function PrimaryNav({
       className={cx("flex gap-1", orientation === "vertical" ? "flex-col" : "flex-row flex-wrap")}
     >
       {items.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        // Sichtbar, aber deaktiviert: kein Link, kein Routing-Ziel, kein Klick-Handler.
+        if (item.disabled || item.href === null) {
+          return (
+            <span
+              key={item.id}
+              aria-disabled="true"
+              title="In Vorbereitung"
+              className="flex cursor-default items-center rounded-md px-3 text-body text-fg-muted opacity-70 touch-target"
+            >
+              {item.label}
+            </span>
+          );
+        }
+        const href = item.href;
+        const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
             key={item.id}
-            href={item.href}
+            href={href}
             aria-current={active ? "page" : undefined}
             className={cx(
               "flex items-center rounded-md px-3 text-body touch-target",

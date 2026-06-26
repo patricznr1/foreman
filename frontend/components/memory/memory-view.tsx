@@ -1,15 +1,14 @@
 // ============================================================
 //  FOREMAN Frontend — components/memory/memory-view.tsx
-//  Zweck: Der Einstieg in die Gedächtnis-Suche (Sektion H, Studie §4H). Bindet das
-//         GETEILTE On-Demand-Muster (Trigger → benannter Zustand → Ergebnis mit
-//         Herkunft) an die Trefferliste. Fünf Pflichtzustände + Degradation:
-//         offline → Suche deaktiviert mit Grund, die zuletzt gefundenen Fälle
-//         bleiben mit Stand sichtbar (kein Leerlaufen). Rollen-Varianten ohne
-//         bedingte Hooks (roleView wird durchgereicht). Herkunft EHRLICH: die Suche
-//         ist Abruf echter vergangener Notizen, KEINE KI-Generierung — der Stempel
-//         trägt aiGenerated=false und keinen Vorbehalt; das Ergebnis ist ein
-//         Retrieval-Snapshot mit Stand (darum freshness="cached", nie ein Live-Puls).
-//         Nur ein FRISCH geholtes Ergebnis sagt die Live-Region an (announce). Read-only.
+//  Zweck: Der Einstieg in das ARCHIV (Paket 1c) — die WÖRTLICHE Suche über abgelegte
+//         Schichtberichte, Wartungsprotokolle und Alarme. Ehrlich benannt: es findet,
+//         was im Wortlaut da ist; das intelligente „Hatten wir das schon mal" ist
+//         bewusst NICHT hier (folgt mit echter Substanz). Bindet das GETEILTE
+//         On-Demand-Muster (Trigger → benannter Zustand → Ergebnis mit Herkunft).
+//         Degradation: offline → Suche deaktiviert mit Grund, die zuletzt gefundenen
+//         Treffer bleiben mit Stand sichtbar. Rollen-Varianten ohne bedingte Hooks
+//         (roleView durchgereicht). Herkunft EHRLICH: Abruf, KEINE KI-Generierung
+//         (aiGenerated=false, kein Vorbehalt; freshness="cached"). Read-only.
 //  Architektur-Einordnung: Sektions-Orchestrierung (Schicht 2, client).
 // ============================================================
 "use client";
@@ -20,15 +19,24 @@ import type { CurrentUser } from "@/lib/api/contracts";
 import { previousResult } from "@/lib/ondemand/machine";
 import { useOnline } from "@/lib/ondemand/use-online";
 import { memoryRoleView } from "@/lib/memory/roles";
-import type { MemorySearchResult } from "@/lib/memory/types";
+import { SOURCE_LABEL } from "@/lib/memory/source";
+import type { ArchiveSearchResult, SourceType } from "@/lib/memory/types";
 import { useMemorySearch } from "@/lib/memory/use-memory-search";
 import { MemoryResultList } from "./memory-result-list";
 import { MemorySearchBar } from "./memory-search-bar";
 
-const PROCESSING_MESSAGE = "Suche nach ähnlichen Fällen im Gedächtnis der Halle …";
+const PROCESSING_MESSAGE = "Durchsucht das Archiv nach dem Stichwort …";
 
 const OFFLINE_REASON =
-  "Offline — neue Suche nicht möglich (zuletzt gefundene Fälle siehe Stand am Ergebnis)";
+  "Offline — neue Suche nicht möglich (zuletzt gefundene Treffer siehe Stand am Ergebnis)";
+
+/** Herkunfts-Basis aus den tatsächlich durchsuchten Quellen (ehrlich, §E). */
+function basisText(sources: SourceType[]): string {
+  if (sources.length === 0) {
+    return "aus dem Archiv";
+  }
+  return `aus dem Archiv (${sources.map((source) => SOURCE_LABEL[source]).join(", ")})`;
+}
 
 /** Ruhiger Hinweis (Fehler/leer) — Hallensprache, kein Alarm-Rot. */
 function Notice({
@@ -66,14 +74,14 @@ export function MemoryView({ user, initialQuery }: { user: CurrentUser; initialQ
 
   // `announce`: nur ein FRISCH geholtes Ergebnis sagt die Live-Region an — ein aus
   // dem Cache rehydriertes oder degradiertes Ergebnis bleibt still (kein alter Stand).
-  function renderResult(result: MemorySearchResult, stampedAt: string, announce: boolean) {
+  function renderResult(result: ArchiveSearchResult, stampedAt: string, announce: boolean) {
     return (
       <ResultWithProvenance
         freshness="cached"
         stampedAt={stampedAt}
         aiGenerated={false}
         caveat={false}
-        basis="aus den Schichtberichten der Halle"
+        basis={basisText(result.sources)}
       >
         <MemoryResultList result={result} roleView={roleView} announce={announce} />
       </ResultWithProvenance>
@@ -106,22 +114,22 @@ export function MemoryView({ user, initialQuery }: { user: CurrentUser; initialQ
       renderResult(previous.data, previous.stampedAt, false)
     ) : (
       <Notice tone="muted" role="status">
-        Noch keine Suche — beschreiben Sie eine Situation, um ähnliche Fälle zu finden.
+        Noch keine Suche — geben Sie ein Stichwort ein, um die abgelegten Berichte zu durchsuchen.
       </Notice>
     );
   }
 
   return (
-    <section className="flex flex-col gap-5" aria-label="Gedächtnis und Verknüpfung">
+    <section className="flex flex-col gap-5" aria-label="Archiv">
       <div className="flex flex-col gap-1">
-        <h1 className="text-h1 text-fg-primary">Gedächtnis</h1>
+        <h1 className="text-h1 text-fg-primary">Archiv</h1>
         <p className="max-w-prose text-body text-fg-secondary">
-          Hatten wir das schon mal — irgendwo, an irgendeiner Maschine, in irgendeiner Schicht?
+          Durchsucht abgelegte Schichtberichte, Wartungsprotokolle und Alarme im Wortlaut.
         </p>
       </div>
       <MemorySearchBar
         defaultQuery={initialQuery}
-        onSubmit={(query, machineId) => search(query, { machineId })}
+        onSubmit={(query, machineId, sources) => search(query, { machineId, sources })}
         busy={busy}
         canFilter={roleView.canFilter}
         machines={user.assigned_machine_ids}

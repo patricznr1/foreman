@@ -1,40 +1,46 @@
 // ============================================================
 //  FOREMAN Frontend — lib/memory/use-memory-search.ts
-//  Zweck: On-Demand-Anbindung der Gedächtnis-Suche über den BFF-Proxy. Trigger =
-//         GET /worker_notes/search (der Dreischritt der Studie §3.2: Trigger →
+//  Zweck: On-Demand-Anbindung der ARCHIV-Suche über den BFF-Proxy. Trigger =
+//         GET /api/v1/archive/search (der Dreischritt der Studie §3.2: Trigger →
 //         benannter Zustand → Ergebnis mit Herkunft). Wiederverwendung des
 //         GETEILTEN On-Demand-Reducers (lib/ondemand/machine) wie E. Degradation:
 //         die letzte Suche wird mit Stand gecacht (sessionStorage) und bleibt bei
 //         Offline/Fehler als früheres Ergebnis sichtbar — kein Leerlaufen. Die
 //         Komponente kennt den Transport nie. Read-only: Suche ist Abruf, keine
-//         Aktorik.
+//         Aktorik. Graceful-Backend: ein Embedding-Ausfall ergibt KEIN 503 mehr (der
+//         Wortlaut trägt) — darum kein 503-Sonderpfad, nur generische Fehler/Offline.
 //  Architektur-Einordnung: State-Anbindung (Schicht 1 ↔ React).
 // ============================================================
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import type { WorkerNoteRead } from "@/lib/api/contracts";
+import type { ArchiveHit } from "@/lib/api/contracts";
 import {
   type OnDemandPhase,
   type OnDemandResult,
   initialPhase,
   onDemandReducer,
 } from "@/lib/ondemand/machine";
-import { assembleSearchResult } from "./view-model";
-import type { MemorySearchResult } from "./types";
-import { searchNotesEndpoint } from "./url";
+import { assembleArchiveResult } from "./view-model";
+import type { ArchiveSearchResult, SourceType } from "./types";
+import { searchArchiveEndpoint } from "./url";
 
-const CACHE_KEY = "foreman.memory.lastSearch";
+const CACHE_KEY = "foreman.archive.lastSearch";
 
-export interface MemorySearchFilters {
+/** Default-Quellen: alle drei (das Backend durchsucht ohne sources ohnehin alle). */
+const ALL_SOURCES: SourceType[] = ["note", "maintenance", "alarm"];
+
+export interface ArchiveSearchFilters {
   /** Optionaler Maschinen-Filter (geht als machine_id ans Backend). */
   machineId?: number | null;
+  /** Aktive Quellen (geht als sources[] ans Backend). Default: alle drei. */
+  sources?: SourceType[];
 }
 
 export interface UseMemorySearchResult {
-  phase: OnDemandPhase<MemorySearchResult>;
-  /** Löst eine Bedeutungssuche aus (leere Anfrage wird ignoriert). */
-  search: (query: string, filters?: MemorySearchFilters) => void;
+  phase: OnDemandPhase<ArchiveSearchResult>;
+  /** Löst eine Archiv-Suche aus (leere Anfrage wird ignoriert). */
+  search: (query: string, filters?: ArchiveSearchFilters) => void;
   busy: boolean;
 }
 
@@ -44,16 +50,13 @@ function failureText(status: number | null): string {
     return "Sitzung abgelaufen — bitte neu anmelden";
   }
   if (status === 403) {
-    return "Kein Zugriff auf das Gedächtnis";
-  }
-  if (status === 503) {
-    return "Gedächtnis derzeit nicht erreichbar — bitte später erneut suchen";
+    return "Kein Zugriff auf das Archiv";
   }
   return "Suche nicht möglich (Netz oder Backend)";
 }
 
 /** Letzte Suche aus dem sessionStorage lesen (Offline-Toleranz, best-effort). */
-function readCache(): OnDemandResult<MemorySearchResult> | null {
+function readCache(): OnDemandResult<ArchiveSearchResult> | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -62,7 +65,7 @@ function readCache(): OnDemandResult<MemorySearchResult> | null {
     if (!raw) {
       return null;
     }
-    const parsed = JSON.parse(raw) as OnDemandResult<MemorySearchResult>;
+    const parsed = JSON.parse(raw) as OnDemandResult<ArchiveSearchResult>;
     if (parsed && typeof parsed.stampedAt === "string" && parsed.data) {
       return parsed;
     }
@@ -73,7 +76,7 @@ function readCache(): OnDemandResult<MemorySearchResult> | null {
 }
 
 /** Letzte Suche im sessionStorage ablegen (best-effort, Fehler still schlucken). */
-function writeCache(result: OnDemandResult<MemorySearchResult>): void {
+function writeCache(result: OnDemandResult<ArchiveSearchResult>): void {
   if (typeof window === "undefined") {
     return;
   }
@@ -86,9 +89,9 @@ function writeCache(result: OnDemandResult<MemorySearchResult>): void {
 
 export function useMemorySearch(): UseMemorySearchResult {
   const [phase, dispatch] = useReducer(
-    onDemandReducer<MemorySearchResult>,
+    onDemandReducer<ArchiveSearchResult>,
     null,
-    () => initialPhase<MemorySearchResult>(readCache()),
+    () => initialPhase<ArchiveSearchResult>(readCache()),
   );
   const inflight = useRef<AbortController | null>(null);
   const mounted = useRef(true);
@@ -101,11 +104,12 @@ export function useMemorySearch(): UseMemorySearchResult {
     };
   }, []);
 
-  const search = useCallback((query: string, filters: MemorySearchFilters = {}) => {
+  const search = useCallback((query: string, filters: ArchiveSearchFilters = {}) => {
     const trimmed = query.trim();
     if (trimmed.length === 0) {
       return; // leere Anfrage löst nichts aus
     }
+    const sources = filters.sources ?? ALL_SOURCES;
     const controller = new AbortController();
     inflight.current?.abort();
     inflight.current = controller;
@@ -114,7 +118,7 @@ export function useMemorySearch(): UseMemorySearchResult {
     void (async () => {
       try {
         const response = await fetch(
-          searchNotesEndpoint(trimmed, filters.machineId ?? null),
+          searchArchiveEndpoint(trimmed, filters.machineId ?? null, sources),
           { credentials: "same-origin", signal: controller.signal },
         );
         if (!response.ok) {
@@ -123,8 +127,8 @@ export function useMemorySearch(): UseMemorySearchResult {
           }
           return;
         }
-        const notes = (await response.json()) as WorkerNoteRead[];
-        const result = assembleSearchResult(notes, trimmed);
+        const hits = (await response.json()) as ArchiveHit[];
+        const result = assembleArchiveResult(hits, trimmed, sources);
         const stampedAt = new Date().toISOString();
         writeCache({ data: result, stampedAt });
         if (mounted.current) {

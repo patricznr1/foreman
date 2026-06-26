@@ -1,8 +1,9 @@
 // ============================================================
 //  FOREMAN Frontend — components/shell/command-palette.tsx
 //  Zweck: Befehlsleiste (Cmd-K, §3.3) — Sprung zu Sektionen UND direkte
-//         Bedeutungssuche im Gedächtnis (H) von überall: was getippt wird, lässt
-//         sich als Suche an /memory übergeben (Cmd-K → H, Studie §3.3/§4H).
+//         Archiv-Suche (H) von überall: was getippt wird, lässt sich als Suche an
+//         /archive übergeben (Cmd-K → H, Studie §3.3/§4H). Deaktivierte Nav-Einträge
+//         (kein Routing-Ziel) erscheinen NICHT als ausführbarer Befehl.
 //         Vollständig tastaturbedienbar (Cmd/Ctrl+K öffnet, Pfeiltasten, Enter,
 //         Esc), Fokus wandert ins Eingabefeld, role=dialog.
 //  Architektur-Einordnung: Persistentes Rahmenelement (Schicht 2, client).
@@ -37,13 +38,13 @@ export function CommandPalette() {
 
   const items = useMemo<Command[]>(() => {
     const list: Command[] = [];
-    // Direkte Bedeutungssuche — nur wenn die Rolle das Gedächtnis sehen darf
+    // Direkte Archiv-Suche — nur wenn die Rolle das Archiv sehen darf
     // (Sichtbarkeit <= Backend-Autorisierung). Springt mit der Anfrage nach H.
     if (trimmed.length > 0 && canAccessSection(user.role, "H")) {
-      const href = `/memory?q=${encodeURIComponent(trimmed)}`;
+      const href = `/archive?q=${encodeURIComponent(trimmed)}`;
       list.push({
         id: "__search",
-        label: `Im Gedächtnis suchen: ${trimmed}`,
+        label: `Im Archiv suchen: ${trimmed}`,
         run: () => {
           setOpen(false);
           router.push(href);
@@ -51,13 +52,18 @@ export function CommandPalette() {
       });
     }
     for (const item of nav) {
+      // Deaktivierte Einträge (kein Routing-Ziel) erzeugen KEINEN ausführbaren Befehl.
+      if (item.disabled || item.href === null) {
+        continue;
+      }
+      const href = item.href;
       if (item.label.toLowerCase().includes(lower)) {
         list.push({
           id: item.id,
           label: item.label,
           run: () => {
             setOpen(false);
-            router.push(item.href);
+            router.push(href);
           },
         });
       }
@@ -143,7 +149,7 @@ export function CommandPalette() {
                 setActiveIndex(0);
               }}
               onKeyDown={onInputKey}
-              placeholder="Sektion springen oder Gedächtnis durchsuchen …"
+              placeholder="Sektion springen oder Archiv durchsuchen …"
               aria-label="Befehl oder Suche"
               className="w-full bg-transparent px-4 py-3 text-body text-fg-primary outline-none"
             />
