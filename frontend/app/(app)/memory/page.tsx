@@ -6,7 +6,7 @@
 //         Gate (H) sitzt auf der Zielroute /archive.
 //  Architektur-Einordnung: Sektions-Route (Schicht 2, server).
 // ============================================================
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 export default async function MemoryPage({
   searchParams,
@@ -16,5 +16,6 @@ export default async function MemoryPage({
   const params = await searchParams;
   const raw = params.q;
   const query = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
-  redirect(query ? `/archive?q=${encodeURIComponent(query)}` : "/archive");
+  // Dauerhaft (308): die Sektion ist endgültig umgewidmet, /memory ist nicht mehr kanonisch.
+  permanentRedirect(query ? `/archive?q=${encodeURIComponent(query)}` : "/archive");
 }

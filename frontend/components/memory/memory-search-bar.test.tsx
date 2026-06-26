@@ -68,4 +68,17 @@ describe("MemorySearchBar (Archiv)", () => {
     expect(screen.getByRole("button", { name: "Suchen" })).toBeDisabled();
     expect(screen.getByText(/Mindestens eine Quelle/)).toBeInTheDocument();
   });
+
+  it("ein Deep-Link-Wechsel setzt Maschinen-Filter und Quellen-Toggles zurück", async () => {
+    const onSubmit = vi.fn();
+    const { rerender } = render(
+      <MemorySearchBar onSubmit={onSubmit} busy={false} canFilter machines={[7]} defaultQuery="alt" />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Wartung" })); // eine Quelle deaktivieren
+    rerender(
+      <MemorySearchBar onSubmit={onSubmit} busy={false} canFilter machines={[7]} defaultQuery="neu" />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Suchen" }));
+    expect(onSubmit).toHaveBeenCalledWith("neu", null, ["note", "maintenance", "alarm"]);
+  });
 });

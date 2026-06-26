@@ -109,7 +109,11 @@ export function useMemorySearch(): UseMemorySearchResult {
     if (trimmed.length === 0) {
       return; // leere Anfrage löst nichts aus
     }
-    const sources = filters.sources ?? ALL_SOURCES;
+    // Leere Auswahl auf den Backend-Default (alle Quellen) normalisieren — sonst
+    // ließe der Endpoint den Param weg (Backend sucht alle), die Herkunfts-Basis im
+    // Ergebnis trüge aber eine leere Quellen-Liste (Anzeige ≠ tatsächlicher Suchlauf).
+    const sources =
+      filters.sources && filters.sources.length > 0 ? filters.sources : ALL_SOURCES;
     const controller = new AbortController();
     inflight.current?.abort();
     inflight.current = controller;

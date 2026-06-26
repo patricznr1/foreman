@@ -53,9 +53,13 @@ export function MemorySearchBar({
   const disabled = busy || disabledReason !== null || noSources;
 
   // Ein Deep-Link-Wechsel (?q=…) ändert defaultQuery von außen (z. B. über die
-  // Befehlsleiste) — dann das Eingabefeld nachführen, damit es zur Suche passt.
+  // Befehlsleiste) — dann das Eingabefeld nachführen UND die sichtbaren Filter
+  // zurücksetzen: MemoryView startet zum Deep-Link eine frische Suche ohne
+  // Maschinen-Filter über alle Quellen, also müssen Leiste und Ergebnis übereinstimmen.
   useEffect(() => {
     setQuery(defaultQuery);
+    setMachineId(null);
+    setActive(new Set<SourceType>(["note", "maintenance", "alarm"]));
   }, [defaultQuery]);
 
   function toggleSource(value: SourceType): void {
