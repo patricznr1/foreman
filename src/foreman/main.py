@@ -32,6 +32,7 @@ from foreman.api.routers import (
     worker_notes,
     ws_ticket,
 )
+from foreman.archive.router import router as archive_router
 from foreman.config import Settings, get_settings
 from foreman.db.session import dispose_engine, init_engine
 from foreman.logging_setup import ALERT, INFO, OK, get_logger, setup_logging
@@ -60,6 +61,8 @@ _API_V1_ROUTERS = (
     notes_search_router,
     worker_notes.router,
     alarms.router,
+    # Paket 1b: quellenübergreifende Archiv-Suche (Notiz + Wartung + Alarm), additiv.
+    archive_router,
     readings.router,
     dashboard.router,
     substrate.router,
