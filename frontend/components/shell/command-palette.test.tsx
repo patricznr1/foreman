@@ -1,8 +1,8 @@
 // ============================================================
 //  FOREMAN Frontend — components/shell/command-palette.test.tsx
 //  Zweck: Cmd-K → H. Die Befehlsleiste bietet bei Eingabe eine direkte
-//         Bedeutungssuche und springt mit der Anfrage nach /memory?q=… —
-//         das Gedächtnis ist von überall erreichbar (Studie §3.3/§4H).
+//         Archiv-Suche und springt mit der Anfrage nach /archive?q=… (Studie
+//         §3.3/§4H). Ein deaktivierter Nav-Eintrag erzeugt KEINEN ausführbaren Befehl.
 // ============================================================
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -23,7 +23,7 @@ const USER: CurrentUser = {
 };
 
 describe("CommandPalette — H von überall", () => {
-  it("bietet bei Eingabe eine Suche im Gedächtnis und springt nach /memory?q=", async () => {
+  it("bietet bei Eingabe eine Suche im Archiv und springt nach /archive?q=", async () => {
     render(
       <SessionProvider user={USER}>
         <CommandPalette />
@@ -31,7 +31,23 @@ describe("CommandPalette — H von überall", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: /Suchen/ }));
     await userEvent.type(screen.getByLabelText("Befehl oder Suche"), "Lager heiß");
-    await userEvent.click(screen.getByRole("button", { name: /Im Gedächtnis suchen/ }));
-    expect(push).toHaveBeenCalledWith("/memory?q=Lager%20hei%C3%9F");
+    await userEvent.click(screen.getByRole("button", { name: /Im Archiv suchen/ }));
+    expect(push).toHaveBeenCalledWith("/archive?q=Lager%20hei%C3%9F");
+  });
+
+  it("der deaktivierte Eintrag 'Hatten wir das schon mal' erzeugt keinen Sprung-Befehl", async () => {
+    render(
+      <SessionProvider user={USER}>
+        <CommandPalette />
+      </SessionProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /Suchen/ }));
+    await userEvent.type(screen.getByLabelText("Befehl oder Suche"), "Hatten wir das schon mal");
+    // Die Such-Aktion ("Im Archiv suchen: …") ist da — aber KEIN ausführbarer Sprung
+    // zum deaktivierten Eintrag (kein Routing-Ziel).
+    expect(screen.getByRole("button", { name: /Im Archiv suchen/ })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Hatten wir das schon mal" }),
+    ).not.toBeInTheDocument();
   });
 });

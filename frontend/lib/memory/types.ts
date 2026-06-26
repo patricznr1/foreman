@@ -7,13 +7,14 @@
 //         REIHENFOLGE ist das Relevanz-Signal, hier als ordinale Stufe + Rang.
 //  Architektur-Einordnung: View-State (Schicht 2). Reine Daten.
 // ============================================================
+import type { ArchiveHitDetail } from "@/lib/api/contracts";
 
 /**
- * Quelltyp eines Treffers. Heterogen angelegt (Studie §4H: Notiz/Ereignis/Kette/
- * Wartung), aber das Gedächtnis liefert derzeit AUSSCHLIESSLICH Schichtnotizen.
- * Weitere Typen sind reserviert und werden NICHT erfunden (graceful).
+ * Quelltyp eines Treffers. Das Archiv (Paket 1b/1c) durchsucht drei Quellen:
+ * Schichtnotiz / Wartung / Alarm. (Weitere — Ereignis/Kette — bleiben für das
+ * spätere „Hatten wir das schon mal" reserviert und werden NICHT erfunden.)
  */
-export type SourceType = "note"; // reserviert: | "event" | "chain" | "maintenance"
+export type SourceType = "note" | "maintenance" | "alarm";
 
 /**
  * Relevanz als ORDINALE Naehe-Stufe, abgeleitet aus der Rang-Position. Bewusst
@@ -85,5 +86,34 @@ export interface MemorySearchResult {
   /** Beziehungen zwischen Treffern (kompakte Verknuepfung, kein Graph). */
   relations: MemoryRelation[];
   /** Gesamtzahl Treffer (fuer die Live-Region-Ansage). */
+  total: number;
+}
+
+// --- Archiv (Paket 1c): flacher, quellenuebergreifender Treffer ---
+// Bewusst SCHLICHT: nur Wortlaut-Auszug + Quelle + Zeit + Maschine + quellen-
+// spezifische, PII-freie Anzeige-Details. KEIN Score, KEIN Autor (ArchiveHit ist
+// PII-frei), KEINE Verdichtung/Verknuepfung (die bleibt fuer Paket 3 reserviert).
+
+/** Ein einzelner Archiv-Treffer fuer die Anzeige (Spiegel von ArchiveHit). */
+export interface ArchiveHitView {
+  source: SourceType;
+  id: number;
+  machineId: number | null;
+  /** Quellen-normalisierter Zeitstempel (ISO 8601). */
+  timestamp: string;
+  /** Wortlaut-Auszug (backend-seitig gekuerzt + PII-maskiert bei Notizen). */
+  excerpt: string;
+  /** Quellenspezifische Anzeige-Details (PII-frei, kein HMAC-Token). */
+  detail: ArchiveHitDetail;
+  /** Rang-Position in der Trefferliste (0 = relevantester). */
+  rank: number;
+}
+
+/** Das flache, sortierte Ergebnis einer Archiv-Suche (Reihenfolge = Relevanz-Rang). */
+export interface ArchiveSearchResult {
+  query: string;
+  /** Die aktiv durchsuchten Quellen (fuer den ehrlichen Herkunfts-Stempel). */
+  sources: SourceType[];
+  hits: ArchiveHitView[];
   total: number;
 }

@@ -384,6 +384,39 @@ export interface WorkerNoteRead {
 }
 
 /**
+ * Quelltyp eines Archiv-Treffers (Paket 1b/1c) — quellenübergreifend.
+ * Gegen den REALEN Vertrag (src/foreman/archive/schemas.py:ArchiveHit).
+ */
+export type ArchiveSourceType = "note" | "maintenance" | "alarm";
+
+/**
+ * Quellenspezifische, PII-FREIE Anzeige-Attribute eines Archiv-Treffers. Je Quelltyp
+ * sind nur die passenden Felder gesetzt: Notiz→{shift}, Wartung→{type},
+ * Alarm→{severity, category, code}. KEIN HMAC-Token (kein Autor/Ausführer).
+ */
+export interface ArchiveHitDetail {
+  shift?: string | null;
+  type?: string;
+  severity?: string;
+  category?: string;
+  code?: string | null;
+}
+
+/**
+ * Ein Treffer der Archiv-Suche (GET /api/v1/archive/search) — flach,
+ * quellenübergreifend, OHNE Score (Reihenfolge = Relevanz-Rang). `timestamp` ist
+ * quellen-normalisiert (Notiz→created_at, Wartung→performed_at, Alarm→raised_at).
+ */
+export interface ArchiveHit {
+  source_type: ArchiveSourceType;
+  id: number;
+  machine_id: number | null;
+  timestamp: string; // ISO 8601
+  excerpt: string;
+  detail: ArchiveHitDetail;
+}
+
+/**
  * Request-Body für POST /api/v1/worker_notes (eine Notiz erfassen — Sektion J).
  * Gegen den REALEN Vertrag (api/routers/worker_notes.py:WorkerNoteCreate):
  * `text` ist Pflicht (min_length 1); `machine_id`/`shift`/`author` sind optional.
