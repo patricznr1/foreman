@@ -71,6 +71,20 @@ class Settings(BaseSettings):
     pseudo_key_versions: str = Field(default="v1", validation_alias="FOREMAN_PSEUDO_KEY_VERSIONS")
     pseudo_tenant: str = Field(default="default", validation_alias="FOREMAN_PSEUDO_TENANT")
 
+    # --- Archiv-Suche: Relevanz-Cutoff der hybriden Notiz-Suche (§15) ---
+    # Maximal zulässige Cosine-Distanz, ab der ein REINER Vektor-Treffer (ohne
+    # Volltext-Match) verworfen wird — der Riegel gegen semantisch-vages Auffüllen.
+    # Ein Kandidat bleibt nur, wenn er einen Volltext-Match hat ODER seine Distanz
+    # unter dieser Schwelle liegt. Bereich der Cosine-Distanz bei L2-normierten
+    # Vektoren: 0 (identisch) … 2 (entgegengesetzt); konservativer Start 0.55, auf
+    # Realdaten ohne Redeploy justierbar (kleiner = strenger).
+    archive_vector_max_distance: float = Field(
+        default=0.55,
+        ge=0.0,
+        le=2.0,
+        validation_alias="FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE",
+    )
+
     @property
     def is_production(self) -> bool:
         """True, wenn die Umgebung NICHT als Entwicklung/Test markiert ist."""
