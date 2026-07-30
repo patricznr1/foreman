@@ -2,7 +2,7 @@
 
 > **Single Source of Truth.** Dieses Dokument beschreibt, was *gilt* — Schema, Routen, Stack, Konventionen. Bei Widerspruch zwischen Code und diesem Dokument gewinnt zunächst dieses Dokument; danach wird eines von beiden korrigiert. Stand-Datum bei jeder Änderung aktualisieren.
 
-**Stand:** 2026-06-25 · **Status:** F7 — MCP-Schnittstelle (FOREMAN als offener Knoten, **zweiter Differenzierungs-Pfeiler „Plattform statt App"**). Neue Schicht `src/foreman/mcp/`: ein **read-only** Model-Context-Protocol-Server (Anthropic SDK / FastMCP, Streamable HTTP), der die aggregierten Reasoner-Erkenntnisse als **11 maschinenlesbare Tools** an Drittsysteme (Simulation/ERP/Energiemanagement) reicht. Drei Invarianten, strukturell verankert: **(I) read-only** — keine Aktorik, kein Reasoner-/LLM-Trigger über MCP (MCP-eigene Read-Schicht `reads.py`, ausschließlich SELECT); **(II) AI-Act-Transparenz** an jedem KI-Output (Art. 50(2): `ai_generated`/`generated_by`/`requires_human_review`/`model_version` + bei Vorhersage/Empfehlung `validation_status`/`data_regime`/`validation_caveat`) — ein gemeinsamer Wrapper, dessen Validator einen unehrlichen Umschlag nicht zulässt; **(III) IP-Wording** — kein internes Vokabular in Tool-Namen/-Beschreibungen/-Schemata (Hidden-Term-Scan als Akzeptanzkriterium). Eigener `FOREMAN_MCP_`-Token (getrennt vom Plattform-JWT, Fail-Closed), PII nur pseudonymisiert/maskiert (Token nie aufgelöst), `foreman_mcp_*`-Metriken, eigenständige ASGI-App (eigener Port, eigene `/health`/`/metrics`). **Erfüllt zugleich AI-Act-Maßnahme §10.5(2) — Transparenz-Flag MCP: „gebaut".** Vertrag: **§17**.
+**Stand:** 2026-07-30 · **Code-Stand:** `main` = `d25da04` (Archiv-Paket 1c, §15.8–15.9 + §21.6/§21.12). *Doku-Nachzug 30.07.: §3 (Three.js + ehrliche Markierung der noch nicht installierten Industrie-Adapter), neue Pflicht-Sektion §3.1 Stack-Versionen, §6.1 Datengrenzen (`zod`-Regel ab Paket 3), §6.2 bewusste Abweichungen von den Hausregeln.* · **Letzter Vertrags-Meilenstein:** F7 — MCP-Schnittstelle (FOREMAN als offener Knoten, **zweiter Differenzierungs-Pfeiler „Plattform statt App"**). Neue Schicht `src/foreman/mcp/`: ein **read-only** Model-Context-Protocol-Server (Anthropic SDK / FastMCP, Streamable HTTP), der die aggregierten Reasoner-Erkenntnisse als **11 maschinenlesbare Tools** an Drittsysteme (Simulation/ERP/Energiemanagement) reicht. Drei Invarianten, strukturell verankert: **(I) read-only** — keine Aktorik, kein Reasoner-/LLM-Trigger über MCP (MCP-eigene Read-Schicht `reads.py`, ausschließlich SELECT); **(II) AI-Act-Transparenz** an jedem KI-Output (Art. 50(2): `ai_generated`/`generated_by`/`requires_human_review`/`model_version` + bei Vorhersage/Empfehlung `validation_status`/`data_regime`/`validation_caveat`) — ein gemeinsamer Wrapper, dessen Validator einen unehrlichen Umschlag nicht zulässt; **(III) IP-Wording** — kein internes Vokabular in Tool-Namen/-Beschreibungen/-Schemata (Hidden-Term-Scan als Akzeptanzkriterium). Eigener `FOREMAN_MCP_`-Token (getrennt vom Plattform-JWT, Fail-Closed), PII nur pseudonymisiert/maskiert (Token nie aufgelöst), `foreman_mcp_*`-Metriken, eigenständige ASGI-App (eigener Port, eigene `/health`/`/metrics`). **Erfüllt zugleich AI-Act-Maßnahme §10.5(2) — Transparenz-Flag MCP: „gebaut".** Vertrag: **§17**.
 
 *Vorgänger-Status F-REC — LLM-Werker-Empfehlung (Erklär-Layer über F-PRED, **zweiter Konsument des `LLMGateway`** nach F6): aus einer `FailurePrediction` + SHAP-Faktoren (`trusted=True`) + NEXUS-Recall (`trusted=False`, best-effort) eine deutsche Werker-Empfehlung über `gateway.complete(task=explanation)`. Zwei strukturell erzwungene Invarianten: (I) Zahlen autoritativ vom Modell — der numerische Post-Check **rejectet** (nicht: flaggt) jede unbelegte Zahl, keine Persistenz; (II) deterministischer Sim-Vorbehalt — `validation_caveat` aus `validation_caveat_for(...)`, nie aus dem LLM. Persistenz `failure_recommendations` (Migration `0007`, FK auf `failure_predictions`) + Dual-Write. Red-Team scharf über den Recall-Pfad ✅. Vertrag: §16.5.*
 
@@ -55,9 +55,58 @@ Drei Schichten:
 - **Gateway:** eigene dünne `LLMGateway`-Abstraktion (`src/foreman/llm/`, F-LLM); LiteLLM ist ausschließlich Implementierungsdetail dahinter (`backends.py`). Lokal-first Qwen3 (Ollama) + Anthropic Cloud-Fallback, vier Priority-Modi. Reasoner sehen nur `LLMGateway`/`GatewayResponse`/`Task`/Fehlerhierarchie — nie einen LiteLLM-Typ. vLLM-Production-Pfad bleibt durch die Backend-Config offen. Vertrag: **§13**.
 - **Embeddings:** eigene dünne `EmbeddingProvider`-Abstraktion (`src/foreman/embeddings/`, F-SEM) — **parallel** zum Gateway, NICHT in den `LLMGateway` gequetscht (Completion ≠ Embedding). Lokal-first über Ollama (`bge-m3`, Default) + sentence-transformers-Alternative hinter derselben Schnittstelle; L2-normierte Vektoren, Dimension 1024 erzwungen (passt auf `vector(1024)`). Aufrufer (Ingestion, Suche, Reasoner) sehen nur `EmbeddingProvider`/`Vector`/`EmbeddingSettings`/Fehlerhierarchie — nie einen Backend-/Library-Typ. Vertrag: **§15**.
 - **Frontend:** Next.js 15 (App Router), React 19, TypeScript strict, Tailwind CSS 4, Vitest + Testing Library; **bespoke token-getriebenes SVG statt Charting-Lib** (kein shadcn/ui, kein Recharts) — Details §21
-- **Industrie:** asyncua, paho-mqtt, pymodbus
+- **3D (Anlagen-Synoptik):** `three` + `@types/three` — WebGL-Liniensicht mit GLB-Assets (CC-BY/CC0), `GLTFLoader` nativ, Live-Status-Overlay aus `/overview` + WS. Einzige Rendering-Abhängigkeit neben dem bespoke SVG; **kein** react-three-fiber/drei (direkte Three.js-Nutzung). Details §21.
+- **Industrie:** asyncua, paho-mqtt, pymodbus — **Zielbild, noch NICHT installiert** (siehe §3.1). Gebaut ist bislang ausschließlich der Simulations-Adapter (`source=simulation`, §12.5); echte Protokoll-Adapter kommen mit der ersten realen Anlagenanbindung.
 - **Integration:** MCP SDK
 - **Betrieb:** Docker Compose
+
+---
+
+## 3.1 Stack-Versionen (Pflicht-Sektion)
+
+> Pflicht-Sektion (siehe Skill `ground-truth-check`). **Verbindliche Lese-Regel:** die Manifeste führen **Mindest-/Kompatibilitätsbereiche** (`>=` bzw. `^`), die **exakt aufgelöste** Version steht im Lockfile (`uv.lock` bzw. `frontend/package-lock.json`) — das Lockfile ist die Wahrheit für einen konkreten Build, diese Tabelle die Wahrheit für den erlaubten Korridor. Bei API-Unsicherheit **Docs-MCP (`query-docs`) fragen, nie aus dem Gedächtnis** (§6).
+
+**Backend** (`pyproject.toml`, Build/Run via `uv`)
+
+| Bereich | Paket | Bereich im Manifest |
+|---|---|---|
+| Laufzeit | Python | `>=3.12` (mypy `python_version=3.12`, ruff `target-version=py312`) |
+| Web | `fastapi` · `uvicorn[standard]` | `>=0.115` · `>=0.30` |
+| DB | `sqlalchemy[asyncio]` · `asyncpg` · `alembic` · `greenlet` | `>=2.0.30` · `>=0.29` · `>=1.13` · `>=3.0` |
+| Vektor | `pgvector` (Python-Adapter, nur SQLAlchemy-Mapping) | `>=0.3.6` |
+| Validierung | `pydantic` · `pydantic-settings` · `email-validator` | `>=2.7` · `>=2.3` · `>=2.1` |
+| Auth | `pyjwt` · `bcrypt` | `>=2.8` · `>=4.1` |
+| HTTP/Substrat | `httpx` | `>=0.27` |
+| Szenarien | `pyyaml` | `>=6.0` |
+| NER (§8) | `presidio-analyzer` · `presidio-anonymizer` · `spacy` | `>=2.2` · `>=2.2` · `>=3.7` (Modell `de_core_news_lg` separat) |
+| Drift (F4) | `river` | `>=0.21` |
+| Metriken | `prometheus-client` | `>=0.20` |
+| LLM (F-LLM) | `litellm` (**nur** hinter `llm/backends.py`, §13) | `>=1.40` |
+| Vorhersage (F-PRED) | `lightgbm` · `shap` · `scikit-learn` | `>=4.5` · `>=0.46` · `>=1.5` |
+| MCP (F7) | `mcp` | `>=1.9,<2` |
+| Dev/Gates | `pytest` · `pytest-asyncio` · `pytest-cov` · `mypy` · `ruff` · `asgi-lifespan` | `>=8.2` · `>=0.23` · `>=5.0` · `>=1.10` · `>=0.5` · `>=2.1` |
+
+**Frontend** (`frontend/package.json`, npm `11.6.2`, Node `>=20 <25`; CI-Job `frontend-gates` auf Node 24)
+
+| Bereich | Paket | Bereich im Manifest |
+|---|---|---|
+| Framework | `next` · `react` · `react-dom` | `^15.5.0` · `^19.1.0` · `^19.1.0` |
+| 3D (Synoptik) | `three` · `@types/three` | `^0.171.0` |
+| Styling | `tailwindcss` · `@tailwindcss/postcss` | `^4.1.0` |
+| Sprache | `typescript` | `^5.7.2` |
+| Test | `vitest` · `@testing-library/react` · `@testing-library/jest-dom` · `@testing-library/user-event` · `jsdom` · `@vitejs/plugin-react` | `^3.0.0` · `^16.1.0` · `^6.6.0` · `^14.5.2` · `^25.0.1` · `^4.3.4` |
+| Lint/Format | `eslint` · `eslint-config-next` · `@eslint/eslintrc` · `prettier` | `^9.17.0` · `^15.5.0` · `^3.2.0` · `^3.4.2` |
+| Tooling | `tsx` · `@types/node` · `@types/react` · `@types/react-dom` | `^4.19.2` · `^24.0.0` · `^19.1.0` · `^19.1.0` |
+
+**Datenbank / Infrastruktur** (nicht paket-verwaltet, Deployment-Anforderung)
+
+| Komponente | Anforderung |
+|---|---|
+| PostgreSQL + TimescaleDB | Image `timescale/timescaledb-ha:pg16` (Hypertable + CAGGs, Migration `0002`) |
+| pgvector-**Extension** | **≥ 0.8.2** (CVE-2026-3172 bei parallelen HNSW-Builds) — DB-seitig, NICHT der Python-Adapter oben |
+| Ollama (lokal-first, optional) | Qwen3 `qwen3:14b` (LLM) · `bge-m3` (Embedding) — Digest gepinnt (§10.4 LLM03/04) |
+
+**Bewusst NICHT im Stack** (damit keine spätere Session sie „nachrüstet"): shadcn/ui, Recharts (bespoke SVG, §21.2) · react-three-fiber/drei (direkte Three.js-Nutzung) · Redis/Celery (Postgres LISTEN/NOTIFY, §20.2) · TanStack Query, Zustand (eigene Realtime-/State-Schicht, §6/§21.3) · `sentence-transformers` (optionales Embedding-Alt-Backend, lazy importiert, **nicht** in den Laufzeit-Deps).
 
 ---
 
@@ -222,6 +271,26 @@ Vier Datenkategorien aus der SPS, sauber getrennt: analoge Messwerte und digital
 - Header-Kommentar in jeder Datei (Zweck + Architektur-Einordnung).
 - Logs mit Emoji-Prefix. Fehlermeldungen auf Deutsch.
 - Mobile-first Tailwind.
+- **Chirurgische Changes:** nur anfassen, was der aktuelle Change erfordert. Imports/Funktionen nur entfernen, wenn *dieser* Change sie obsolet macht — **nie** pre-existing Dead Code ungefragt. **Simplicity-Default:** minimaler Code, der das Problem löst; kein spekulatives Feature, kein ungefragtes Error-Handling.
+- **ORM-only:** Datenzugriff über SQLAlchemy. `text()` nur mit **Begründungskommentar** direkt darüber (warum das ORM hier nicht trägt — z. B. `to_tsvector`/`<=>`/`DISTINCT ON`/CAGG-Zugriff).
+- **Library-APIs nie aus dem Gedächtnis:** bei Unsicherheit über eine Fremd-API zuerst **Docs-MCP (`query-docs`)** fragen. Verbindliche Versionsbereiche stehen in **§3.1**.
+
+### 6.1 Datengrenzen (Frontend ↔ Backend)
+
+- **Backend:** Pydantic v2 an jeder Grenze (Request-Schemas + `*Out`-Response-Schemas). Gilt bereits durchgängig.
+- **Frontend — Laufzeit-Validierung jeder Backend-Response (`zod` `safeParse`):** die Hausregel verlangt, dass keine Backend-Antwort ungeprüft in den View-State läuft. **Ist-Stand: NICHT umgesetzt** — `zod` ist nicht installiert, `lib/api/contracts.ts` ist handgeschrieben und wird ungeprüft übernommen. **Ab sofort verbindlich für jeden NEU gebauten oder inhaltlich berührten Vertrag** (Schema neben dem Typ, `safeParse` im Fetch-Pfad, Parse-Fehler → Fünf-Zustände-Fehlerzustand statt stiller Weiterreichung). Kein Big-Bang-Rewrite der acht bestehenden Sektionen — der Bestand wandert bei Berührung mit. Erste Anwendung: **Paket 3** (§15.10).
+- **OpenAPI-Codegen (`hey-api`) — offene Position, bewusst zurückgestellt.** Die Hausregel sieht Schema-Sync per Codegen vor; FOREMAN pflegt die FE-Typen bislang von Hand. Nachträglicher Codegen über das gewachsene `contracts.ts` ist ein eigener Umbau, nicht Beiwerk eines Feature-PRs. Bis dahin bleibt die Handpflege ein **bekanntes Drift-Risiko** (Pydantic-Schema ↔ TS-Typ); die `zod`-Grenze oben fängt es zur Laufzeit ab, ersetzt den Codegen aber nicht.
+
+### 6.2 Bewusste Abweichungen von den Hausregeln
+
+Damit keine spätere Session sie als Versäumnis „repariert":
+
+| Hausregel | FOREMAN | Begründung |
+|---|---|---|
+| Server-State via TanStack Query v5 | **eigene Realtime-Schicht** (`Transport` → `RealtimeStore` → `useSyncExternalStore`, §21.3) | Das tragende Modell ist **WS-Push mit Themen-Abos**, nicht Request-Response-Caching. Query-Invalidierung wäre eine zweite, konkurrierende Wahrheit neben dem Push-Kanal. On-Demand-Reads (§21 D/E) laufen über schlanke eigene Hooks. |
+| Client-State via Zustand | `RealtimeStore` + lokaler React-State | Kein globaler Client-State jenseits des Streams nötig; eine Store-Bibliothek zusätzlich zur bestehenden Store-Abstraktion wäre Doppelung. |
+
+Neue Abweichungen gehören **hierher** — nicht in einen Commit-Kommentar.
 
 ---
 
@@ -713,7 +782,7 @@ Next.js 15 App Router, React 19, TypeScript **strict** (`noUncheckedIndexedAcces
 Drei Ebenen: **primitive** (`tokens/primitive.ts`, Rohwerte) → **semantic** (`tokens/themes.ts`, `SEMANTIC_COLOR_TOKENS`) → **theme** (`dark` primär + `hc-light` gleichwertig). Generator `scripts/build-tokens.ts` → `app/styles/tokens.generated.css` (Tailwind `@theme` + Runtime-CSS-Variablen). `npm run tokens:check` ist das CI-Sync-Gate (committete CSS == Quelle). UI referenziert **nur** semantische Utilities (`bg-surface-canvas`, `text-fg-primary`, `bg-state-ok`, `text-note-caveat`, `border-line-subtle` …). Paletten: neutrale UI, ISA-18.2 (`alarm-*`), NE-107 FCSM (`state-*`), Vorbehalt (`note-caveat`, **kein** Rot), entsättigte Daten/Heatmap, Differenz blau↔orange. **Kontrast automatisiert** (`tokens/contrast.test.ts`): Status-Text ≥7:1, Körper ≥4.5:1, Grafik ≥3:1 — beide Themes.
 
 ### 21.3 Echtzeit-/State-Schicht (Kern, Studie §5.1)
-Strikte Transport-Entkopplung: `Transport`-Interface (`lib/realtime/transport.ts`) → `WebSocketTransport` (`lib/realtime/ws-client.ts`, gegen **realen** WS-Vertrag: `{action,topic}` / `{type,topic,data|reason}`, Themen `overview`/`machine:{id}`/`trend:{data_point_id}`, `?token=`, Close 4401, Reconnect→Re-Subscribe=Snapshot-Reload) → `RealtimeStore` (`lib/realtime/realtime-store.ts`, Stream-State: gepuffert+gedrosselt, Backpressure). Abgeleitete Ebene `lib/state/view-state.ts` (fünf Pflichtzustände, Degradation friert ein). React via `useSyncExternalStore` (`lib/state/use-topic.ts`). **Visualisierung kennt den Transport nie** — transport-agnostisch testbar gegen `FakeTransport`.
+Strikte Transport-Entkopplung: `Transport`-Interface (`lib/realtime/transport.ts`) → `WebSocketTransport` (`lib/realtime/ws-client.ts`, gegen **realen** WS-Vertrag: `{action,topic}` / `{type,topic,data|reason}`, Themen `overview`/`machine:{id}`/`trend:{data_point_id}`, `?token=`, Close 4401, Reconnect→Re-Subscribe=Snapshot-Reload) → `RealtimeStore` (`lib/realtime/realtime-store.ts`, Stream-State: gepuffert+gedrosselt, Backpressure). Abgeleitete Ebene `lib/state/view-state.ts` (fünf Pflichtzustände, Degradation friert ein). React via `useSyncExternalStore` (`lib/state/use-topic.ts`). **Visualisierung kennt den Transport nie** — transport-agnostisch testbar gegen `FakeTransport`. *Diese Schicht ersetzt bewusst TanStack Query/Zustand — begründete Abweichung von den Hausregeln, siehe §6.2.*
 
 ### 21.4 Backend-Anbindung (BFF — kein CORS-Eingriff, chirurgisch)
 Next.js-Route-Handler-Proxy `app/api/v1/[...path]/route.ts` liest das JWT aus dem **httpOnly-Cookie** `foreman_token` und injiziert es als Bearer → das Backend braucht keine CORS-Lockerung. `app/api/session/route.ts` (Login → `/auth/login` + `/api/v1/me`, setzt Cookie; Logout; GET Session). `app/api/ws-ticket/route.ts` liefert dem Client das WS-Ticket just-in-time. Rolle/Scope kommen aus **GET /api/v1/me**. WS verbindet direkt zum Backend über `NEXT_PUBLIC_FOREMAN_WS_URL` (Route-Handler proxien kein WebSocket).
