@@ -10,7 +10,7 @@ import { makeDraft } from "./testing/fixtures";
 
 describe("buildNotePayload", () => {
   it("trimmt den Text und lässt leere optionale Felder weg (Backend setzt None)", () => {
-    const payload = buildNotePayload(makeDraft({ text: "  Lager heiß  " }), null);
+    const payload = buildNotePayload(makeDraft({ text: "  Lager heiß  " }));
     expect(payload).toEqual({ text: "Lager heiß" });
     expect("machine_id" in payload).toBe(false);
     expect("shift" in payload).toBe(false);
@@ -18,22 +18,23 @@ describe("buildNotePayload", () => {
     expect("author" in payload).toBe(false);
   });
 
-  it("übernimmt Maschine, Schicht, Kategorie und Autor wenn gesetzt", () => {
+  it("übernimmt Maschine, Schicht und Kategorie wenn gesetzt — nie einen Autor", () => {
     const payload = buildNotePayload(
       makeDraft({ text: "Späne bläulich", machineId: 12, shift: "Frueh", classification: "kritisch" }),
-      "42",
     );
     expect(payload).toEqual({
       text: "Späne bläulich",
       machine_id: 12,
       shift: "Frueh",
       classification: "kritisch",
-      author: "42",
     });
+    // Der Verfasser kommt aus dem Token — das Backend lehnt ein client-seitiges
+    // `author` mit 422 ab (§8/§19).
+    expect("author" in payload).toBe(false);
   });
 
   it("sendet classification MIT (Werker-Kategorie) — Anschlusspunkt, Backend verwirft heute still", () => {
-    const payload = buildNotePayload(makeDraft({ classification: "auffaellig" }), null);
+    const payload = buildNotePayload(makeDraft({ classification: "auffaellig" }));
     expect(payload.classification).toBe("auffaellig");
   });
 });

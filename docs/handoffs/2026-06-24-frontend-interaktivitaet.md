@@ -1,5 +1,8 @@
 # Hand-off — FOREMAN Frontend-Interaktivitäts-Sprint — 2026-06-24
 
+> **Historisches Übergabedokument, Stand 24.06.2026 — nicht der geltende Stand.**
+> Verbindlich ist ausschließlich `GROUND_TRUTH.md`.
+
 ## Kontext
 FOREMAN ist live auf Railway (main `4600388`, alle Services SUCCESS, Login als Rolle **manager** — Zugangsdaten nicht im Repo, siehe Secret-Store/separaten Kanal). Beim Durchklicken fällt durchgängig auf: die Sichten zeigen Daten an, sind aber **nicht explorierbar** — man will intuitiv klicken (Alarmzeile, Aggregat-Einträge, Ketten-Summaries) und wird nirgends hingeleitet, oder Texte sind abgeschnitten ohne Volltext-Zugang. Frühere Fixes (PR #40 Cockpit-Drill-Down, #42 Sensor-Default) waren punktuell und lösen das **nicht**.
 

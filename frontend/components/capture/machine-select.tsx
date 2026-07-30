@@ -5,8 +5,8 @@
 //         Auswahl: lädt / bereit / leer (keine zugewiesene Maschine) / Fehler. Bei
 //         leer ODER Fehler bleibt die Erfassung möglich — machine_id ist optional
 //         (eine allgemeine Notiz ohne Maschinenbezug ist erlaubt). Auswahl ist
-//         NEUTRAL gefärbt (keine Statussemantik). Scope ist UX-Führung, keine
-//         AuthZ-Grenze (der Server nimmt jede machine_id, §20).
+//         NEUTRAL gefärbt (keine Statussemantik). Scope ist hier UX-Führung; die
+//         Autorisierung selbst liegt auf den Lese-/Abo-Pfaden (§20/§20.4).
 //  Architektur-Einordnung: Sicht-Komponente (Schicht 3, client).
 // ============================================================
 "use client";

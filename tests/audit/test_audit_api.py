@@ -8,6 +8,7 @@
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -19,15 +20,12 @@ from foreman.db.models import AuditLog
 
 pytestmark = pytest.mark.integration
 
-_PW = "supersecret1"
 _DRIFT_CODE = "DRIFT"
 
 
-async def _auth(client: AsyncClient, email: str, role: str) -> dict[str, str]:
-    await client.post("/auth/register", json={"email": email, "password": _PW, "role": role})
-    response = await client.post("/auth/login", json={"email": email, "password": _PW})
-    assert response.status_code == 200, response.text
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+# Signatur der conftest-Fixture `auth_headers_for` (legt den Nutzer über den
+# Produktions-Anlagepfad an — es gibt keine Register-Route mehr, §4/§19).
+AuthHeaders = Callable[[str, str], Awaitable[dict[str, str]]]
 
 
 async def _seed_drift_alarm(client: AsyncClient, auth: dict[str, str]) -> tuple[int, int]:
@@ -48,8 +46,10 @@ async def _seed_drift_alarm(client: AsyncClient, auth: dict[str, str]) -> tuple[
     return int(machine["id"]), int(alarm["id"])
 
 
-async def test_acknowledge_writes_single_pseudonymous_hitl_audit_entry(client: AsyncClient) -> None:
-    auth = await _auth(client, "audit-mgr1@x.de", "manager")
+async def test_acknowledge_writes_single_pseudonymous_hitl_audit_entry(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("audit-mgr1@x.de", "manager")
     machine_id, alarm_id = await _seed_drift_alarm(client, auth)
 
     ack = await client.post(f"/api/v1/reasoners/drift/alarms/{alarm_id}/acknowledge", headers=auth)
@@ -79,33 +79,43 @@ async def test_audit_requires_authentication(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_audit_forbidden_for_worker(client: AsyncClient) -> None:
-    auth = await _auth(client, "audit-wrk@x.de", "worker")
+async def test_audit_forbidden_for_worker(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("audit-wrk@x.de", "worker")
     response = await client.get("/api/v1/audit", headers=auth)
     assert response.status_code == 403
 
 
-async def test_audit_forbidden_for_technician(client: AsyncClient) -> None:
-    auth = await _auth(client, "audit-tec@x.de", "technician")
+async def test_audit_forbidden_for_technician(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("audit-tec@x.de", "technician")
     response = await client.get("/api/v1/audit", headers=auth)
     assert response.status_code == 403
 
 
-async def test_audit_forbidden_for_shift_lead(client: AsyncClient) -> None:
-    auth = await _auth(client, "audit-shl@x.de", "shift_lead")
+async def test_audit_forbidden_for_shift_lead(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("audit-shl@x.de", "shift_lead")
     response = await client.get("/api/v1/audit", headers=auth)
     assert response.status_code == 403
 
 
-async def test_audit_visible_for_manager(client: AsyncClient) -> None:
-    auth = await _auth(client, "audit-mgr2@x.de", "manager")
+async def test_audit_visible_for_manager(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("audit-mgr2@x.de", "manager")
     response = await client.get("/api/v1/audit", headers=auth)
     assert response.status_code == 200
     assert response.json() == []
 
 
-async def test_audit_filters_by_action_type_and_machine_and_time(client: AsyncClient) -> None:
-    auth = await _auth(client, "audit-mgr3@x.de", "manager")
+async def test_audit_filters_by_action_type_and_machine_and_time(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("audit-mgr3@x.de", "manager")
     machine_id, alarm_id = await _seed_drift_alarm(client, auth)
     await client.post(f"/api/v1/reasoners/drift/alarms/{alarm_id}/acknowledge", headers=auth)
 

@@ -8,6 +8,8 @@
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+
 import pytest
 from httpx import AsyncClient
 from starlette.testclient import TestClient
@@ -22,12 +24,9 @@ pytestmark = pytest.mark.integration
 
 _PW = "supersecret1"
 
-
-async def _auth(client: AsyncClient, email: str, role: str = "manager") -> dict[str, str]:
-    await client.post("/auth/register", json={"email": email, "password": _PW, "role": role})
-    response = await client.post("/auth/login", json={"email": email, "password": _PW})
-    assert response.status_code == 200, response.text
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+# Signatur der conftest-Fixture `auth_headers_for` (legt den Nutzer über den
+# Produktions-Anlagepfad an — es gibt keine Register-Route mehr, §4/§19).
+AuthHeaders = Callable[[str, str], Awaitable[dict[str, str]]]
 
 
 async def test_ws_ticket_requires_auth(client: AsyncClient) -> None:
@@ -36,9 +35,9 @@ async def test_ws_ticket_requires_auth(client: AsyncClient) -> None:
 
 
 async def test_ws_ticket_issues_short_lived_scoped_ticket(
-    client: AsyncClient, test_settings: Settings
+    client: AsyncClient, test_settings: Settings, auth_headers_for: AuthHeaders
 ) -> None:
-    auth = await _auth(client, "wst-mgr@x.de")
+    auth = await auth_headers_for("wst-mgr@x.de", "manager")
     response = await client.get("/api/v1/ws-ticket", headers=auth)
     assert response.status_code == 200, response.text
     body = response.json()
@@ -47,8 +46,10 @@ async def test_ws_ticket_issues_short_lived_scoped_ticket(
     assert payload["aud"] == WS_TICKET_AUDIENCE
 
 
-async def test_ws_ticket_is_rejected_on_http_route(client: AsyncClient) -> None:
-    auth = await _auth(client, "wst-mgr2@x.de")
+async def test_ws_ticket_is_rejected_on_http_route(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("wst-mgr2@x.de", "manager")
     ticket = (await client.get("/api/v1/ws-ticket", headers=auth)).json()["ticket"]
     # Das WS-Ticket als Bearer auf einer HTTP-Route → 401 (nur am WS gültig).
     response = await client.get("/api/v1/me", headers={"Authorization": f"Bearer {ticket}"})
@@ -64,16 +65,19 @@ def _app(test_settings: Settings) -> object:
     return app
 
 
-def _register_login(client: TestClient, email: str, role: str = "manager") -> str:
-    client.post("/auth/register", json={"email": email, "password": _PW, "role": role})
+def _login(client: TestClient, email: str) -> str:
+    """Loggt einen zuvor per `ensure_user_sync` angelegten Nutzer ein."""
     response = client.post("/auth/login", json={"email": email, "password": _PW})
     assert response.status_code == 200, response.text
     return str(response.json()["access_token"])
 
 
-def test_ws_accepts_ws_ticket(test_settings: Settings, _migrated_db: None) -> None:
+def test_ws_accepts_ws_ticket(
+    test_settings: Settings, _migrated_db: None, ensure_user_sync: Callable[[str, str], None]
+) -> None:
+    ensure_user_sync("wst-ws@x.de", "manager")
     with TestClient(_app(test_settings)) as client:  # type: ignore[arg-type]
-        token = _register_login(client, "wst-ws@x.de")
+        token = _login(client, "wst-ws@x.de")
         auth = {"Authorization": f"Bearer {token}"}
         line = client.post("/api/v1/lines", json={"label": "L"}, headers=auth).json()
         machine = client.post(

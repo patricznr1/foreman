@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import type { WorkerNoteRead } from "@/lib/api/contracts";
 import { OUTBOX_KEY, readOutbox } from "@/lib/capture/outbox";
 import { captureRoleView } from "@/lib/capture/roles";
-import { makeMachine, makeUser } from "@/lib/capture/testing/fixtures";
+import { makeMachine } from "@/lib/capture/testing/fixtures";
 import type { MachinesState } from "@/lib/capture/use-machines";
 import { CaptureForm } from "./capture-form";
 
@@ -59,7 +59,6 @@ afterEach(() => {
   setOnline(true);
 });
 
-const worker = makeUser({ role: "worker", assigned_machine_ids: [2, 3] });
 const roleView = captureRoleView("worker");
 
 describe("CaptureForm — Happy-Path", () => {
@@ -67,7 +66,7 @@ describe("CaptureForm — Happy-Path", () => {
     setOnline(true);
     const mock = stubFetch();
     render(
-      <CaptureForm user={worker} roleView={roleView} machinesState={READY} initialMachineId={null} />,
+      <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={null} />,
     );
     await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Lager läuft heiß");
     await userEvent.click(screen.getByRole("button", { name: /Notiz speichern/ }));
@@ -82,7 +81,7 @@ describe("CaptureForm — Happy-Path", () => {
   it("HITL: sendet AUSSCHLIESSLICH an den worker_notes-POST — kein Aktor-Pfad", async () => {
     const mock = stubFetch();
     render(
-      <CaptureForm user={worker} roleView={roleView} machinesState={READY} initialMachineId={null} />,
+      <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={null} />,
     );
     await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Beobachtung");
     await userEvent.click(screen.getByRole("button", { name: /Notiz speichern/ }));
@@ -97,7 +96,7 @@ describe("CaptureForm — Pflichtfeld", () => {
   it("sperrt Speichern bei leerer Beobachtung (mit Grund)", () => {
     stubFetch();
     render(
-      <CaptureForm user={worker} roleView={roleView} machinesState={READY} initialMachineId={null} />,
+      <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={null} />,
     );
     expect(screen.getByRole("button", { name: /Notiz speichern/ })).toBeDisabled();
     expect(screen.getByText(/Beobachtung eingeben/)).toBeInTheDocument();
@@ -108,7 +107,7 @@ describe("CaptureForm — Kategorie mitgesendet (Anschlusspunkt)", () => {
   it("schickt classification im POST mit, wenn der Werker sie wählt", async () => {
     const mock = stubFetch();
     render(
-      <CaptureForm user={worker} roleView={roleView} machinesState={READY} initialMachineId={null} />,
+      <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={null} />,
     );
     await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Späne bläulich");
     await userEvent.click(screen.getByRole("button", { name: /Kritisch/ }));
@@ -122,7 +121,7 @@ describe("CaptureForm — Offline-Puffer (Degradation)", () => {
     setOnline(false);
     const mock = stubFetch();
     render(
-      <CaptureForm user={worker} roleView={roleView} machinesState={READY} initialMachineId={2} />,
+      <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={2} />,
     );
     await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Notiz ohne Netz");
     await userEvent.click(screen.getByRole("button", { name: /Notiz speichern/ }));
@@ -143,7 +142,7 @@ describe("CaptureForm — Kontext-Vorauswahl", () => {
   it("wählt die übergebene Maschine vor (aus ?machine=)", () => {
     stubFetch();
     render(
-      <CaptureForm user={worker} roleView={roleView} machinesState={READY} initialMachineId={3} />,
+      <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={3} />,
     );
     expect(screen.getByRole("button", { name: "Fräse 3" })).toHaveAttribute("aria-pressed", "true");
   });

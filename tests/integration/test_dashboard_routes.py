@@ -7,19 +7,17 @@
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+
 import pytest
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.integration
 
-_PW = "supersecret1"
 
-
-async def _auth(client: AsyncClient, email: str, role: str) -> dict[str, str]:
-    await client.post("/auth/register", json={"email": email, "password": _PW, "role": role})
-    response = await client.post("/auth/login", json={"email": email, "password": _PW})
-    assert response.status_code == 200, response.text
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+# Signatur der conftest-Fixture `auth_headers_for` (legt den Nutzer über den
+# Produktions-Anlagepfad an — es gibt keine Register-Route mehr, §4/§19).
+AuthHeaders = Callable[[str, str], Awaitable[dict[str, str]]]
 
 
 async def _seed_machine_with_data_point(
@@ -41,8 +39,10 @@ async def _seed_machine_with_data_point(
     return int(machine["id"]), int(data_point["id"])
 
 
-async def test_overview_returns_fleet_for_manager(client: AsyncClient) -> None:
-    auth = await _auth(client, "ovw-mgr@x.de", "manager")
+async def test_overview_returns_fleet_for_manager(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("ovw-mgr@x.de", "manager")
     machine_id, _ = await _seed_machine_with_data_point(client, auth)
 
     response = await client.get("/api/v1/overview", headers=auth)
@@ -53,8 +53,10 @@ async def test_overview_returns_fleet_for_manager(client: AsyncClient) -> None:
     assert any(machine["id"] == machine_id for machine in body["machines"])
 
 
-async def test_overview_forbidden_for_worker(client: AsyncClient) -> None:
-    auth = await _auth(client, "ovw-wrk@x.de", "worker")
+async def test_overview_forbidden_for_worker(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("ovw-wrk@x.de", "worker")
     response = await client.get("/api/v1/overview", headers=auth)
     assert response.status_code == 403
 
@@ -64,8 +66,10 @@ async def test_overview_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_machine_trend_returns_metadata_for_manager(client: AsyncClient) -> None:
-    auth = await _auth(client, "trd-mgr@x.de", "manager")
+async def test_machine_trend_returns_metadata_for_manager(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("trd-mgr@x.de", "manager")
     machine_id, _ = await _seed_machine_with_data_point(client, auth)
 
     response = await client.get(
@@ -79,18 +83,22 @@ async def test_machine_trend_returns_metadata_for_manager(client: AsyncClient) -
     assert body["profile_band"] is None
 
 
-async def test_machine_trend_unknown_datapoint_404(client: AsyncClient) -> None:
-    auth = await _auth(client, "trd-mgr2@x.de", "manager")
+async def test_machine_trend_unknown_datapoint_404(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("trd-mgr2@x.de", "manager")
     machine_id, _ = await _seed_machine_with_data_point(client, auth)
 
     response = await client.get(f"/api/v1/machines/{machine_id}/trend?datapoint=nope", headers=auth)
     assert response.status_code == 404
 
 
-async def test_machine_trend_forbidden_for_worker(client: AsyncClient) -> None:
-    manager_auth = await _auth(client, "trd-mgr3@x.de", "manager")
+async def test_machine_trend_forbidden_for_worker(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    manager_auth = await auth_headers_for("trd-mgr3@x.de", "manager")
     machine_id, _ = await _seed_machine_with_data_point(client, manager_auth)
-    worker_auth = await _auth(client, "trd-wrk@x.de", "worker")
+    worker_auth = await auth_headers_for("trd-wrk@x.de", "worker")
 
     response = await client.get(
         f"/api/v1/machines/{machine_id}/trend?datapoint=vib", headers=worker_auth
@@ -102,13 +110,15 @@ async def test_machine_trend_forbidden_for_worker(client: AsyncClient) -> None:
 #  F4-Eigenprofil-Overlay: beide Transport-Einstiege (HTTP + WS) tragen das Band
 # --------------------------------------------------------------------------- #
 async def test_machine_trend_returns_profile_band_for_manager(
-    client: AsyncClient, raw_conn: object
+    client: AsyncClient,
+    raw_conn: object,
+    auth_headers_for: AuthHeaders,
 ) -> None:
     # HTTP-Einstieg: liegt ein persistiertes Profil vor, trägt das Erstbild das Band.
     import json
     from datetime import UTC, datetime
 
-    auth = await _auth(client, "trd-prof@x.de", "manager")
+    auth = await auth_headers_for("trd-prof@x.de", "manager")
     machine_id, dp_id = await _seed_machine_with_data_point(client, auth)
     now = datetime.now(UTC).replace(second=0, microsecond=0)
     await raw_conn.execute(  # type: ignore[attr-defined]
@@ -144,8 +154,9 @@ async def test_machine_trend_returns_profile_band_for_manager(
 # --------------------------------------------------------------------------- #
 async def test_machine_card_returns_steifbrief_and_datapoints_for_manager(
     client: AsyncClient,
+    auth_headers_for: AuthHeaders,
 ) -> None:
-    auth = await _auth(client, "card-mgr@x.de", "manager")
+    auth = await auth_headers_for("card-mgr@x.de", "manager")
     machine_id, _ = await _seed_machine_with_data_point(client, auth)
 
     response = await client.get(f"/api/v1/machines/{machine_id}/card", headers=auth)
@@ -161,17 +172,21 @@ async def test_machine_card_returns_steifbrief_and_datapoints_for_manager(
     assert "stream" in body
 
 
-async def test_machine_card_forbidden_for_worker(client: AsyncClient) -> None:
-    manager_auth = await _auth(client, "card-mgr2@x.de", "manager")
+async def test_machine_card_forbidden_for_worker(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    manager_auth = await auth_headers_for("card-mgr2@x.de", "manager")
     machine_id, _ = await _seed_machine_with_data_point(client, manager_auth)
-    worker_auth = await _auth(client, "card-wrk@x.de", "worker")
+    worker_auth = await auth_headers_for("card-wrk@x.de", "worker")
 
     response = await client.get(f"/api/v1/machines/{machine_id}/card", headers=worker_auth)
     assert response.status_code == 403
 
 
-async def test_machine_card_unknown_machine_404(client: AsyncClient) -> None:
-    auth = await _auth(client, "card-mgr3@x.de", "manager")
+async def test_machine_card_unknown_machine_404(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("card-mgr3@x.de", "manager")
     response = await client.get("/api/v1/machines/999999/card", headers=auth)
     assert response.status_code == 404
 
@@ -181,8 +196,10 @@ async def test_machine_card_requires_auth(client: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_cards_returns_fleet_for_manager(client: AsyncClient) -> None:
-    auth = await _auth(client, "cards-mgr@x.de", "manager")
+async def test_cards_returns_fleet_for_manager(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("cards-mgr@x.de", "manager")
     machine_id, _ = await _seed_machine_with_data_point(client, auth)
 
     response = await client.get("/api/v1/cards", headers=auth)
@@ -193,10 +210,12 @@ async def test_cards_returns_fleet_for_manager(client: AsyncClient) -> None:
     assert any(card["id"] == machine_id for card in body)
 
 
-async def test_cards_empty_scope_for_unassigned_worker(client: AsyncClient) -> None:
-    manager_auth = await _auth(client, "cards-mgr2@x.de", "manager")
+async def test_cards_empty_scope_for_unassigned_worker(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    manager_auth = await auth_headers_for("cards-mgr2@x.de", "manager")
     await _seed_machine_with_data_point(client, manager_auth)
-    worker_auth = await _auth(client, "cards-wrk@x.de", "worker")
+    worker_auth = await auth_headers_for("cards-wrk@x.de", "worker")
 
     response = await client.get("/api/v1/cards", headers=worker_auth)
 

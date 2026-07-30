@@ -26,15 +26,16 @@ export interface UseCreateNoteResult {
 }
 
 /**
- * `author` = eigene user_id (Klartext; serverseitig zu HMAC pseudonymisiert, §8).
+ * Der Verfasser wird nicht mitgeschickt — das Backend leitet ihn aus dem Token ab
+ * und legt ihn als HMAC-Token ab (§8/§19).
  * `online` wird hineingereicht (useOnline) — so bleibt der Hook ohne Netz testbar.
  */
-export function useCreateNote(author: string | null, online: boolean): UseCreateNoteResult {
+export function useCreateNote(online: boolean): UseCreateNoteResult {
   const [sending, setSending] = useState(false);
 
   const submit = useCallback(
     async (draft: CaptureDraft): Promise<CaptureSubmitResult> => {
-      const payload = buildNotePayload(draft, author);
+      const payload = buildNotePayload(draft);
       // Offline → sofort lokal sichern; der Flush sendet später (Studie §4J).
       if (!online) {
         return { kind: "queued", item: enqueueNote(payload) };
@@ -54,7 +55,7 @@ export function useCreateNote(author: string | null, online: boolean): UseCreate
         setSending(false);
       }
     },
-    [author, online],
+    [online],
   );
 
   return { submit, sending };

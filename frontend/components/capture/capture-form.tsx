@@ -13,7 +13,6 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import type { CurrentUser } from "@/lib/api/contracts";
 import type { CaptureRoleView } from "@/lib/capture/roles";
 import { SHIFTS } from "@/lib/capture/shifts";
 import { isSubmittable } from "@/lib/capture/submit";
@@ -31,7 +30,6 @@ import { SyncStatus } from "./sync-status";
 import { VoiceCapturePlaceholder } from "./voice-capture-placeholder";
 
 export interface CaptureFormProps {
-  user: CurrentUser;
   roleView: CaptureRoleView;
   machinesState: MachinesState;
   initialMachineId: number | null;
@@ -50,9 +48,9 @@ function errorText(reason: "validation" | "unauthorized" | "forbidden"): string 
   }
 }
 
-export function CaptureForm({ user, roleView, machinesState, initialMachineId }: CaptureFormProps) {
+export function CaptureForm({ roleView, machinesState, initialMachineId }: CaptureFormProps) {
   const online = useOnline();
-  const { submit, sending } = useCreateNote(String(user.id), online);
+  const { submit, sending } = useCreateNote(online);
   const { pending, flushing, hadError, refresh } = useOutbox(online);
 
   const [text, setText] = useState("");

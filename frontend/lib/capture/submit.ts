@@ -4,8 +4,9 @@
 //         Antwort in ein SubmitOutcome interpretieren. Reine Helfer (payload/
 //         status) sind ohne Netz testbar; submitNote() komponiert sie mit fetch
 //         (injizierbar). Der Pfad geht über den BFF-Proxy (JWT serverseitig).
-//         classification wird mitgesendet (Werker-Kategorie) — das Backend nimmt
-//         das Feld heute noch nicht an und verwirft es still (Anschlusspunkt).
+//         Der Verfasser wird nicht mitgesendet — das Backend leitet ihn aus dem
+//         Token ab (§8/§19). classification wird mitgesendet (Werker-Kategorie);
+//         das Backend nimmt das Feld heute noch nicht an (Anschlusspunkt).
 //  Architektur-Einordnung: Transport-Komposition (Schicht 1). Reine + IO-Funktion.
 // ============================================================
 import type { WorkerNoteCreate, WorkerNoteRead } from "@/lib/api/contracts";
@@ -14,11 +15,11 @@ import { createNoteEndpoint } from "./url";
 
 /**
  * Baut den POST-Body aus dem Entwurf. Reine Funktion. Leere optionale Felder werden
- * WEGGELASSEN (das Backend setzt dann None). `author` ist die eigene user_id im
- * Klartext — serverseitig zu einem HMAC-Token pseudonymisiert (§8), nie als Klartext
- * gespeichert; das Frontend hält ihn nur transient.
+ * WEGGELASSEN (das Backend setzt dann None). Der Verfasser wird NICHT mitgesendet:
+ * das Backend leitet ihn aus dem Token ab (§8/§19) und lehnt ein client-seitiges
+ * `author` mit 422 ab.
  */
-export function buildNotePayload(draft: CaptureDraft, author: string | null): WorkerNoteCreate {
+export function buildNotePayload(draft: CaptureDraft): WorkerNoteCreate {
   const payload: WorkerNoteCreate = { text: draft.text.trim() };
   if (draft.machineId !== null) {
     payload.machine_id = draft.machineId;
@@ -29,10 +30,6 @@ export function buildNotePayload(draft: CaptureDraft, author: string | null): Wo
   }
   if (draft.classification !== null) {
     payload.classification = draft.classification;
-  }
-  const trimmedAuthor = author?.trim();
-  if (trimmedAuthor) {
-    payload.author = trimmedAuthor;
   }
   return payload;
 }

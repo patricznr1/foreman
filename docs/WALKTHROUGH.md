@@ -70,10 +70,10 @@ Damit die Datenbankstruktur nachvollziehbar und reproduzierbar wächst. 0002 set
 ### Auth & Zugriffsschutz (`core/security.py`, `api/auth.py`, `api/middleware.py`, `api/deps.py`)
 
 **Was tut es?**
-Registriert Nutzer mit sicher gehashten Passwörtern, gibt beim Login ein Zugangs-Token (JWT) aus und sperrt alle geschützten Routen ohne gültiges Token.
+Prüft Anmeldedaten gegen sicher gehashte Passwörter, gibt beim Login ein Zugangs-Token (JWT) aus und sperrt alle geschützten Routen ohne gültiges Token.
 
 **Warum existiert es / wo sitzt es?**
-Die Eingangskontrolle der Plattform. Offen sind nur Health-Check und die Login-/Registrier-Routen; alles unter `/api/v1/` braucht ein Token. Die Hilfsfunktionen (Dependencies) reichen Datenbank, Konfiguration und die Datenschutz-Werkzeuge sauber an die Endpunkte durch.
+Die Eingangskontrolle der Plattform. Offen sind nur der Health-Check, die Kennzahlen-Route und der Login; alles unter `/api/v1/` braucht ein Token. Konten selbst legt der Betreiber an — FOREMAN ist eine Werksanwendung, keine Seite mit Selbstregistrierung, und die Rolle eines Nutzers ist deshalb nichts, was über das Netz gesetzt werden kann. Die Hilfsfunktionen (Dependencies) reichen Datenbank, Konfiguration und die Datenschutz-Werkzeuge sauber an die Endpunkte durch.
 
 ### Datenschutz-Schicht (`core/pseudonymize.py`, `core/redact.py`)
 

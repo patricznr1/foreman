@@ -176,7 +176,7 @@ async def test_alarm_invalid_severity_422(auth_client: AsyncClient) -> None:
     assert r.status_code == 422
 
 
-# --- worker_notes: author → Token UND text → NER-maskiert (§8) ---
+# --- worker_notes: author → Token aus dem JWT UND text → NER-maskiert (§8/§19) ---
 async def test_worker_note_author_tokenized_and_text_redacted(
     auth_client: AsyncClient,
 ) -> None:
@@ -187,13 +187,13 @@ async def test_worker_note_author_tokenized_and_text_redacted(
             "machine_id": machine_id,
             "shift": "frueh",
             "text": "Lager an Spindel 3 mit Schmidt getauscht",
-            "author": "77",
         },
     )
     assert r.status_code == 201
     body = r.json()
-    # Autor pseudonymisiert
-    assert body["author"] == _EXPECTED.tokenize_worker("77")
+    # Autor pseudonymisiert — und zwar über die ID aus dem TOKEN, nicht aus dem Body.
+    own_id = (await auth_client.get("/api/v1/me")).json()["id"]
+    assert body["author"] == _EXPECTED.tokenize_worker(str(own_id))
     # Freitext NER-maskiert: „Schmidt" ist weg, Platzhalter da
     assert "Schmidt" not in body["text"]
     assert "[PERSON]" in body["text"]

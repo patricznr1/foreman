@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { captureRoleView } from "@/lib/capture/roles";
-import { makeMachine, makeUser } from "@/lib/capture/testing/fixtures";
+import { makeMachine } from "@/lib/capture/testing/fixtures";
 import { makeNote } from "@/lib/memory/testing/fixtures";
 import type { MachinesState } from "@/lib/capture/use-machines";
 import { CaptureForm } from "./capture-form";
@@ -46,7 +46,6 @@ describe("Hidden-Term-Scan (Sektion J)", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as Response));
     render(
       <CaptureForm
-        user={makeUser({ role: "worker", assigned_machine_ids: [2] })}
         roleView={captureRoleView("worker")}
         machinesState={READY}
         initialMachineId={2}

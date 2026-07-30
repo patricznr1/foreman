@@ -19,13 +19,16 @@ from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from foreman.api.deps import get_embedding_provider, get_redactor
 from foreman.config import Settings, get_settings
 from foreman.core.pseudonymize import Pseudonymizer, build_pseudonymizer
+from foreman.core.roles import Role
+from foreman.db.models import User
+from foreman.db.provisioning import create_user
 from foreman.db.session import get_session
 from foreman.main import create_app
 
@@ -233,15 +236,46 @@ def fake_redactor() -> FakeRedactor:
     return FakeRedactor()
 
 
+# Einheitliches Test-Passwort (erfüllt PASSWORD_MIN aus schemas/auth.py).
+TEST_PASSWORD = "supersecret1"
+
+
+async def ensure_user(test_settings: Settings, email: str, role: Role) -> None:
+    """Legt einen Test-Nutzer über den PRODUKTIONS-Anlagepfad an (idempotent).
+
+    Die Suite nutzt denselben Weg wie der Betrieb (§4/§19) — über HTTP wird keine
+    Rolle vergeben, auch nicht im Test. Idempotent, weil mehrere Tests
+    derselben Datei denselben Nutzer anfordern und nicht zwischen jedem Test
+    getruncatet wird — `create_user` selbst bleibt bewusst strikt (kein
+    Überschreiben). Dieselbe E-Mail mit ABWEICHENDER Rolle ist ein Testfehler und
+    knallt hier, statt still die falsche Rolle zu verwenden.
+    """
+    engine = create_async_engine(test_settings.database_url, poolclass=NullPool)
+    maker = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with maker() as session:
+            existing = await session.scalar(select(User).where(User.email == email))
+            if existing is not None:
+                assert existing.role == role.value, (
+                    f"❌ Test-Nutzer {email} existiert mit Rolle {existing.role}, "
+                    f"angefordert war {role.value}"
+                )
+                return
+            await create_user(session, email=email, password=TEST_PASSWORD, role=role)
+            await session.commit()
+    finally:
+        await engine.dispose()
+
+
 @pytest_asyncio.fixture
-async def auth_token(client: AsyncClient) -> str:
-    """Registriert einen Test-Nutzer (Rolle `shift_lead`) und gibt ein gültiges JWT
+async def auth_token(client: AsyncClient, test_settings: Settings) -> str:
+    """Legt einen Test-Nutzer (Rolle `shift_lead`) an und gibt ein gültiges JWT
     zurück. shift_lead ist der operative Standard-Nutzer der Suite — er darf die
     Trigger-/Quittier-Routen (§21.18), damit die bestehenden Reasoner-Tests den
     Erfolgs-Pfad prüfen; rollenspezifische Sperren testet `auth_headers_for`."""
-    creds = {"email": "tester@foreman.de", "password": "supersecret1"}
-    await client.post("/auth/register", json={**creds, "role": "shift_lead"})
-    response = await client.post("/auth/login", json=creds)
+    email = "tester@foreman.de"
+    await ensure_user(test_settings, email, Role.SHIFT_LEAD)
+    response = await client.post("/auth/login", json={"email": email, "password": TEST_PASSWORD})
     token: str = response.json()["access_token"]
     return token
 
@@ -254,16 +288,30 @@ async def auth_client(client: AsyncClient, auth_token: str) -> AsyncClient:
 
 
 @pytest_asyncio.fixture
-def auth_headers_for(client: AsyncClient) -> Callable[[str, str], Awaitable[dict[str, str]]]:
-    """Factory: registriert + loggt einen Nutzer mit gegebener Rolle ein und liefert
+def auth_headers_for(
+    client: AsyncClient, test_settings: Settings
+) -> Callable[[str, str], Awaitable[dict[str, str]]]:
+    """Factory: legt einen Nutzer mit gegebener Rolle an, loggt ihn ein und liefert
     den Bearer-Header — für rollenspezifische RBAC-Tests (§21.18). Mehrere Aufrufe
     mit verschiedenen E-Mails/Rollen sind möglich (jeder eigener Nutzer)."""
 
     async def _make(email: str, role: str) -> dict[str, str]:
-        creds = {"email": email, "password": "supersecret1"}
-        await client.post("/auth/register", json={**creds, "role": role})
-        resp = await client.post("/auth/login", json=creds)
+        await ensure_user(test_settings, email, Role(role))
+        resp = await client.post("/auth/login", json={"email": email, "password": TEST_PASSWORD})
         token: str = resp.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
+
+    return _make
+
+
+@pytest.fixture
+def ensure_user_sync(test_settings: Settings) -> Callable[[str, str], None]:
+    """Sync-Variante von `ensure_user` für die TestClient-basierten WS-Tests.
+
+    Der TestClient fährt seinen Event-Loop in einem eigenen Portal-Thread, im
+    Test-Thread läuft keiner — `asyncio.run` ist hier also sicher."""
+
+    def _make(email: str, role: str) -> None:
+        asyncio.run(ensure_user(test_settings, email, Role(role)))
 
     return _make

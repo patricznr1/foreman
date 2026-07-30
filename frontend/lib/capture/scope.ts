@@ -1,9 +1,9 @@
 // ============================================================
 //  FOREMAN Frontend — lib/capture/scope.ts
 //  Zweck: Die client-seitig auswählbaren Maschinen — reiner UX-/Führungs-Filter,
-//         KEINE AuthZ-Grenze. Der worker_notes-POST ist server-seitig NICHT
-//         scope-gefiltert (§20: Per-User-Scope greift nur bei Lese-/WS-Abos); das
-//         Backend nimmt jede machine_id an. Diese Beschränkung spiegelt die
+//         KEINE AuthZ-Grenze. Der Per-User-Scope ist auf den Lese-/WS-Abo-Pfaden
+//         durchgesetzt (§20/§20.4), nicht als Filter des Erfassungs-POST — eine
+//         Notiz bleibt eine Daten-Eingabe. Diese Beschränkung spiegelt die
 //         inScope-Logik aus app/(app)/machines/page.tsx (Naht: später nach lib
 //         hochziehen + dort teilen) und führt den Werker auf seine Maschinen.
 //  Architektur-Einordnung: Zugriffs-Spiegel (Schicht 2). Reine Logik, testbar.
