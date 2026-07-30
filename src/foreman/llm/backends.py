@@ -154,6 +154,8 @@ class LiteLLMBackend:
         is_local: bool,
         api_key: str | None = None,
         base_url: str | None = None,
+        supports_sampling_params: bool = True,
+        reasoning_effort: str | None = None,
         completion_fn: CompletionFn | None = None,
     ) -> None:
         self.name = name
@@ -162,6 +164,19 @@ class LiteLLMBackend:
         # api_key wird NIE geloggt (§8) — nur an LiteLLM durchgereicht.
         self._api_key = api_key
         self._base_url = base_url
+        # Nicht jeder Provider nimmt Sampling-Parameter an: die aktuelle
+        # Anthropic-Generation hat `temperature`/`top_p`/`top_k` entfernt (nur der
+        # Default temperature=1 gilt noch), Ollama/vLLM nehmen sie weiter. Der
+        # Aufrufer entscheidet pro Backend (§13.2) — bewusst nicht an `is_local`
+        # gekoppelt, damit ein künftiges Cloud-vLLM-Backend seine temperature behält.
+        self._supports_sampling_params = supports_sampling_params
+        # LiteLLMs providerneutrales Denk-Budget. "none" schaltet das Denken ab
+        # (nötig bei Anthropic-Modellen, die per Default denken); None = nicht
+        # senden, also die Voreinstellung des Providers. Nachgemessen an LiteLLM
+        # 1.89.0: "none" wird in die Anthropic-Übersetzung aufgelöst und erscheint
+        # bei KEINEM Modell als Feld auf der Leitung — auch bei älteren Modellen
+        # ohne Default-Denken (z. B. Sonnet 4.5) also ein No-op, kein Fehler.
+        self._reasoning_effort = reasoning_effort
         self._completion_fn = completion_fn or _default_completion
 
     async def complete(
@@ -175,9 +190,18 @@ class LiteLLMBackend:
         call_kwargs: dict[str, Any] = {
             "model": self.model,
             "messages": [dict(m) for m in messages],
-            "temperature": temperature,
             "timeout": timeout_s,
         }
+        # `temperature` nur, wenn das Backend sie annimmt. LiteLLM kennt die
+        # Modell-Grenze und wirft sonst schon clientseitig `UnsupportedParamsError`
+        # (die hier als BackendUnavailable ankäme — ein Konfigurationsfehler sähe
+        # dann wie ein Backend-Ausfall aus). Globales `litellm.drop_params = True`
+        # wäre die Alternative, würde die Auswahl aber für ALLE Backends still
+        # übernehmen und echte Konfigurationsfehler verstecken — deshalb explizit.
+        if self._supports_sampling_params:
+            call_kwargs["temperature"] = temperature
+        if self._reasoning_effort is not None:
+            call_kwargs["reasoning_effort"] = self._reasoning_effort
         if max_tokens is not None:
             call_kwargs["max_tokens"] = max_tokens
         if self._api_key is not None:

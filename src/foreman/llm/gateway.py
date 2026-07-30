@@ -184,6 +184,18 @@ class LiteLLMGateway:
                     model=settings.cloud_model,
                     is_local=False,
                     api_key=api_key,
+                    # Der Cloud-Pfad ist per Vertrag Anthropic (§13.2). Die aktuelle
+                    # Generation hat die Sampling-Parameter entfernt — Determinismus
+                    # kommt dort aus dem Prompt, nicht aus dem Sampling.
+                    supports_sampling_params=False,
+                    # Denken explizit aus: es ist bei diesen Modellen per Default an
+                    # und teilt sich das Ausgabe-Budget mit dem Antworttext. Da
+                    # `max_tokens` hier meist None ist und LiteLLM für Anthropic
+                    # ersatzweise 4096 setzt, würde gedacht + geantwortet in dieselbe
+                    # Obergrenze laufen — abgeschnittene Erklärungen wären die Folge.
+                    # Denken einzuschalten ist eine eigene Entscheidung und braucht
+                    # dann ein bewusst gesetztes FOREMAN_LLM_MAX_TOKENS.
+                    reasoning_effort="none",
                     completion_fn=cloud_completion_fn,
                 )
             )

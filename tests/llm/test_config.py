@@ -25,6 +25,14 @@ def test_defaults_sind_lokal_first_qwen_grounding_an_cache_aus() -> None:
     assert s.local_cost_per_1k_tokens == 0.0
 
 
+def test_cloud_default_ist_das_aktuelle_sonnet_modell() -> None:
+    # Stolperdraht: der Cloud-Aufruf-Vertrag (keine Sampling-Parameter, Denken aus —
+    # §13.2, geprüft in tests/llm/test_gateway.py) hängt an der Modell-Generation.
+    # Wer diesen Default wechselt, muss den Vertrag neu prüfen — nicht nur den String.
+    s = LLMSettings(_env_file=None)
+    assert s.cloud_model == "anthropic/claude-sonnet-5"
+
+
 def test_secretstr_leakt_den_key_nicht_im_repr() -> None:
     s = LLMSettings(_env_file=None, cloud_api_key="sk-streng-geheim-123")
     assert isinstance(s.cloud_api_key, SecretStr)
