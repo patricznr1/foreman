@@ -220,3 +220,54 @@ async def test_litellm_backend_kapselt_malformte_antwort_als_backend_unavailable
         await backend.complete(
             [{"role": "user", "content": "hi"}], temperature=0.0, max_tokens=None, timeout_s=1.0
         )
+
+
+# --- Aufruf-Parameter: was das Backend tatsächlich an LiteLLM übergibt ---
+
+
+async def test_backend_reicht_temperature_weiter_wenn_der_provider_sie_annimmt() -> None:
+    # Der lokale Pfad (Ollama/Qwen3) lebt von temperature=0.0 — dieser Test hält den
+    # Determinismus fest, damit die Cloud-Ausnahme nicht versehentlich global wird.
+    seen: dict[str, object] = {}
+
+    async def fn(**kwargs: object) -> _FakeResponse:
+        seen.update(kwargs)
+        return _FakeResponse()
+
+    backend = LiteLLMBackend(
+        name="local", model="ollama/qwen3:14b", is_local=True, completion_fn=fn
+    )
+    await backend.complete(
+        [{"role": "user", "content": "hi"}], temperature=0.0, max_tokens=None, timeout_s=30.0
+    )
+    assert seen["temperature"] == 0.0
+    # Ohne gesetztes reasoning_effort bleibt die Provider-Voreinstellung unberührt.
+    assert "reasoning_effort" not in seen
+
+
+async def test_backend_laesst_temperature_weg_wenn_der_provider_sie_ablehnt() -> None:
+    # Anthropic (aktuelle Generation) quittiert eine mitgesendete temperature mit
+    # HTTP 400. LiteLLM führt sie für Anthropic als unterstützt und würde sie
+    # durchreichen — die Auswahl muss deshalb im Backend passieren.
+    seen: dict[str, object] = {}
+
+    async def fn(**kwargs: object) -> _FakeResponse:
+        seen.update(kwargs)
+        return _FakeResponse()
+
+    backend = LiteLLMBackend(
+        name="cloud",
+        model="anthropic/claude-sonnet-5",
+        is_local=False,
+        supports_sampling_params=False,
+        reasoning_effort="none",
+        completion_fn=fn,
+    )
+    await backend.complete(
+        [{"role": "user", "content": "hi"}], temperature=0.0, max_tokens=None, timeout_s=30.0
+    )
+    assert "temperature" not in seen
+    assert seen["reasoning_effort"] == "none"
+    # Die übrigen Aufruf-Parameter bleiben unverändert.
+    assert seen["model"] == "anthropic/claude-sonnet-5"
+    assert seen["timeout"] == 30.0

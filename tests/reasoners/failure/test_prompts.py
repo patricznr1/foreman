@@ -2,7 +2,7 @@
 #  FOREMAN — tests/reasoners/failure/test_prompts.py
 #  Zweck: Regressionsschutz für den F-REC-System-Prompt. Der numerische Grounding-
 #         Post-Check (§13.3) verlangt EXAKTE Übereinstimmung mit den Quellzahlen;
-#         ein echtes Modell (claude-sonnet-4-5) rundet die hochpräzisen Quellwerte
+#         ein echtes Modell (claude-sonnet-5) rundet die hochpräzisen Quellwerte
 #         (451.328363 → „451,3") oder rechnet um (336 h → „14 Tage") und fällt damit
 #         fail-closed durch (422 — Empfehlung praktisch immer abgelehnt). Der Prompt
 #         MUSS deshalb GAR KEINE Ziffern verlangen (rein qualitativ). Dieser Test

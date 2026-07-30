@@ -54,14 +54,26 @@ class LLMSettings(BaseSettings):
     local_cost_per_1k_tokens: float = 0.0
 
     # --- Cloud-Backend (Anthropic-Fallback über LiteLLM) ---
-    cloud_model: str = "anthropic/claude-sonnet-4-5"
+    # Claude Sonnet 5. Die aktuelle Anthropic-Generation weicht im Aufruf-Vertrag
+    # von Sonnet 4.5 ab: Sampling-Parameter (temperature/top_p/top_k) werden mit
+    # HTTP 400 abgelehnt, und das Denken ist per Default an. Der Cloud-Pfad sendet
+    # deshalb KEINE temperature und schaltet das Denken explizit ab — gebaut in
+    # `backends.LiteLLMBackend` / `gateway.from_settings` (§13.2).
+    cloud_model: str = "anthropic/claude-sonnet-5"
     cloud_api_key: SecretStr | None = None
     # Kosten-Schätzung Cloud: getrennt für Eingabe/Ausgabe (USD je 1k Tokens).
+    # Eingetragen ist der Listenpreis ($3/$15 je Mio. Tokens); der Einführungspreis
+    # ($2/$10, bis 31.08.2026) bleibt bewusst draußen — die Schätzung überzeichnet
+    # lieber, als nach dessen Ablauf zu untertreiben. Sonnet 5 tokenisiert denselben
+    # Text feiner als Sonnet 4.5 (grob +30 %): die Sätze hier stimmen weiter, die
+    # Token-Zahlen pro Anfrage steigen.
     cloud_input_cost_per_1k: float = 0.003
     cloud_output_cost_per_1k: float = 0.015
 
     # --- Aufruf-Parameter ---
     request_timeout_s: float = 60.0
+    # Gilt nur für Backends, die Sampling-Parameter annehmen (lokal: Ollama/Qwen3).
+    # Der Cloud-Pfad sendet sie nicht — dort steuert allein der Prompt (§13.2).
     temperature: float = 0.0
     max_tokens: int | None = None
 

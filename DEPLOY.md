@@ -119,7 +119,7 @@ Warten, bis der DB-Service **läuft**.
    | Variable | Wert |
    | --- | --- |
    | `FOREMAN_LLM_PRIORITY` | `cloud_only` |
-   | `FOREMAN_LLM_CLOUD_MODEL` | `anthropic/claude-sonnet-4-5` |
+   | `FOREMAN_LLM_CLOUD_MODEL` | `anthropic/claude-sonnet-5` |
    | `FOREMAN_LLM_CLOUD_API_KEY` | `<dein Anthropic-API-Key>` |
 
    **Embeddings (F-SEM — in Etappe 1 optional/degradiert)**:

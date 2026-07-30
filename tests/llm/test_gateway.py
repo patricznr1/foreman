@@ -212,3 +212,72 @@ def test_from_settings_baut_gateway_mit_lokalem_backend() -> None:
     settings = LLMSettings(_env_file=None, priority="local_only")
     gateway = LiteLLMGateway.from_settings(settings)
     assert isinstance(gateway, LiteLLMGateway)
+
+
+# --- Anthropic-Aufruf-Vertrag des Cloud-Pfads (§13.2) ---
+#
+# Diese beiden Tests prüfen bewusst die ECHTEN LiteLLM-Aufruf-Parameter des echten
+# Cloud-Backends. Der Mock-Backend-Pfad der übrigen Gateway-Tests implementiert nur
+# das Backend-Protokoll und käme an `call_kwargs` nie vorbei — ein Modell-Wechsel,
+# der den Aufruf-Vertrag verletzt, würde dort also unbemerkt durchlaufen.
+
+
+class _CloudUsage:
+    prompt_tokens = 3
+    completion_tokens = 2
+
+
+class _CloudMessage:
+    content = "Antwort aus der Cloud"
+
+
+class _CloudChoice:
+    message = _CloudMessage()
+    finish_reason = "stop"
+
+
+class _CloudResponse:
+    choices = (_CloudChoice(),)
+    usage = _CloudUsage()
+    model = "anthropic/claude-sonnet-5"
+
+
+async def test_cloud_pfad_sendet_keine_sampling_parameter() -> None:
+    # Die aktuelle Anthropic-Generation lehnt temperature/top_p/top_k mit HTTP 400
+    # ab. Determinismus kommt auf diesem Pfad aus dem Prompt, nicht aus dem Sampling.
+    from foreman.llm.config import LLMSettings
+
+    seen: dict[str, object] = {}
+
+    async def capture_fn(**kwargs: object) -> _CloudResponse:
+        seen.update(kwargs)
+        return _CloudResponse()
+
+    settings = LLMSettings(_env_file=None, priority="cloud_only", cloud_api_key="sk-test")
+    gateway = LiteLLMGateway.from_settings(settings, cloud_completion_fn=capture_fn)
+    await gateway.complete(task=Task.EXPLANATION, system_prompt="s", user_prompt="u")
+
+    assert "temperature" not in seen
+    assert "top_p" not in seen
+    assert "top_k" not in seen
+    # Das konfigurierte Modell erreicht LiteLLM unverändert.
+    assert seen["model"] == settings.cloud_model
+
+
+async def test_cloud_pfad_schaltet_das_denken_ab() -> None:
+    # Denken ist bei diesen Modellen per Default an und teilt sich das Ausgabe-Budget
+    # mit dem Antworttext — ohne dieses Abschalten liefe FOREMAN in abgeschnittene
+    # Erklärungen (LiteLLM setzt für Anthropic ersatzweise max_tokens=4096).
+    from foreman.llm.config import LLMSettings
+
+    seen: dict[str, object] = {}
+
+    async def capture_fn(**kwargs: object) -> _CloudResponse:
+        seen.update(kwargs)
+        return _CloudResponse()
+
+    settings = LLMSettings(_env_file=None, priority="cloud_only", cloud_api_key="sk-test")
+    gateway = LiteLLMGateway.from_settings(settings, cloud_completion_fn=capture_fn)
+    await gateway.complete(task=Task.EXPLANATION, system_prompt="s", user_prompt="u")
+
+    assert seen["reasoning_effort"] == "none"
