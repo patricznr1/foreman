@@ -55,10 +55,12 @@ class LLMSettings(BaseSettings):
 
     # --- Cloud-Backend (Anthropic-Fallback über LiteLLM) ---
     # Claude Sonnet 5. Die aktuelle Anthropic-Generation weicht im Aufruf-Vertrag
-    # von Sonnet 4.5 ab: Sampling-Parameter (temperature/top_p/top_k) werden mit
-    # HTTP 400 abgelehnt, und das Denken ist per Default an. Der Cloud-Pfad sendet
-    # deshalb KEINE temperature und schaltet das Denken explizit ab — gebaut in
-    # `backends.LiteLLMBackend` / `gateway.from_settings` (§13.2).
+    # von Sonnet 4.5 ab: Sampling-Parameter (temperature/top_p/top_k) sind entfernt —
+    # ein Nicht-Default-Wert wird abgelehnt (nur temperature=1 gilt als Default), und
+    # zwar unabhängig davon, ob gedacht wird. Zusätzlich ist das Denken per Default
+    # an. Der Cloud-Pfad sendet deshalb KEINE temperature und schaltet das Denken
+    # explizit ab — gebaut in `backends.LiteLLMBackend` / `gateway.from_settings`
+    # (§13.2).
     cloud_model: str = "anthropic/claude-sonnet-5"
     cloud_api_key: SecretStr | None = None
     # Kosten-Schätzung Cloud: getrennt für Eingabe/Ausgabe (USD je 1k Tokens).

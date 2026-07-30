@@ -185,7 +185,7 @@ class LiteLLMGateway:
                     is_local=False,
                     api_key=api_key,
                     # Der Cloud-Pfad ist per Vertrag Anthropic (§13.2). Die aktuelle
-                    # Generation lehnt `temperature` mit HTTP 400 ab — Determinismus
+                    # Generation hat die Sampling-Parameter entfernt — Determinismus
                     # kommt dort aus dem Prompt, nicht aus dem Sampling.
                     supports_sampling_params=False,
                     # Denken explizit aus: es ist bei diesen Modellen per Default an
