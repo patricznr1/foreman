@@ -30,8 +30,12 @@ export interface UsePredictionResult {
 
 const JSON_HEADERS = { "content-type": "application/json" } as const;
 
-/** Fehlertext (Hallensprache) zu einem fehlgeschlagenen Schritt. */
-function failureText(status: number | null, what: "prediction" | "recommendation"): string {
+/** Fehlertext (Hallensprache) zu einem fehlgeschlagenen Schritt. Reine Funktion,
+ *  exportiert für den Test — die Statuscode-Abbildung ist Vertrag, kein Detail. */
+export function failureText(
+  status: number | null,
+  what: "prediction" | "recommendation",
+): string {
   if (status === 401) {
     return "Sitzung abgelaufen — bitte neu anmelden";
   }
@@ -41,6 +45,16 @@ function failureText(status: number | null, what: "prediction" | "recommendation
   if (what === "recommendation" && status === 422) {
     // Backend rejectet eine unbelegte/umdeutende Empfehlung (Invarianten I/II) — ehrlich benennen.
     return "Empfehlung konnte nicht belegbar erzeugt werden";
+  }
+  if (status === 429) {
+    return "Gerade viele Analysen unterwegs — bitte kurz warten";
+  }
+  if (status === 503) {
+    // Bekannter Betriebszustand, kein Defekt: die Vorhersage selbst ist rein
+    // rechnerisch (kein Modell-Aufruf) — nur die Empfehlung braucht das Gateway.
+    return what === "prediction"
+      ? "Vorhersage vorübergehend nicht abrufbar"
+      : "Empfehlung vorübergehend nicht verfügbar — die Vorhersage bleibt gültig";
   }
   return what === "prediction" ? "Vorhersage nicht abrufbar" : "Empfehlung nicht abrufbar";
 }

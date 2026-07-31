@@ -23,8 +23,9 @@ export interface UseChainReconstructionResult {
 
 const JSON_HEADERS = { "content-type": "application/json" } as const;
 
-/** Fehlertext (Hallensprache) zu einem fehlgeschlagenen Schritt. */
-function failureText(status: number | null): string {
+/** Fehlertext (Hallensprache) zu einem fehlgeschlagenen Schritt. Reine Funktion,
+ *  exportiert für den Test — die Statuscode-Abbildung ist Vertrag, kein Detail. */
+export function failureText(status: number | null): string {
   if (status === 401) {
     return "Sitzung abgelaufen — bitte neu anmelden";
   }
@@ -36,6 +37,13 @@ function failureText(status: number | null): string {
   }
   if (status === 422) {
     return "Ungültiger Anker oder Rückblick-Fenster";
+  }
+  if (status === 429) {
+    return "Gerade viele Analysen unterwegs — bitte kurz warten";
+  }
+  if (status === 503) {
+    // Bekannter Betriebszustand, kein Defekt: die übrigen Sichten tragen weiter.
+    return "Rekonstruktion vorübergehend nicht verfügbar — Alarme und Trends laufen weiter";
   }
   return "Kette nicht rekonstruierbar (Netz oder Backend)";
 }

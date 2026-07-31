@@ -9,8 +9,10 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from math import ceil
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Request, status
+from fastapi.responses import JSONResponse
 
 from foreman.api import auth, health
 from foreman.api import metrics as metrics_api
@@ -35,6 +37,7 @@ from foreman.api.routers import (
 from foreman.archive.router import router as archive_router
 from foreman.config import Settings, get_settings
 from foreman.db.session import dispose_engine, init_engine
+from foreman.llm.errors import BackendUnavailable, GatewayTimeout, RateLimited
 from foreman.logging_setup import ALERT, INFO, OK, get_logger, setup_logging
 from foreman.notes.router import router as notes_search_router
 from foreman.realtime import ws as dashboard_ws
@@ -100,6 +103,44 @@ async def _startup_substrate_smoke(settings: Settings) -> None:
         await client.aclose()
 
 
+# --- Fehlerabbildung des Modell-Gateways (§11.2/§13.2) ---
+# Ohne diese Abbildung endet ein BEKANNTER Betriebszustand — Backend nicht
+# erreichbar, Zeitüberschreitung, Kontingent erschöpft — als 500 und sieht damit
+# aus wie ein Absturz statt wie eine vorübergehende Einschränkung. Dieselbe Linie
+# wie die Archiv-Suche (§15.8): ehrlich degradieren statt hart scheitern.
+# `GatewayConfigError` bleibt bewusst ein 500 — eine Fehlkonfiguration IST ein
+# Serverfehler und soll nicht als vorübergehend beschönigt werden.
+_GATEWAY_UNAVAILABLE_DETAIL = (
+    "Die KI-Analyse ist vorübergehend nicht verfügbar. Alarme, Trends und Archiv "
+    "sind davon unberührt."
+)
+
+
+async def _gateway_unavailable_handler(_request: Request, exc: Exception) -> JSONResponse:
+    """`BackendUnavailable`/`GatewayTimeout` → 503. Details nur ins Log, nie in die
+    Antwort (keine Backend-Namen/Konfigurationszustände nach außen)."""
+    logger.warning("%s Modell-Gateway nicht verfügbar: %s", ALERT, exc)
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": _GATEWAY_UNAVAILABLE_DETAIL},
+    )
+
+
+async def _gateway_rate_limited_handler(_request: Request, exc: Exception) -> JSONResponse:
+    """`RateLimited` → 429 mit `Retry-After` (OWASP LLM10)."""
+    # Starlette ruft diesen Handler ausschließlich für den registrierten Typ auf —
+    # die Zusicherung engt den `Exception`-Parameter der Handler-Signatur ein,
+    # statt einen unerreichbaren Fallback vorzutäuschen.
+    assert isinstance(exc, RateLimited)
+    retry_after = max(1, ceil(exc.retry_after_s))
+    logger.warning("%s Modell-Gateway gedrosselt (retry_after=%ds)", ALERT, retry_after)
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"detail": "Zu viele KI-Analysen in kurzer Zeit. Bitte kurz warten."},
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Baut die FOREMAN-FastAPI-App."""
     cfg = settings or get_settings()
@@ -127,6 +168,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     # Auth-Middleware: alles außer /health, /auth/*, OpenAPI-Doku (§4).
     app.add_middleware(AuthMiddleware, settings=cfg)
+
+    # Gateway-Fehler tragen HTTP-Semantik statt 500 (siehe oben).
+    app.add_exception_handler(BackendUnavailable, _gateway_unavailable_handler)
+    app.add_exception_handler(GatewayTimeout, _gateway_unavailable_handler)
+    app.add_exception_handler(RateLimited, _gateway_rate_limited_handler)
 
     app.include_router(health.router)
     app.include_router(auth.router)
