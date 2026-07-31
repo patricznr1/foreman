@@ -15,14 +15,19 @@ from datetime import UTC, datetime
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from foreman.api.deps import get_llm_gateway
 from foreman.config import Settings
 from foreman.db.models import Alarm, Machine
-from foreman.llm.errors import BackendUnavailable, GatewayTimeout, RateLimited
+from foreman.llm.errors import (
+    BackendUnavailable,
+    GatewayConfigError,
+    GatewayTimeout,
+    RateLimited,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -119,6 +124,34 @@ async def test_rate_limited_maps_to_429_with_retry_after(
     assert response.status_code == 429, response.text
     # Aufgerundet und mindestens 1 — ein `Retry-After: 0` wäre eine Einladung zum Hämmern.
     assert response.headers["Retry-After"] == "3"
+
+
+async def test_config_error_stays_500(
+    app: FastAPI, auth_token: str, test_settings: Settings
+) -> None:
+    """Regressionsschutz für die bewusste Ausnahme: `GatewayConfigError` bleibt 500.
+
+    Eine Fehlkonfiguration IST ein Serverfehler und darf nicht als vorübergehende
+    Einschränkung beschönigt werden (§13.5). Würde jemand den Typ zu den
+    503-Handlern hinzufügen, schlägt dieser Test an.
+
+    Eigener Client mit `raise_app_exceptions=False` — sonst reicht der
+    ASGI-Transport die Ausnahme an den Test durch, statt die HTTP-Antwort zu
+    zeigen, die ein echter Aufrufer bekäme."""
+    anchor_id = await _seed_anchor(test_settings)
+    app.dependency_overrides[get_llm_gateway] = lambda: _FailingGateway(
+        GatewayConfigError("cloud_only ohne API-Key")
+    )
+
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as raw:
+        response = await raw.post(
+            _RECONSTRUCT,
+            json={"anchor_alarm_id": anchor_id},
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
+
+    assert response.status_code == 500, response.text
 
 
 async def test_retry_after_is_at_least_one_second(

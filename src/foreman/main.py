@@ -128,8 +128,11 @@ async def _gateway_unavailable_handler(_request: Request, exc: Exception) -> JSO
 
 async def _gateway_rate_limited_handler(_request: Request, exc: Exception) -> JSONResponse:
     """`RateLimited` → 429 mit `Retry-After` (OWASP LLM10)."""
-    retry_after = ceil(exc.retry_after_s) if isinstance(exc, RateLimited) else 1
-    retry_after = max(1, retry_after)
+    # Starlette ruft diesen Handler ausschließlich für den registrierten Typ auf —
+    # die Zusicherung engt den `Exception`-Parameter der Handler-Signatur ein,
+    # statt einen unerreichbaren Fallback vorzutäuschen.
+    assert isinstance(exc, RateLimited)
+    retry_after = max(1, ceil(exc.retry_after_s))
     logger.warning("%s Modell-Gateway gedrosselt (retry_after=%ds)", ALERT, retry_after)
     return JSONResponse(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,

@@ -540,7 +540,9 @@ Das Modell-Gateway unter `src/foreman/llm/` ist die **dünne Abstraktion**, auf 
 | --- | --- | --- |
 | `BackendUnavailable`, `GatewayTimeout` | **503** | „Die KI-Analyse ist vorübergehend nicht verfügbar. Alarme, Trends und Archiv sind davon unberührt." |
 | `RateLimited` | **429** | Hinweis + `Retry-After` (aufgerundet, mindestens 1 s) |
-| `GatewayConfigError` | **500** | bewusst unverändert — eine Fehlkonfiguration IST ein Serverfehler und wird nicht als vorübergehend beschönigt |
+| `GatewayConfigError` | **500** | bewusst unverändert — eine Fehlkonfiguration IST ein Serverfehler und wird nicht als vorübergehend beschönigt (Regressionstest hält das fest) |
+
+`GroundingViolation` steht bewusst **nicht** in der Tabelle: Sie erreicht die HTTP-Schicht nicht, weil der Empfehlungs-Pfad sie vorher fängt und als Invariante-I-Reject mit **422** beantwortet (§16.5, `recommendation.py`). Bei `grounding_strict=false` (Default, §13.4) entsteht sie ohnehin nicht; wird strikt geschaltet, ist der Empfehlungs-Pfad der einzige mit eigener Behandlung.
 
 Dieselbe Linie wie die Archiv-Suche (§15.8: ein Embedding-Ausfall erzeugt kein 503, der Volltext-Zweig trägt): **ehrlich degradieren statt hart scheitern.** Details (Backend-Namen, Konfigurationszustände) gehen ausschließlich ins Log, nie in die Antwort (§8). Das Frontend übersetzt beide Codes in Hallensprache und macht die Trennung sichtbar — bei einer Vorhersage bleibt der gerechnete Teil gültig, auch wenn die Empfehlung ausfällt (§21.10). Verifiziert: `tests/integration/test_gateway_error_mapping.py`, `frontend/lib/{event-chains,prediction}/failure-text.test.ts`.
 
