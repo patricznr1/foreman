@@ -8,6 +8,8 @@
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pytest
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
@@ -27,8 +29,14 @@ def _app(test_settings: Settings) -> object:
     return app
 
 
-def _register_login(client: TestClient, email: str, role: str) -> str:
-    client.post("/auth/register", json={"email": email, "password": _PW, "role": role})
+# Signatur der conftest-Fixture `ensure_user_sync` — legt den Nutzer über den
+# Produktions-Anlagepfad an. Es gibt keine Register-Route mehr (§4/§19), und diese
+# Tests fahren synchron über den TestClient, brauchen also die Sync-Variante.
+EnsureUser = Callable[[str, str], None]
+
+
+def _provision_login(client: TestClient, ensure_user: EnsureUser, email: str, role: str) -> str:
+    ensure_user(email, role)
     response = client.post("/auth/login", json={"email": email, "password": _PW})
     assert response.status_code == 200, response.text
     return str(response.json()["access_token"])
@@ -50,10 +58,10 @@ def test_ws_rejects_connection_without_token(test_settings: Settings, _migrated_
 
 
 def test_ws_manager_subscribe_machine_receives_snapshot(
-    test_settings: Settings, _migrated_db: None
+    test_settings: Settings, _migrated_db: None, ensure_user_sync: EnsureUser
 ) -> None:
     with TestClient(_app(test_settings)) as client:  # type: ignore[arg-type]
-        token = _register_login(client, "ws-mgr@x.de", "manager")
+        token = _provision_login(client, ensure_user_sync, "ws-mgr@x.de", "manager")
         auth = {"Authorization": f"Bearer {token}"}
         machine_id = _seed_machine(client, auth)
 
@@ -67,12 +75,12 @@ def test_ws_manager_subscribe_machine_receives_snapshot(
 
 
 def test_ws_worker_subscribe_unassigned_machine_is_forbidden(
-    test_settings: Settings, _migrated_db: None
+    test_settings: Settings, _migrated_db: None, ensure_user_sync: EnsureUser
 ) -> None:
     with TestClient(_app(test_settings)) as client:  # type: ignore[arg-type]
-        manager = _register_login(client, "ws-mgr2@x.de", "manager")
+        manager = _provision_login(client, ensure_user_sync, "ws-mgr2@x.de", "manager")
         machine_id = _seed_machine(client, {"Authorization": f"Bearer {manager}"})
-        worker = _register_login(client, "ws-wrk@x.de", "worker")
+        worker = _provision_login(client, ensure_user_sync, "ws-wrk@x.de", "worker")
 
         with client.websocket_connect(f"/api/v1/ws?token={worker}") as ws:
             ws.send_json({"action": "subscribe", "topic": machine_topic(machine_id)})
@@ -82,9 +90,11 @@ def test_ws_worker_subscribe_unassigned_machine_is_forbidden(
         assert message["reason"] == "forbidden"
 
 
-def test_ws_live_push_on_new_reading(test_settings: Settings, _migrated_db: None) -> None:
+def test_ws_live_push_on_new_reading(
+    test_settings: Settings, _migrated_db: None, ensure_user_sync: EnsureUser
+) -> None:
     with TestClient(_app(test_settings)) as client:  # type: ignore[arg-type]
-        token = _register_login(client, "ws-mgr3@x.de", "manager")
+        token = _provision_login(client, ensure_user_sync, "ws-mgr3@x.de", "manager")
         auth = {"Authorization": f"Bearer {token}"}
         line = client.post("/api/v1/lines", json={"label": "L"}, headers=auth).json()
         machine = client.post(
@@ -125,13 +135,13 @@ def test_ws_live_push_on_new_reading(test_settings: Settings, _migrated_db: None
 
 
 def test_ws_new_reading_refreshes_living_machine_card(
-    test_settings: Settings, _migrated_db: None
+    test_settings: Settings, _migrated_db: None, ensure_user_sync: EnsureUser
 ) -> None:
     # Akzeptanz der lebenden Karte: ein neues Reading lässt nicht nur das Trend-Thema,
     # sondern auch das machine:{id}-Thema (die ganze Karte) live nachrücken —
     # konsumentenseitige Fächerung über die NOTIFY-Anreicherung (dp → Maschine).
     with TestClient(_app(test_settings)) as client:  # type: ignore[arg-type]
-        token = _register_login(client, "ws-card-live@x.de", "manager")
+        token = _provision_login(client, ensure_user_sync, "ws-card-live@x.de", "manager")
         auth = {"Authorization": f"Bearer {token}"}
         line = client.post("/api/v1/lines", json={"label": "L"}, headers=auth).json()
         machine = client.post(

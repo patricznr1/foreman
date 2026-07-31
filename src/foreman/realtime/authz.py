@@ -21,13 +21,17 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from foreman.core.roles import Role
 from foreman.db.models import DataPoint, Machine, User
 from foreman.realtime.topics import parse_topic
 
-ROLE_WORKER = "worker"
-ROLE_SHIFT_LEAD = "shift_lead"
-ROLE_TECHNICIAN = "technician"
-ROLE_MANAGER = "manager"
+# Kanonische Quelle ist `core/roles.py`; die vier Namen bleiben als Aliase
+# bestehen, damit die vorhandenen Importstellen (audit, topology, Reasoner-Router)
+# unverändert weiterlaufen.
+ROLE_WORKER = Role.WORKER.value
+ROLE_SHIFT_LEAD = Role.SHIFT_LEAD.value
+ROLE_TECHNICIAN = Role.TECHNICIAN.value
+ROLE_MANAGER = Role.MANAGER.value
 
 # Rollen mit unbeschränktem Lese-Scope (Matrix 3.1).
 _UNRESTRICTED_ROLES = frozenset({ROLE_MANAGER, ROLE_TECHNICIAN})

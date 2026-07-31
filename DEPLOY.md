@@ -190,18 +190,22 @@ Alternativ ein einmaliges One-off im Railway-Dashboard mit demselben Befehl.
 
 ## 5. Demo-Nutzer anlegen + Durchklick
 
+Konten legt der Betreiber an — es gibt keinen HTTP-Pfad dafür (§4). Der Befehl
+läuft im Backend-Container (Railway: One-off im Dashboard oder `railway run`):
+
 ```bash
-# Manager-Konto registrieren (gegen die ÖFFENTLICHE Backend-Domain):
-curl -X POST https://<backend-domain>/auth/register \
-  -H "content-type: application/json" \
-  -d '{"email":"chef@foreman.de","password":"<starkes-passwort>","role":"manager"}'
+# Manager-Konto anlegen (Rolle: worker | shift_lead | technician | manager):
+python -m foreman.db.provisioning --email chef@foreman.de --role manager
 ```
 
-> Stolpersteine: `/auth/*` ist **top-level** gemountet (**nicht** `/api/v1/auth`).
+> Das Passwort wird interaktiv abgefragt. In nicht-interaktiven Umgebungen
+> (One-off-Job, CI) stattdessen `FOREMAN_SEED_PASSWORD` setzen — nie als
+> Kommandozeilen-Argument übergeben (Shell-Historie, Prozessliste).
 > `EmailStr` lehnt reservierte TLDs wie `.local` ab → eine echte TLD (`.de`) nutzen.
 
 Dann im Browser `https://<frontend-domain>/login` → Manager landet auf `/overview`
-(Cockpit). Andere Rollen (worker/shift_lead/technician) bei Bedarf zusätzlich registrieren.
+(Cockpit). Weitere Rollen (worker/shift_lead/technician) bei Bedarf mit demselben
+Befehl anlegen.
 
 ---
 

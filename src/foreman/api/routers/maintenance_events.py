@@ -4,6 +4,10 @@
 #  Architektur-Einordnung: HTTP-Schicht (Schicht 2).
 #  Datenschutz (§8): `performed_by` wird im Schreibpfad zu einem HMAC-Token
 #         über die user_id tokenisiert — nie Klartext.
+#  Identitätsbindung (§19): `performed_by` ist ein Nachweis-Feld (§8, auditiert
+#         re-identifizierbar). Default ist die Token-Identität; ein abweichender
+#         Wert ist der Nachtrag für eine dritte Person und den aufsichtsführenden
+#         Rollen vorbehalten.
 # ============================================================
 from __future__ import annotations
 
@@ -12,24 +16,40 @@ from collections.abc import Sequence
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import PseudonymizerDep, SessionDep
+from foreman.api.deps import CurrentUser, PseudonymizerDep, SessionDep
+from foreman.core.roles import Role
 from foreman.db.models import MaintenanceEvent
 from foreman.schemas.resources import MaintenanceEventCreate, MaintenanceEventRead
 
 router = APIRouter(prefix="/maintenance_events", tags=["maintenance_events"])
 
+# Rollen, die einen Wartungsnachweis für eine dritte Person eintragen dürfen
+# (Rollenmatrix 3.1). Ein `worker` trägt ausschließlich für sich selbst ein.
+_DELEGATING_ROLES = frozenset({Role.SHIFT_LEAD, Role.TECHNICIAN, Role.MANAGER})
+
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=MaintenanceEventRead)
 async def create_maintenance_event(
-    body: MaintenanceEventCreate, session: SessionDep, pseudo: PseudonymizerDep
+    body: MaintenanceEventCreate,
+    current_user: CurrentUser,
+    session: SessionDep,
+    pseudo: PseudonymizerDep,
 ) -> MaintenanceEvent:
     data = body.model_dump()
     if data.get("performed_at") is None:
         data.pop("performed_at", None)  # Server-Default greift
-    performed_by = data.pop("performed_by", None)
+    own_id = str(current_user.id)
+    # Leer/weggelassen → der eingeloggte Nutzer. Nur ein ABWEICHENDER Wert ist ein
+    # Nachtrag für eine dritte Person und damit rollenbeschränkt.
+    performed_by = data.pop("performed_by", None) or own_id
+    if performed_by != own_id and current_user.role not in _DELEGATING_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Deine Rolle darf Wartungen nur für die eigene Person eintragen",
+        )
     obj = MaintenanceEvent(
         **data,
-        performed_by=pseudo.tokenize_worker(performed_by) if performed_by else None,
+        performed_by=pseudo.tokenize_worker(performed_by),
     )
     session.add(obj)
     await session.flush()

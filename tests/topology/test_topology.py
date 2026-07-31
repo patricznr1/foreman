@@ -9,6 +9,7 @@
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -207,29 +208,29 @@ async def test_vision_category_marked_and_never_connected(db_session: AsyncSessi
 
 # --- HTTP-Ebene: Rollen-Split ---
 
-_PW = "supersecret1"
 
-
-async def _auth(client: AsyncClient, email: str, role: str) -> dict[str, str]:
-    await client.post("/auth/register", json={"email": email, "password": _PW, "role": role})
-    response = await client.post("/auth/login", json={"email": email, "password": _PW})
-    assert response.status_code == 200, response.text
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+# Signatur der conftest-Fixture `auth_headers_for` (legt den Nutzer über den
+# Produktions-Anlagepfad an — es gibt keine Register-Route mehr, §4/§19).
+AuthHeaders = Callable[[str, str], Awaitable[dict[str, str]]]
 
 
 async def test_topology_requires_auth(client: AsyncClient) -> None:
     assert (await client.get("/api/v1/topology")).status_code == 401
 
 
-async def test_topology_forbidden_for_worker_and_technician(client: AsyncClient) -> None:
-    wrk = await _auth(client, "topo-wrk@x.de", "worker")
-    tec = await _auth(client, "topo-tec@x.de", "technician")
+async def test_topology_forbidden_for_worker_and_technician(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    wrk = await auth_headers_for("topo-wrk@x.de", "worker")
+    tec = await auth_headers_for("topo-tec@x.de", "technician")
     assert (await client.get("/api/v1/topology", headers=wrk)).status_code == 403
     assert (await client.get("/api/v1/topology", headers=tec)).status_code == 403
 
 
-async def test_topology_full_for_manager(client: AsyncClient) -> None:
-    auth = await _auth(client, "topo-mgr@x.de", "manager")
+async def test_topology_full_for_manager(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("topo-mgr@x.de", "manager")
     response = await client.get("/api/v1/topology", headers=auth)
     assert response.status_code == 200, response.text
     body = response.json()
@@ -237,8 +238,10 @@ async def test_topology_full_for_manager(client: AsyncClient) -> None:
     assert len(body["vision"]) >= 1
 
 
-async def test_topology_status_only_for_shift_lead(client: AsyncClient) -> None:
-    auth = await _auth(client, "topo-shl@x.de", "shift_lead")
+async def test_topology_status_only_for_shift_lead(
+    client: AsyncClient, auth_headers_for: AuthHeaders
+) -> None:
+    auth = await auth_headers_for("topo-shl@x.de", "shift_lead")
     response = await client.get("/api/v1/topology", headers=auth)
     assert response.status_code == 200, response.text
     body = response.json()

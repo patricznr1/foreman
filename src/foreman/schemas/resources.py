@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # Geschlossene Wertebereiche (GROUND_TRUTH §5, ohne „…"-Erweiterung).
 DataPointKind = Literal["analog", "digital", "setpoint", "counter"]
@@ -21,6 +21,13 @@ DataPointKind = Literal["analog", "digital", "setpoint", "counter"]
 # werden (GROUND_TRUTH §5). Kein DB-CHECK-Constraint vorhanden → keine Migration.
 DataPointSource = Literal["opcua", "modbus", "mqtt", "s7", "simulation"]
 AlarmSeverity = Literal["info", "warning", "alarm", "critical", "emergency"]
+
+# Längengrenze des Schichtnotiz-Freitextes. Eine reale Notiz liegt weit darunter;
+# die Grenze hält den Volltext-Index (`text_tsv`, GENERATED) und den Embedding-Pfad
+# von unbegrenzten Eingaben frei — und damit die Archiv-Trefferliste davor, von
+# einem einzelnen vollgestopften Datensatz belegt zu werden (§15). Liegt zugleich
+# weit unter der harten `tsvector`-Grenze von 1 MB.
+WORKER_NOTE_TEXT_MAX = 4000
 
 
 class _ReadBase(BaseModel):
@@ -168,6 +175,9 @@ class MaintenanceEventCreate(BaseModel):
     performed_at: datetime | None = None
     description: str | None = None
     # Input: user_id der ausführenden Person → wird zu HMAC-Token tokenisiert.
+    # Leer/weggelassen = der eingeloggte Nutzer (Regelfall). Ein ABWEICHENDER Wert
+    # ist der Nachtrag für eine dritte Person und nur `shift_lead`/`technician`/
+    # `manager` erlaubt — ein `worker` bekommt 403 (§8 Nachweisfeld, §19).
     performed_by: str | None = Field(default=None, max_length=128)
 
 
@@ -184,11 +194,28 @@ class MaintenanceEventRead(_ReadBase):
 
 # --- worker_notes ---
 class WorkerNoteCreate(BaseModel):
-    text: str = Field(min_length=1)
+    text: str = Field(min_length=1, max_length=WORKER_NOTE_TEXT_MAX)
     machine_id: int | None = None
     shift: str | None = Field(default=None, max_length=16)
-    # Input: user_id des Verfassers → wird zu HMAC-Token tokenisiert.
-    author: str | None = Field(default=None, max_length=128)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _author_is_server_side(cls, data: object) -> object:
+        """Weist ein client-seitiges `author` ab (422), statt es still zu verwerfen.
+
+        Der Verfasser kommt aus dem Token (§19). Ein 201 mit ignoriertem Feld würde
+        dem Client eine Wirkung vorspiegeln, die die Eingabe nicht hatte.
+
+        Bewusst ein gezieltes Verbot statt `extra="forbid"`: die übrigen unbekannten
+        Felder verhalten sich unverändert (Pydantic-Default `ignore`). Das Frontend
+        sendet `classification` als markierten Anschlusspunkt mit (§21.16) — dieser
+        Vertrag bleibt so, wie er dokumentiert ist.
+        """
+        if isinstance(data, dict) and "author" in data:
+            raise ValueError(
+                "`author` wird serverseitig aus dem Token gesetzt und darf nicht mitgesendet werden"
+            )
+        return data
 
 
 class WorkerNoteRead(_ReadBase):

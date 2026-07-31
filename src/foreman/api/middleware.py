@@ -1,9 +1,11 @@
 # ============================================================
 #  FOREMAN — api/middleware.py
 #  Zweck: Auth-Middleware — schützt alle Routen außer den offenen (§4).
-#  Architektur-Einordnung: HTTP-Schicht (Schicht 2). Offen: /health,
-#         /auth/login, /auth/register, OpenAPI-Doku. Alles andere braucht ein
-#         gültiges Bearer-JWT, sonst 401.
+#  Architektur-Einordnung: HTTP-Schicht (Schicht 2). Offen: /health, /metrics,
+#         /auth/login, OpenAPI-Doku. Alles andere braucht ein gültiges
+#         Bearer-JWT, sonst 401.
+#  Offene Schreib-Route ist ausschließlich /auth/login: FOREMAN kennt keine
+#         Selbstregistrierung, Konten legt der Betreiber per CLI an (§4).
 #  Umsetzung als REINE ASGI-Middleware (kein BaseHTTPMiddleware): wickelt die
 #  nachgelagerte App inline ab — performanter und ohne Child-Task-Eigenheiten.
 # ============================================================
@@ -22,7 +24,6 @@ OPEN_PATHS: frozenset[str] = frozenset(
         "/health",
         "/metrics",  # Prometheus-Scraper (kein JWT) — §11.2, ab F4
         "/auth/login",
-        "/auth/register",
         "/",
         "/docs",
         "/redoc",

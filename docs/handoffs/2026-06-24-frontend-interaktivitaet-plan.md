@@ -1,5 +1,11 @@
 # FOREMAN Frontend-Interaktivität — Implementierungs-Plan
 
+> **Historisches Planungsdokument, Stand 24.06.2026 — nicht der geltende Stand.**
+> Verbindlich ist ausschließlich `GROUND_TRUTH.md`. Überholt ist insbesondere die
+> hier beschriebene Backend-Lage: die Schreib-/Trigger-Routen erzwingen die
+> Rollen-Matrix inzwischen serverseitig (`require_roles`, §21.18), und die
+> Kontenanlage läuft über die Betreiber-CLI (§4).
+
 > **Für agentische Worker:** Ausführung task-by-task via `superpowers:subagent-driven-development` oder `superpowers:executing-plans`. Steps mit Checkbox-Syntax.
 
 **Goal:** FOREMANs Sichten durchgängig explorierbar machen — klickbare Alarmzeilen, Alarm-Volltext in der Maschine, und das `manager`-Login zum Werksleiter-/Vorführ-Vollzugriffsprofil (liest C/D/E/H voll, fragt, entscheidet) aufwerten.

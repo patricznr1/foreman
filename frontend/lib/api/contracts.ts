@@ -419,10 +419,10 @@ export interface ArchiveHit {
 /**
  * Request-Body für POST /api/v1/worker_notes (eine Notiz erfassen — Sektion J).
  * Gegen den REALEN Vertrag (api/routers/worker_notes.py:WorkerNoteCreate):
- * `text` ist Pflicht (min_length 1); `machine_id`/`shift`/`author` sind optional.
- * Serverseitig: `text` wird VOR dem Insert NER-maskiert, `author` (eine user_id)
- * zu einem HMAC-Token pseudonymisiert (§8) — das Frontend sendet beides im Klartext
- * NUR transient (Offline-Puffer wird nach erfolgreichem Senden gelöscht).
+ * `text` ist Pflicht (min_length 1, max_length 4000); `machine_id`/`shift` sind optional.
+ * Serverseitig: `text` wird VOR dem Insert NER-maskiert; der Verfasser (`author`)
+ * wird aus dem Token abgeleitet und als HMAC-Token abgelegt (§8/§19) — er ist KEIN
+ * Eingabefeld: ein mitgesendetes `author` lehnt der Endpoint mit 422 ab.
  * `created_at` setzt der Server (tz-aware, nicht vom Client anpassbar).
  *
  * `classification`: ADDITIV mitgesendet (Werker-Kategorie). Das heutige
@@ -436,7 +436,6 @@ export interface WorkerNoteCreate {
   text: string;
   machine_id?: number | null;
   shift?: string | null;
-  author?: string | null;
   classification?: string | null;
 }
 

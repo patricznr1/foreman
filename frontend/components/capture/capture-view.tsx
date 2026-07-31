@@ -37,7 +37,6 @@ export function CaptureView({ user, initialMachineId }: CaptureViewProps) {
 
       {roleView.canCapture ? (
         <CaptureForm
-          user={user}
           roleView={roleView}
           machinesState={machinesState}
           initialMachineId={initialMachineId}

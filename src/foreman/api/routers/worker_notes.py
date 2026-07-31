@@ -6,6 +6,9 @@
 #         (1) `author` → HMAC-Token über die user_id (nie Klartext),
 #         (2) `text` → NER-Maskierung (Personennamen → [PERSON]) VOR dem Insert.
 #         Restrisiko bleibt; der Freitext wird nie als anonym deklariert.
+#  Identitätsbindung (§19): der Verfasser kommt aus dem Token, nicht aus dem Body
+#         — die Zuschreibung folgt der Authentifizierung, nicht den Nutzdaten.
+#         Unbekannte Felder ergeben 422 (`extra="forbid"`), statt still zu verfallen.
 #  Embedding (F-SEM, §15): der NER-maskierte Text wird beim Insert eingebettet
 #         (best-effort) — Backend-Ausfall → embedding=NULL, Notiz wird trotzdem
 #         geschrieben; der Backfill holt es nach. Blockiert den Insert NIE.
@@ -17,7 +20,13 @@ from collections.abc import Sequence
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import EmbeddingProviderDep, PseudonymizerDep, RedactorDep, SessionDep
+from foreman.api.deps import (
+    CurrentUser,
+    EmbeddingProviderDep,
+    PseudonymizerDep,
+    RedactorDep,
+    SessionDep,
+)
 from foreman.db.models import WorkerNote
 from foreman.embeddings import embed_best_effort
 from foreman.schemas.resources import WorkerNoteCreate, WorkerNoteRead
@@ -28,20 +37,21 @@ router = APIRouter(prefix="/worker_notes", tags=["worker_notes"])
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=WorkerNoteRead)
 async def create_worker_note(
     body: WorkerNoteCreate,
+    current_user: CurrentUser,
     session: SessionDep,
     pseudo: PseudonymizerDep,
     redactor: RedactorDep,
     provider: EmbeddingProviderDep,
 ) -> WorkerNote:
     data = body.model_dump()
-    author = data.pop("author", None)
     raw_text = data.pop("text")
-    # 1) Freitext VOR dem Insert maskieren. 2) Autor tokenisieren.
+    # 1) Freitext VOR dem Insert maskieren. 2) Autor aus dem TOKEN tokenisieren —
+    # der Verfasser ist immer der eingeloggte Nutzer, nie ein Body-Feld.
     masked_text = redactor.redact_person_names(raw_text)
     obj = WorkerNote(
         **data,
         text=masked_text,
-        author=pseudo.tokenize_worker(author) if author else None,
+        author=pseudo.tokenize_worker(str(current_user.id)),
     )
     # 3) Embedding beim Insert (best-effort, §15): den MASKIERTEN Text einbetten.
     # `if vectors:` (nicht `is not None`) — eine leere Liste würde sonst bei vectors[0]
