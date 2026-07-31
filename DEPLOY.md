@@ -207,6 +207,27 @@ Dann im Browser `https://<frontend-domain>/login` → Manager landet auf `/overv
 (Cockpit). Weitere Rollen (worker/shift_lead/technician) bei Bedarf mit demselben
 Befehl anlegen.
 
+### Die öffentliche Demo-Instanz
+
+Für die Showcase-Instanz ist ein Manager-Konto **bewusst geteilt** — die Zugangsdaten
+stehen im [README](README.md#try-it-live) und sind kein Versehen. Manager ist dort die
+richtige Wahl, weil dieses Profil laut §21.18 das Vorführprofil ist: Es erreicht jede
+Sicht und darf die Reasoner anstoßen, ohne dass ein Besucher das Konto wechseln muss.
+
+Wer FOREMAN so betreibt, sollte zwei Dinge bedenken:
+
+- **Verbrauch drosseln.** Die Reasoner rufen ein Sprachmodell, und der Token-Bucket
+  wirkt **pro Backend, nicht pro Nutzer** — ein einzelner Besucher kann also das
+  Kontingent für alle aufbrauchen. Für öffentlichen Betrieb die Backend-Variable
+  `FOREMAN_LLM_RATE_LIMIT_REFILL_PER_S` deutlich senken (z. B. `0.05` ≈ 3 Analysen/Minute)
+  und `FOREMAN_LLM_MAX_TOKENS` setzen. Zusätzlich gehört ein Ausgabelimit beim
+  Modellanbieter selbst gesetzt — das ist die einzige Bremse, die auch dann greift,
+  wenn in der Anwendung etwas schiefgeht.
+- **Eingaben sind öffentlich.** Alles, was Besucher erfassen, steht allen anderen zur
+  Verfügung und bleibt in der Datenbank. Die NER-Maskierung der Notiz-Freitexte (§8) ist
+  ein Sicherheitsnetz, keine Garantie — der Hinweis „keine echten Personendaten eingeben"
+  gehört sichtbar an den Zugang.
+
 ---
 
 ## 6. Verifikations-Checkliste

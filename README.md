@@ -38,6 +38,41 @@ The name says it all: a *foreman* is the experienced supervisor who has known th
 
 ---
 
+## Try it live
+
+A public demo instance is available — no registration, no request. The credentials below are
+deliberately shared so anyone can look around.
+
+| | |
+| --- | --- |
+| **URL** | **[frontend-production-169a.up.railway.app](https://frontend-production-169a.up.railway.app)** |
+| **E-mail** | `chef@foreman.de` |
+| **Password** | `ForemanDemo2026!` |
+
+The login is the *plant manager* profile: it sees the whole fleet and may trigger the reasoners,
+so every capability is reachable from a single account.
+
+**Where to start:** the fleet cockpit gives you the overall picture; a machine card shows live
+sensor values with an honest status per data point; the archive searches notes, maintenance
+records and alarms together. The reasoners are on demand — reconstructing an event chain or
+requesting a recommendation is a deliberate click, never automatic.
+
+**A few honest notes before you click:**
+
+- **The interface is German.** FOREMAN speaks the language of the shop floor it was designed for.
+- **The data is simulated.** No real plant is connected. Every prediction carries a visible
+  simulation caveat — that is a deliberate design rule, not a placeholder.
+- **It is a shared instance.** Anything you enter is visible to everyone else trying the demo,
+  and it stays in the database. **Please do not enter real personal data.** Worker notes are
+  run through name redaction before they are stored, but that is a safety net, not a guarantee.
+- **AI analyses are rate-limited.** The reasoners call a language model, and the demo runs on a
+  capped budget. If an analysis is temporarily unavailable, the rest of the system keeps working
+  — alarms, trends and the archive are unaffected.
+- **Nothing here switches anything.** FOREMAN explains, it does not actuate. There is no path
+  from this interface to a machine.
+
+---
+
 ## Architecture
 
 Three cleanly decoupled layers. Industry delivers the data, FOREMAN reasons, operators act.
