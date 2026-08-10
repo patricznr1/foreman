@@ -121,6 +121,14 @@ Warten, bis der DB-Service **läuft**.
    | `FOREMAN_LLM_PRIORITY` | `cloud_only` |
    | `FOREMAN_LLM_CLOUD_MODEL` | `anthropic/claude-sonnet-5` |
    | `FOREMAN_LLM_CLOUD_API_KEY` | `<dein Anthropic-API-Key>` |
+   | `FOREMAN_LLM_RATE_LIMIT_REFILL_PER_S` | Default `1.0` — **für öffentlich erreichbare Instanzen deutlich senken**, siehe §5 |
+   | `FOREMAN_LLM_RATE_LIMIT_CAPACITY` | Default `60` (Startguthaben des Token-Buckets) |
+   | `FOREMAN_LLM_MAX_TOKENS` | `4096` — deckelt die Antwortlänge je Aufruf. Das ist der Wert, den LiteLLM für Anthropic ohnehin einsetzt, wenn nichts gesetzt ist; explizit gesetzt ist er sichtbar und steuerbar. **Nicht kleiner wählen, ohne es zu messen** — eine abgeschnittene Erklärung ist schlechter als eine teurere |
+
+   > **Der Verbrauch wird hier gedeckelt, nicht erst im Betrieb.** Der Token-Bucket wirkt
+   > **pro Backend, nicht pro Nutzer** — bei einer öffentlich erreichbaren Instanz kann ein
+   > einzelner Besucher damit das Kontingent für alle aufbrauchen. Wer so betreibt, setzt
+   > die Drossel **jetzt** und nicht nachträglich (§5).
 
    **Embeddings (F-SEM — in Etappe 1 optional/degradiert)**:
    | Variable | Wert |
@@ -206,6 +214,30 @@ python -m foreman.db.provisioning --email chef@foreman.de --role manager
 Dann im Browser `https://<frontend-domain>/login` → Manager landet auf `/overview`
 (Cockpit). Weitere Rollen (worker/shift_lead/technician) bei Bedarf mit demselben
 Befehl anlegen.
+
+### Die öffentliche Demo-Instanz
+
+Für die Showcase-Instanz ist ein Manager-Konto **bewusst geteilt** — die Zugangsdaten
+stehen im [README](README.md#try-it-live) und sind kein Versehen. Manager ist dort die
+richtige Wahl, weil dieses Profil laut §21.18 das Vorführprofil ist: Es erreicht jede
+Sicht und darf die Reasoner anstoßen, ohne dass ein Besucher das Konto wechseln muss.
+
+Wer FOREMAN so betreibt, sollte zwei Dinge bedenken:
+
+- **Verbrauch drosseln.** Die Reasoner rufen ein Sprachmodell, und der Token-Bucket
+  wirkt **pro Backend, nicht pro Nutzer** — ein einzelner Besucher kann also das
+  Kontingent für alle aufbrauchen. Für öffentlichen Betrieb die Backend-Variable
+  `FOREMAN_LLM_RATE_LIMIT_REFILL_PER_S` deutlich senken (z. B. `0.05` ≈ 3 Analysen/Minute)
+  und `FOREMAN_LLM_MAX_TOKENS` explizit auf `4096` setzen — den Wert, der ohnehin gilt,
+  aber dann sichtbar. Die Drossel gehört an die **Frequenz**, nicht an die Antwortlänge:
+  kürzere Antworten sparen wenig und beschädigen die Erklärqualität.
+  Zusätzlich gehört ein Ausgabelimit beim
+  Modellanbieter selbst gesetzt — das ist die einzige Bremse, die auch dann greift,
+  wenn in der Anwendung etwas schiefgeht.
+- **Eingaben sind öffentlich.** Alles, was Besucher erfassen, steht allen anderen zur
+  Verfügung und bleibt in der Datenbank. Die NER-Maskierung der Notiz-Freitexte (§8) ist
+  ein Sicherheitsnetz, keine Garantie — der Hinweis „keine echten Personendaten eingeben"
+  gehört sichtbar an den Zugang.
 
 ---
 
