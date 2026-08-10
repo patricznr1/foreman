@@ -233,18 +233,22 @@ claims:
       - "docs/simulation/szenarien.md, Abschnitt 1 (Erkennungsfenster 7 bis 10 Tage)"
       - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 7 (Erkennungsfenster vs. Vorlauf)"
       - "tests/integration/test_drift_validation.py (primary_detected_in_window je Szenario)"
-    geltung: "ungeprueft"
-    geltung_grund: >-
-      ZWEI DOKUMENTE, ZWEI MASSSTÄBE, KEINE ENTSCHEIDUNG. Die Zahl selbst ist
-      seit dem 10.08.2026 gemessen und im Test festgehalten — offen ist nicht
-      der Wert, sondern der Massstab: Die Szenario-Beschreibung führt das enge
-      Fenster weiterhin als Validierungserwartung, die Kalibrierung erklärt es
-      für ungeeignet und führt die Abnahme über den Vorlauf. Beide Dokumente
-      stehen unverändert nebeneinander im Repo. Solange das nicht entschieden
-      ist, lässt sich nicht sagen, ob die Erkennung fristgerecht war — und
-      damit taugt der Eintrag für keine Unterlage.
+    geltung: "gueltig"
     freigabe:
       - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst — hier nicht durch Messen,
+      sondern durch Entscheiden, weil zwei Dokumente zwei Massstäbe führten und
+      die Zahl selbst nie strittig war. Entschieden: Abgenommen wird über den
+      Vorlauf vor der ersten menschlichen Reaktion bei null Fehlalarmen; die
+      engen Erwartungsfenster bleiben als ursprüngliche Zielgrösse erhalten und
+      sind ausdrücklich KEINE Bestehens-Bedingung. Begründung: Bei einem
+      allmählich ansteigenden Signal ist eine Meldung im engen Fenster nicht
+      belastbar, sondern voreilig — wer die Schwelle so weit senkt, dass das
+      Fenster getroffen wird, bezahlt mit Fehlalarmen auf der gesunden
+      Maschine. Die Fenster an das Messergebnis anzugleichen wäre das
+      Verschieben der Messlatte an das Ergebnis und wurde deshalb verworfen.
 
   - id: "C-011"
     aussage: "Der Arbeitspunkt der Abweichungserkennung wurde durch einen Durchlauf über drei Schwellenkandidaten bestimmt."

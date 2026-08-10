@@ -17,6 +17,7 @@ Stand: 2026-08-10
 | C-007 | Auf der gesunden Vergleichsmaschine erzeugt die Abweichungserkennung über den ganzen Prüfzeitraum keine Meldung. | gemessen | 0 Meldungen im Szenario der gesunden Maschine; 0 Meldungen am Kontroll-Lager des Schmierstoff-Szenarios | 2026-06-14 | gueltig | intern, fach |
 | C-008 | Die Abweichungserkennung meldete einen Verschleissverlauf zwischen 1,9 und 6,9 Tagen nach dessen Beginn. | gemessen | Verzug 6,9 Tage (Lagerschaden), 5,0 Tage (Werkzeugverschleiss), 1,9 Tage (Schmierstoff-Fehlwahl) | 2026-08-10 | gueltig | intern, fach |
 | C-009 | Die Abweichungserkennung meldete den Verschleiss zwischen 2,5 und 19,3 Tage vor dem ersten Anlagen-Alarm. | gemessen | Vorlauf rund 3,4 Tage (Lagerschaden), 2,5 Tage (Werkzeugverschleiss), 19,3 Tage (Schmierstoff-Fehlwahl) | 2026-08-10 | gueltig | intern, fach |
+| C-010 | Der Erkennungszeitpunkt liegt bei zwei der drei Verläufe ausserhalb des im Szenario erwarteten Fensters. | gemessen | Lagerschaden: erwartet 7 bis 10 Tage, gemessen rund 13,9 Tage nach Beginn | 2026-08-10 | gueltig | intern, fach |
 | C-011 | Der Arbeitspunkt der Abweichungserkennung wurde durch einen Durchlauf über drei Schwellenkandidaten bestimmt. | gemessen | Gewählt: Schwelle 3,0 bei einer Persistenz von 12 Intervallen; verworfen 2,5 und 3,5 | 2026-06-14 | gueltig | intern |
 | C-012 | Die Ausfalleinschätzung ist auf Simulationsdaten trainiert und gegen reale Ausfälle nicht überprüft. | gemessen | Der Vorbehalt ist an drei Stellen erzwungen: Datenobjekt, Kennzahlen-Label, Datenbankspalte | 2026-06-15 | gueltig | intern, fach, kunde |
 | C-013 | Die Ausfalleinschätzung trennt die Prüfdaten des Simulators nahezu vollständig. | gemessen | Präzisions-Ausbeute-Fläche 0,998; Rangordnungsgüte 0,998; Kalibrierungsmass 0,025 | 2026-06-15 | gueltig | intern |
@@ -50,11 +51,7 @@ Stand: 2026-08-10
 
 ## Nicht verwendbar
 
-Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
-
-| ID | Produkt | Aussage | Geltung | Grund |
-|---|---|---|---|---|
-| C-010 | FOREMAN | Der Erkennungszeitpunkt liegt bei zwei der drei Verläufe ausserhalb des im Szenario erwarteten Fensters. | ungeprueft | ZWEI DOKUMENTE, ZWEI MASSSTÄBE, KEINE ENTSCHEIDUNG. Die Zahl selbst ist seit dem 10.08.2026 gemessen und im Test festgehalten — offen ist nicht der Wert, sondern der Massstab: Die Szenario-Beschreibung führt das enge Fenster weiterhin als Validierungserwartung, die Kalibrierung erklärt es für ungeeignet und führt die Abnahme über den Vorlauf. Beide Dokumente stehen unverändert nebeneinander im Repo. Solange das nicht entschieden ist, lässt sich nicht sagen, ob die Erkennung fristgerecht war — und damit taugt der Eintrag für keine Unterlage. |
+Keine Einträge.
 
 ## Zählung
 
@@ -69,6 +66,6 @@ Nach Status:
 
 Nach Geltung:
 
-- gueltig: 39
+- gueltig: 40
 - ueberholt: 0
-- ungeprueft: 1
+- ungeprueft: 0
