@@ -100,16 +100,26 @@ Mit dieser Baseline wurde die Relevanz-Schwelle bei fester Persistenz (12 Interv
 
 Zustandsspezifische Baseline, z = 3,0, Persistenz 12:
 
-| Szenario | erkannt | Verzug nach t\* | Vorlauf vor Alarm | Fehlalarme |
+| Szenario | erkannt | Verzug nach t\* | Vorlauf vor der ersten menschlichen Reaktion | Fehlalarme |
 |---|---|---|---|---|
-| `bearing_drift` | ja (Vibration) | 6,9 d | ≈ 3,4 d | 0 |
-| `tool_wear` | ja (Drehmoment/Strom) | 5,0 d | ≈ 2,5 d | 0 |
-| `lubrication_correlation` | ja (Lager B) | 1,9 d | ≈ 19,3 d | 0; Lager A still |
+| `bearing_drift` | ja (Vibration) | 6,9 d | 2,7 d | 0 |
+| `tool_wear` | ja (Drehmoment/Strom) | 5,0 d | 1,3 d | 0 |
+| `lubrication_correlation` | ja (Lager B) | 1,9 d | 16,0 d | 0; Lager A still |
 | `healthy_baseline` | — (korrekt) | — | — | **0** |
+
+> **Korrektur der Vorlauf-Spalte am 10.08.2026.** Bis dahin standen hier 3,4 / 2,5 / 19,3 d. Diese Werte maßen den Abstand zum ersten **Alarm** — die Kennzahl meint aber den Vorsprung vor der ersten **menschlichen Reaktion**, und in allen drei Szenarien fällt einem Werker vorher etwas auf (mahlendes Geräusch, bläuliche Späne, „wärmer und lauter"). Der Anker steht jetzt als `ground_truth.human_reaction_offset` im Szenario und wird nicht mehr aus den Alarmen abgeleitet.
+>
+> Warum deklariert statt abgeleitet: In `lubrication_correlation` dokumentiert die **früheste** Notiz (2 d 10 h) die Nachschmierung mit dem Ersatzfett — sie ist die Ursache, keine Reaktion auf ein Symptom. Wer schlicht die früheste Notiz nähme, bekäme für dieses Szenario einen **negativen** Vorlauf, obwohl die Erkennung tatsächlich sehr früh war. Beide naheliegenden Ableitungen — „frühester Alarm" und „früheste Notiz" — sind still falsch: Die Zahl sieht plausibel aus und misst etwas anderes, als sie behauptet.
 
 Alle drei Verschleiß-Szenarien werden mit nützlichem Vorlauf **vor** dem ersten Alarm bzw. der Werker-Notiz erkannt. Die gesunde Maschine löst über volle Schicht-Saisonalität und Wochenend-Stillstand hinweg **keine** Meldung aus.
 
 Die Tests, die dieses Ergebnis absichern, liegen in `tests/integration/test_drift_validation.py`.
+
+> **Nachgemessen am 10.08.2026 — Verzug unverändert, Vorlauf korrigiert.** Anlass: Der Detektionskern wurde nach dieser Kalibrierung dreimal berührt (`aeab6d7` Eigenprofil-Overlay, `34f952b` Park-Backfill, `e24da81` Maschinenkarte), ohne dass ein Wiederholungslauf belegt war. Der **Verzug** ist auf dem heutigen `main` unverändert reproduziert (6,9 / 5,0 / 1,9 d), ebenso 0 Fehlalarme und das stille Kontroll-Lager. Der **Vorlauf** ist nach unten korrigiert, weil sein Bezugspunkt falsch gewählt war — siehe den Kasten unter der Ergebnistabelle.
+>
+> **Bis dahin hat die Suite diese Zahlen NICHT bewacht** — sie prüfte ausschließlich, *dass* mit Vorlauf erkannt wird, und wäre bei verdoppeltem Verzug grün geblieben. Seit dem 10.08.2026 fordert `test_drift_validation.py` die publizierten Werte in der Auflösung ein, in der sie hier stehen (eine Nachkommastelle in Tagen). Ändert sich der Pfad so, dass sich eine dieser Stellen verschiebt, wird die Suite rot und dieses Dokument gehört nachgezogen.
+>
+> **Gegenprobe zur Wirksamkeit:** Mit `DEFAULT_MIN_EFFECT_SIZE = 3.5` statt `3.0` schlagen genau die beiden Tests an, deren Werte sich laut §5 ändern müssen — `tool_wear` auf 6,1 d und `lubrication_correlation` auf 11,0 d, beides die Zahlen aus der Sweep-Tabelle. `bearing_drift` bleibt bei 6,9 d und grün, ebenfalls wie in §5. Die Tabelle in §5 ist damit auf dem heutigen Stand zeilenweise reproduzierbar.
 
 ---
 

@@ -1,0 +1,78 @@
+# Projekteigene Ergaenzung der Sperrlisten. ADDITIV — der Startbestand des
+# Werkzeugs bleibt erhalten, diese Eintraege kommen hinzu.
+#
+# interne_bezeichner greifen nur, wenn eine Aussage ueber "intern" hinaus
+# freigegeben ist. Sie sollen verhindern, dass Haus- und Bibliotheksvokabular
+# in eine Unterlage wandert, die jemand ausserhalb des Projekts liest.
+
+interne_bezeichner:
+  # Bausteinkuerzel aus der Spezifikation — ausserhalb des Repos bedeutungslos
+  - "F-PRED"
+  - "F-REC"
+  - "F-SEM"
+  - "F-LLM"
+  - "FCSM"
+  - "HITL"
+  - "RRF"
+  - "CAGG"
+  - "ISA-18.2"
+
+  # Bibliotheken und Dienste hinter den Abstraktionen
+  - "litellm"
+  - "ollama"
+  - "qwen3"
+  - "lightgbm"
+  - "shap"
+  - "timescaledb"
+  - "river"
+  - "presidio"
+  - "spacy"
+  - "fastmcp"
+  - "asyncua"
+  - "paho-mqtt"
+  - "pymodbus"
+  - "bge-m3"
+  - "three.js"
+  - "webgl"
+  - "next.js"
+  - "vitest"
+  - "playwright"
+  - "mypy"
+  - "ruff"
+  - "pytest"
+
+  # Tabellen- und Feldnamen — Innenleben, kein Aussenvokabular
+  - "readings_1m"
+  - "semantic_events"
+  - "worker_notes"
+  - "maintenance_events"
+  - "drift_profiles"
+  - "failure_predictions"
+  - "failure_recommendations"
+  - "reasoner_explanations"
+  - "audit_logs"
+  - "production_runs"
+  - "data_points"
+  - "validation_status"
+  - "data_regime"
+  - "ground_truth"
+
+  # Hidden-Term aus GROUND_TRUTH Abschnitt 8: nach aussen heisst der externe
+  # Dienst "Gedaechtnis-Substrat", nie anders.
+  - "nexus"
+
+superlative:
+  # Formulierungen, die diesem Produkt eine Sicherheit zuschreiben, die es
+  # auf Simulationsdaten nicht haben kann.
+  - "verhindert ausfälle"
+  - "verhindert jeden ausfall"
+  - "erkennt jeden ausfall"
+  - "sagt ausfälle vorher"
+  - "vorhersagegenau"
+  - "selbstlernend"
+  - "vollautomatisch"
+  - "autonom"
+  - "in echtzeit"
+  - "ausfallsicher"
+  - "fehlerfrei"
+  - "validiert"

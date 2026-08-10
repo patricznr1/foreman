@@ -31,8 +31,26 @@ def test_load_truth_liest_primary_und_anchor() -> None:
     assert truth.primary is not None
     assert truth.primary.data_point == "vib_rms"
     assert truth.primary.t_star == scenario.start_utc + timedelta(days=7)
-    # narrativer Anker = erster Alarm (bearing: 17d08h).
-    assert truth.anchor == scenario.start_utc + timedelta(days=17, hours=8)
+    # Anker = die DEKLARIERTE erste menschliche Reaktion (Notiz "mahlendes
+    # Geräusch", 16d14h) — NICHT der erste Alarm (17d08h). Bis 10.08.2026 wurde
+    # der Anker aus den Alarmen abgeleitet; das schrieb dem Reasoner einen
+    # Vorlauf gut, den er gegenüber dem Menschen nicht hatte.
+    assert truth.anchor == scenario.start_utc + timedelta(days=16, hours=14)
+    assert truth.anchor is not None
+    assert truth.anchor < scenario.start_utc + timedelta(days=17, hours=8)
+
+
+def test_narrative_anchor_faellt_ohne_deklaration_auf_ersten_alarm_zurueck() -> None:
+    # Aufbau-Kontrolle zum Test darüber: Ohne deklarierten Anker greift der
+    # Alarm-Fallback. Ohne diesen Zwilling wäre nicht unterscheidbar, ob der
+    # Test oben den deklarierten Wert liest oder ob eine Ableitung zufällig
+    # dasselbe Ergebnis liefert. `minimal_bearing_drift` trägt bewusst keinen
+    # `human_reaction_offset`, aber einen Alarm.
+    scenario = load_scenario_by_name("minimal_bearing_drift")
+    assert scenario.ground_truth is not None
+    assert "human_reaction_offset" not in (scenario.ground_truth.model_extra or {})
+    erster_alarm = min(event_time(scenario, alarm.offset) for alarm in scenario.alarms)
+    assert narrative_anchor(scenario) == erster_alarm
 
 
 def test_load_truth_healthy_ist_driftfrei() -> None:

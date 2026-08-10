@@ -55,7 +55,26 @@ class ScenarioTruth:
 
 
 def narrative_anchor(scenario: Scenario) -> datetime | None:
-    """Früheste Alarm-Zeit eines Szenarios (Vorlauf-Deadline), oder None."""
+    """Erste menschliche Reaktion auf ein Symptom (Vorlauf-Deadline), oder None.
+
+    Vorrangig aus `ground_truth.human_reaction_offset` — der Anker wird
+    DEKLARIERT, nicht abgeleitet. Grund: Eine Ableitung müsste entscheiden, welche
+    Werker-Notiz eine Reaktion auf ein Symptom ist und welche nicht. In
+    `lubrication_correlation` dokumentiert die früheste Notiz die Nachschmierung,
+    die die Ursache IST — als Anker genommen ergäbe sie einen negativen Vorlauf
+    für eine Erkennung, die tatsächlich früh war. Umgekehrt ist der früheste
+    Alarm regelmässig SPÄTER als die erste Wahrnehmung im Betrieb; wer ihn nimmt,
+    schreibt sich einen Vorlauf gut, den es gegenüber dem Menschen nicht gab.
+    Beides sind stille Fehler — die Zahl sieht plausibel aus und misst etwas
+    anderes, als sie behauptet.
+
+    Fallback auf den frühesten Alarm, wenn kein Anker deklariert ist: besser eine
+    benannte, konservativ zu lesende Näherung als gar keine Vorlauf-Aussage.
+    """
+    gt = scenario.ground_truth
+    erklaert = (gt.model_extra or {}).get("human_reaction_offset") if gt is not None else None
+    if isinstance(erklaert, str):
+        return event_time(scenario, erklaert)
     if not scenario.alarms:
         return None
     return min(event_time(scenario, alarm.offset) for alarm in scenario.alarms)
@@ -118,6 +137,11 @@ class DriftMetrics:
     primary_detected_in_window: bool  # im engen ground_truth-Fenster (optimistisch)
     detected_with_useful_lead: bool  # nach t* UND vor dem narrativen Anker (Frühwarn-Nutzen)
     detection_delay: timedelta | None  # t* -> erste Primär-Meldung
+    # Erste Primär-Meldung -> narrativer Anker. Die zweite Kennzahl aus Research §7:
+    # der Verzug sagt, wie spät nach dem Beginn gemeldet wurde, der Vorlauf, wie früh
+    # vor der ersten menschlichen Reaktion. Negativ, wenn nach dem Anker gemeldet
+    # wurde — das ist eine Aussage und kein Fehler, deshalb kein None.
+    lead_time: timedelta | None
     false_alarms: int  # Meldungen außerhalb der Erwartung
     control_alarms: int  # Meldungen am Kontroll-Signal (müssen 0 sein)
 
@@ -142,6 +166,7 @@ def compute_metrics(
             primary_detected_in_window=False,
             detected_with_useful_lead=False,
             detection_delay=None,
+            lead_time=None,
             false_alarms=len(findings),
             control_alarms=control_alarms,
         )
@@ -157,12 +182,15 @@ def compute_metrics(
     in_window = False
     useful_lead = False
     delay: timedelta | None = None
+    lead: timedelta | None = None
     if primary_hits:
         first = primary_hits[0]
         delay = first.detected_at - truth.primary.t_star
         in_window = truth.primary.window_start <= first.detected_at <= truth.primary.window_end
         before_anchor = truth.anchor is None or first.detected_at < truth.anchor
         useful_lead = first.detected_at >= truth.primary.t_star and before_anchor
+        if truth.anchor is not None:
+            lead = truth.anchor - first.detected_at
 
     # Fehlalarm: Meldungen am Kontroll-Signal + Primär-Meldungen vor t*.
     early_primary = sum(1 for f in primary_hits if f.detected_at < truth.primary.t_star)
@@ -171,6 +199,7 @@ def compute_metrics(
         primary_detected_in_window=in_window,
         detected_with_useful_lead=useful_lead,
         detection_delay=delay,
+        lead_time=lead,
         false_alarms=control_alarms + early_primary,
         control_alarms=control_alarms,
     )

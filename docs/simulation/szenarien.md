@@ -85,14 +85,24 @@ Alle vier Dateien sind YAML-valide und gegen die Enums aus GROUND_TRUTH §5 gepr
 
 ## 5. Zusammenfassung der F4-Validierungsmatrix
 
-| Szenario | Primärsignal | Drift-Typ | t\* | Erwartetes Erkennungsfenster | Fehlalarm-Erwartung |
-|---|---|---|---|---|---|
-| `bearing_drift` | `vib_rms` (mm/s) | ramp (progressiv) | 7 d | 7–10 d | 0 |
-| `tool_wear` | `spindle_torque` (Nm) | ramp (progressiv) | 2 d | 2–4 d | 0 |
-| `lubrication_correlation` | `vib_rms_b` (mm/s) | ramp (progressiv) | 3 d | 3–7 d | 0 (Lager A = Kontrolle, keine Meldung) |
-| `healthy_baseline` | — | kein Drift | — | keine Detektion | 0 (jede Meldung = Fehlschlag) |
+| Szenario | Primärsignal | Drift-Typ | t\* | Ursprünglich erwartetes Fenster | Tatsächlich gemeldet | Erste menschliche Reaktion | Vorlauf | Fehlalarme |
+|---|---|---|---|---|---|---|---|---|
+| `bearing_drift` | `vib_rms` (mm/s) | ramp (progressiv) | 7 d | 7–10 d | 13,9 d (außerhalb) | 16 d 14 h (Notiz „mahlendes Geräusch") | 2,7 d | 0 |
+| `tool_wear` | `spindle_torque` (Nm) | ramp (progressiv) | 2 d | 2–4 d | 7,0 d (außerhalb) | 8 d 09 h (Notiz „Späne bläulich") | 1,3 d | 0 |
+| `lubrication_correlation` | `vib_rms_b` (mm/s) | ramp (progressiv) | 3 d | 3–7 d | 4,9 d (innerhalb) | 20 d 22 h (Notiz „wärmer und lauter") | 16,0 d | 0 (Lager A = Kontrolle, still) |
+| `healthy_baseline` | — | kein Drift | — | keine Detektion | keine Meldung | — | — | 0 (jede Meldung = Fehlschlag) |
+
+Der Bezugspunkt der Vorlauf-Spalte steht je Szenario als `ground_truth.human_reaction_offset` — **deklariert, nicht abgeleitet**. Der frühere Wert (Abstand zum ersten *Alarm*) fiel um 0,7 bis 3,3 Tage zu günstig aus, weil in allen drei Szenarien ein Werker vor dem Alarm etwas bemerkt. Umgekehrt wäre „die früheste Notiz" ebenso falsch: In `lubrication_correlation` dokumentiert die erste Notiz die Nachschmierung, die die **Ursache** ist — als Anker genommen ergäbe sie einen negativen Vorlauf für eine sehr frühe Erkennung.
 
 Gemeinsamer roter Faden: In allen drei Positiv-Szenarien erkennt der Drift-Reasoner die Veränderung **Tage vor** der menschlichen Wahrnehmung bzw. dem klassischen Schwellwert-Alarm — das ist der nachzuweisende Frühwarn-Mehrwert. `healthy_baseline` belegt, dass dieser Mehrwert nicht durch Fehlalarme erkauft wird.
+
+### Der Abnahmemaßstab ist der Vorlauf, nicht das enge Fenster (entschieden 10.08.2026)
+
+Die Ist-Spalten oben zeigen, dass zwei der drei Verläufe **außerhalb** des ursprünglich erwarteten Fensters gemeldet werden — und trotzdem alle drei mit nützlichem Vorlauf. Das ist kein Mangel des Reasoners, sondern eine zu optimistisch gesetzte Erwartung: Bei einer **progressiven** Ramp ist das Signal in den ersten Tagen nach t\* noch im Rauschen, und eine Meldung dort wäre nicht belastbar, sondern voreilig. Wer die Schwelle so weit senkt, dass das enge Fenster getroffen wird, kauft das mit Fehlalarmen auf der gesunden Maschine — der Schwellen-Durchlauf in [`../research/drift-reasoner-kalibrierung.md`](../research/drift-reasoner-kalibrierung.md) §5 zeigt genau das.
+
+**Damit gilt:** Abgenommen wird über den **Vorlauf vor dem narrativen Anker** (erster Alarm bzw. erste Werker-Notiz) bei **null Fehlalarmen**. Die `expected_detection_window`-Angaben in den `ground_truth`-Blöcken bleiben als **ursprüngliche Zielgröße** erhalten — sie sind eine ehrliche Aufzeichnung dessen, was beim Entwurf erwartet wurde, und an realen Maschinendaten zu schärfen. Sie sind **keine** Bestehens-Bedingung.
+
+Beide Größen sind in `tests/integration/test_drift_validation.py` festgehalten: die Vorlauf- und Verzugswerte als Erwartungswert, und je Szenario, ob das enge Fenster getroffen wird. Verschiebt sich eines davon, wird die Suite rot und diese Tabelle gehört nachgezogen.
 
 ---
 
@@ -102,7 +112,7 @@ Gemeinsamer roter Faden: In allen drei Positiv-Szenarien erkennt der Drift-Reaso
 - **`measurement_type: vibration`** in GROUND_TRUTH §5 ergänzen (derzeit `signal`/`mm/s`-Workaround).
 - **Werker-Notiz-Stil:** Notiz-Texte am Stilguide (`werker-notizen-stilguide.md`) ausrichten; aktuell knappe, plausible deutsche Schichtbericht-Notizen.
 - **Parametrierung an Realdaten:** Magnituden und Zeithorizonte sind fachlich plausibel, aber synthetisch; sobald reale SPS-/Sensordaten vorliegen, gegen sie kalibrieren.
-- **Erkennungsfenster vs. Detektor-Parameter:** Die Fenster (z. B. 7–10 d) sind mit den Warm-up-/`delta`-Startwerten aus dem Drift-Doc (§6) konsistent zu halten; bei Tuning beidseitig nachziehen.
+- ~~**Erkennungsfenster vs. Detektor-Parameter:** Die Fenster (z. B. 7–10 d) sind mit den Warm-up-/`delta`-Startwerten aus dem Drift-Doc (§6) konsistent zu halten; bei Tuning beidseitig nachziehen.~~ **Erledigt 10.08.2026:** Die Fenster werden *nicht* an die Detektor-Parameter angeglichen. Sie bleiben als ursprüngliche Zielgröße stehen, die Abnahme läuft über den Vorlauf (§5). Ein Nachziehen der Fenster an das Messergebnis wäre das Verschieben der Messlatte an das Ergebnis.
 
 ---
 

@@ -1,0 +1,905 @@
+# Aussagen-Register. Was hier nicht steht, geht nicht nach draussen.
+schema_version: 1
+projekt: "foreman"
+produkt: "FOREMAN"
+stand: "2026-08-10"
+claims:
+  # ──────────────────────────────────────────────────────────────────────
+  # Bauzustand der Plattform
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-001"
+    aussage: "Von den vier vorgesehenen Auswerte-Bausteinen der Plattform sind drei gebaut, der vierte ist noch offen."
+    status: "gemessen"
+    wert: "3 von 4 — Ereignisketten, Abweichungserkennung und Ausfalleinschätzung gebaut; Wartungszyklen offen"
+    bedingung: >-
+      Ausgezählt auf dem Stand von main (Commit 5f90439, 31.07.2026) gegen die
+      Verzeichnisse unter src/foreman/reasoners/. Der vierte Baustein
+      (Wartungszyklen) ist ausdrücklich datenabhängig zurückgestellt — er
+      braucht eine echte Wartungshistorie, die über den vorhandenen Datenkanal
+      nicht verfügbar ist.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 2 (Die vier Reasoner, Bau-Status)"
+      - "CLEANUP_REPORT.md, Teil 2 (Konsistenz-Audit gegen den Code)"
+      - "Commit 5f90439"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Bis Juni 2026 sprachen mehrere Dokumente von fünf Bausteinen. Der fünfte
+      (Belastungs-Simulation) wurde nie gebaut und ist bewusst gestrichen: die
+      dafür nötigen Grössen liegen ausserhalb dessen, was die Plattform
+      beobachtet. Die Korrektur ist in CLEANUP_REPORT.md Teil 1 dokumentiert.
+
+  - id: "C-002"
+    aussage: "Die Plattform stellt Drittsystemen elf nur lesende Abfragen über eine offene Schnittstelle bereit."
+    status: "gemessen"
+    wert: "11 Werkzeuge, alle als nur lesend gekennzeichnet"
+    bedingung: >-
+      Ausgezählt in der Werkzeug-Registrierung src/foreman/mcp/server.py auf dem
+      Stand von main (5f90439). Alle elf werden mit derselben Kennzeichnung
+      registriert (nur lesend, nicht verändernd, geschlossene Welt); ein Test
+      fordert diese Kennzeichnung für jedes registrierte Werkzeug ein.
+    datum: "2026-07-31"
+    fundstelle:
+      - "src/foreman/mcp/server.py, _TOOL_SPECS"
+      - "tests/mcp/security/test_no_actuation.py"
+      - "GROUND_TRUTH.md, Abschnitt 17"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-003"
+    aussage: "Acht der zehn geplanten Bedienoberflächen-Bereiche sind gebaut, zwei stehen als gekennzeichnete Platzhalter."
+    status: "gemessen"
+    wert: "8 von 10 gebaut; Wartung und Belastung sind Platzhalter"
+    bedingung: >-
+      Ausgezählt gegen die Reifegrad-Tabelle in GROUND_TRUTH.md Abschnitt 21.6
+      auf dem Stand von main (5f90439). Die beiden Platzhalter sind im
+      Oberflächen-Code sichtbar deaktiviert, nicht versteckt.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 21.6"
+      - "frontend/components/insights/insights-hub.tsx"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-004"
+    aussage: "Die Datenhaltung umfasst sechzehn Tabellen, aufgebaut über dreizehn aufeinander aufbauende Schemaschritte."
+    status: "gemessen"
+    wert: "16 Tabellen, 13 Migrationsschritte (0001 bis 0013)"
+    bedingung: >-
+      Ausgezählt auf dem Stand von main (5f90439): Tabellennamen in
+      src/foreman/db/models.py, Migrationsdateien unter migrations/versions/.
+    datum: "2026-07-31"
+    fundstelle:
+      - "src/foreman/db/models.py"
+      - "migrations/versions/"
+      - "GROUND_TRUTH.md, Abschnitt 5"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-005"
+    aussage: "Die Anbindung an echte Anlagen-Protokolle ist noch nicht gebaut; Datenquelle ist bislang ausschliesslich ein Simulator."
+    status: "gemessen"
+    wert: "0 von 3 Protokoll-Anbindungen installiert; ein Simulations-Adapter vorhanden"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439): die drei in der
+      Aussenkommunikation genannten Protokoll-Bibliotheken stehen weder in
+      pyproject.toml noch in uv.lock, und src/foreman/adapters/ enthält
+      ausschliesslich das Unterverzeichnis simulation.
+    datum: "2026-07-31"
+    fundstelle:
+      - "pyproject.toml (kein Eintrag für asyncua, paho-mqtt, pymodbus)"
+      - "src/foreman/adapters/"
+      - "GROUND_TRUTH.md, Abschnitt 3 (Zielbild, noch NICHT installiert)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Bis zum 10.08.2026 ein Widerspruch in der Aussendarstellung: Die
+      Tech-Stack-Tabelle der README listete die drei Protokolle ohne den
+      Zielbild-Vorbehalt, den GROUND_TRUTH Abschnitt 3 ausdrücklich setzt — wer
+      nur die README las, nahm eine gebaute Anlagenanbindung an. Am 10.08.2026
+      um denselben Vorbehalt ergänzt; beide Stellen sagen jetzt dasselbe.
+      Unverändert gilt: keine Unterlage darf eine bestehende
+      Protokoll-Anbindung behaupten.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Abweichungserkennung (Reasoner Nr. 2)
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-006"
+    aussage: "Die Abweichungserkennung meldet alle drei Verschleiss-Verläufe des Prüfsatzes vor dem ersten Anlagen-Alarm."
+    status: "gemessen"
+    wert: "3 von 3 Verläufen mit nutzbarem Vorlauf erkannt"
+    bedingung: >-
+      Prüfsatz sind die vier Szenarien des Simulators (Lagerschaden,
+      Werkzeugverschleiss, Schmierstoff-Fehlwahl, gesunde Maschine). Bewertet
+      wird gegen den mitgelieferten Wahrheitsblock jedes Szenarios. Die
+      Zusicherung ist qualitativ — erkannt vor dem Alarm, nicht ein bestimmter
+      Zeitabstand — und wird bei jedem Testlauf gegen eine echte Datenbank
+      erneut eingefordert.
+    datum: "2026-06-14"
+    fundstelle:
+      - "tests/integration/test_drift_validation.py"
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Die Aussage trägt, weil ein laufender Test sie einfordert. Die konkreten
+      Zeitabstände dieser Messung tun das NICHT — sie stehen als C-008 und C-009
+      getrennt und ungeprüft im Register.
+
+  - id: "C-007"
+    aussage: "Auf der gesunden Vergleichsmaschine erzeugt die Abweichungserkennung über den ganzen Prüfzeitraum keine Meldung."
+    status: "gemessen"
+    wert: "0 Meldungen im Szenario der gesunden Maschine; 0 Meldungen am Kontroll-Lager des Schmierstoff-Szenarios"
+    bedingung: >-
+      Gemessen über das Szenario mit voller Schicht-Saisonalität und
+      Wochenend-Stillstand, ohne eingebauten Verschleiss. Zusätzlich bleibt im
+      Schmierstoff-Szenario das korrekt geschmierte Kontroll-Lager still,
+      während das geschädigte gemeldet wird. Beide Zusicherungen werden bei
+      jedem Testlauf gegen eine echte Datenbank erneut eingefordert.
+    datum: "2026-06-14"
+    fundstelle:
+      - "tests/integration/test_drift_validation.py"
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-008"
+    aussage: "Die Abweichungserkennung meldete einen Verschleissverlauf zwischen 1,9 und 6,9 Tagen nach dessen Beginn."
+    status: "gemessen"
+    wert: "Verzug 6,9 Tage (Lagerschaden), 5,0 Tage (Werkzeugverschleiss), 1,9 Tage (Schmierstoff-Fehlwahl)"
+    bedingung: >-
+      Kalibrierungsmessung vom 14.06.2026 auf den vier Simulations-Szenarien,
+      mit dem festgelegten Arbeitspunkt und zustandsspezifischer
+      Vergleichsgrundlage; am 10.08.2026 auf dem heutigen Stand von main
+      unverändert reproduziert. Gemessen wird der Abstand zwischen dem
+      eingebauten Beginn der Abweichung und der ersten als relevant
+      eingestuften Meldung.
+    datum: "2026-08-10"
+    fundstelle:
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6 (inkl. Nachmessungs-Vermerk 10.08.2026)"
+      - "tests/integration/test_drift_validation.py (VEROEFFENTLICHTE_KENNZAHLEN)"
+      - "Commit b086831"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst. Der Zweifel war berechtigt: Der
+      Detektionskern wurde nach der Kalibrierung dreimal berührt (aeab6d7,
+      34f952b, e24da81), und die Suite prüfte bis dahin nur, DASS mit Vorlauf
+      erkannt wird — sie wäre bei verdoppeltem Verzug grün geblieben. Der
+      Wiederholungslauf ergab identische Werte. Die Zahlen sind jetzt im Test
+      als Erwartungswerte hinterlegt, in der Auflösung, in der sie publiziert
+      sind. Gegenprobe gefahren: mit einer Relevanzschwelle von 3,5 statt 3,0
+      schlagen genau die beiden Tests an, deren Werte sich laut Sweep-Tabelle
+      ändern müssen (6,1 und 11,0 Tage) — der Test hängt am gemessenen Pfad,
+      nicht an sich selbst.
+
+  - id: "C-009"
+    aussage: "Die Abweichungserkennung meldete den Verschleiss 1,3 bis 16,0 Tage vor der ersten menschlichen Reaktion."
+    status: "gemessen"
+    wert: "Vorlauf 2,7 Tage (Lagerschaden), 1,3 Tage (Werkzeugverschleiss), 16,0 Tage (Schmierstoff-Fehlwahl)"
+    bedingung: >-
+      Gleiche Messung wie C-008, am 10.08.2026 auf dem heutigen Stand gefahren.
+      Bezugspunkt ist die erste im Szenario hinterlegte Reaktion eines Menschen
+      auf ein Symptom — ein vom Szenario-Autor gesetzter Zeitpunkt, keine
+      Beobachtung an einer realen Anlage. Er ist je Szenario ausdrücklich
+      deklariert und wird nicht aus Alarmen oder Notizen abgeleitet.
+    datum: "2026-08-10"
+    fundstelle:
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6 (inkl. Nachmessungs-Vermerk 10.08.2026)"
+      - "tests/integration/test_drift_validation.py (VEROEFFENTLICHTE_KENNZAHLEN)"
+      - "docs/simulation/szenarien.md, Abschnitte 1 bis 4"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst und im selben Zug NACH UNTEN
+      korrigiert. Der zuvor geführte Vorlauf (3,4 / 2,5 / 19,3 Tage) maß den
+      Abstand zum ersten ALARM, während die Kennzahl den Vorsprung vor der
+      ersten menschlichen Reaktion meint — und in allen drei Szenarien fällt
+      einem Werker vorher etwas auf. Ein Prüfer hat das am fertigen Vorschlag
+      gefunden, nicht die eigene Messung. Die naheliegende Gegenkorrektur wäre
+      ebenso falsch gewesen: Nähme man schlicht die früheste Notiz, ergäbe die
+      Schmierstoff-Fehlwahl einen NEGATIVEN Vorlauf, weil dort die erste Notiz
+      die Nachschmierung dokumentiert, die die Ursache ist. Der Anker ist
+      deshalb je Szenario deklariert statt abgeleitet und im Test festgehalten.
+
+  - id: "C-010"
+    aussage: "Der Erkennungszeitpunkt liegt bei zwei der drei Verläufe ausserhalb des im Szenario erwarteten Fensters."
+    status: "gemessen"
+    wert: "Lagerschaden: erwartet 7 bis 10 Tage, gemessen rund 13,9 Tage nach Beginn"
+    bedingung: >-
+      Am 10.08.2026 direkt gemessen, nicht mehr nur aus zwei Dokumenten
+      abgeleitet: Der Reasoner meldet je Szenario, ob die Erkennung im engen
+      Erwartungsfenster lag. Ergebnis 1 von 3 — der Schmierstoff-Verlauf trifft
+      das Fenster, Lagerschaden und Werkzeugverschleiss nicht. Ursache laut
+      Kalibrierung: bei einem allmählich ansteigenden Signal liegt die
+      Abweichung im erwarteten Fenster noch im Rauschen.
+    datum: "2026-08-10"
+    fundstelle:
+      - "docs/simulation/szenarien.md, Abschnitt 1 (Erkennungsfenster 7 bis 10 Tage)"
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 7 (Erkennungsfenster vs. Vorlauf)"
+      - "tests/integration/test_drift_validation.py (primary_detected_in_window je Szenario)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst — hier nicht durch Messen,
+      sondern durch Entscheiden, weil zwei Dokumente zwei Massstäbe führten und
+      die Zahl selbst nie strittig war. Entschieden: Abgenommen wird über den
+      Vorlauf vor der ersten menschlichen Reaktion bei null Fehlalarmen; die
+      engen Erwartungsfenster bleiben als ursprüngliche Zielgrösse erhalten und
+      sind ausdrücklich KEINE Bestehens-Bedingung. Begründung: Bei einem
+      allmählich ansteigenden Signal ist eine Meldung im engen Fenster nicht
+      belastbar, sondern voreilig — wer die Schwelle so weit senkt, dass das
+      Fenster getroffen wird, bezahlt mit Fehlalarmen auf der gesunden
+      Maschine. Die Fenster an das Messergebnis anzugleichen wäre das
+      Verschieben der Messlatte an das Ergebnis und wurde deshalb verworfen.
+
+  - id: "C-011"
+    aussage: "Der Arbeitspunkt der Abweichungserkennung wurde durch einen Durchlauf über drei Schwellenkandidaten bestimmt."
+    status: "gemessen"
+    wert: "Gewählt: Schwelle 3,0 bei einer Persistenz von 12 Intervallen; verworfen 2,5 und 3,5"
+    bedingung: >-
+      Durchlauf vom 14.06.2026 über die vier Simulations-Szenarien bei fester
+      Persistenz. Die niedrigere Schwelle meldete das gesunde Kontroll-Lager
+      fälschlich, die höhere verzögerte einen Verlauf von 1,9 auf 11,0 Tage.
+      Die Magnituden der Szenarien sind fachlich begründet, aber synthetisch.
+    datum: "2026-06-14"
+    fundstelle:
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 5"
+      - "src/foreman/reasoners/drift/relevance.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Die Kalibrierung benennt den Wert selbst als Startwert, der an realen
+      Maschinendaten nachzuziehen ist. Zwei weitere dokumentierte Grenzen:
+      eine reine Streuungsänderung ohne Niveauverschiebung wird bauartbedingt
+      schwach erkannt, und der Zustandsschlüssel ist die Tagesstunde — bei
+      abweichenden Schichtmodellen ist er anzupassen.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Ausfalleinschätzung (Reasoner Nr. 3)
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-012"
+    aussage: "Die Ausfalleinschätzung ist auf Simulationsdaten trainiert und gegen reale Ausfälle nicht überprüft."
+    status: "gemessen"
+    wert: "Der Vorbehalt ist an drei Stellen erzwungen: Datenobjekt, Kennzahlen-Label, Datenbankspalte"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Das Datenobjekt trägt den
+      Validierungsstand als Pflichtfeld ohne Vorbelegung mit genau einem
+      erlaubten Wert; es gibt keinen Konstruktionsweg ohne ihn. Alle Kennzahlen
+      des Bausteins tragen das Datenregime als Pflicht-Etikett, und die
+      Speicherung führt beide als eigene Spalten.
+    datum: "2026-06-15"
+    fundstelle:
+      - "docs/models/failure_prediction_model_card.md, Abschnitte 6, 7 und 9"
+      - "GROUND_TRUTH.md, Abschnitt 16"
+      - "Commit 1330f12"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+    bemerkung: >-
+      Dieser Eintrag ist die Bedingung jeder Aussage über die
+      Ausfalleinschätzung. Der Grund ist strukturell und nicht durch Zuwarten
+      behebbar: aus dem vorhandenen Industriekanal kommen Steuerungsprogramme,
+      keine Betriebsaufzeichnungen — eine Ausfallhistorie entsteht darüber
+      grundsätzlich nicht.
+
+  - id: "C-013"
+    aussage: "Die Ausfalleinschätzung trennt die Prüfdaten des Simulators nahezu vollständig."
+    status: "gemessen"
+    wert: "Präzisions-Ausbeute-Fläche 0,998; Rangordnungsgüte 0,998; Kalibrierungsmass 0,025"
+    bedingung: >-
+      Bewertung auf einem lauf-getrennten Prüfteil des Trainingsmaterials,
+      Artefaktstand Juni 2026. Merkmale und Zielgrössen stammen vom selben
+      Erzeuger; der Wert belegt, dass die Verarbeitungskette rechnet, nicht dass
+      reale Ausfälle vorhergesagt werden. Die Modellkarte benennt genau diese
+      Zahl als empirischen Beleg für die Zirkularität und untersagt
+      ausdrücklich, sie als Vorhersagegenauigkeit zu kommunizieren.
+    datum: "2026-06-15"
+    fundstelle:
+      - "docs/models/failure_prediction_model_card.md, Abschnitt 6"
+      - "docs/models/failure_prediction_model_card.md, Abschnitt 7.1"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Freigabe bewusst nur intern, obwohl die Modellkarte öffentlich im Repo
+      liegt. Die Zahl ist ohne den vollständigen Abschnitt 7 irreführend, und
+      in einer Unterlage steht sie fast nie mit ihm zusammen. Wer sie
+      verwenden will, zitiert die Modellkarte, nicht diesen Wert.
+
+  - id: "C-014"
+    aussage: "Das Trainingsmaterial der Ausfalleinschätzung umfasst weniger als fünfhundert bewertete Zeitfenster."
+    status: "gemessen"
+    wert: "369 Trainings-Fenster (222 mit Ausfall, 147 ohne), 123 Prüf-Fenster"
+    bedingung: >-
+      Klassenverteilung des Artefakts vom Juni 2026, erzeugt aus vier
+      Simulations-Szenarien. Der Anteil der Ausfall-Fenster liegt bei rund 60
+      Prozent — real sind Ausfälle selten, die Aufgabe ist im Prüfmaterial
+      also deutlich leichter als im Betrieb.
+    datum: "2026-06-15"
+    fundstelle:
+      - "docs/models/failure_prediction_model_card.md, Abschnitt 3"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-015"
+    aussage: "Die Ausfalleinschätzung entscheidet erst ab einer sehr hohen Modellsicherheit auf Ausfall."
+    status: "gemessen"
+    wert: "Entscheidungsschwelle 0,997"
+    bedingung: >-
+      Kostensensitiv auf der Präzisions-Ausbeute-Kurve gewählt: niedrigste
+      Schwelle mit einer Ausbeute von mindestens 0,80 bei grösster Präzision.
+      Der ungewöhnlich hohe Wert ist eine Folge der nahezu perfekten Trennung
+      auf Simulationsdaten und damit selbst ein Symptom der Zirkularität aus
+      C-013, kein Zeichen von Vorsicht.
+    datum: "2026-06-15"
+    fundstelle:
+      - "docs/models/failure_prediction_model_card.md, Abschnitt 5"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-016"
+    aussage: "Die Ausfalleinschätzung ist auf einen Vorhersagehorizont von zwei Wochen ausgelegt."
+    status: "konzipiert"
+    bedingung: >-
+      Auslegungsentscheidung des Artefakts vom Juni 2026, beim Training global
+      einstellbar. Maschinenklassen-eigene Horizonte sind als Migrationspfad
+      beschrieben, im vorliegenden Stand aber nicht gebaut.
+    datum: "2026-06-15"
+    fundstelle:
+      - "docs/models/failure_prediction_model_card.md, Abschnitt 1"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Zielwert laut Modellkarte: 14 Tage Vorhersagehorizont bei einem
+      Vorlauffenster von 72 Stunden für die Merkmalsbildung. Bewusst ohne
+      Wertfeld geführt — es ist eine Parametrierung, keine Messung, und ein
+      Zahlenwert an dieser Stelle läse sich wie eine belegte Vorlaufzeit.
+
+  - id: "C-017"
+    aussage: "Zahlen in einer Werker-Empfehlung stammen ausschliesslich aus dem Rechenmodell, nie aus dem Sprachmodell."
+    status: "gemessen"
+    wert: "Unbelegte Zahlen führen zur Ablehnung der Empfehlung, nicht zu einer Markierung"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Die nachgelagerte
+      Zahlenprüfung verwirft eine Empfehlung mit nicht belegter Zahl vollständig
+      und speichert sie nicht; der Simulations-Vorbehalt wird deterministisch
+      gesetzt und nicht vom Sprachmodell formuliert. Beide Zusicherungen sind
+      strukturell verankert und getestet.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 16.5"
+      - "Commit 659c2bf"
+      - "Commit 98c4ea1"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Qualitätsnachweis
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-018"
+    aussage: "Die Prüfsuite des Backends läuft vollständig grün."
+    status: "gemessen"
+    wert: "984 bestanden, 2 übersprungen, 2 abgewählt"
+    bedingung: >-
+      Lauf vom 10.08.2026 auf dem Stand von main (d821c7a) gegen eine echte
+      Zeitreihen-Datenbank derselben Fassung wie im automatischen Prüflauf,
+      nicht gegen Attrappen. Die zwei Übersprungenen brauchen ein lokal
+      laufendes Sprachmodell, die zwei Abgewählten ein 560 MB grosses
+      Sprachmodell für die Namenserkennung — beide sind im Pflichtlauf
+      ausdrücklich ausgenommen, wie im automatischen Prüflauf auch.
+    datum: "2026-08-10"
+    fundstelle:
+      - "Eigener Lauf 10.08.2026, 984 passed / 2 skipped / 2 deselected in 546 s"
+      - "Commit d821c7a"
+      - "Gegenzählung: 904 Prüffunktionen in 125 Dateien unter tests/ (weniger als die Laufzahl, weil tabellengetriebene Fälle einmal im Quelltext stehen und mehrfach laufen)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst — durch Messen statt durch
+      Entscheiden. Die beiden widersprechenden Zahlen waren die README-Angabe
+      von rund 370 Tests (ein älterer Bauzustand, nie nachgezogen) und ein
+      Lauf vom 31.07.2026 mit 862 Tests. Beide sind überholt; die README ist
+      im selben Arbeitsschritt korrigiert worden. Warum der Lauf vom 31.07.
+      niedriger lag, ist nicht rekonstruierbar und wird auch nicht behauptet.
+
+  - id: "C-019"
+    aussage: "Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze."
+    status: "gemessen"
+    wert: "94,47 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
+    bedingung: >-
+      Gemessen im selben Lauf vom 10.08.2026 wie C-018, gegen eine echte
+      Zeitreihen-Datenbank. Zweigabdeckung, nicht Zeilenabdeckung — so ist die
+      Messung im Manifest eingestellt. Ohne erreichbare Datenbank fällt der
+      Wert deutlich ab, weil die Integrationsprüfungen dann überspringen; die
+      Zahl gilt nur für einen Lauf mit Datenbank.
+    datum: "2026-08-10"
+    fundstelle:
+      - "Eigener Lauf 10.08.2026, Total coverage 94.47 Prozent"
+      - "pyproject.toml, Zeile 211 (Zweigabdeckung aktiv)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst. Von den beiden strittigen
+      Werten lag die öffentliche README-Angabe (rund 95 Prozent) praktisch
+      richtig und die interne Zahl vom 31.07.2026 (87,20 Prozent) daneben — das
+      war vorher nicht absehbar und ist der Grund, warum der Eintrag nicht
+      nach Quellenrang aufgelöst wurde, sondern durch einen Lauf. Dieselbe
+      Zahl steht in der Kennzahlenkarte der persönlichen Website
+      (NEXUS-Eintrag b343af89-4c3f-49fb-a0a4-0074131fe19d) und ist dort damit
+      gedeckt.
+
+  - id: "C-020"
+    aussage: "Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern."
+    status: "geplant"
+    bedingung: >-
+      Vorgabe im Manifest auf dem Stand von main (5f90439), nicht das Ergebnis
+      einer Messung. Sie wirkt bei jedem Lauf, weil sie in den festen
+      Aufrufparametern der Prüfsuite steht und nicht separat aktiviert werden
+      muss.
+    datum: "2026-07-31"
+    fundstelle:
+      - "pyproject.toml, Zeile 203 (Abbruchgrenze) und Zeile 211 (Zweigabdeckung)"
+      - ".github/workflows/ci.yml"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Zielwert: mindestens 85 Prozent Zweigabdeckung. Bewusst ohne Wertfeld —
+      eine Untergrenze ist kein erreichter Wert. Der erreichte Wert steht als
+      C-019.
+
+  - id: "C-021"
+    aussage: "Die Prüfsuite des Oberflächen-Teils läuft vollständig grün."
+    status: "gemessen"
+    wert: "744 bestanden in 146 Prüfdateien"
+    bedingung: >-
+      Lauf vom 10.08.2026 auf dem Stand von main (d821c7a), zusammen mit
+      fehlerfreier Typprüfung und fehlerfreier Stilprüfung.
+    datum: "2026-08-10"
+    fundstelle:
+      - "Eigener Lauf 10.08.2026 nach dem Merge: 146 Prüfdateien, 744 bestanden"
+      - "Internes Sitzungsprotokoll 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES, 31.07.2026)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Vor dem Zusammenführen mit dem Hauptzweig lag der Stand bei 733 Fällen in
+      144 Dateien und bestätigte damit einen unabhängigen Lauf vom 31.07.2026
+      mit identischer Zahl; die Differenz sind die beiden Prüfdateien, die mit
+      der Fehlerabbildung des Modell-Zugangs hinzukamen. Der im Aufräum-Bericht
+      genannte Stand von 633 Fällen ist der ältere Wert vom Juni 2026.
+
+  - id: "C-022"
+    aussage: "Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch."
+    status: "gemessen"
+    wert: "0 Typfehler über 148 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 305 Dateien ohne Befund"
+    bedingung: >-
+      Lauf vom 10.08.2026, gleicher Stand wie C-018. Die Typprüfung läuft im
+      strengsten Modus.
+    datum: "2026-08-10"
+    fundstelle:
+      - "Eigener Lauf 10.08.2026: mypy Success in 148 source files, ruff check All checks passed, ruff format 305 files already formatted, tsc und eslint ohne Ausgabe"
+      - "GROUND_TRUTH.md, Abschnitt 10.2"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-023"
+    aussage: "Die Prüfläufe laufen gegen eine echte Zeitreihen-Datenbank statt gegen Attrappen."
+    status: "gemessen"
+    wert: "Ein Dienst-Container mit der produktiv eingesetzten Datenbankfassung wird für jeden Lauf gestartet"
+    bedingung: >-
+      Gegengeprüft in der Ablaufbeschreibung des automatischen Prüflaufs auf
+      dem Stand von main (5f90439). Ohne erreichbare Datenbank überspringen
+      die betroffenen Prüfungen sauber, statt stillschweigend zu bestehen.
+    datum: "2026-07-31"
+    fundstelle:
+      - ".github/workflows/ci.yml, Abschnitt services"
+      - "GROUND_TRUTH.md, Abschnitt 10.2"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-024"
+    aussage: "Der Freitext-Pfad des erklärenden Sprachmodells wird mit gezielten Angriffsmustern geprüft."
+    status: "gemessen"
+    wert: "Ein fester Angriffssatz läuft bei jedem Prüflauf durch die vollständige Erklär-Kette"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Geprüft wird, dass die
+      Quellenmarkierung hält, der Ausgabe-Wächter erfundene Quellen und
+      unbelegte Zahlen kennzeichnet und der Baustein keine eingeschleuste
+      Anweisung ausführt. Der Angriffssatz ist erweiterbar angelegt.
+    datum: "2026-07-31"
+    fundstelle:
+      - "tests/reasoners/event_chain/security/test_injection.py"
+      - "GROUND_TRUTH.md, Abschnitt 10.4"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Regelkonformität und Datenschutz
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-025"
+    aussage: "Die Plattform ist als KI-System mit begrenztem Risiko eingestuft, mit Transparenzpflichten."
+    status: "konzipiert"
+    bedingung: >-
+      Selbsteinschätzung nach der europäischen KI-Verordnung, Stand Juni 2026,
+      entlang eines dokumentierten Entscheidungsbaums. Sie ist ausdrücklich
+      keine Rechtsberatung; die verbindliche Einstufung ist vor einem echten
+      Produktiveinsatz juristisch abzusichern. Voraussetzung der Einstufung
+      ist, dass die Plattform beratend bleibt.
+    datum: "2026-06-30"
+    fundstelle:
+      - "docs/compliance/eu-ai-act-assessment.md, Abschnitte 1 bis 3"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-026"
+    aussage: "Die Einstufung als begrenztes Risiko kippt, sobald ein Betreiber die Ausgaben automatisch schalten lässt."
+    status: "konzipiert"
+    bedingung: >-
+      Ausdrücklich markierter Grenzfall derselben Selbsteinschätzung: Wird die
+      Ausgabe in eine automatische Sicherheitsreaktion eingebunden oder die
+      Plattform als lernendes Sicherheitsbauteil in eine
+      konformitätspflichtige Maschine integriert, greift die Hochrisiko-Regel
+      samt Bewertung durch eine benannte Stelle.
+    datum: "2026-06-30"
+    fundstelle:
+      - "docs/compliance/eu-ai-act-assessment.md, Abschnitt 3.3"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+    bemerkung: >-
+      Für den Vertrieb bindend: der Ausschluss automatischer Schalthandlungen
+      ist keine Gestaltungsvorliebe, sondern die tragende Grenze der
+      Einstufung, und gehört vertraglich abgesichert.
+
+  - id: "C-027"
+    aussage: "Personenbezogene Felder werden vor der Speicherung durch ein nicht rückrechenbares Kürzel ersetzt."
+    status: "gemessen"
+    wert: "Verfasser und Ausführende werden tokenisiert; Werker-Freitext wird zusätzlich auf Namen geschwärzt"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Die Ersetzung geschieht
+      auf der Eingangsebene, sodass der Klartext die Plattform nicht erreicht;
+      die Namenserkennung im Freitext läuft in beiden Schreibpfaden. Der
+      Rückbezug auf eine Person bleibt ausserhalb der Plattform.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 8 und Abschnitt 10.4"
+      - "docs/research/anonymisierung-werkerdaten.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-028"
+    aussage: "Wartungs- und Alarmtexte werden nicht auf Personennamen geschwärzt und im Archiv unverändert ausgeliefert."
+    status: "gemessen"
+    wert: "2 von 3 Freitextfeldern ohne Namensschwärzung"
+    bedingung: >-
+      Als Befund im Repo dokumentiert, Stand main (5f90439). Beide Felder sind
+      als Sach- und Steuerungstext gedacht; enthalten sie wider Erwarten
+      Personennamen, bleiben sie im Klartext gespeichert und über die
+      quellenübergreifende Suche auffindbar. Nur der Werker-Freitext läuft
+      durch die Namenserkennung.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 15.9 (Datenschutz-Befund, gemeldet, NICHT gelöst)"
+      - "GROUND_TRUTH.md, Abschnitt 10.4 (Freitext-Scope der Maskierung)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Bewusst als eigener Eintrag geführt, weil er die Aussage aus C-027
+      begrenzt. Eine Unterlage, die pauschal von geschwärzten Freitexten
+      spricht, wäre damit falsch. Als offener Punkt für das nächste Paket
+      vermerkt; das Restrisiko ist derzeit organisatorisch abgefangen.
+
+  - id: "C-029"
+    aussage: "Konten und Rollen entstehen ausschliesslich über den Betreiber-Weg, nicht über die Schnittstelle."
+    status: "gemessen"
+    wert: "Drei serverseitig durchgesetzte Striche: keine Selbstanlage, Rollenprüfung auf den schreibenden Wegen, Identität aus dem Zugangsnachweis"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Alle drei Zusicherungen
+      sind serverseitig durchgesetzt und über eigene Prüfungen belegt; die
+      Rollenprüfung trägt, weil die Rolle selbst nicht über die Schnittstelle
+      setzbar ist.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 19"
+      - "tests/integration/test_user_provisioning.py"
+      - "tests/integration/test_reasoner_rbac.py"
+      - "Commit 5f90439"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-030"
+    aussage: "Die lesenden Listen sind nicht nach Zuständigkeit gefiltert; die Rollensicht ist dort nur eine Anzeigehilfe."
+    status: "gemessen"
+    wert: "3 Listen ohne serverseitige Zuständigkeitsprüfung"
+    bedingung: >-
+      Im Repo ausdrücklich als bewusste Grenze dokumentiert, Stand main
+      (5f90439). Die schreibenden und auslösenden Wege tragen eine echte
+      serverseitige Rollenprüfung, die Abo- und Trendwege eine echte
+      Zuständigkeitsgrenze — die drei genannten Listen geben unabhängig von der
+      Rolle alles zurück.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 21.18"
+      - "GROUND_TRUTH.md, Abschnitt 21.9 (markierte Anschlusspunkte)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Begrenzt jede Aussage über rollenbasierte Sichtbarkeit. Eine Unterlage
+      darf nicht behaupten, ein Werker sehe nur seinen Bereich — er sieht in
+      der Anzeige nur seinen Bereich, die Schnittstelle liefert mehr.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Tragende Architektur-Zusicherungen
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-031"
+    aussage: "Die Plattform schaltet nichts; sie erklärt und empfiehlt, entschieden wird von einem Menschen."
+    status: "gemessen"
+    wert: "Keine schreibende oder auslösende Schnittstelle nach aussen; sicherheitsrelevante Meldungen gelten erst nach Quittierung als erledigt"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Die offene Schnittstelle
+      für Drittsysteme hat eine eigene, ausschliesslich lesende Zugriffsebene
+      ohne Auslöse-Möglichkeit; ein Test weist nach, dass ein Aufruf keine
+      Fachdaten verändert. In der Bedienoberfläche ist das Quittieren als
+      reine Statusaktion abgegrenzt, mit einem Gegentest gegen jeden anderen
+      Pfad.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 17 (Invariante I)"
+      - "tests/mcp/security/test_no_actuation.py"
+      - "GROUND_TRUTH.md, Abschnitt 21.9 (HITL-Grenze)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-032"
+    aussage: "Jede KI-erzeugte Ausgabe an Drittsysteme trägt eine Kennzeichnung ihrer Herkunft und ihres Prüfbedarfs."
+    status: "gemessen"
+    wert: "Vier Pflichtangaben je Ausgabe, bei Einschätzungen drei weitere zum Validierungsstand"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Ein gemeinsamer Umschlag
+      erzwingt die Kennzeichnung; sein Prüfer lässt einen unehrlichen Umschlag
+      nicht zu, und reine Messdaten tragen umgekehrt keine KI-Kennzeichen.
+      Damit ist die Transparenzpflicht aus C-025 an dieser Stelle erfüllt.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 17 (Invariante II) und Abschnitt 10.5"
+      - "src/foreman/mcp/transparency.py"
+      - "tests/mcp/"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-033"
+    aussage: "Das Langzeitgedächtnis ist ein eigenständiger Dienst ausserhalb dieses Systems und austauschbar angebunden."
+    status: "gemessen"
+    wert: "Kein Code des Gedächtnis-Dienstes in diesem Bestand; Anbindung ausschliesslich über eine Netzschnittstelle"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Der Datenzufluss läuft
+      unabhängig weiter, wenn der Gedächtnis-Dienst ausfällt — nur die
+      Auswertung ist dann eingeschränkt.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 2 und Abschnitt 9"
+      - "src/foreman/substrate/"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-034"
+    aussage: "Die Erklärungen des Systems trennen sichtbar zwischen belegten Ereignissen und erzähltem Zusammenhang."
+    status: "gemessen"
+    wert: "Zitierte Quellen werden gegen eine Positivliste geprüft; erfundene Quellen und unbelegte Zahlen werden gekennzeichnet gespeichert"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Die Kennzeichnung
+      überlebt die Speicherung als eigenes Feld, und die Bedienoberfläche
+      stellt Beleg und Erzählung zweispaltig getrennt dar.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 5 (reasoner_explanations) und Abschnitt 14"
+      - "GROUND_TRUTH.md, Abschnitt 21.15"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-035"
+    aussage: "Der Zugriff auf ein Sprachmodell läuft bevorzugt über ein lokal betriebenes Modell."
+    status: "gemessen"
+    wert: "Vier wählbare Betriebsarten, lokal zuerst als Grundeinstellung"
+    bedingung: >-
+      Gegengeprüft auf dem Stand von main (5f90439). Die Auswertungs-Bausteine
+      sehen ausschliesslich die hauseigene Abstraktion, nie einen Typ der
+      dahinterliegenden Vermittlungsbibliothek — der Anbieter ist damit
+      austauschbar, ohne einen Baustein anzufassen.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 13"
+      - "src/foreman/llm/gateway.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+      - "kunde"
+
+  - id: "C-036"
+    aussage: "Der Zugriff auf das Sprachmodell ist nach oben begrenzt, damit ein Fehllauf keine offenen Kosten erzeugt."
+    status: "geplant"
+    bedingung: >-
+      Vorgaben in der Konfiguration auf dem Stand von main (5f90439), nicht das
+      Ergebnis einer Messung: eine Zeitgrenze je Anfrage, ein Eimer-Verfahren
+      zur Begrenzung der Anfragerate je Anbieter und eine Kostenschätzung je
+      Aufruf. Ob die Grenzen im Betrieb je gegriffen haben, ist nicht erhoben.
+    datum: "2026-07-31"
+    fundstelle:
+      - "src/foreman/llm/config.py"
+      - "GROUND_TRUTH.md, Abschnitt 11.2 und Abschnitt 10.4"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Zielwerte laut Konfiguration: 60 Sekunden Zeitgrenze je Anfrage,
+      Eimergrösse 60 Anfragen bei einer Nachfüllrate von 1 pro Sekunde.
+      Bewusst ohne Wertfeld — es sind Vorgaben, keine beobachteten Grössen.
+
+  - id: "C-037"
+    aussage: "Die Kostenschätzung für den Cloud-Zugriff rechnet bewusst mit dem Listenpreis statt mit dem Einführungspreis."
+    status: "geschaetzt"
+    wert: "ca. 3 US-Dollar je Million Eingabe-Zeichenblöcke, ca. 15 je Million Ausgabe-Zeichenblöcke"
+    bedingung: >-
+      Hinterlegte Schätzgrössen auf dem Stand von main (5f90439). Der bis Ende
+      August 2026 geltende niedrigere Einführungspreis ist absichtlich nicht
+      eingetragen, um eher zu über- als zu unterschätzen. Der aktuelle
+      Modellstand zerlegt Text feiner als sein Vorgänger, die Anzahl der
+      abgerechneten Blöcke je Anfrage steigt dadurch.
+    datum: "2026-07-30"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 13.2 (Kosten-Schätzung Cloud)"
+      - "Commit ce463af"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Offene Punkte mit Aussenwirkung
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-038"
+    aussage: "Die Antwortzeit der Plattform ist nicht erhoben; es liegen ausschliesslich Messpunkte des Gedächtnis-Dienstes vor."
+    status: "gemessen"
+    wert: "0 erhobene Antwortzeit-Verteilungen für die Plattform selbst"
+    bedingung: >-
+      Gesucht auf dem Stand von main (5f90439) und im Langzeitgedächtnis. Die
+      Plattform erhebt Antwortzeiten laufend als Kennzahl, aber es existiert
+      kein Messlauf, der daraus eine belegte Verteilung ableitet. Die
+      vorhandenen Zahlen gehören zum extern betriebenen Gedächtnis-Dienst und
+      sagen über die Plattform nichts aus.
+    datum: "2026-08-10"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 11.1 (Kennzahlen vorhanden)"
+      - "Keine Messdatei unter docs/, tests/ oder benchmarks/ im gesamten Bestand"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Bewusst als Eintrag geführt, obwohl es eine Lücke beschreibt: Ohne ihn
+      würde die nächste Unterlage die Zahlen des Gedächtnis-Dienstes für
+      Zahlen der Plattform halten. Genau diese Verwechslung ist bereits einmal
+      in eine externe Darstellung geraten.
+
+  - id: "C-039"
+    aussage: "Der vierte Auswerte-Baustein zu Wartungszyklen ist nicht gebaut und hängt an einer echten Wartungshistorie."
+    status: "geplant"
+    bedingung: >-
+      Stand main (5f90439). Die Datengrundlage für einen Teil der geplanten
+      Auswertung liegt als Zwillings-Park im Simulator bereit, die reale
+      Wartungshistorie fehlt. Solange der Baustein fehlt, bleiben zwei
+      Bereiche der Bedienoberfläche Platzhalter.
+    datum: "2026-07-31"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 2 (Bau-Status, datenabhängig)"
+      - "src/foreman/adapters/simulation/scenarios/ (12 Park-Szenarien)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-040"
+    aussage: "Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand."
+    status: "gemessen"
+    wert: "Stand vom 12.06.2026; nennt einen Zugangsweg als geltend, der seit dem 31.07.2026 entfernt ist"
+    bedingung: >-
+      Befund vom 31.07.2026 auf dem separaten Auslieferungszweig der
+      Projektseite. Der Zweig führt eine eigene Kopie der Spezifikation, die
+      beim Nachziehen auf dem Hauptzweig nicht mitwandert. Er liegt nicht im
+      Arbeitsbaum und wurde von den bisherigen Korrekturen nicht erfasst.
+    datum: "2026-07-31"
+    fundstelle:
+      - "Internes Sitzungsprotokoll 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Zwei Funde, die Patric entscheiden muss)"
+      - "Zweig origin/gh-pages, Stand 5cefe1b vor der Bereinigung"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die
+      Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind
+      entfernt statt aktualisiert — die Projektseite braucht keine davon,
+      belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte
+      und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu
+      pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat.
+      Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die
+      vier entfernten Adressen liefern 404.
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Erster überholter Eintrag des Registers, und ein gewollter: Er bleibt
+      stehen, damit nachvollziehbar ist, warum eine kursierende Aussage über
+      die Projektseite nicht mehr gilt. Der Widerspruch zu C-029 (Konten und
+      Rollen entstehen nur über den Betreiber-Weg) ist damit aufgelöst.
