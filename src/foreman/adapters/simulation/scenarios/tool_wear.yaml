@@ -153,6 +153,10 @@ alarms:
 
 ground_truth:
   drift_present: true
+  # Erste menschliche Reaktion auf ein Symptom (siehe bearing_drift zur Begründung):
+  # die Notiz zu rauer Oberfläche und bläulichen Spänen, gut einen Tag vor dem
+  # Lastalarm.
+  human_reaction_offset: "8d09h"
   primary_drift:
     data_point: spindle_torque
     type: ramp

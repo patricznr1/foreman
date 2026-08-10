@@ -159,6 +159,12 @@ alarms:
 # -----------------------------------------------------------------------------
 ground_truth:
   drift_present: true
+  # Erste menschliche Reaktion auf ein Symptom — Bezugspunkt des Vorlaufs.
+  # Deklariert statt abgeleitet: Nicht jede Werker-Notiz ist eine Reaktion
+  # (eine kann die Wartung dokumentieren, die die Ursache IST), und der
+  # früheste Alarm ist oft später als die erste Wahrnehmung im Betrieb.
+  # Hier die Notiz "mahlendes Geräusch", ~2 Schichten vor dem Temperatur-Alarm.
+  human_reaction_offset: "16d14h"
   primary_drift:
     data_point: vib_rms
     type: ramp

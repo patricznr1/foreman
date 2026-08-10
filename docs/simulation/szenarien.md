@@ -85,12 +85,14 @@ Alle vier Dateien sind YAML-valide und gegen die Enums aus GROUND_TRUTH §5 gepr
 
 ## 5. Zusammenfassung der F4-Validierungsmatrix
 
-| Szenario | Primärsignal | Drift-Typ | t\* | Ursprünglich erwartetes Fenster | Tatsächlich gemeldet | Vorlauf vor dem Anker | Fehlalarme |
-|---|---|---|---|---|---|---|---|
-| `bearing_drift` | `vib_rms` (mm/s) | ramp (progressiv) | 7 d | 7–10 d | 13,9 d (außerhalb) | 3,4 d | 0 |
-| `tool_wear` | `spindle_torque` (Nm) | ramp (progressiv) | 2 d | 2–4 d | 7,0 d (außerhalb) | 2,5 d | 0 |
-| `lubrication_correlation` | `vib_rms_b` (mm/s) | ramp (progressiv) | 3 d | 3–7 d | 4,9 d (innerhalb) | 19,3 d | 0 (Lager A = Kontrolle, still) |
-| `healthy_baseline` | — | kein Drift | — | keine Detektion | keine Meldung | — | 0 (jede Meldung = Fehlschlag) |
+| Szenario | Primärsignal | Drift-Typ | t\* | Ursprünglich erwartetes Fenster | Tatsächlich gemeldet | Erste menschliche Reaktion | Vorlauf | Fehlalarme |
+|---|---|---|---|---|---|---|---|---|
+| `bearing_drift` | `vib_rms` (mm/s) | ramp (progressiv) | 7 d | 7–10 d | 13,9 d (außerhalb) | 16 d 14 h (Notiz „mahlendes Geräusch") | 2,7 d | 0 |
+| `tool_wear` | `spindle_torque` (Nm) | ramp (progressiv) | 2 d | 2–4 d | 7,0 d (außerhalb) | 8 d 09 h (Notiz „Späne bläulich") | 1,3 d | 0 |
+| `lubrication_correlation` | `vib_rms_b` (mm/s) | ramp (progressiv) | 3 d | 3–7 d | 4,9 d (innerhalb) | 20 d 22 h (Notiz „wärmer und lauter") | 16,0 d | 0 (Lager A = Kontrolle, still) |
+| `healthy_baseline` | — | kein Drift | — | keine Detektion | keine Meldung | — | — | 0 (jede Meldung = Fehlschlag) |
+
+Der Bezugspunkt der Vorlauf-Spalte steht je Szenario als `ground_truth.human_reaction_offset` — **deklariert, nicht abgeleitet**. Der frühere Wert (Abstand zum ersten *Alarm*) fiel um 0,7 bis 3,3 Tage zu günstig aus, weil in allen drei Szenarien ein Werker vor dem Alarm etwas bemerkt. Umgekehrt wäre „die früheste Notiz" ebenso falsch: In `lubrication_correlation` dokumentiert die erste Notiz die Nachschmierung, die die **Ursache** ist — als Anker genommen ergäbe sie einen negativen Vorlauf für eine sehr frühe Erkennung.
 
 Gemeinsamer roter Faden: In allen drei Positiv-Szenarien erkennt der Drift-Reasoner die Veränderung **Tage vor** der menschlichen Wahrnehmung bzw. dem klassischen Schwellwert-Alarm — das ist der nachzuweisende Frühwarn-Mehrwert. `healthy_baseline` belegt, dass dieser Mehrwert nicht durch Fehlalarme erkauft wird.
 

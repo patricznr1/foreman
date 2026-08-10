@@ -170,6 +170,13 @@ alarms:
 
 ground_truth:
   drift_present: true
+  # Erste menschliche Reaktion auf ein Symptom (siehe bearing_drift zur Begründung).
+  # HIER BESONDERS WICHTIG: Die frühere Notiz bei 2d10h dokumentiert die
+  # Nachschmierung mit dem Ersatzfett — sie ist die URSACHE, keine Reaktion auf
+  # ein Symptom. Wer sie als Anker nähme, bekäme einen negativen Vorlauf für
+  # eine Erkennung, die tatsächlich früh war. Anker ist die Notiz bei 20d22h
+  # ("wird spürbar wärmer und lauter").
+  human_reaction_offset: "20d22h"
   primary_drift:
     data_point: vib_rms_b
     type: ramp

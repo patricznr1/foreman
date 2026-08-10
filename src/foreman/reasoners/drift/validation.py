@@ -55,7 +55,26 @@ class ScenarioTruth:
 
 
 def narrative_anchor(scenario: Scenario) -> datetime | None:
-    """Früheste Alarm-Zeit eines Szenarios (Vorlauf-Deadline), oder None."""
+    """Erste menschliche Reaktion auf ein Symptom (Vorlauf-Deadline), oder None.
+
+    Vorrangig aus `ground_truth.human_reaction_offset` — der Anker wird
+    DEKLARIERT, nicht abgeleitet. Grund: Eine Ableitung müsste entscheiden, welche
+    Werker-Notiz eine Reaktion auf ein Symptom ist und welche nicht. In
+    `lubrication_correlation` dokumentiert die früheste Notiz die Nachschmierung,
+    die die Ursache IST — als Anker genommen ergäbe sie einen negativen Vorlauf
+    für eine Erkennung, die tatsächlich früh war. Umgekehrt ist der früheste
+    Alarm regelmässig SPÄTER als die erste Wahrnehmung im Betrieb; wer ihn nimmt,
+    schreibt sich einen Vorlauf gut, den es gegenüber dem Menschen nicht gab.
+    Beides sind stille Fehler — die Zahl sieht plausibel aus und misst etwas
+    anderes, als sie behauptet.
+
+    Fallback auf den frühesten Alarm, wenn kein Anker deklariert ist: besser eine
+    benannte, konservativ zu lesende Näherung als gar keine Vorlauf-Aussage.
+    """
+    gt = scenario.ground_truth
+    erklaert = (gt.model_extra or {}).get("human_reaction_offset") if gt is not None else None
+    if isinstance(erklaert, str):
+        return event_time(scenario, erklaert)
     if not scenario.alarms:
         return None
     return min(event_time(scenario, alarm.offset) for alarm in scenario.alarms)

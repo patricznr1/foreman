@@ -40,6 +40,12 @@ pytestmark = pytest.mark.integration
 # e24da81) und die Suite wäre bei jedem verschobenen Verzug grün geblieben. Am
 # 10.08.2026 nachgemessen: unverändert.
 #
+# Die VORLAUF-Werte sind am 10.08.2026 nach unten korrigiert worden (3,4/2,5/19,3
+# -> 2,7/1,3/16,0). Grund: Der Bezugspunkt war der früheste ALARM, obwohl die
+# Kennzahl den Vorsprung vor der ersten menschlichen Reaktion meint — und in allen
+# drei Szenarien fällt einem Werker vor dem Alarm etwas auf. Der Anker steht jetzt
+# als `ground_truth.human_reaction_offset` im Szenario.
+#
 # Verglichen wird auf EINE Nachkommastelle in Tagen, also genau in der Auflösung, in
 # der die Zahl publiziert ist. Wandert der Wert so weit, dass sich die publizierte
 # Stelle ändert, SOLL dieser Test anschlagen — dann ist die Kalibrierungs-Doku falsch
@@ -47,9 +53,9 @@ pytestmark = pytest.mark.integration
 # ändert, zieht den Registereintrag nach).
 VEROEFFENTLICHTE_KENNZAHLEN: dict[str, tuple[float, float]] = {
     # Szenario: (Verzug nach t* in Tagen, Vorlauf vor dem Anker in Tagen)
-    "bearing_drift": (6.9, 3.4),
-    "tool_wear": (5.0, 2.5),
-    "lubrication_correlation": (1.9, 19.3),
+    "bearing_drift": (6.9, 2.7),
+    "tool_wear": (5.0, 1.3),
+    "lubrication_correlation": (1.9, 16.0),
 }
 
 

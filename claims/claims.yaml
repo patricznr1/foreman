@@ -192,14 +192,15 @@ claims:
       nicht an sich selbst.
 
   - id: "C-009"
-    aussage: "Die Abweichungserkennung meldete den Verschleiss zwischen 2,5 und 19,3 Tage vor dem ersten Anlagen-Alarm."
+    aussage: "Die Abweichungserkennung meldete den Verschleiss 1,3 bis 16,0 Tage vor der ersten menschlichen Reaktion."
     status: "gemessen"
-    wert: "Vorlauf rund 3,4 Tage (Lagerschaden), 2,5 Tage (Werkzeugverschleiss), 19,3 Tage (Schmierstoff-Fehlwahl)"
+    wert: "Vorlauf 2,7 Tage (Lagerschaden), 1,3 Tage (Werkzeugverschleiss), 16,0 Tage (Schmierstoff-Fehlwahl)"
     bedingung: >-
-      Gleiche Messung wie C-008, vom 14.06.2026 und am 10.08.2026 unverändert
-      reproduziert. Bezugspunkt ist der im Szenario hinterlegte erste Alarm
-      beziehungsweise die erste Werker-Notiz — ein vom Szenario-Autor gesetzter
-      Zeitpunkt, keine Beobachtung an einer realen Anlage.
+      Gleiche Messung wie C-008, am 10.08.2026 auf dem heutigen Stand gefahren.
+      Bezugspunkt ist die erste im Szenario hinterlegte Reaktion eines Menschen
+      auf ein Symptom — ein vom Szenario-Autor gesetzter Zeitpunkt, keine
+      Beobachtung an einer realen Anlage. Er ist je Szenario ausdrücklich
+      deklariert und wird nicht aus Alarmen oder Notizen abgeleitet.
     datum: "2026-08-10"
     fundstelle:
       - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6 (inkl. Nachmessungs-Vermerk 10.08.2026)"
@@ -210,12 +211,16 @@ claims:
       - "intern"
       - "fach"
     bemerkung: >-
-      Am 10.08.2026 aus 'ungeprueft' aufgelöst, gemeinsam mit C-008 und aus
-      demselben Lauf. Der Vorlauf ist die betrieblich interessantere der beiden
-      Kennzahlen — sie sagt, wie viel Zeit zwischen der Meldung und der ersten
-      menschlichen Reaktion liegt. Sie ist seit dem 10.08.2026 als Kennzahl
-      berechnet (vorher nur der Verzug) und im Test als Erwartungswert
-      hinterlegt.
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst und im selben Zug NACH UNTEN
+      korrigiert. Der zuvor geführte Vorlauf (3,4 / 2,5 / 19,3 Tage) maß den
+      Abstand zum ersten ALARM, während die Kennzahl den Vorsprung vor der
+      ersten menschlichen Reaktion meint — und in allen drei Szenarien fällt
+      einem Werker vorher etwas auf. Ein Prüfer hat das am fertigen Vorschlag
+      gefunden, nicht die eigene Messung. Die naheliegende Gegenkorrektur wäre
+      ebenso falsch gewesen: Nähme man schlicht die früheste Notiz, ergäbe die
+      Schmierstoff-Fehlwahl einen NEGATIVEN Vorlauf, weil dort die erste Notiz
+      die Nachschmierung dokumentiert, die die Ursache ist. Der Anker ist
+      deshalb je Szenario deklariert statt abgeleitet und im Test festgehalten.
 
   - id: "C-010"
     aussage: "Der Erkennungszeitpunkt liegt bei zwei der drei Verläufe ausserhalb des im Szenario erwarteten Fensters."
@@ -409,9 +414,9 @@ claims:
   - id: "C-018"
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
-    wert: "977 bestanden, 2 übersprungen, 2 abgewählt"
+    wert: "984 bestanden, 2 übersprungen, 2 abgewählt"
     bedingung: >-
-      Lauf vom 10.08.2026 auf dem Stand von main (5f90439) gegen eine echte
+      Lauf vom 10.08.2026 auf dem Stand von main (d821c7a) gegen eine echte
       Zeitreihen-Datenbank derselben Fassung wie im automatischen Prüflauf,
       nicht gegen Attrappen. Die zwei Übersprungenen brauchen ein lokal
       laufendes Sprachmodell, die zwei Abgewählten ein 560 MB grosses
@@ -419,8 +424,8 @@ claims:
       ausdrücklich ausgenommen, wie im automatischen Prüflauf auch.
     datum: "2026-08-10"
     fundstelle:
-      - "Eigener Lauf 10.08.2026, 977 passed / 2 skipped / 2 deselected in 589 s"
-      - "Commit 5f90439"
+      - "Eigener Lauf 10.08.2026, 984 passed / 2 skipped / 2 deselected in 546 s"
+      - "Commit d821c7a"
       - "Gegenzählung: 904 Prüffunktionen in 125 Dateien unter tests/ (weniger als die Laufzahl, weil tabellengetriebene Fälle einmal im Quelltext stehen und mehrfach laufen)"
     geltung: "gueltig"
     freigabe:
@@ -437,7 +442,7 @@ claims:
   - id: "C-019"
     aussage: "Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze."
     status: "gemessen"
-    wert: "94,45 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
+    wert: "94,47 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
     bedingung: >-
       Gemessen im selben Lauf vom 10.08.2026 wie C-018, gegen eine echte
       Zeitreihen-Datenbank. Zweigabdeckung, nicht Zeilenabdeckung — so ist die
@@ -446,7 +451,7 @@ claims:
       Zahl gilt nur für einen Lauf mit Datenbank.
     datum: "2026-08-10"
     fundstelle:
-      - "Eigener Lauf 10.08.2026, Total coverage 94.45 Prozent"
+      - "Eigener Lauf 10.08.2026, Total coverage 94.47 Prozent"
       - "pyproject.toml, Zeile 211 (Zweigabdeckung aktiv)"
     geltung: "gueltig"
     freigabe:
@@ -486,25 +491,24 @@ claims:
   - id: "C-021"
     aussage: "Die Prüfsuite des Oberflächen-Teils läuft vollständig grün."
     status: "gemessen"
-    wert: "733 bestanden in 144 Prüfdateien"
+    wert: "744 bestanden in 146 Prüfdateien"
     bedingung: >-
-      Lauf vom 10.08.2026 auf dem Stand von main (5f90439), zusammen mit
-      fehlerfreier Typprüfung und fehlerfreier Stilprüfung. Bestätigt den Lauf
-      vom 31.07.2026 mit identischer Zahl.
+      Lauf vom 10.08.2026 auf dem Stand von main (d821c7a), zusammen mit
+      fehlerfreier Typprüfung und fehlerfreier Stilprüfung.
     datum: "2026-08-10"
     fundstelle:
-      - "Eigener Lauf 10.08.2026: 144 Prüfdateien, 733 bestanden, 55,75 s"
-      - "NEXUS-Eintrag 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES, 31.07.2026)"
+      - "Eigener Lauf 10.08.2026 nach dem Merge: 146 Prüfdateien, 744 bestanden"
+      - "Internes Sitzungsprotokoll 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES, 31.07.2026)"
     geltung: "gueltig"
     freigabe:
       - "intern"
       - "fach"
     bemerkung: >-
-      Zwei unabhängige Läufe mit demselben Ergebnis. Die statische Gegenzählung
-      findet 701 einzeln benannte Fälle in denselben 144 Dateien — die Differenz
-      sind tabellengetriebene Fälle, die einmal im Quelltext stehen und mehrfach
-      laufen. Kein Widerspruch. Der im Aufräum-Bericht genannte Stand von 633
-      Fällen ist der ältere Wert vom Juni 2026.
+      Vor dem Zusammenführen mit dem Hauptzweig lag der Stand bei 733 Fällen in
+      144 Dateien und bestätigte damit einen unabhängigen Lauf vom 31.07.2026
+      mit identischer Zahl; die Differenz sind die beiden Prüfdateien, die mit
+      der Fehlerabbildung des Modell-Zugangs hinzukamen. Der im Aufräum-Bericht
+      genannte Stand von 633 Fällen ist der ältere Wert vom Juni 2026.
 
   - id: "C-022"
     aussage: "Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch."
