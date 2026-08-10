@@ -111,6 +111,12 @@ Alle drei Verschleiß-Szenarien werden mit nützlichem Vorlauf **vor** dem erste
 
 Die Tests, die dieses Ergebnis absichern, liegen in `tests/integration/test_drift_validation.py`.
 
+> **Nachgemessen am 10.08.2026 — unverändert.** Anlass: Der Detektionskern wurde nach dieser Kalibrierung dreimal berührt (`aeab6d7` Eigenprofil-Overlay, `34f952b` Park-Backfill, `e24da81` Maschinenkarte), ohne dass ein Wiederholungslauf belegt war. Die Werte oben sind auf dem heutigen `main` reproduziert: Verzug 6,9 / 5,0 / 1,9 d, Vorlauf 3,4 / 2,5 / 19,3 d, 0 Fehlalarme, Kontroll-Lager still.
+>
+> **Bis dahin hat die Suite diese Zahlen NICHT bewacht** — sie prüfte ausschließlich, *dass* mit Vorlauf erkannt wird, und wäre bei verdoppeltem Verzug grün geblieben. Seit dem 10.08.2026 fordert `test_drift_validation.py` die publizierten Werte in der Auflösung ein, in der sie hier stehen (eine Nachkommastelle in Tagen). Ändert sich der Pfad so, dass sich eine dieser Stellen verschiebt, wird die Suite rot und dieses Dokument gehört nachgezogen.
+>
+> **Gegenprobe zur Wirksamkeit:** Mit `DEFAULT_MIN_EFFECT_SIZE = 3.5` statt `3.0` schlagen genau die beiden Tests an, deren Werte sich laut §5 ändern müssen — `tool_wear` auf 6,1 d und `lubrication_correlation` auf 11,0 d, beides die Zahlen aus der Sweep-Tabelle. `bearing_drift` bleibt bei 6,9 d und grün, ebenfalls wie in §5. Die Tabelle in §5 ist damit auf dem heutigen Stand zeilenweise reproduzierbar.
+
 ---
 
 ## 7. Bekannte Grenzen und Vorbehalte

@@ -8,6 +8,8 @@
 # ============================================================
 from __future__ import annotations
 
+from datetime import timedelta
+
 import asyncpg
 import pytest
 from sqlalchemy import select
@@ -29,6 +31,47 @@ from foreman.reasoners.drift.validation import (
 )
 
 pytestmark = pytest.mark.integration
+
+# Die in docs/research/drift-reasoner-kalibrierung.md §6 VERÖFFENTLICHTEN Kennzahlen,
+# je Szenario (Detektionsverzug nach t*, Vorlauf vor dem narrativen Anker, beides in
+# Tagen auf eine Nachkommastelle). Sie stehen hier, weil sie sonst niemand bewacht:
+# Bis 10.08.2026 prüfte diese Suite nur, DASS mit Vorlauf erkannt wird — der
+# Detektionskern wurde nach der Kalibrierung dreimal geändert (aeab6d7, 34f952b,
+# e24da81) und die Suite wäre bei jedem verschobenen Verzug grün geblieben. Am
+# 10.08.2026 nachgemessen: unverändert.
+#
+# Verglichen wird auf EINE Nachkommastelle in Tagen, also genau in der Auflösung, in
+# der die Zahl publiziert ist. Wandert der Wert so weit, dass sich die publizierte
+# Stelle ändert, SOLL dieser Test anschlagen — dann ist die Kalibrierungs-Doku falsch
+# geworden und gehört nachgezogen (GROUND_TRUTH §23: wer einen gemessenen Pfad
+# ändert, zieht den Registereintrag nach).
+VEROEFFENTLICHTE_KENNZAHLEN: dict[str, tuple[float, float]] = {
+    # Szenario: (Verzug nach t* in Tagen, Vorlauf vor dem Anker in Tagen)
+    "bearing_drift": (6.9, 3.4),
+    "tool_wear": (5.0, 2.5),
+    "lubrication_correlation": (1.9, 19.3),
+}
+
+
+def _tage(spanne: timedelta) -> float:
+    """Zeitspanne in Tagen, auf die publizierte Auflösung gerundet."""
+    return round(spanne.total_seconds() / 86400, 1)
+
+
+def _pruefe_veroeffentlichte_kennzahlen(szenario: str, metrics: DriftMetrics) -> None:
+    """Fordert die in der Kalibrierung publizierten Verzugs-/Vorlaufwerte ein."""
+    verzug_soll, vorlauf_soll = VEROEFFENTLICHTE_KENNZAHLEN[szenario]
+    assert metrics.detection_delay is not None, f"{szenario}: kein Detektionsverzug — {metrics}"
+    assert metrics.lead_time is not None, f"{szenario}: kein Vorlauf — {metrics}"
+    assert _tage(metrics.detection_delay) == verzug_soll, (
+        f"{szenario}: Detektionsverzug {_tage(metrics.detection_delay)} d weicht vom "
+        f"publizierten Wert {verzug_soll} d ab — Kalibrierungs-Doku und Register "
+        f"nachziehen ({metrics})"
+    )
+    assert _tage(metrics.lead_time) == vorlauf_soll, (
+        f"{szenario}: Vorlauf {_tage(metrics.lead_time)} d weicht vom publizierten "
+        f"Wert {vorlauf_soll} d ab — Kalibrierungs-Doku und Register nachziehen ({metrics})"
+    )
 
 
 async def _seed_replay_evaluate(
@@ -91,6 +134,12 @@ async def test_bearing_drift_mit_nuetzlichem_vorlauf_erkannt(
     assert metrics.detected_with_useful_lead, f"bearing_drift ohne Vorlauf: {metrics}"
     assert metrics.control_alarms == 0
     assert metrics.false_alarms == 0
+    _pruefe_veroeffentlichte_kennzahlen("bearing_drift", metrics)
+    # Liegt AUSSERHALB des engen ground_truth-Fensters (7 bis 10 d) — bei einer
+    # progressiven Ramp ist das Signal dort noch im Rauschen. Die Kalibrierung führt
+    # die Abnahme deshalb über den Vorlauf, das Szenario nennt weiter das Fenster.
+    # Solange dieser Widerspruch offen ist, hält der Test den Ist-Zustand fest.
+    assert metrics.primary_detected_in_window is False
 
 
 async def test_tool_wear_mit_nuetzlichem_vorlauf_erkannt(
@@ -105,6 +154,8 @@ async def test_tool_wear_mit_nuetzlichem_vorlauf_erkannt(
     )
     assert metrics.detected_with_useful_lead, f"tool_wear ohne Vorlauf: {metrics}"
     assert metrics.false_alarms == 0
+    _pruefe_veroeffentlichte_kennzahlen("tool_wear", metrics)
+    assert metrics.primary_detected_in_window is False  # wie bearing_drift, s. o.
 
 
 async def test_lubrication_lager_b_erkannt_kontrolle_still(
@@ -120,6 +171,10 @@ async def test_lubrication_lager_b_erkannt_kontrolle_still(
     )
     assert metrics.detected_with_useful_lead, f"lubrication Lager B nicht erkannt: {metrics}"
     assert metrics.control_alarms == 0
+    _pruefe_veroeffentlichte_kennzahlen("lubrication_correlation", metrics)
+    # Einziges der drei Szenarien, das das enge Fenster trifft — die Ramp ist hier
+    # steil genug. Der Gegensatz zu den beiden anderen ist die eigentliche Aussage.
+    assert metrics.primary_detected_in_window is True
 
 
 async def test_healthy_baseline_loest_keinen_fehlalarm_aus(
