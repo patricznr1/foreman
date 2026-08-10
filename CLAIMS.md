@@ -15,6 +15,8 @@ Stand: 2026-08-10
 | C-005 | Die Anbindung an echte Anlagen-Protokolle ist noch nicht gebaut; Datenquelle ist bislang ausschliesslich ein Simulator. | gemessen | 0 von 3 Protokoll-Anbindungen installiert; ein Simulations-Adapter vorhanden | 2026-07-31 | gueltig | intern |
 | C-006 | Die Abweichungserkennung meldet alle drei Verschleiss-Verläufe des Prüfsatzes vor dem ersten Anlagen-Alarm. | gemessen | 3 von 3 Verläufen mit nutzbarem Vorlauf erkannt | 2026-06-14 | gueltig | intern, fach |
 | C-007 | Auf der gesunden Vergleichsmaschine erzeugt die Abweichungserkennung über den ganzen Prüfzeitraum keine Meldung. | gemessen | 0 Meldungen im Szenario der gesunden Maschine; 0 Meldungen am Kontroll-Lager des Schmierstoff-Szenarios | 2026-06-14 | gueltig | intern, fach |
+| C-008 | Die Abweichungserkennung meldete einen Verschleissverlauf zwischen 1,9 und 6,9 Tagen nach dessen Beginn. | gemessen | Verzug 6,9 Tage (Lagerschaden), 5,0 Tage (Werkzeugverschleiss), 1,9 Tage (Schmierstoff-Fehlwahl) | 2026-08-10 | gueltig | intern, fach |
+| C-009 | Die Abweichungserkennung meldete den Verschleiss zwischen 2,5 und 19,3 Tage vor dem ersten Anlagen-Alarm. | gemessen | Vorlauf rund 3,4 Tage (Lagerschaden), 2,5 Tage (Werkzeugverschleiss), 19,3 Tage (Schmierstoff-Fehlwahl) | 2026-08-10 | gueltig | intern, fach |
 | C-011 | Der Arbeitspunkt der Abweichungserkennung wurde durch einen Durchlauf über drei Schwellenkandidaten bestimmt. | gemessen | Gewählt: Schwelle 3,0 bei einer Persistenz von 12 Intervallen; verworfen 2,5 und 3,5 | 2026-06-14 | gueltig | intern |
 | C-012 | Die Ausfalleinschätzung ist auf Simulationsdaten trainiert und gegen reale Ausfälle nicht überprüft. | gemessen | Der Vorbehalt ist an drei Stellen erzwungen: Datenobjekt, Kennzahlen-Label, Datenbankspalte | 2026-06-15 | gueltig | intern, fach, kunde |
 | C-013 | Die Ausfalleinschätzung trennt die Prüfdaten des Simulators nahezu vollständig. | gemessen | Präzisions-Ausbeute-Fläche 0,998; Rangordnungsgüte 0,998; Kalibrierungsmass 0,025 | 2026-06-15 | gueltig | intern |
@@ -22,9 +24,11 @@ Stand: 2026-08-10
 | C-015 | Die Ausfalleinschätzung entscheidet erst ab einer sehr hohen Modellsicherheit auf Ausfall. | gemessen | Entscheidungsschwelle 0,997 | 2026-06-15 | gueltig | intern |
 | C-016 | Die Ausfalleinschätzung ist auf einen Vorhersagehorizont von zwei Wochen ausgelegt. | konzipiert | — | 2026-06-15 | gueltig | intern, fach |
 | C-017 | Zahlen in einer Werker-Empfehlung stammen ausschliesslich aus dem Rechenmodell, nie aus dem Sprachmodell. | gemessen | Unbelegte Zahlen führen zur Ablehnung der Empfehlung, nicht zu einer Markierung | 2026-07-31 | gueltig | intern, fach, kunde |
+| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 977 bestanden, 2 übersprungen, 2 abgewählt | 2026-08-10 | gueltig | intern, fach |
+| C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,45 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-10 | gueltig | intern, fach |
 | C-020 | Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern. | geplant | — | 2026-07-31 | gueltig | intern, fach |
-| C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 733 bestanden in 144 Prüfdateien | 2026-07-31 | gueltig | intern |
-| C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 145 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung ohne Befund | 2026-07-31 | gueltig | intern, fach |
+| C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 733 bestanden in 144 Prüfdateien | 2026-08-10 | gueltig | intern, fach |
+| C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 148 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 305 Dateien ohne Befund | 2026-08-10 | gueltig | intern, fach |
 | C-023 | Die Prüfläufe laufen gegen eine echte Zeitreihen-Datenbank statt gegen Attrappen. | gemessen | Ein Dienst-Container mit der produktiv eingesetzten Datenbankfassung wird für jeden Lauf gestartet | 2026-07-31 | gueltig | intern, fach |
 | C-024 | Der Freitext-Pfad des erklärenden Sprachmodells wird mit gezielten Angriffsmustern geprüft. | gemessen | Ein fester Angriffssatz läuft bei jedem Prüflauf durch die vollständige Erklär-Kette | 2026-07-31 | gueltig | intern, fach, kunde |
 | C-025 | Die Plattform ist als KI-System mit begrenztem Risiko eingestuft, mit Transparenzpflichten. | konzipiert | — | 2026-06-30 | gueltig | intern, fach, kunde |
@@ -50,11 +54,7 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 | ID | Produkt | Aussage | Geltung | Grund |
 |---|---|---|---|---|
-| C-008 | FOREMAN | Die Abweichungserkennung meldete einen Verschleissverlauf zwischen 1,9 und 6,9 Tagen nach dessen Beginn. | ungeprueft | Der gemessene Pfad wurde nach der Messung dreimal geändert: die Vergleichsgrundlage in den Commits aeab6d7 (23.06.) und e24da81 (25.06.), der Detektor in aeab6d7, die Ablaufsteuerung zusätzlich in 34f952b. Alle Änderungen sind additiv, ein erneuter Kalibrierungslauf ist aber nicht belegt. Der begleitende Test prüft ausschliesslich, DASS mit Vorlauf erkannt wird — er hält keine dieser Zahlen fest und wäre auch bei verändertem Verzug grün geblieben. |
-| C-009 | FOREMAN | Die Abweichungserkennung meldete den Verschleiss zwischen 2,5 und 19,3 Tage vor dem ersten Anlagen-Alarm. | ungeprueft | Derselbe Grund wie C-008 — der gemessene Pfad wurde nach der Messung dreimal geändert, ohne belegten Wiederholungslauf. Hinzu kommt, dass der Vorlauf gegen einen im Szenario gesetzten Alarmzeitpunkt gemessen wird; dieser Bezugspunkt ist eine Annahme des Szenario-Autors, keine Beobachtung an einer realen Anlage. |
-| C-010 | FOREMAN | Der Erkennungszeitpunkt liegt bei zwei der drei Verläufe ausserhalb des im Szenario erwarteten Fensters. | ungeprueft | ZWEI DOKUMENTE, ZWEI MASSSTÄBE, KEINE ENTSCHEIDUNG. Die Szenario-Beschreibung führt das enge Fenster weiterhin als Validierungserwartung; die Kalibrierung erklärt es für ungeeignet und führt die Abnahme stattdessen über den Vorlauf. Beide Dokumente stehen unverändert nebeneinander im Repo. Welcher Massstab gilt, ist offen — und damit auch, ob die Erkennung als fristgerecht gelten darf. |
-| C-018 | FOREMAN | Die Prüfsuite des Backends läuft vollständig grün. | ungeprueft | WIDERSPRUCH ZUR AUSSENDARSTELLUNG. README.md Zeile 182 nennt für main rund 370 Tests. Der belegte Lauf meldet 862, die statische Gegenzählung 904 Prüffunktionen. Die README-Zahl bezieht sich erkennbar auf einen älteren Bauzustand (dort als F2 bis F6 bezeichnet), wurde aber nie nachgezogen und steht öffentlich. Der Aufräum-Bericht hat das im Juni gemeldet und die Korrektur bewusst offengelassen. Solange beide Zahlen nebeneinander stehen, ist keine von beiden zitierfähig. |
-| C-019 | FOREMAN | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | ungeprueft | WIDERSPRUCH ZUR AUSSENDARSTELLUNG. README.md Zeile 182 nennt rund 95 Prozent Zweigabdeckung, der belegte Lauf 87,20 Prozent. Dieselbe Zahl ist zusätzlich in die Kennzahlenkarte der persönlichen Website eingeflossen (NEXUS-Eintrag b343af89-4c3f-49fb-a0a4-0074131fe19d), steht also bereits an zwei Stellen aussen. Welcher Wert für welchen Bauzustand gilt, ist nicht aufgelöst; ein aktueller Lauf würde es entscheiden. |
+| C-010 | FOREMAN | Der Erkennungszeitpunkt liegt bei zwei der drei Verläufe ausserhalb des im Szenario erwarteten Fensters. | ungeprueft | ZWEI DOKUMENTE, ZWEI MASSSTÄBE, KEINE ENTSCHEIDUNG. Die Zahl selbst ist seit dem 10.08.2026 gemessen und im Test festgehalten — offen ist nicht der Wert, sondern der Massstab: Die Szenario-Beschreibung führt das enge Fenster weiterhin als Validierungserwartung, die Kalibrierung erklärt es für ungeeignet und führt die Abnahme über den Vorlauf. Beide Dokumente stehen unverändert nebeneinander im Repo. Solange das nicht entschieden ist, lässt sich nicht sagen, ob die Erkennung fristgerecht war — und damit taugt der Eintrag für keine Unterlage. |
 
 ## Zählung
 
@@ -69,6 +69,6 @@ Nach Status:
 
 Nach Geltung:
 
-- gueltig: 35
+- gueltig: 39
 - ueberholt: 0
-- ungeprueft: 5
+- ungeprueft: 1

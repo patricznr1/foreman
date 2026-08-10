@@ -104,7 +104,7 @@ FOREMAN builds on an **external, biologically inspired memory substrate** that i
 | **Storage** | PostgreSQL + TimescaleDB (time series) + vector search |
 | **Model gateway** | LiteLLM — local model (Qwen3 via Ollama) + cloud fallback (Anthropic) |
 | **Frontend** | Next.js 15 (App Router), React 19, Tailwind CSS 4, bespoke SVG (no charting library) |
-| **Industrial connectivity** | asyncua (OPC UA), paho-mqtt, pymodbus |
+| **Industrial connectivity** | asyncua (OPC UA), paho-mqtt, pymodbus — *target picture, not yet installed*; the only adapter built so far is the simulation one ([GROUND_TRUTH.md](GROUND_TRUTH.md) §3) |
 | **Integration** | Model Context Protocol (MCP) SDK |
 | **Operations** | Docker Compose |
 
@@ -179,7 +179,9 @@ Every push and pull request runs the full quality gate in CI (see the **CI badge
 | **Red-team** | prompt-injection payloads driven through the **live LLM-reasoner pipeline** — spotlighting holds, output-guard flags invented sources/numbers, reasoner stays inert | `tests/reasoners/event_chain/security/` |
 | **Smoke** | real round-trips against local Ollama (LLM completion + `bge-m3` embeddings) | `@pytest.mark.smoke`, skips cleanly if absent |
 
-**Current state (`main`, F2–F6):** ~370 tests green, **≈ 95 % branch coverage**, `mypy --strict` 0 errors across the package, `ruff` clean. The coverage gate **fails the build under 85 %** — enforced in `pyproject.toml`, not just claimed. Each feature ships a mandatory test block (happy path · error · auth · edge), and docs (`GROUND_TRUTH` + `WALKTHROUGH`) move in the same commit as the code.
+**Current state (`main`, measured 2026-08-10):** **977 backend tests** green (2 skipped — they need a local model — and 2 opt-in NER tests deselected), plus **733 frontend tests** across 144 files. **94.45 % branch coverage** against a real TimescaleDB. `mypy --strict` 0 errors across 148 source files, `ruff` check and format clean, `tsc --noEmit` and `eslint` clean. The coverage gate **fails the build under 85 %** — enforced in `pyproject.toml`, not just claimed. Each feature ships a mandatory test block (happy path · error · auth · edge), and docs (`GROUND_TRUTH` + `WALKTHROUGH`) move in the same commit as the code.
+
+Numbers in this README are entries in the [claims register](CLAIMS.md) — each one carries its measurement conditions, its evidence status, and the date it was taken. A measurement without a register entry counts as not having happened (see `GROUND_TRUTH.md` §23).
 
 ```bash
 uv run mypy && uv run ruff check && uv run ruff format --check && uv run pytest   # the same gate CI runs
@@ -217,7 +219,9 @@ Integration tests run against a real TimescaleDB (`timescale/timescaledb-ha:pg16
 
 ## Status
 
-🚧 **Active development.** In `main`: the foundation (F2 — schema, TimescaleDB migrations, JWT auth, CRUD + batch ingestion, pseudonymization + NER), data adapters with a synthetic simulation (F3), the **drift reasoner** (F4 — ADWIN over `river`), the **model gateway** (F-LLM — own `LLMGateway` abstraction over LiteLLM, local-first), and the **event-chain reasoner** (F6 — the first LLM free-text reasoner, with a sharp prompt-injection red-team). In review: **semantic note search** (F-SEM — embeddings + HNSW vector search). Next: operator dashboard or failure prediction. Roadmap and binding state live in the [GROUND_TRUTH](GROUND_TRUTH.md).
+🚧 **Active development.** In `main`: the foundation (F2 — schema, TimescaleDB migrations, JWT auth, CRUD + batch ingestion, pseudonymization + NER), data adapters with a synthetic simulation (F3), the **drift reasoner** (F4 — ADWIN over `river`), the **model gateway** (F-LLM — own `LLMGateway` abstraction over LiteLLM, local-first), the **event-chain reasoner** (F6 — the first LLM free-text reasoner, with a sharp prompt-injection red-team), **semantic note search** (F-SEM — embeddings + HNSW), the **failure-prediction reasoner** (F-PRED — an honestly declared method demonstrator on simulation data, see its [model card](docs/models/failure_prediction_model_card.md)) with its **LLM explanation layer** (F-REC), the read-only **MCP interface** (F7), and the **operator dashboard** (F5 — eight of ten sections built, plus the platform/audit view).
+
+Three of the four reasoners are built. Still open: **maintenance-cycle analysis** (reasoner #4 — data-dependent, it needs a real maintenance history) and the two remaining dashboard sections. Roadmap and binding state live in the [GROUND_TRUTH](GROUND_TRUTH.md); what may be *claimed* about any of it lives in [CLAIMS.md](CLAIMS.md).
 
 ---
 

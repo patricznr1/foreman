@@ -104,12 +104,13 @@ claims:
     freigabe:
       - "intern"
     bemerkung: >-
-      WIDERSPRUCH IN DER AUSSENDARSTELLUNG, hier bewusst als eigener Eintrag
-      geführt: Die Tech-Stack-Tabelle in README.md Zeile 107 listet die drei
-      Protokolle als Bestandteil des Stacks, ohne den Zielbild-Vorbehalt, den
-      GROUND_TRUTH.md Abschnitt 3 ausdrücklich setzt. Wer die README liest,
-      nimmt eine gebaute Anlagenanbindung an. Bis zur Korrektur darf keine
-      Unterlage eine bestehende Protokoll-Anbindung behaupten.
+      Bis zum 10.08.2026 ein Widerspruch in der Aussendarstellung: Die
+      Tech-Stack-Tabelle der README listete die drei Protokolle ohne den
+      Zielbild-Vorbehalt, den GROUND_TRUTH Abschnitt 3 ausdrücklich setzt — wer
+      nur die README las, nahm eine gebaute Anlagenanbindung an. Am 10.08.2026
+      um denselben Vorbehalt ergänzt; beide Stellen sagen jetzt dasselbe.
+      Unverändert gilt: keine Unterlage darf eine bestehende
+      Protokoll-Anbindung behaupten.
 
   # ──────────────────────────────────────────────────────────────────────
   # Abweichungserkennung (Reasoner Nr. 2)
@@ -163,72 +164,85 @@ claims:
     status: "gemessen"
     wert: "Verzug 6,9 Tage (Lagerschaden), 5,0 Tage (Werkzeugverschleiss), 1,9 Tage (Schmierstoff-Fehlwahl)"
     bedingung: >-
-      Einmalige Kalibrierungsmessung vom 14.06.2026 auf den vier
-      Simulations-Szenarien, mit dem festgelegten Arbeitspunkt und
-      zustandsspezifischer Vergleichsgrundlage. Gemessen wird der Abstand
-      zwischen dem eingebauten Beginn der Abweichung und der ersten als relevant
+      Kalibrierungsmessung vom 14.06.2026 auf den vier Simulations-Szenarien,
+      mit dem festgelegten Arbeitspunkt und zustandsspezifischer
+      Vergleichsgrundlage; am 10.08.2026 auf dem heutigen Stand von main
+      unverändert reproduziert. Gemessen wird der Abstand zwischen dem
+      eingebauten Beginn der Abweichung und der ersten als relevant
       eingestuften Meldung.
-    datum: "2026-06-14"
+    datum: "2026-08-10"
     fundstelle:
-      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6"
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6 (inkl. Nachmessungs-Vermerk 10.08.2026)"
+      - "tests/integration/test_drift_validation.py (VEROEFFENTLICHTE_KENNZAHLEN)"
       - "Commit b086831"
-    geltung: "ungeprueft"
-    geltung_grund: >-
-      Der gemessene Pfad wurde nach der Messung dreimal geändert: die
-      Vergleichsgrundlage in den Commits aeab6d7 (23.06.) und e24da81 (25.06.),
-      der Detektor in aeab6d7, die Ablaufsteuerung zusätzlich in 34f952b. Alle
-      Änderungen sind additiv, ein erneuter Kalibrierungslauf ist aber nicht
-      belegt. Der begleitende Test prüft ausschliesslich, DASS mit Vorlauf
-      erkannt wird — er hält keine dieser Zahlen fest und wäre auch bei
-      verändertem Verzug grün geblieben.
+    geltung: "gueltig"
     freigabe:
       - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst. Der Zweifel war berechtigt: Der
+      Detektionskern wurde nach der Kalibrierung dreimal berührt (aeab6d7,
+      34f952b, e24da81), und die Suite prüfte bis dahin nur, DASS mit Vorlauf
+      erkannt wird — sie wäre bei verdoppeltem Verzug grün geblieben. Der
+      Wiederholungslauf ergab identische Werte. Die Zahlen sind jetzt im Test
+      als Erwartungswerte hinterlegt, in der Auflösung, in der sie publiziert
+      sind. Gegenprobe gefahren: mit einer Relevanzschwelle von 3,5 statt 3,0
+      schlagen genau die beiden Tests an, deren Werte sich laut Sweep-Tabelle
+      ändern müssen (6,1 und 11,0 Tage) — der Test hängt am gemessenen Pfad,
+      nicht an sich selbst.
 
   - id: "C-009"
     aussage: "Die Abweichungserkennung meldete den Verschleiss zwischen 2,5 und 19,3 Tage vor dem ersten Anlagen-Alarm."
     status: "gemessen"
     wert: "Vorlauf rund 3,4 Tage (Lagerschaden), 2,5 Tage (Werkzeugverschleiss), 19,3 Tage (Schmierstoff-Fehlwahl)"
     bedingung: >-
-      Gleiche Kalibrierungsmessung wie C-008, vom 14.06.2026 auf den vier
-      Simulations-Szenarien. Bezugspunkt ist der im Szenario hinterlegte erste
-      Alarm beziehungsweise die erste Werker-Notiz.
-    datum: "2026-06-14"
+      Gleiche Messung wie C-008, vom 14.06.2026 und am 10.08.2026 unverändert
+      reproduziert. Bezugspunkt ist der im Szenario hinterlegte erste Alarm
+      beziehungsweise die erste Werker-Notiz — ein vom Szenario-Autor gesetzter
+      Zeitpunkt, keine Beobachtung an einer realen Anlage.
+    datum: "2026-08-10"
     fundstelle:
-      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6"
+      - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 6 (inkl. Nachmessungs-Vermerk 10.08.2026)"
+      - "tests/integration/test_drift_validation.py (VEROEFFENTLICHTE_KENNZAHLEN)"
       - "docs/simulation/szenarien.md, Abschnitte 1 bis 4"
-    geltung: "ungeprueft"
-    geltung_grund: >-
-      Derselbe Grund wie C-008 — der gemessene Pfad wurde nach der Messung
-      dreimal geändert, ohne belegten Wiederholungslauf. Hinzu kommt, dass der
-      Vorlauf gegen einen im Szenario gesetzten Alarmzeitpunkt gemessen wird;
-      dieser Bezugspunkt ist eine Annahme des Szenario-Autors, keine
-      Beobachtung an einer realen Anlage.
+    geltung: "gueltig"
     freigabe:
       - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst, gemeinsam mit C-008 und aus
+      demselben Lauf. Der Vorlauf ist die betrieblich interessantere der beiden
+      Kennzahlen — sie sagt, wie viel Zeit zwischen der Meldung und der ersten
+      menschlichen Reaktion liegt. Sie ist seit dem 10.08.2026 als Kennzahl
+      berechnet (vorher nur der Verzug) und im Test als Erwartungswert
+      hinterlegt.
 
   - id: "C-010"
     aussage: "Der Erkennungszeitpunkt liegt bei zwei der drei Verläufe ausserhalb des im Szenario erwarteten Fensters."
     status: "gemessen"
     wert: "Lagerschaden: erwartet 7 bis 10 Tage, gemessen rund 13,9 Tage nach Beginn"
     bedingung: >-
-      Gegenüberstellung zweier Repo-Dokumente auf demselben Prüfsatz: die
-      Szenario-Beschreibung nennt ein enges Erkennungsfenster von drei Tagen,
-      die Kalibrierung meldet den tatsächlichen Verzug. Die Kalibrierung
-      benennt die Abweichung selbst und begründet sie damit, dass ein
-      allmählich ansteigendes Signal im erwarteten Fenster noch im Rauschen
-      liegt.
-    datum: "2026-06-14"
+      Am 10.08.2026 direkt gemessen, nicht mehr nur aus zwei Dokumenten
+      abgeleitet: Der Reasoner meldet je Szenario, ob die Erkennung im engen
+      Erwartungsfenster lag. Ergebnis 1 von 3 — der Schmierstoff-Verlauf trifft
+      das Fenster, Lagerschaden und Werkzeugverschleiss nicht. Ursache laut
+      Kalibrierung: bei einem allmählich ansteigenden Signal liegt die
+      Abweichung im erwarteten Fenster noch im Rauschen.
+    datum: "2026-08-10"
     fundstelle:
       - "docs/simulation/szenarien.md, Abschnitt 1 (Erkennungsfenster 7 bis 10 Tage)"
       - "docs/research/drift-reasoner-kalibrierung.md, Abschnitt 7 (Erkennungsfenster vs. Vorlauf)"
+      - "tests/integration/test_drift_validation.py (primary_detected_in_window je Szenario)"
     geltung: "ungeprueft"
     geltung_grund: >-
-      ZWEI DOKUMENTE, ZWEI MASSSTÄBE, KEINE ENTSCHEIDUNG. Die
-      Szenario-Beschreibung führt das enge Fenster weiterhin als
-      Validierungserwartung; die Kalibrierung erklärt es für ungeeignet und
-      führt die Abnahme stattdessen über den Vorlauf. Beide Dokumente stehen
-      unverändert nebeneinander im Repo. Welcher Massstab gilt, ist offen —
-      und damit auch, ob die Erkennung als fristgerecht gelten darf.
+      ZWEI DOKUMENTE, ZWEI MASSSTÄBE, KEINE ENTSCHEIDUNG. Die Zahl selbst ist
+      seit dem 10.08.2026 gemessen und im Test festgehalten — offen ist nicht
+      der Wert, sondern der Massstab: Die Szenario-Beschreibung führt das enge
+      Fenster weiterhin als Validierungserwartung, die Kalibrierung erklärt es
+      für ungeeignet und führt die Abnahme über den Vorlauf. Beide Dokumente
+      stehen unverändert nebeneinander im Repo. Solange das nicht entschieden
+      ist, lässt sich nicht sagen, ob die Erkennung fristgerecht war — und
+      damit taugt der Eintrag für keine Unterlage.
     freigabe:
       - "intern"
 
@@ -391,51 +405,58 @@ claims:
   - id: "C-018"
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
-    wert: "862 bestanden, 2 übersprungen"
+    wert: "977 bestanden, 2 übersprungen, 2 abgewählt"
     bedingung: >-
-      Lauf vom 31.07.2026 auf dem Arbeitszweig, dessen Inhalt als Commit
-      5f90439 auf main gemergt wurde. Gefahren gegen eine echte Zeitreihen-
-      Datenbank, nicht gegen Attrappen; die zwei Übersprungenen sind
-      ausdrücklich abwählbare Prüfungen.
-    datum: "2026-07-31"
+      Lauf vom 10.08.2026 auf dem Stand von main (5f90439) gegen eine echte
+      Zeitreihen-Datenbank derselben Fassung wie im automatischen Prüflauf,
+      nicht gegen Attrappen. Die zwei Übersprungenen brauchen ein lokal
+      laufendes Sprachmodell, die zwei Abgewählten ein 560 MB grosses
+      Sprachmodell für die Namenserkennung — beide sind im Pflichtlauf
+      ausdrücklich ausgenommen, wie im automatischen Prüflauf auch.
+    datum: "2026-08-10"
     fundstelle:
-      - "NEXUS-Eintrag 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES)"
+      - "Eigener Lauf 10.08.2026, 977 passed / 2 skipped / 2 deselected in 589 s"
       - "Commit 5f90439"
-      - "Gegenzählung 10.08.2026: 904 Prüffunktionen in 125 Dateien unter tests/"
-    geltung: "ungeprueft"
-    geltung_grund: >-
-      WIDERSPRUCH ZUR AUSSENDARSTELLUNG. README.md Zeile 182 nennt für main
-      rund 370 Tests. Der belegte Lauf meldet 862, die statische Gegenzählung
-      904 Prüffunktionen. Die README-Zahl bezieht sich erkennbar auf einen
-      älteren Bauzustand (dort als F2 bis F6 bezeichnet), wurde aber nie
-      nachgezogen und steht öffentlich. Der Aufräum-Bericht hat das im Juni
-      gemeldet und die Korrektur bewusst offengelassen. Solange beide Zahlen
-      nebeneinander stehen, ist keine von beiden zitierfähig.
+      - "Gegenzählung: 904 Prüffunktionen in 125 Dateien unter tests/ (weniger als die Laufzahl, weil tabellengetriebene Fälle einmal im Quelltext stehen und mehrfach laufen)"
+    geltung: "gueltig"
     freigabe:
       - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst — durch Messen statt durch
+      Entscheiden. Die beiden widersprechenden Zahlen waren die README-Angabe
+      von rund 370 Tests (ein älterer Bauzustand, nie nachgezogen) und ein
+      Lauf vom 31.07.2026 mit 862 Tests. Beide sind überholt; die README ist
+      im selben Arbeitsschritt korrigiert worden. Warum der Lauf vom 31.07.
+      niedriger lag, ist nicht rekonstruierbar und wird auch nicht behauptet.
 
   - id: "C-019"
     aussage: "Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze."
     status: "gemessen"
-    wert: "87,20 Prozent Zweigabdeckung"
+    wert: "94,45 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
     bedingung: >-
-      Gemessen im selben Lauf vom 31.07.2026 wie C-018, gegen eine echte
+      Gemessen im selben Lauf vom 10.08.2026 wie C-018, gegen eine echte
       Zeitreihen-Datenbank. Zweigabdeckung, nicht Zeilenabdeckung — so ist die
-      Messung im Manifest eingestellt.
-    datum: "2026-07-31"
+      Messung im Manifest eingestellt. Ohne erreichbare Datenbank fällt der
+      Wert deutlich ab, weil die Integrationsprüfungen dann überspringen; die
+      Zahl gilt nur für einen Lauf mit Datenbank.
+    datum: "2026-08-10"
     fundstelle:
-      - "NEXUS-Eintrag 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES)"
+      - "Eigener Lauf 10.08.2026, Total coverage 94.45 Prozent"
       - "pyproject.toml, Zeile 211 (Zweigabdeckung aktiv)"
-    geltung: "ungeprueft"
-    geltung_grund: >-
-      WIDERSPRUCH ZUR AUSSENDARSTELLUNG. README.md Zeile 182 nennt rund 95
-      Prozent Zweigabdeckung, der belegte Lauf 87,20 Prozent. Dieselbe Zahl
-      ist zusätzlich in die Kennzahlenkarte der persönlichen Website
-      eingeflossen (NEXUS-Eintrag b343af89-4c3f-49fb-a0a4-0074131fe19d), steht
-      also bereits an zwei Stellen aussen. Welcher Wert für welchen Bauzustand
-      gilt, ist nicht aufgelöst; ein aktueller Lauf würde es entscheiden.
+    geltung: "gueltig"
     freigabe:
       - "intern"
+      - "fach"
+    bemerkung: >-
+      Am 10.08.2026 aus 'ungeprueft' aufgelöst. Von den beiden strittigen
+      Werten lag die öffentliche README-Angabe (rund 95 Prozent) praktisch
+      richtig und die interne Zahl vom 31.07.2026 (87,20 Prozent) daneben — das
+      war vorher nicht absehbar und ist der Grund, warum der Eintrag nicht
+      nach Quellenrang aufgelöst wurde, sondern durch einen Lauf. Dieselbe
+      Zahl steht in der Kennzahlenkarte der persönlichen Website
+      (NEXUS-Eintrag b343af89-4c3f-49fb-a0a4-0074131fe19d) und ist dort damit
+      gedeckt.
 
   - id: "C-020"
     aussage: "Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern."
@@ -456,40 +477,41 @@ claims:
     bemerkung: >-
       Zielwert: mindestens 85 Prozent Zweigabdeckung. Bewusst ohne Wertfeld —
       eine Untergrenze ist kein erreichter Wert. Der erreichte Wert steht als
-      C-019 und ist derzeit ungeprüft.
+      C-019.
 
   - id: "C-021"
     aussage: "Die Prüfsuite des Oberflächen-Teils läuft vollständig grün."
     status: "gemessen"
     wert: "733 bestanden in 144 Prüfdateien"
     bedingung: >-
-      Lauf vom 31.07.2026 auf dem Arbeitszweig, dessen Inhalt als Commit
-      5f90439 auf main gemergt wurde, zusammen mit fehlerfreier Typprüfung und
-      fehlerfreier Stilprüfung.
-    datum: "2026-07-31"
+      Lauf vom 10.08.2026 auf dem Stand von main (5f90439), zusammen mit
+      fehlerfreier Typprüfung und fehlerfreier Stilprüfung. Bestätigt den Lauf
+      vom 31.07.2026 mit identischer Zahl.
+    datum: "2026-08-10"
     fundstelle:
-      - "NEXUS-Eintrag 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES)"
-      - "Gegenzählung 10.08.2026: 144 Prüfdateien mit 701 einzeln benannten Fällen"
+      - "Eigener Lauf 10.08.2026: 144 Prüfdateien, 733 bestanden, 55,75 s"
+      - "NEXUS-Eintrag 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES, 31.07.2026)"
     geltung: "gueltig"
     freigabe:
       - "intern"
+      - "fach"
     bemerkung: >-
-      Die Dateizahl stimmt mit der Gegenzählung exakt überein; die
-      Fallzahl liegt bei der statischen Zählung niedriger, weil
-      tabellengetriebene Fälle im Quelltext einmal stehen und mehrfach laufen.
-      Kein Widerspruch. Der im Aufräum-Bericht genannte Stand von 633 Fällen
-      ist der ältere Wert vom Juni 2026.
+      Zwei unabhängige Läufe mit demselben Ergebnis. Die statische Gegenzählung
+      findet 701 einzeln benannte Fälle in denselben 144 Dateien — die Differenz
+      sind tabellengetriebene Fälle, die einmal im Quelltext stehen und mehrfach
+      laufen. Kein Widerspruch. Der im Aufräum-Bericht genannte Stand von 633
+      Fällen ist der ältere Wert vom Juni 2026.
 
   - id: "C-022"
     aussage: "Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch."
     status: "gemessen"
-    wert: "0 Typfehler über 145 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung ohne Befund"
+    wert: "0 Typfehler über 148 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 305 Dateien ohne Befund"
     bedingung: >-
-      Lauf vom 31.07.2026, gleicher Stand wie C-018. Die Typprüfung läuft im
-      strengsten Modus, die Formatprüfung über 305 Dateien.
-    datum: "2026-07-31"
+      Lauf vom 10.08.2026, gleicher Stand wie C-018. Die Typprüfung läuft im
+      strengsten Modus.
+    datum: "2026-08-10"
     fundstelle:
-      - "NEXUS-Eintrag 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES)"
+      - "Eigener Lauf 10.08.2026: mypy Success in 148 source files, ruff check All checks passed, ruff format 305 files already formatted, tsc und eslint ohne Ausgabe"
       - "GROUND_TRUTH.md, Abschnitt 10.2"
     geltung: "gueltig"
     freigabe:
