@@ -47,11 +47,14 @@ Stand: 2026-08-10
 | C-037 | Die Kostenschätzung für den Cloud-Zugriff rechnet bewusst mit dem Listenpreis statt mit dem Einführungspreis. | geschaetzt | ca. 3 US-Dollar je Million Eingabe-Zeichenblöcke, ca. 15 je Million Ausgabe-Zeichenblöcke | 2026-07-30 | gueltig | intern |
 | C-038 | Die Antwortzeit der Plattform ist nicht erhoben; es liegen ausschliesslich Messpunkte des Gedächtnis-Dienstes vor. | gemessen | 0 erhobene Antwortzeit-Verteilungen für die Plattform selbst | 2026-08-10 | gueltig | intern |
 | C-039 | Der vierte Auswerte-Baustein zu Wartungszyklen ist nicht gebaut und hängt an einer echten Wartungshistorie. | geplant | — | 2026-07-31 | gueltig | intern |
-| C-040 | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | gemessen | Stand vom 12.06.2026; nennt einen Zugangsweg als geltend, der seit dem 31.07.2026 entfernt ist | 2026-07-31 | gueltig | intern |
 
 ## Nicht verwendbar
 
-Keine Einträge.
+Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
+
+| ID | Produkt | Aussage | Geltung | Grund |
+|---|---|---|---|---|
+| C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 
 ## Zählung
 
@@ -66,6 +69,6 @@ Nach Status:
 
 Nach Geltung:
 
-- gueltig: 40
-- ueberholt: 0
+- gueltig: 39
+- ueberholt: 1
 - ungeprueft: 0

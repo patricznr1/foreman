@@ -880,12 +880,22 @@ claims:
       Arbeitsbaum und wurde von den bisherigen Korrekturen nicht erfasst.
     datum: "2026-07-31"
     fundstelle:
-      - "NEXUS-Eintrag 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Zwei Funde, die Patric entscheiden muss)"
-      - "Zweig origin/gh-pages, letzter Stand bbc48cb"
-    geltung: "gueltig"
+      - "Internes Sitzungsprotokoll 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Zwei Funde, die Patric entscheiden muss)"
+      - "Zweig origin/gh-pages, Stand 5cefe1b vor der Bereinigung"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die
+      Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind
+      entfernt statt aktualisiert — die Projektseite braucht keine davon,
+      belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte
+      und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu
+      pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat.
+      Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die
+      vier entfernten Adressen liefern 404.
     freigabe:
       - "intern"
     bemerkung: >-
-      Aussenwirksam und unerledigt: Die Seite bewirbt einen Zugangsweg, den es
-      nicht mehr gibt. Solange das so ist, widerspricht die öffentliche
-      Projektseite dem Eintrag C-029.
+      Erster überholter Eintrag des Registers, und ein gewollter: Er bleibt
+      stehen, damit nachvollziehbar ist, warum eine kursierende Aussage über
+      die Projektseite nicht mehr gilt. Der Widerspruch zu C-029 (Konten und
+      Rollen entstehen nur über den Betreiber-Weg) ist damit aufgelöst.
