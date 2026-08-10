@@ -82,3 +82,6 @@ tmp/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# --- Interne Arbeitsanweisungen: gehören nicht ins öffentliche Repo ---
+PROMPT_*.md
