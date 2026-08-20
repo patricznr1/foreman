@@ -35,9 +35,10 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any, Protocol
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -396,6 +397,72 @@ async def backfill_rows(
     return stats
 
 
+async def referenzen_zuruecksetzen(
+    session: AsyncSession,
+    *,
+    vor: datetime,
+    dry_run: bool = False,
+) -> int:
+    """Setzt `substrate_ref` auf NULL für Zeilen, deren Referenz ins Leere zeigt.
+
+    ANLASS (belegt am 20.08.2026): 65 `semantic_events` aus dem Zeitraum
+    24.06. bis 13.07.2026 tragen je eine vom Substrat zurückgegebene Kennung. Keine
+    davon existiert dort noch — geprüft über vier unabhängige Wege: direkter
+    Schlüssel-Zugriff auf den Bestand, Aufstellung nach Herkunft, die zweite
+    Instanz, und eine Suche im persönlichen Bestand. Auch nicht als gelöscht
+    vermerkt; sie sind nie in der Datenbank des Substrats angekommen.
+
+    WAS DAS FELD BEDEUTET: „Diese Zeile ist im Gedächtnis gespiegelt." Für die
+    betroffenen Zeilen ist diese Aussage falsch. NULL ist damit nicht ein
+    Datenverlust, sondern die Richtigstellung — und erst sie lässt den
+    Backfill die Zeilen wieder aufgreifen, denn er überspringt alles mit
+    gesetzter Referenz (Idempotenz-Invariante, §12.4).
+
+    STICHTAG STATT PAUSCHAL: Zurückgesetzt wird nur, was VOR `vor` entstand.
+    Alles danach ist nicht geprüft und wird nicht angefasst — ein pauschales
+    Zurücksetzen würde auch gültige Referenzen entwerten und dieselbe Erinnerung
+    ein zweites Mal anlegen.
+
+    Args:
+        session: DB-Sitzung.
+        vor: Stichtag (`created_at <` diesem Wert). Nur geprüfte Zeiträume.
+        dry_run: Nur zählen, nichts schreiben.
+
+    Returns:
+        Anzahl betroffener Zeilen.
+    """
+    auswahl = select(func.count()).where(
+        SemanticEvent.substrate_ref.is_not(None),
+        SemanticEvent.created_at < vor,
+    )
+    betroffen = int((await session.scalar(auswahl)) or 0)
+    if dry_run or betroffen == 0:
+        logger.info(
+            "🔎 %d Zeile(n) mit Referenz vor %s%s.",
+            betroffen,
+            vor.isoformat(),
+            " — Probelauf, nichts geschrieben" if dry_run else "",
+        )
+        return betroffen
+
+    await session.execute(
+        update(SemanticEvent)
+        .where(
+            SemanticEvent.substrate_ref.is_not(None),
+            SemanticEvent.created_at < vor,
+        )
+        .values(substrate_ref=None)
+    )
+    await session.commit()
+    logger.warning(
+        "🧹 %d Referenz(en) vor %s zurückgesetzt — sie zeigten nachweislich ins Leere. "
+        "Der nächste Lauf spiegelt diese Zeilen erneut.",
+        betroffen,
+        vor.isoformat(),
+    )
+    return betroffen
+
+
 async def backfill_semantic_events(
     session: AsyncSession,
     substrate: _SupportsRemember,
@@ -453,6 +520,16 @@ def _nonneg_float(value: str) -> float:
     return fvalue
 
 
+def _iso_datum(value: str) -> datetime:
+    """argparse-Typ: ISO-8601-Datum. Naive Angaben gelten als UTC — dieselbe
+    Zeitachse, auf der `semantic_events.created_at` liegt."""
+    try:
+        gelesen = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"kein ISO-8601-Datum: {value!r}") from exc
+    return gelesen if gelesen.tzinfo is not None else gelesen.replace(tzinfo=UTC)
+
+
 def build_argparser() -> argparse.ArgumentParser:
     """Baut den CLI-Parser für den Substrat-Backfill."""
     parser = argparse.ArgumentParser(
@@ -495,6 +572,18 @@ def build_argparser() -> argparse.ArgumentParser:
         action="store_true",
         help="Nur zählen, was gespiegelt würde — kein remember, kein DB-Schreibvorgang.",
     )
+    parser.add_argument(
+        "--referenzen-zuruecksetzen-vor",
+        type=_iso_datum,
+        default=None,
+        metavar="ISO-DATUM",
+        help=(
+            "Setzt substrate_ref auf NULL für Zeilen VOR diesem Datum, sodass der Lauf "
+            "sie erneut spiegelt. NUR verwenden, wenn nachgewiesen ist, dass die "
+            "Referenzen dieses Zeitraums ins Leere zeigen — sonst entsteht die "
+            "Erinnerung ein zweites Mal. Beachtet --dry-run."
+        ),
+    )
     return parser
 
 
@@ -517,6 +606,12 @@ async def amain(argv: list[str] | None = None, *, settings: Settings | None = No
                 args.limit,
                 args.dry_run,
             )
+            if args.referenzen_zuruecksetzen_vor is not None:
+                await referenzen_zuruecksetzen(
+                    session,
+                    vor=args.referenzen_zuruecksetzen_vor,
+                    dry_run=args.dry_run,
+                )
             stats = await backfill_semantic_events(
                 session,
                 substrate,

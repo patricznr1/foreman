@@ -811,3 +811,43 @@ def test_anreicherung_laesst_die_uebergebene_payload_unberuehrt() -> None:
     meta = herkunft_ergaenzen("alarm_raised", original)
     assert original == {"machine_id": 3}
     assert meta is not original
+
+
+# ------------------------------------------------------------
+#  Zurücksetzen toter Referenzen (Freigabe Patric, 20.08.2026)
+# ------------------------------------------------------------
+def test_iso_datum_liest_mit_und_ohne_zone() -> None:
+    """Naive Angaben gelten als UTC — dieselbe Achse wie semantic_events.created_at.
+    Ohne die Zone bräche der Vergleich in der Abfrage mit TypeError, und zwar
+    erst dort, weit weg von der Eingabe."""
+    from datetime import UTC, datetime
+
+    from foreman.substrate.backfill import _iso_datum
+
+    assert _iso_datum("2026-08-01") == datetime(2026, 8, 1, tzinfo=UTC)
+    assert _iso_datum("2026-08-01T12:00:00Z") == datetime(2026, 8, 1, 12, 0, tzinfo=UTC)
+    assert _iso_datum("2026-08-01T12:00:00+02:00").tzinfo is not None
+
+
+@pytest.mark.parametrize("unsinn", ["gestern", "01.08.2026", "", "2026-13-45"])
+def test_iso_datum_weist_unlesbares_ab(unsinn: str) -> None:
+    import argparse
+
+    from foreman.substrate.backfill import _iso_datum
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        _iso_datum(unsinn)
+
+
+def test_flag_ist_per_default_aus() -> None:
+    """Ein Lauf ohne das Flag darf NIE Referenzen anfassen — das Zurücksetzen
+    ist ein Eingriff, kein Nebeneffekt des normalen Nachtrags."""
+    args = build_argparser().parse_args([])
+    assert args.referenzen_zuruecksetzen_vor is None
+
+
+def test_flag_nimmt_ein_datum_entgegen() -> None:
+    from datetime import UTC, datetime
+
+    args = build_argparser().parse_args(["--referenzen-zuruecksetzen-vor", "2026-08-01"])
+    assert args.referenzen_zuruecksetzen_vor == datetime(2026, 8, 1, tzinfo=UTC)
