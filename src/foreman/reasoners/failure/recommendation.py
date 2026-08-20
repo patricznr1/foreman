@@ -344,6 +344,11 @@ class RecommendationService:
         """
         payload = {
             "reasoner": REASONER_NAME,
+            # Herkunft wie bei den Ingestion-Ereignissen (§12.4). Eine Empfehlung
+            # ist keine Archiv-Quelle und hat keine eigene Zeile — `source_id`
+            # bleibt leer statt geraten; die Vorhersage steht separat darunter.
+            "source_type": "failure_recommendation",
+            "source_id": None,
             "prediction_id": recommendation.prediction_id,
             "machine_id": recommendation.machine_id,
             "decision": recommendation.decision,

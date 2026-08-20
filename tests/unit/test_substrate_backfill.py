@@ -24,6 +24,7 @@ from foreman.substrate.backfill import (
     BackfillStats,
     backfill_rows,
     build_argparser,
+    herkunft_ergaenzen,
     reconstruct_content,
 )
 from foreman.substrate.client import SubstrateError
@@ -352,9 +353,13 @@ async def test_backfill_setzt_refs_und_spiegelt_payload() -> None:
     assert all(r.substrate_ref is not None for r in db.rows)
     assert len(sub.calls) == 3
     assert db.commits == 3  # per-Zeile-Commit
-    # metadata == die jeweilige payload (exakt wie der ursprüngliche Dual-Write).
+    # metadata == die jeweilige payload plus die abgeleitete Herkunft. Die
+    # payload-Felder selbst bleiben unverändert (exakt wie der ursprüngliche
+    # Dual-Write) — die DB-Zeile wird dabei nicht angefasst.
     for r, (_content, meta) in zip(db.rows, sub.calls, strict=True):
-        assert meta == r.payload
+        assert meta == herkunft_ergaenzen(r.event_type, r.payload)
+        assert all(meta[k] == v for k, v in r.payload.items())
+        assert "source_type" not in r.payload  # Zeile unberührt
 
 
 async def test_backfill_nur_null_refs() -> None:
@@ -725,3 +730,84 @@ def test_argparser_lehnt_ungueltige_werte_ab(argv: list[str]) -> None:
     # argparse beendet bei Typ-/Wertfehler mit SystemExit(2) — kein No-op/Unsinn-Lauf.
     with pytest.raises(SystemExit):
         build_argparser().parse_args(argv)
+
+
+# ------------------------------------------------------------
+#  Herkunft in der Payload (Freigabe-Bedingung 3)
+# ------------------------------------------------------------
+# Alle sechs event_type, die je über record_semantic_event entstehen — dieselbe
+# Menge, die _CONTENT_BUILDERS abdeckt. Der zweite Wert ist die erwartete
+# Herkunft, der dritte sagt, ob ein Treffer dieses Typs im Archiv auflösbar ist.
+_HERKUNFT_FAELLE = [
+    ("alarm_raised", "alarm", True),
+    ("maintenance_performed", "maintenance", True),
+    ("production_run", "production_run", False),
+    ("drift_detected", "drift", False),
+    ("event_chain_reconstructed", "event_chain", False),
+    ("failure_recommendation", "failure_recommendation", False),
+]
+
+
+@pytest.mark.parametrize(("event_type", "erwartet", "_archiv"), _HERKUNFT_FAELLE)
+def test_herkunft_wird_fuer_jeden_typ_abgeleitet(
+    event_type: str, erwartet: str, _archiv: bool
+) -> None:
+    """Alle sechs Formen, nicht nur die drei des Park-Seeds."""
+    meta = herkunft_ergaenzen(event_type, {"machine_id": 7})
+    assert meta["source_type"] == erwartet
+    assert meta["machine_id"] == 7
+
+
+def test_die_sechs_faelle_decken_alle_gebauten_typen_ab() -> None:
+    """Gegen stilles Auseinanderlaufen: kommt ein siebter event_type dazu,
+    fällt er hier auf und nicht erst im Betrieb."""
+    from foreman.substrate.backfill import _CONTENT_BUILDERS, _SOURCE_TYPES
+
+    assert set(_SOURCE_TYPES) == set(_CONTENT_BUILDERS)
+    assert {t for t, _, _ in _HERKUNFT_FAELLE} == set(_CONTENT_BUILDERS)
+
+
+def test_vorhandene_herkunft_wird_nicht_ueberschrieben() -> None:
+    """Neue Zeilen schreiben die Herkunft selbst mit — der Nachtrag ist für
+    den Altbestand da und darf die Quelle nie überstimmen."""
+    meta = herkunft_ergaenzen("alarm_raised", {"source_type": "alarm", "source_id": 42})
+    assert meta["source_type"] == "alarm"
+    assert meta["source_id"] == 42
+
+
+def test_altbestand_bekommt_herkunft_aber_keinen_geratenen_schluessel() -> None:
+    """Die Kernentscheidung: `source_type` folgt eindeutig aus dem event_type,
+    `source_id` steht in der Zeile nicht drin. Er wird NICHT über Maschine plus
+    Zeitstempel erraten — eine falsche Zuordnung wäre plausibel und falsch.
+    Ein Treffer ohne Rückweg bleibt eine eigenständige Erinnerung.
+    """
+    altbestand = {
+        "code": "AX-03-TEMP",
+        "severity": "warning",
+        "category": "temperature",
+        "machine_id": 3,
+        "raised_at": "2026-06-21T22:03:51",
+    }
+    meta = herkunft_ergaenzen("alarm_raised", altbestand)
+    assert meta["source_type"] == "alarm"
+    assert meta["source_id"] is None
+
+
+def test_unbekannter_typ_bekommt_keine_erfundene_herkunft() -> None:
+    meta = herkunft_ergaenzen("voellig_neuer_typ", {"a": 1})
+    assert "source_type" not in meta
+    assert meta["source_id"] is None
+    assert meta["a"] == 1
+
+
+def test_anreicherung_laesst_die_uebergebene_payload_unberuehrt() -> None:
+    """Invariante des Backfills: einzige DB-Schreibung ist `substrate_ref`.
+
+    Würde hier die übergebene Abbildung mutiert, hinge daran eine ORM-Zeile und
+    der nächste Commit schriebe die Änderung mit — additiv wäre der Lauf dann
+    nicht mehr.
+    """
+    original = {"machine_id": 3}
+    meta = herkunft_ergaenzen("alarm_raised", original)
+    assert original == {"machine_id": 3}
+    assert meta is not original

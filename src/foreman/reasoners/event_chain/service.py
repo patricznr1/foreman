@@ -427,6 +427,12 @@ class EventChainService:
         Gedächtnis-Substrat). Best-effort über F3 `record_semantic_event`."""
         payload = {
             "reasoner": REASONER_NAME,
+            # Herkunft wie bei den Ingestion-Ereignissen (§12.4). Eine Kette ist
+            # keine Archiv-Quelle und hat keine eigene Zeile — die Erklärung ist
+            # ein Pydantic-Ergebnis, kein Datensatz. `source_id` bleibt deshalb
+            # leer statt geraten; der Anker-Alarm steht separat darunter.
+            "source_type": "event_chain",
+            "source_id": None,
             "anchor_alarm_id": explanation.anchor_alarm_id,
             "machine_id": explanation.machine_id,
             "event_count": len(chain.events),

@@ -129,6 +129,46 @@ _CONTENT_BUILDERS: dict[str, Callable[[Mapping[str, Any]], str]] = {
 }
 
 
+# Abbildung event_type → source_type. Deterministisch, kein Rückschluss: der
+# event_type steht in der Zeile, die Herkunft folgt daraus eindeutig.
+# `alarm`/`maintenance` sind die beiden Werte, unter denen ein Treffer auch im
+# Archiv auflösbar ist (§15.9 kennt note/maintenance/alarm); die übrigen
+# bezeichnen Gedächtnis-Inhalt ohne Archiv-Entsprechung.
+_SOURCE_TYPES: dict[str, str] = {
+    "alarm_raised": "alarm",
+    "production_run": "production_run",
+    "maintenance_performed": "maintenance",
+    "drift_detected": "drift",
+    "event_chain_reconstructed": "event_chain",
+    "failure_recommendation": "failure_recommendation",
+}
+
+
+def herkunft_ergaenzen(event_type: str, payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Liefert die Metadaten für den Nachtrag: die payload plus die Herkunft.
+
+    Seit dem 20.08.2026 schreibt der Dual-Write `source_type` und `source_id`
+    selbst mit. Zeilen aus der Zeit davor — der Park-Seed und alles, was bei
+    leerem Substrat entstand — tragen beides nicht.
+
+    `source_type` wird deterministisch aus dem `event_type` ergänzt. `source_id`
+    NICHT: der Schlüssel der Quellzeile steht in der Zeile nicht drin und ließe
+    sich nur über Maschine plus Zeitstempel erraten. Eine falsche Zuordnung wäre
+    plausibel und falsch — der Treffer bleibt dann lieber ohne Rückweg und wird
+    als eigenständige Erinnerung angezeigt.
+
+    Die DB-Zeile wird dabei NICHT verändert (Invariante: einzige Schreibung ist
+    `substrate_ref`) — angereichert wird eine Kopie.
+    """
+    metadata = dict(payload)
+    if not metadata.get("source_type"):
+        abgeleitet = _SOURCE_TYPES.get(event_type)
+        if abgeleitet is not None:
+            metadata["source_type"] = abgeleitet
+    metadata.setdefault("source_id", None)
+    return metadata
+
+
 def reconstruct_content(event_type: str, payload: Mapping[str, Any]) -> str | None:
     """Baut den Substrat-Text aus event_type + payload — wortgleich zum Aufrufer.
 
@@ -273,11 +313,12 @@ async def _process_row(
     if dry_run:
         stats.would_remember += 1
         return False
-    # metadata = die gespiegelte payload — exakt wie der ursprüngliche Dual-Write.
+    # metadata = die gespiegelte payload plus die deterministisch abgeleitete
+    # Herkunft (Altbestand trägt sie nicht). Kopie — die DB-Zeile bleibt unberührt.
     response = await _remember_with_retry(
         substrate,
         content,
-        dict(row.payload),
+        herkunft_ergaenzen(row.event_type, row.payload),
         max_attempts=max_attempts,
         base_delay_s=base_delay_s,
         sleep=sleep,
