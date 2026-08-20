@@ -11,12 +11,12 @@
 #  Sicherheit: Recall-Inhalte sind externer Freitext → in den Grounding-Quellen
 #         werden sie als untrusted geführt (siehe grounding_sources.py).
 # ============================================================
-import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from foreman.core.sanitize import clean_excerpt
 from foreman.db.models import Alarm, Machine
 from foreman.ingestion.semantic import extract_substrate_ref
 from foreman.logging_setup import REASON, get_logger
@@ -43,14 +43,6 @@ _RELEVANCE_KEYS = ("relevance", "score", "similarity", "relevance_score")
 # Ereigniszeit des Treffers. `occurred_at` ist die Gültigkeitszeit der Fassade;
 # die übrigen Namen sind Rückfallpositionen derselben Achse.
 _OCCURRED_AT_KEYS = ("occurred_at", "occurredAt", "timestamp", "created_at", "createdAt")
-
-# Output-Sanitisierung des Auszugs (LLM05, defensiv — der Recall-Inhalt ist
-# untrusted externer Freitext und wird im FE nur angezeigt, nie als Instruktion).
-_TAG_RE = re.compile(r"<[^>]*>")
-_MD_LINK_RE = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
-_URL_RE = re.compile(r"(?:https?|ftp|file|data|javascript|vbscript):(?://)?\S+", re.IGNORECASE)
-_WHITESPACE_RE = re.compile(r"\s+")
-_EXCERPT_MAX_LEN = 200
 
 
 @dataclass(frozen=True)
@@ -265,22 +257,6 @@ async def recall_similar_incidents(
 def to_grounding_inputs(items: Sequence[RecallItem]) -> list[str]:
     """Hilfs-Sicht: nur die Inhalte (für die Grounding-Quellen-Bildung)."""
     return [item.content for item in items]
-
-
-def clean_excerpt(text: str, *, max_len: int = _EXCERPT_MAX_LEN) -> str:
-    """Sanitisiert + kürzt den untrusted Recall-Inhalt für die reine Anzeige.
-
-    Entfernt HTML/Markdown-Links/rohe URLs (Output-Smuggling, LLM05), normalisiert
-    Whitespace und kürzt auf `max_len` (mit Ellipsis). Der Auszug ist NIE eine
-    Instruktion — er wird im FE nur dargestellt.
-    """
-    cleaned = _MD_LINK_RE.sub(r"\1", text)
-    cleaned = _TAG_RE.sub("", cleaned)
-    cleaned = _URL_RE.sub("[link entfernt]", cleaned)
-    cleaned = _WHITESPACE_RE.sub(" ", cleaned).strip()
-    if len(cleaned) > max_len:
-        cleaned = cleaned[: max_len - 1].rstrip() + "…"
-    return cleaned
 
 
 def sibling_similarity_basis(anchor: Alarm, machine: Machine | None) -> str:
