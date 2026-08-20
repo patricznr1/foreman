@@ -19,20 +19,30 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.archive.schemas import ArchiveHit, SourceType
+from foreman.core.sanitize import clean_excerpt
 from foreman.db.models import Alarm, MaintenanceEvent, WorkerNote
 from foreman.embeddings.provider import EmbeddingProvider
 from foreman.notes.search import DEFAULT_SEARCH_K, RRF_K, embed_and_search_hybrid
+from foreman.reasoners.event_chain.recall import RecallItem, recall_similar_incidents
+from foreman.substrate.client import SubstrateClient
 
 # Alle Archiv-Quellen — Default-Suchraum, wenn `sources` nicht gesetzt ist.
-ALL_SOURCES: tuple[SourceType, ...] = ("note", "maintenance", "alarm")
+ALL_SOURCES: tuple[SourceType, ...] = ("note", "maintenance", "alarm", "memory")
 
 # Auszugs-Budget (Zeichen) — spiegelt frontend/lib/memory/excerpt.ts (Wortgrenze, " …").
 EXCERPT_MAX = 180
+
+# Ersatz-Zeitpunkt fuer eine Erinnerung ohne eigene Zeitangabe. Bewusst der
+# Anfang der Zeitrechnung und nicht "jetzt": Ein Treffer ohne Zeit soll in einer
+# zeitlich sortierten Liste HINTEN stehen, nicht faelschlich als der juengste.
+_OHNE_ZEIT = datetime(1970, 1, 1, tzinfo=UTC)
 
 # Allowlist der durchsuchbaren Volltext-Tabellen. `table` in `_fulltext_ids` wird per
 # f-String interpoliert (Identifier sind nicht parametrisierbar); die Allowlist macht die
@@ -141,6 +151,70 @@ def _rrf_key(item: tuple[int, ArchiveHit]) -> tuple[float, float, str, int]:
     return (-rrf_score, -hit.timestamp.timestamp(), hit.source_type, hit.id)
 
 
+async def _substrat_treffer(
+    substrate: SubstrateClient | None,
+    q: str,
+    *,
+    machine_id: int | None,
+    k: int,
+) -> list[ArchiveHit]:
+    """Ruft Erinnerungen ab und formt sie zu ArchiveHits — STRIKT best-effort.
+
+    Kein Substrat, abgeschaltet oder JEDER Fehler → leere Liste. Die drei eigenen
+    Quellen tragen dann allein; das Archiv funktioniert ohne Gedächtnis weiter
+    (dieselbe Zusage wie für den Embedding-Ausfall, §15.8).
+
+    `machine_id` ist bei den eigenen Quellen ein harter WHERE-Filter. Hier kann er
+    das nicht sein — der Abruf ist semantisch, nicht relational. Er wird deshalb
+    NACHTRÄGLICH angewandt: ein Treffer ohne bekannte Maschine faellt bei gesetztem
+    Filter heraus, statt als moeglicherweise passend durchzugehen. Lieber ein
+    Treffer zu wenig als einer, der eine Zugehoerigkeit behauptet, die niemand
+    geprueft hat.
+    """
+    if substrate is None or k <= 0:
+        return []
+    items = await recall_similar_incidents(substrate, q, max_results=k)
+
+    treffer: list[ArchiveHit] = []
+    for item in items:
+        if machine_id is not None and item.machine_id != machine_id:
+            continue
+        treffer.append(_memory_hit(item))
+    return treffer
+
+
+def _memory_hit(item: RecallItem) -> ArchiveHit:
+    """Formt eine Erinnerung zu einem Archiv-Treffer.
+
+    Der Inhalt laeuft durch `clean_excerpt`, NICHT durch `_make_excerpt`: Er kommt
+    aus dem Gedaechtnis zurueck und ist damit untrusted — HTML, Markdown-Links und
+    rohe URLs werden entschaerft, nicht nur gekuerzt (Freigabe-Bedingung 5).
+
+    `id` ist bei den eigenen Quellen der Primaerschluessel. Eine Erinnerung hat
+    keinen; getragen wird stattdessen der Rueckweg in `detail` — falls die
+    Erinnerung ihn kennt. Fuer Altbestand fehlt er und wird NICHT geraten.
+    """
+    detail: dict[str, Any] = {"herkunft": "gedaechtnis"}
+    if item.ref:
+        detail["erinnerung"] = item.ref
+    if item.machine_class:
+        detail["maschinenklasse"] = item.machine_class
+
+    return ArchiveHit(
+        source_type="memory",
+        # Kein Primaerschluessel vorhanden — 0 statt einer erfundenen Zahl, die
+        # auf eine fremde Zeile zeigen wuerde.
+        id=0,
+        machine_id=item.machine_id,
+        # Ohne Zeitstempel waere der Treffer nicht einsortierbar; der Abruf liefert
+        # ihn (Freigabe-Bedingung 4), und ohne ihn gehoert der Treffer nicht in
+        # eine nach Zeit sortierbare Liste.
+        timestamp=item.occurred_at or _OHNE_ZEIT,
+        excerpt=clean_excerpt(item.content),
+        detail=detail,
+    )
+
+
 async def search_archive(
     provider: EmbeddingProvider,
     session: AsyncSession,
@@ -150,6 +224,8 @@ async def search_archive(
     sources: Sequence[SourceType] | None = None,
     k: int = DEFAULT_SEARCH_K,
     max_distance: float,
+    substrate: SubstrateClient | None = None,
+    substrate_k: int = 0,
 ) -> list[ArchiveHit]:
     """Quellenübergreifende Archiv-Suche → flache list[ArchiveHit], Reihenfolge = RRF-Rang.
 
@@ -179,6 +255,10 @@ async def search_archive(
         ids = await _fulltext_ids(session, "alarms", q, machine_id=machine_id, k=k)
         alarms = await _fetch_alarms(session, ids)
         ranked.extend((rank, _alarm_hit(alarm)) for rank, alarm in enumerate(alarms, start=1))
+
+    if "memory" in selected:
+        erinnerungen = await _substrat_treffer(substrate, q, machine_id=machine_id, k=substrate_k)
+        ranked.extend((rang, hit) for rang, hit in enumerate(erinnerungen, start=1))
 
     ranked.sort(key=_rrf_key)
     return [hit for _rank, hit in ranked[:k]]

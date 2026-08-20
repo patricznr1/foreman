@@ -91,6 +91,25 @@ class Settings(BaseSettings):
         validation_alias="FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE",
     )
 
+    # --- Substrat-Veredelung der Archiv-Suche (Freigabe-Abschnitt 9) ---
+    # AUS per Default: Der Treffer trägt einen vierten `source_type`, den die
+    # Anzeige kennen muss. Ein unbekannter Wert bricht dort die Prüfung der
+    # Antwort und nähme die laufende Vorführung mit. Eingeschaltet wird erst,
+    # wenn beide Seiten ihn kennen.
+    archive_substrate_enabled: bool = Field(
+        default=False,
+        validation_alias="FOREMAN_ARCHIVE_SUBSTRATE_ENABLED",
+    )
+    # Wie viele Erinnerungen der Abruf höchstens beisteuert. Bewusst kleiner als
+    # die Trefferzahl der eigenen Quellen: das Gedächtnis ergänzt, es dominiert
+    # nicht.
+    archive_substrate_k: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        validation_alias="FOREMAN_ARCHIVE_SUBSTRATE_K",
+    )
+
     @property
     def is_production(self) -> bool:
         """True, wenn die Umgebung NICHT als Entwicklung/Test markiert ist."""
