@@ -10,11 +10,13 @@
 import type { ArchiveHitDetail } from "@/lib/api/contracts";
 
 /**
- * Quelltyp eines Treffers. Das Archiv (Paket 1b/1c) durchsucht drei Quellen:
- * Schichtnotiz / Wartung / Alarm. (Weitere — Ereignis/Kette — bleiben für das
- * spätere „Hatten wir das schon mal" reserviert und werden NICHT erfunden.)
+ * Quelltyp eines Treffers. Das Archiv durchsucht drei EIGENE Quellen —
+ * Schichtnotiz / Wartung / Alarm — und seit §15.10 optional eine vierte:
+ * "memory", eine Erinnerung aus dem Gedächtnis. Sie ist bewusst kein eigener
+ * Anzeige-Sonderfall, sondern eine Quelle neben den anderen; nur ihre Herkunft
+ * bleibt kenntlich.
  */
-export type SourceType = "note" | "maintenance" | "alarm";
+export type SourceType = "note" | "maintenance" | "alarm" | "memory";
 
 /**
  * Relevanz als ORDINALE Naehe-Stufe, abgeleitet aus der Rang-Position. Bewusst

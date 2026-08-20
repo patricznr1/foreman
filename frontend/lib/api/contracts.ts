@@ -386,8 +386,13 @@ export interface WorkerNoteRead {
 /**
  * Quelltyp eines Archiv-Treffers (Paket 1b/1c) — quellenübergreifend.
  * Gegen den REALEN Vertrag (src/foreman/archive/schemas.py:ArchiveHit).
+ *
+ * "memory" ist die vierte Quelle (Substrat-Veredelung, §15.10): ein Treffer aus
+ * dem Gedächtnis statt aus der eigenen Datenbank. Eigener Wert, weil die
+ * Herkunft sichtbar bleiben muss — als Notiz oder Alarm ausgegeben wäre er eine
+ * Behauptung über die eigene Datenlage, die nicht stimmt.
  */
-export type ArchiveSourceType = "note" | "maintenance" | "alarm";
+export type ArchiveSourceType = "note" | "maintenance" | "alarm" | "memory";
 
 /**
  * Quellenspezifische, PII-FREIE Anzeige-Attribute eines Archiv-Treffers. Je Quelltyp
@@ -400,6 +405,12 @@ export interface ArchiveHitDetail {
   severity?: string;
   category?: string;
   code?: string | null;
+  /** Nur bei source_type "memory": Kennzeichnung der Herkunft. */
+  herkunft?: string;
+  /** Nur bei "memory", falls die Erinnerung ihre Kennung trägt. */
+  erinnerung?: string;
+  /** Nur bei "memory", falls bekannt. */
+  maschinenklasse?: string;
 }
 
 /**

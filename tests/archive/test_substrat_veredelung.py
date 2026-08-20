@@ -254,3 +254,47 @@ def test_antwortform_der_fassade_ist_die_gepinnte() -> None:
     roh = _erinnerung()
     assert set(roh) >= {"id", "content", "relevance", "occurred_at", "metadata"}
     assert json.loads(json.dumps(roh)) == roh
+
+
+# ------------------------------------------------------------
+#  Vertrag über die Sprachgrenze (Backend ↔ Anzeige)
+# ------------------------------------------------------------
+def test_anzeige_kennt_dieselben_quelltypen_wie_der_vertrag() -> None:
+    """Die Sprachgrenze ist die Stelle, an der die beiden Listen auseinanderlaufen.
+
+    Der Backend-Vertrag ist Python, die Anzeige TypeScript — kein Übersetzer und
+    keine Prüfung der Antwort (Zod ist für diesen Endpunkt nicht verdrahtet,
+    Stand 20.08.2026) hält sie zusammen. Kommt hinten ein fünfter Quelltyp dazu,
+    merkt es die Anzeige erst, wenn ein Treffer ohne Beschriftung erscheint.
+
+    Geprüft wird die AUSFÜHRBARE Form — die Typ-Definition und die beiden
+    Abbildungen —, nicht ein Kommentar, der sie beschreibt.
+    """
+    import re
+    from pathlib import Path
+
+    from foreman.archive.schemas import SourceType
+
+    wurzel = Path(__file__).resolve().parents[2]
+    typen_datei = (wurzel / "frontend/lib/memory/types.ts").read_text(encoding="utf-8")
+    quelle_datei = (wurzel / "frontend/lib/memory/source.ts").read_text(encoding="utf-8")
+    vertrag_datei = (wurzel / "frontend/lib/api/contracts.ts").read_text(encoding="utf-8")
+
+    erwartet = set(SourceType.__args__)  # type: ignore[attr-defined]
+
+    def literale(text: str, name: str) -> set[str]:
+        treffer = re.search(rf"export type {name} =([^;]+);", text)
+        assert treffer, f"{name} nicht gefunden"
+        return set(re.findall(r'"([a-z_]+)"', treffer.group(1)))
+
+    assert literale(typen_datei, "SourceType") == erwartet
+    assert literale(vertrag_datei, "ArchiveSourceType") == erwartet
+
+    # Beide Abbildungen müssen JEDEN Typ führen — ein fehlender Schlüssel liefert
+    # zur Laufzeit `undefined` und damit einen Treffer ohne Beschriftung.
+    for name in ("SOURCE_LABEL", "SOURCE_GLYPH"):
+        block = re.search(rf"{name}[^=]*=\s*\{{(.*?)\}};", quelle_datei, re.S)
+        assert block, f"{name} nicht gefunden"
+        schluessel = set(re.findall(r"^\s*([a-z_]+):", block.group(1), re.M))
+        fehlend = erwartet - schluessel
+        assert not fehlend, f"{name} kennt {fehlend} nicht — diese Treffer blieben unbeschriftet"
