@@ -360,6 +360,12 @@ class DriftService:
         effect_size = round(finding.effect_size, 4)
         payload = {
             "reasoner": "drift",
+            # Herkunft in derselben Form wie bei den Ingestion-Ereignissen (§12.4).
+            # Ein Drift-Befund ist KEINE Archiv-Quelle (§15.9 kennt note/maintenance/
+            # alarm) — er trägt deshalb `source_id: None` und bleibt im Gedächtnis
+            # ein eigenständiger Treffer statt eines Rückwegs in eine Trefferliste.
+            "source_type": "drift",
+            "source_id": None,
             "machine_id": machine_id,
             "data_point_id": finding.data_point_id,
             "detected_at": finding.detected_at.isoformat(),

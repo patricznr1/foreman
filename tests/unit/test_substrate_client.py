@@ -144,3 +144,104 @@ async def test_smoke_not_ok_on_substrate_error() -> None:
     result = await run_substrate_smoke(client)
     assert result.ok is False
     await client.aclose()
+
+
+# ------------------------------------------------------------
+#  Namespace-Trennung des Smoke (Freigabe-Bedingung 7)
+# ------------------------------------------------------------
+def _settings_with_substrate() -> Settings:
+    return Settings(
+        _env_file=None,
+        substrate_base_url="http://substrate.test",
+        substrate_token="tok",
+        substrate_namespace="foreman",
+        substrate_smoke_namespace="foreman-smoke",
+    )
+
+
+def test_from_settings_uses_operating_namespace_by_default() -> None:
+    client = SubstrateClient.from_settings(_settings_with_substrate())
+    assert client._namespace == "foreman"
+
+
+def test_from_settings_namespace_override_wins() -> None:
+    settings = _settings_with_substrate()
+    client = SubstrateClient.from_settings(settings, namespace=settings.substrate_smoke_namespace)
+    assert client._namespace == "foreman-smoke"
+
+
+async def test_smoke_writes_into_smoke_namespace_not_the_operating_one() -> None:
+    """Die Zusicherung aus §9: der Smoke verschmutzt den Abruf-Bestand nicht.
+
+    Geprüft wird der Wert, der WIRKLICH über die Leitung geht — nicht das
+    Attribut am Client. Beide Aufrufe (remember UND recall) müssen den
+    Smoke-Namespace tragen; ein remember im Smoke- und ein recall im
+    Betriebs-Namespace wäre genauso falsch wie umgekehrt.
+    """
+    settings = _settings_with_substrate()
+    gesehen: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        gesehen.append((request.url.path, body["namespace"]))
+        if request.url.path == "/remember":
+            return httpx.Response(200, json={"stored": True})
+        return httpx.Response(200, json={"results": [{"content": body["query"]}]})
+
+    http = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://substrate.test"
+    )
+    client = SubstrateClient.from_settings(
+        settings, namespace=settings.substrate_smoke_namespace, client=http
+    )
+    await run_substrate_smoke(client)
+
+    assert gesehen == [("/remember", "foreman-smoke"), ("/recall", "foreman-smoke")]
+    assert all(ns != "foreman" for _, ns in gesehen)
+
+
+def test_token_is_secret_but_reaches_the_header_in_clear() -> None:
+    """SecretStr schützt Logs/Serialisierung, nicht den Aufruf selbst.
+
+    Beide Hälften gehören zusammen: Ein Token, das nirgends mehr auftaucht,
+    aber auch nicht mehr authentifiziert, wäre kein Fortschritt.
+    """
+    # Unverwechselbarer Wert: "tok" käme im repr schon als Teil von
+    # "substrate_token" vor — der Test prüfte dann seine eigene Beschreibung
+    # statt der Sache.
+    geheim = "s3cr3t-substrat-4711"
+    settings = Settings(
+        _env_file=None,
+        substrate_base_url="http://substrate.test",
+        substrate_token=geheim,
+    )
+    assert geheim not in str(settings.substrate_token)
+    assert geheim not in repr(settings)
+    assert geheim not in settings.model_dump_json()
+    client = SubstrateClient.from_settings(settings)
+    assert client._client.headers["Authorization"] == f"Bearer {geheim}"
+
+
+def test_missing_token_stays_missing() -> None:
+    settings = Settings(_env_file=None, substrate_base_url="http://substrate.test")
+    client = SubstrateClient.from_settings(settings)
+    assert "Authorization" not in client._client.headers
+
+
+def test_smoke_route_haengt_an_der_smoke_dependency() -> None:
+    """Verdrahtungs-Nachweis, der OHNE Datenbank greift.
+
+    Die Namespace-Trennung nützt nichts, wenn die Route weiter am
+    Betriebs-Client hängt. Der Integrationstest dazu wird ohne Test-DB
+    übersprungen — dieser hier nicht. Geprüft wird die aufgelöste
+    Dependency der echten Route, nicht ein nachgebauter Aufruf.
+    """
+    from fastapi.routing import APIRoute
+
+    from foreman.api.deps import get_substrate_client, get_substrate_smoke_client
+    from foreman.api.routers.substrate import router
+
+    route = next(r for r in router.routes if isinstance(r, APIRoute) and r.path.endswith("/smoke"))
+    abhaengigkeiten = [d.call for d in route.dependant.dependencies]
+    assert get_substrate_smoke_client in abhaengigkeiten
+    assert get_substrate_client not in abhaengigkeiten

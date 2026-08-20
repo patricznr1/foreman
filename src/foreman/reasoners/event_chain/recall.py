@@ -11,14 +11,22 @@
 #  Sicherheit: Recall-Inhalte sind externer Freitext → in den Grounding-Quellen
 #         werden sie als untrusted geführt (siehe grounding_sources.py).
 # ============================================================
-import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
+from foreman.core.sanitize import clean_excerpt
 from foreman.db.models import Alarm, Machine
 from foreman.ingestion.semantic import extract_substrate_ref
 from foreman.logging_setup import REASON, get_logger
+from foreman.observability.metrics import (
+    RECALL_FEHLER,
+    RECALL_LEER,
+    RECALL_NICHT_KONFIGURIERT,
+    RECALL_TREFFER,
+    record_event_chain_recall,
+)
 from foreman.reasoners.event_chain.schema import SiblingReference
 from foreman.substrate.client import SubstrateClient
 
@@ -36,14 +44,12 @@ _META_KEYS = ("metadata", "payload", "meta")
 _MACHINE_ID_KEYS = ("machine_id", "machineId")
 _MACHINE_CLASS_KEYS = ("machine_class", "machineClass")
 _EXPLANATION_ID_KEYS = ("explanation_id", "explanationId")
-
-# Output-Sanitisierung des Auszugs (LLM05, defensiv — der Recall-Inhalt ist
-# untrusted externer Freitext und wird im FE nur angezeigt, nie als Instruktion).
-_TAG_RE = re.compile(r"<[^>]*>")
-_MD_LINK_RE = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
-_URL_RE = re.compile(r"(?:https?|ftp|file|data|javascript|vbscript):(?://)?\S+", re.IGNORECASE)
-_WHITESPACE_RE = re.compile(r"\s+")
-_EXCERPT_MAX_LEN = 200
+# Rang-Grundlage. Die Fassade liefert `relevance`; die generischen Namen decken
+# andere Substrat-Fassungen ab, ohne dass hier etwas erfunden wird.
+_RELEVANCE_KEYS = ("relevance", "score", "similarity", "relevance_score")
+# Ereigniszeit des Treffers. `occurred_at` ist die Gültigkeitszeit der Fassade;
+# die übrigen Namen sind Rückfallpositionen derselben Achse.
+_OCCURRED_AT_KEYS = ("occurred_at", "occurredAt", "timestamp", "created_at", "createdAt")
 
 
 @dataclass(frozen=True)
@@ -61,6 +67,12 @@ class RecallItem:
     machine_id: int | None = None
     machine_class: str | None = None
     explanation_id: int | None = None
+    # Rangierbarkeit gegen einen ArchiveHit (Freigabe-Bedingung 4): ohne Zeit und
+    # Ähnlichkeitsmaß lässt sich ein Substrat-Treffer nicht neben einen Treffer aus
+    # der eigenen Datenbank stellen. Beides kommt aus dem realen Treffer oder bleibt
+    # `None` — nichts wird geschätzt.
+    occurred_at: datetime | None = None
+    relevance: float | None = None
 
 
 def build_recall_query(anchor: Alarm, machine: Machine | None) -> str:
@@ -117,6 +129,54 @@ def _first_str(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) -> str 
     return None
 
 
+def _first_float(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) -> float | None:
+    """Erste endliche Fließkommazahl unter den Schlüsseln (auch numerische Strings).
+
+    `bool` wird ausgeschlossen (int-Subtyp), ebenso NaN/Infinity: ein Rang, der
+    sich nicht ordnen lässt, ist kein Rang.
+    """
+    for scope in scopes:
+        for key in keys:
+            value = scope.get(key)
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, int | float):
+                zahl = float(value)
+            elif isinstance(value, str) and value.strip():
+                try:
+                    zahl = float(value.strip())
+                except ValueError:
+                    continue
+            else:
+                continue
+            if zahl == zahl and zahl not in (float("inf"), float("-inf")):
+                return zahl
+    return None
+
+
+def _first_datetime(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) -> datetime | None:
+    """Erster lesbarer ISO-8601-Zeitstempel unter den Schlüsseln, immer aware.
+
+    Die Fassade liefert `occurred_at` OHNE Zeitzonen-Kennung. Ein naiver Wert
+    ließe sich später nicht mit dem `timestamp` eines ArchiveHit vergleichen —
+    Python wirft dabei `TypeError`, und zwar erst beim Sortieren, also weit weg
+    von der Ursache. Er wird deshalb hier als UTC gelesen; das ist die Zeitachse,
+    in der das Substrat schreibt.
+    """
+    for scope in scopes:
+        for key in keys:
+            value = scope.get(key)
+            if not isinstance(value, str) or not value.strip():
+                continue
+            roh = value.strip().replace("Z", "+00:00")
+            try:
+                gelesen = datetime.fromisoformat(roh)
+            except ValueError:
+                continue
+            return gelesen if gelesen.tzinfo is not None else gelesen.replace(tzinfo=UTC)
+    return None
+
+
 def _coerce_item(entry: Any) -> RecallItem | None:
     """Wandelt einen Roh-Treffer (str oder dict) in einen RecallItem (oder None).
 
@@ -144,6 +204,8 @@ def _coerce_item(entry: Any) -> RecallItem | None:
             machine_id=_first_int(scopes, _MACHINE_ID_KEYS),
             machine_class=_first_str(scopes, _MACHINE_CLASS_KEYS),
             explanation_id=_first_int(scopes, _EXPLANATION_ID_KEYS),
+            occurred_at=_first_datetime(scopes, _OCCURRED_AT_KEYS),
+            relevance=_first_float(scopes, _RELEVANCE_KEYS),
         )
     return None
 
@@ -187,37 +249,27 @@ async def recall_similar_incidents(
     Recall-Anteil). Es wird NIE eine Exception nach oben gereicht.
     """
     if substrate is None:
+        record_event_chain_recall(RECALL_NICHT_KONFIGURIERT)
         return []
     try:
         data = await substrate.recall(query, max_results=max_results)
         # Mapping INNERHALB des try: ein unerwartetes Recall-Format (z. B. kein dict)
         # darf den best-effort-Vertrag nicht brechen → wird hier mitgefangen.
-        return map_recall_response(data, max_results=max_results)
+        treffer = map_recall_response(data, max_results=max_results)
     except Exception as exc:
         # Bewusst breit (best-effort): JEDER Recall-Fehler → kein Recall, nie Abbruch.
+        record_event_chain_recall(RECALL_FEHLER)
         logger.warning("%s NEXUS-Recall fehlgeschlagen (best-effort, ohne Recall): %s", REASON, exc)
         return []
+    # Erst NACH dem try zählen: ein Fehler im Zähler selbst würde sonst als
+    # Recall-Fehler verbucht und die Quote verfälschen.
+    record_event_chain_recall(RECALL_TREFFER if treffer else RECALL_LEER)
+    return treffer
 
 
 def to_grounding_inputs(items: Sequence[RecallItem]) -> list[str]:
     """Hilfs-Sicht: nur die Inhalte (für die Grounding-Quellen-Bildung)."""
     return [item.content for item in items]
-
-
-def clean_excerpt(text: str, *, max_len: int = _EXCERPT_MAX_LEN) -> str:
-    """Sanitisiert + kürzt den untrusted Recall-Inhalt für die reine Anzeige.
-
-    Entfernt HTML/Markdown-Links/rohe URLs (Output-Smuggling, LLM05), normalisiert
-    Whitespace und kürzt auf `max_len` (mit Ellipsis). Der Auszug ist NIE eine
-    Instruktion — er wird im FE nur dargestellt.
-    """
-    cleaned = _MD_LINK_RE.sub(r"\1", text)
-    cleaned = _TAG_RE.sub("", cleaned)
-    cleaned = _URL_RE.sub("[link entfernt]", cleaned)
-    cleaned = _WHITESPACE_RE.sub(" ", cleaned).strip()
-    if len(cleaned) > max_len:
-        cleaned = cleaned[: max_len - 1].rstrip() + "…"
-    return cleaned
 
 
 def sibling_similarity_basis(anchor: Alarm, machine: Machine | None) -> str:

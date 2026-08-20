@@ -19,6 +19,13 @@ from __future__ import annotations
 
 from foreman.db.models import Machine
 from foreman.logging_setup import REASON, get_logger
+from foreman.observability.metrics import (
+    RECALL_FEHLER,
+    RECALL_LEER,
+    RECALL_NICHT_KONFIGURIERT,
+    RECALL_TREFFER,
+    record_failure_recommendation_recall,
+)
 from foreman.reasoners.event_chain.recall import RecallItem, map_recall_response
 from foreman.reasoners.failure.schema import FailurePredictionRead
 from foreman.substrate.client import SubstrateClient
@@ -60,17 +67,23 @@ async def recall_similar_runups(
     erzeugt). Es wird NIE eine Exception nach oben gereicht.
     """
     if substrate is None:
+        record_failure_recommendation_recall(RECALL_NICHT_KONFIGURIERT)
         return []
     try:
         data = await substrate.recall(query, max_results=max_results)
         # Mapping INNERHALB des try: ein unerwartetes Recall-Format darf den
         # best-effort-Vertrag nicht brechen → wird hier mitgefangen.
-        return map_recall_response(data, max_results=max_results)
+        treffer = map_recall_response(data, max_results=max_results)
     except Exception as exc:
         # Bewusst breit (best-effort): JEDER Recall-Fehler → kein Recall, nie Abbruch.
+        record_failure_recommendation_recall(RECALL_FEHLER)
         logger.warning(
             "%s NEXUS-Recall (Vorlauf) fehlgeschlagen (best-effort, ohne Kontext): %s",
             REASON,
             exc,
         )
         return []
+    # Erst NACH dem try zählen: ein Fehler im Zähler selbst würde sonst als
+    # Recall-Fehler verbucht und die Quote verfälschen.
+    record_failure_recommendation_recall(RECALL_TREFFER if treffer else RECALL_LEER)
+    return treffer

@@ -238,18 +238,22 @@ class IngestionService:
             await self._write_worker_note(event)
 
     async def _write_alarm(self, event: AlarmEvent) -> None:
-        self.session.add(
-            Alarm(
-                machine_id=event.machine_id,
-                component_id=event.component_id,
-                data_point_id=event.data_point_id,
-                code=event.code,
-                message=event.message,
-                severity=event.severity,
-                category=event.category,
-                raised_at=event.occurred_at,
-            )
+        alarm = Alarm(
+            machine_id=event.machine_id,
+            component_id=event.component_id,
+            data_point_id=event.data_point_id,
+            code=event.code,
+            message=event.message,
+            severity=event.severity,
+            category=event.category,
+            raised_at=event.occurred_at,
         )
+        self.session.add(alarm)
+        # Schlüssel vergeben lassen, BEVOR gespiegelt wird: ohne ihn trägt die
+        # Erinnerung keinen Rückweg auf ihre Quellzeile und ist im Archiv nicht
+        # auflösbar (§12.4). Betrifft nur die drei diskreten Ereignisse — der
+        # Reading-Pfad (COPY, §12.3) bleibt unberührt.
+        await self.session.flush()
         self._stats.alarms += 1
         # Live-Push (F5): ein Alarm ändert Maschinen-Status (A) + Alarmliste (C).
         self._changed_machines.add(event.machine_id)
@@ -258,6 +262,8 @@ class IngestionService:
             machine_id=event.machine_id,
             event_type="alarm_raised",
             payload={
+                "source_type": "alarm",
+                "source_id": alarm.id,
                 "code": event.code,
                 "severity": event.severity,
                 "category": event.category,
@@ -271,21 +277,27 @@ class IngestionService:
         )
 
     async def _write_production_run(self, event: ProductionRunRecord) -> None:
-        self.session.add(
-            ProductionRun(
-                line_id=event.line_id,
-                product_code=event.product_code,
-                order_id=event.order_id,
-                batch=event.batch,
-                started_at=event.started_at,
-                ended_at=event.ended_at,
-            )
+        lauf = ProductionRun(
+            line_id=event.line_id,
+            product_code=event.product_code,
+            order_id=event.order_id,
+            batch=event.batch,
+            started_at=event.started_at,
+            ended_at=event.ended_at,
         )
+        self.session.add(lauf)
+        await self.session.flush()  # Schlüssel vor der Spiegelung (§12.4)
         self._stats.production_runs += 1
         await self._mirror(
             machine_id=None,  # Produktionskontext liegt auf Linien-Ebene
             event_type="production_run",
             payload={
+                # Produktionsläufe sind KEINE Archiv-Quelle (§15.9 kennt
+                # note/maintenance/alarm). Die Herkunft steht trotzdem drin —
+                # sie macht den Treffer im Gedächtnis einordenbar, auch ohne
+                # Rückweg in eine Archiv-Trefferliste.
+                "source_type": "production_run",
+                "source_id": lauf.id,
                 "product_code": event.product_code,
                 "order_id": event.order_id,
                 "line_id": event.line_id,
@@ -304,21 +316,23 @@ class IngestionService:
             if event.performed_by_ref
             else None
         )
-        self.session.add(
-            MaintenanceEvent(
-                machine_id=event.machine_id,
-                component_id=event.component_id,
-                type=event.type,
-                description=event.description,
-                performed_at=event.occurred_at,
-                performed_by=performed_by,  # HMAC-Token, nie Klartext (§8)
-            )
+        wartung = MaintenanceEvent(
+            machine_id=event.machine_id,
+            component_id=event.component_id,
+            type=event.type,
+            description=event.description,
+            performed_at=event.occurred_at,
+            performed_by=performed_by,  # HMAC-Token, nie Klartext (§8)
         )
+        self.session.add(wartung)
+        await self.session.flush()  # Schlüssel vor der Spiegelung (§12.4)
         self._stats.maintenance_events += 1
         await self._mirror(
             machine_id=event.machine_id,
             event_type="maintenance_performed",
             payload={
+                "source_type": "maintenance",
+                "source_id": wartung.id,
                 "type": event.type,
                 "machine_id": event.machine_id,
                 "component_id": event.component_id,

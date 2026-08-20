@@ -61,18 +61,29 @@ class SubstrateClient:
 
     @classmethod
     def from_settings(
-        cls, settings: Settings, *, client: httpx.AsyncClient | None = None
+        cls,
+        settings: Settings,
+        *,
+        namespace: str | None = None,
+        client: httpx.AsyncClient | None = None,
     ) -> SubstrateClient:
-        """Baut den Client aus der Config. Wirft, wenn keine Base-URL gesetzt ist."""
+        """Baut den Client aus der Config. Wirft, wenn keine Base-URL gesetzt ist.
+
+        `namespace` überschreibt den Betriebs-Namespace — genutzt vom Round-Trip-Smoke,
+        der seine Test-Erinnerungen bewusst NICHT dort ablegt, wo abgerufen wird.
+        """
         if not settings.substrate_base_url:
             raise SubstrateNotConfiguredError(
                 "SUBSTRATE_BASE_URL ist nicht gesetzt — Substrat-Anbindung fehlt."
             )
         return cls(
             base_url=settings.substrate_base_url,
-            token=settings.substrate_token,
+            # SecretStr → Klartext erst hier, unmittelbar vor dem Header-Bau (§8).
+            token=(
+                settings.substrate_token.get_secret_value() if settings.substrate_token else None
+            ),
             timeout_s=settings.substrate_timeout_s,
-            namespace=settings.substrate_namespace,
+            namespace=namespace or settings.substrate_namespace,
             paths={
                 "remember": settings.substrate_remember_path,
                 "recall": settings.substrate_recall_path,

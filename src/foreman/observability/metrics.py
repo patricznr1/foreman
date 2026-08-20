@@ -101,7 +101,7 @@ EVENT_CHAIN_EXPLANATIONS: Final = Counter(
 )
 EVENT_CHAIN_RECALL: Final = Counter(
     "foreman_event_chain_recall_total",
-    "NEXUS-Recall-Ausgänge des Ereignisketten-Reasoners (Treffer/kein Treffer).",
+    "NEXUS-Recall-Ausgänge des Ereignisketten-Reasoners (siehe RECALL_AUSGAENGE).",
     ["result"],
     registry=REGISTRY,
 )
@@ -160,9 +160,24 @@ FAILURE_RECOMMENDATIONS: Final = Counter(
     ["data_regime", "result"],
     registry=REGISTRY,
 )
+# Die vier Ausgänge eines Substrat-Recalls. EINE Quelle für beide Konsumenten:
+# getrennte Listen sind die Stelle, an der die Pfade auseinanderlaufen.
+# Warum vier statt zwei: Ohne die Trennung liefert der best-effort-Pfad in ALLEN
+# drei Nicht-Treffer-Fällen dasselbe Bild (leere Liste) — von außen ist dann
+# nicht unterscheidbar, ob das Substrat gar nicht angebunden ist, ob es nichts
+# gefunden hat oder ob der Aufruf gescheitert ist. Genau das macht den
+# Unterschied zwischen "nichts zu holen" und "kaputt".
+RECALL_TREFFER: Final = "hit"
+RECALL_LEER: Final = "miss"
+RECALL_NICHT_KONFIGURIERT: Final = "not_configured"
+RECALL_FEHLER: Final = "error"
+RECALL_AUSGAENGE: Final = frozenset(
+    {RECALL_TREFFER, RECALL_LEER, RECALL_NICHT_KONFIGURIERT, RECALL_FEHLER}
+)
+
 FAILURE_RECOMMENDATION_RECALL: Final = Counter(
     "foreman_failure_recommendation_recall_total",
-    "NEXUS-Recall-Ausgänge des Empfehlungs-Reasoners (Treffer/kein Treffer).",
+    "NEXUS-Recall-Ausgänge des Empfehlungs-Reasoners (siehe RECALL_AUSGAENGE).",
     ["result"],
     registry=REGISTRY,
 )
@@ -211,7 +226,13 @@ def observe_failure_recommendation(*, data_regime: str, result: str) -> None:
 
 
 def record_failure_recommendation_recall(result: str) -> None:
-    """Zählt einen NEXUS-Recall-Ausgang des Empfehlungs-Reasoners (result ∈ {hit, miss})."""
+    """Zählt einen NEXUS-Recall-Ausgang des Empfehlungs-Reasoners.
+
+    `result` muss aus RECALL_AUSGAENGE stammen — ein Tippfehler legte sonst eine
+    stille neue Zeitreihe an, die niemand sucht und die nie wieder verschwindet.
+    """
+    if result not in RECALL_AUSGAENGE:
+        raise ValueError(f"Unbekannter Recall-Ausgang: {result!r}")
     FAILURE_RECOMMENDATION_RECALL.labels(result=result).inc()
 
 
@@ -268,7 +289,12 @@ def record_event_chain_explanation(*, flagged: bool) -> None:
 
 
 def record_event_chain_recall(result: str) -> None:
-    """Zählt einen NEXUS-Recall-Ausgang des Reasoners (result ∈ {hit, miss})."""
+    """Zählt einen NEXUS-Recall-Ausgang des Ereignisketten-Reasoners.
+
+    `result` muss aus RECALL_AUSGAENGE stammen (siehe dort).
+    """
+    if result not in RECALL_AUSGAENGE:
+        raise ValueError(f"Unbekannter Recall-Ausgang: {result!r}")
     EVENT_CHAIN_RECALL.labels(result=result).inc()
 
 

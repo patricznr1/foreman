@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import httpx
+import pytest
 
 from foreman.db.models import Alarm, Machine
 from foreman.reasoners.event_chain.recall import (
@@ -118,3 +119,108 @@ async def test_recall_bei_substrat_ausfall_blockiert_nicht() -> None:
     # Darf NICHT werfen — best-effort: Ausfall → leere Liste.
     items = await recall_similar_incidents(substrate, "query")
     assert items == []
+
+
+# ------------------------------------------------------------
+#  Rangierbarkeit gegen einen ArchiveHit (Freigabe-Bedingung 4)
+# ------------------------------------------------------------
+def test_recall_item_uebernimmt_zeit_und_aehnlichkeit_der_fassade() -> None:
+    """Die reale Antwortform der Substrate-Fassade, live abgenommen 20.08.2026.
+
+    Der Treffer stammt wörtlich aus POST /api/substrate/recall gegen die
+    betriebene Anlage — nicht aus einer selbst gebauten Beispielform.
+    """
+    antwort = {
+        "results": [
+            {
+                "id": "13205b00-0618-4c58-90e4-163a4356166a",
+                "content": "FOREMAN Substrat-Smoke foreman-smoke-a4639f58",
+                "relevance": 0.6824336923266521,
+                "source": "substrate:foreman",
+                "entry_type": "observation",
+                "metadata": {"kind": "smoke", "temporal_label": "vor 2 Wochen"},
+                "occurred_at": "2026-07-30T13:11:47.191796",
+            }
+        ],
+        "query": "machine note",
+        "namespace": "foreman",
+        "total_count": 1,
+    }
+    (item,) = map_recall_response(antwort, max_results=5)
+    assert item.relevance == 0.6824336923266521
+    assert item.occurred_at == datetime(2026, 7, 30, 13, 11, 47, 191796, tzinfo=UTC)
+
+
+def test_zeitstempel_ohne_zone_wird_als_utc_gelesen() -> None:
+    """Die Fassade schickt `occurred_at` OHNE Zonen-Kennung.
+
+    Bliebe der Wert naiv, würde erst der Vergleich mit einem ArchiveHit.timestamp
+    (aware) mit TypeError abbrechen — weit weg von der Ursache. Der Test hält
+    fest, dass die Zone hier gesetzt wird, nicht erst beim Sortieren.
+    """
+    (item,) = map_recall_response(
+        {"results": [{"content": "x", "occurred_at": "2026-07-30T13:11:47"}]}, max_results=1
+    )
+    assert item.occurred_at is not None
+    assert item.occurred_at.tzinfo is not None
+    # Gegen einen aware-Zeitstempel vergleichbar — das ist der Zweck des Feldes.
+    assert item.occurred_at < datetime.now(UTC)
+
+
+def test_zone_im_zeitstempel_bleibt_erhalten() -> None:
+    (item,) = map_recall_response(
+        {"results": [{"content": "x", "occurred_at": "2026-07-30T13:11:47Z"}]}, max_results=1
+    )
+    assert item.occurred_at == datetime(2026, 7, 30, 13, 11, 47, tzinfo=UTC)
+
+
+def test_fehlende_felder_bleiben_none_statt_geraten() -> None:
+    """Kein Ersatzwert. Ein Treffer ohne Rang ist ehrlich rangelos."""
+    (item,) = map_recall_response({"results": [{"content": "x"}]}, max_results=1)
+    assert item.relevance is None
+    assert item.occurred_at is None
+
+
+@pytest.mark.parametrize(
+    "kaputt",
+    [
+        {"content": "x", "relevance": True},  # bool ist int-Subtyp, kein Rang
+        {"content": "x", "relevance": "nicht-numerisch"},
+        {"content": "x", "relevance": float("nan")},
+        {"content": "x", "relevance": float("inf")},
+    ],
+)
+def test_unbrauchbare_aehnlichkeit_wird_verworfen(kaputt: dict[str, object]) -> None:
+    """Ein Rang, der sich nicht ordnen lässt, ist kein Rang — lieber None."""
+    (item,) = map_recall_response({"results": [kaputt]}, max_results=1)
+    assert item.relevance is None
+    assert item.content == "x"  # der Treffer selbst überlebt
+
+
+@pytest.mark.parametrize(
+    "kaputt",
+    [
+        {"content": "x", "occurred_at": "gestern"},
+        {"content": "x", "occurred_at": ""},
+        {"content": "x", "occurred_at": 1753877507},  # Unix-Sekunden sind kein ISO-Format
+        {"content": "x", "occurred_at": None},
+    ],
+)
+def test_unlesbare_zeit_wird_verworfen(kaputt: dict[str, object]) -> None:
+    (item,) = map_recall_response({"results": [kaputt]}, max_results=1)
+    assert item.occurred_at is None
+    assert item.content == "x"
+
+
+def test_zeit_und_rang_auch_aus_dem_metadaten_container() -> None:
+    """Dieselbe Such-Ebenen-Regel wie für machine_id — kein zweiter Weg."""
+    (item,) = map_recall_response(
+        {
+            "results": [
+                {"content": "x", "metadata": {"occurred_at": "2026-05-01T08:00:00Z", "score": 0.5}}
+            ]
+        },
+        max_results=1,
+    )
+    assert item.occurred_at == datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
+    assert item.relevance == 0.5

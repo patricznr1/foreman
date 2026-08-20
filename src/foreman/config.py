@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Unsicherer JWT-Default — nur Platzhalter; im Produktionsbetrieb hart abgelehnt.
@@ -54,9 +54,15 @@ class Settings(BaseSettings):
     # --- Gedächtnis-Substrat (NEXUS-Anbindung, §9) ---
     # Base-URL + Token aus der .env. Datenaufnahme läuft auch ohne Substrat (Fallback).
     substrate_base_url: str | None = None
-    substrate_token: str | None = None
+    # Token als SecretStr (§8, Vorbild llm/config.py:65 + embeddings/config.py:81) —
+    # niemals im Klartext geloggt oder serialisiert.
+    substrate_token: SecretStr | None = None
     substrate_timeout_s: float = 10.0
     substrate_namespace: str = "foreman"
+    # Eigener Namespace für den Round-Trip-Smoke. Der Smoke legt bei JEDEM App-Start
+    # eine Erinnerung ab; läge sie im Betriebs-Namespace, schwämme sie in jeder
+    # Trefferliste mit, die aus dem Gedächtnis gespeist wird.
+    substrate_smoke_namespace: str = "foreman-smoke"
     # Endpunkt-Pfade konfigurierbar (Default = generischer REST-Vertrag).
     substrate_remember_path: str = "/remember"
     substrate_recall_path: str = "/recall"

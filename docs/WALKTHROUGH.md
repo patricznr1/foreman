@@ -408,7 +408,7 @@ On-demand, **kein** Auto-LLM pro Alarm — der alarm-getriebene Hook bleibt offe
 ### Metriken (`observability/metrics.py`, erweitert)
 
 **Was tut es?**
-`foreman_event_chain_explanations_total` (sauber/geflaggt) + `foreman_event_chain_recall_total` (Treffer/kein Treffer) unter `GET /metrics`.
+`foreman_event_chain_explanations_total` (sauber/geflaggt) + `foreman_event_chain_recall_total` (Treffer / kein Treffer / nicht konfiguriert / Fehler) unter `GET /metrics`.
 
 **Warum existiert es / wo sitzt es?**
 Die geflaggt-Quote ist die Injection-Containment-Sicht; niedrig-kardinal, keine PII.

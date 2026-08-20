@@ -82,7 +82,11 @@ _API_V1_ROUTERS = (
 async def _startup_substrate_smoke(settings: Settings) -> None:
     """Führt den Substrat-Smoke beim Start aus — strikt non-blocking (§9)."""
     try:
-        client = SubstrateClient.from_settings(settings)
+        # Eigener Namespace: der Smoke schreibt bei jedem Start und darf den
+        # Bestand nicht verschmutzen, aus dem abgerufen wird (§9).
+        client = SubstrateClient.from_settings(
+            settings, namespace=settings.substrate_smoke_namespace
+        )
     except SubstrateNotConfiguredError:
         logger.warning(
             "%s Substrat nicht konfiguriert (SUBSTRATE_BASE_URL fehlt) — Smoke übersprungen",
