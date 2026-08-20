@@ -14,6 +14,7 @@
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from foreman.db.models import Alarm, Machine
@@ -36,6 +37,12 @@ _META_KEYS = ("metadata", "payload", "meta")
 _MACHINE_ID_KEYS = ("machine_id", "machineId")
 _MACHINE_CLASS_KEYS = ("machine_class", "machineClass")
 _EXPLANATION_ID_KEYS = ("explanation_id", "explanationId")
+# Rang-Grundlage. Die Fassade liefert `relevance`; die generischen Namen decken
+# andere Substrat-Fassungen ab, ohne dass hier etwas erfunden wird.
+_RELEVANCE_KEYS = ("relevance", "score", "similarity", "relevance_score")
+# Ereigniszeit des Treffers. `occurred_at` ist die Gültigkeitszeit der Fassade;
+# die übrigen Namen sind Rückfallpositionen derselben Achse.
+_OCCURRED_AT_KEYS = ("occurred_at", "occurredAt", "timestamp", "created_at", "createdAt")
 
 # Output-Sanitisierung des Auszugs (LLM05, defensiv — der Recall-Inhalt ist
 # untrusted externer Freitext und wird im FE nur angezeigt, nie als Instruktion).
@@ -61,6 +68,12 @@ class RecallItem:
     machine_id: int | None = None
     machine_class: str | None = None
     explanation_id: int | None = None
+    # Rangierbarkeit gegen einen ArchiveHit (Freigabe-Bedingung 4): ohne Zeit und
+    # Ähnlichkeitsmaß lässt sich ein Substrat-Treffer nicht neben einen Treffer aus
+    # der eigenen Datenbank stellen. Beides kommt aus dem realen Treffer oder bleibt
+    # `None` — nichts wird geschätzt.
+    occurred_at: datetime | None = None
+    relevance: float | None = None
 
 
 def build_recall_query(anchor: Alarm, machine: Machine | None) -> str:
@@ -117,6 +130,54 @@ def _first_str(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) -> str 
     return None
 
 
+def _first_float(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) -> float | None:
+    """Erste endliche Fließkommazahl unter den Schlüsseln (auch numerische Strings).
+
+    `bool` wird ausgeschlossen (int-Subtyp), ebenso NaN/Infinity: ein Rang, der
+    sich nicht ordnen lässt, ist kein Rang.
+    """
+    for scope in scopes:
+        for key in keys:
+            value = scope.get(key)
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, int | float):
+                zahl = float(value)
+            elif isinstance(value, str) and value.strip():
+                try:
+                    zahl = float(value.strip())
+                except ValueError:
+                    continue
+            else:
+                continue
+            if zahl == zahl and zahl not in (float("inf"), float("-inf")):
+                return zahl
+    return None
+
+
+def _first_datetime(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) -> datetime | None:
+    """Erster lesbarer ISO-8601-Zeitstempel unter den Schlüsseln, immer aware.
+
+    Die Fassade liefert `occurred_at` OHNE Zeitzonen-Kennung. Ein naiver Wert
+    ließe sich später nicht mit dem `timestamp` eines ArchiveHit vergleichen —
+    Python wirft dabei `TypeError`, und zwar erst beim Sortieren, also weit weg
+    von der Ursache. Er wird deshalb hier als UTC gelesen; das ist die Zeitachse,
+    in der das Substrat schreibt.
+    """
+    for scope in scopes:
+        for key in keys:
+            value = scope.get(key)
+            if not isinstance(value, str) or not value.strip():
+                continue
+            roh = value.strip().replace("Z", "+00:00")
+            try:
+                gelesen = datetime.fromisoformat(roh)
+            except ValueError:
+                continue
+            return gelesen if gelesen.tzinfo is not None else gelesen.replace(tzinfo=UTC)
+    return None
+
+
 def _coerce_item(entry: Any) -> RecallItem | None:
     """Wandelt einen Roh-Treffer (str oder dict) in einen RecallItem (oder None).
 
@@ -144,6 +205,8 @@ def _coerce_item(entry: Any) -> RecallItem | None:
             machine_id=_first_int(scopes, _MACHINE_ID_KEYS),
             machine_class=_first_str(scopes, _MACHINE_CLASS_KEYS),
             explanation_id=_first_int(scopes, _EXPLANATION_ID_KEYS),
+            occurred_at=_first_datetime(scopes, _OCCURRED_AT_KEYS),
+            relevance=_first_float(scopes, _RELEVANCE_KEYS),
         )
     return None
 

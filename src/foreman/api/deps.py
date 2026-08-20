@@ -126,7 +126,26 @@ async def get_substrate_client(
         await client.aclose()
 
 
+async def get_substrate_smoke_client(
+    settings: SettingsDep,
+) -> AsyncIterator[SubstrateClient | None]:
+    """Wie `get_substrate_client`, aber auf dem Smoke-Namespace (§9).
+
+    Getrennt, weil der Smoke schreibt: seine Test-Erinnerungen gehören nicht in den
+    Bestand, gegen den die Archiv-Suche abruft.
+    """
+    if not settings.substrate_base_url:
+        yield None
+        return
+    client = SubstrateClient.from_settings(settings, namespace=settings.substrate_smoke_namespace)
+    try:
+        yield client
+    finally:
+        await client.aclose()
+
+
 SubstrateClientDep = Annotated[SubstrateClient | None, Depends(get_substrate_client)]
+SubstrateSmokeClientDep = Annotated[SubstrateClient | None, Depends(get_substrate_smoke_client)]
 
 
 # --- LLM-Gateway (F-LLM) — F6 (Ereignisketten) ist der erste Konsument ---

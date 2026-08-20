@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from foreman.api.deps import SubstrateClientDep
+from foreman.api.deps import SubstrateSmokeClientDep
 from foreman.schemas.substrate import SubstrateSmokeResult
 from foreman.substrate.smoke import run_substrate_smoke
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/substrate", tags=["substrate"])
 
 
 @router.get("/smoke", response_model=SubstrateSmokeResult)
-async def substrate_smoke(client: SubstrateClientDep) -> SubstrateSmokeResult:
+async def substrate_smoke(client: SubstrateSmokeClientDep) -> SubstrateSmokeResult:
     """Führt den Substrat-Round-Trip aus und liefert {ok, latency_ms}."""
     if client is None:
         return SubstrateSmokeResult(

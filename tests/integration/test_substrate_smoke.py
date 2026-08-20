@@ -13,7 +13,7 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from foreman.api.deps import get_substrate_client
+from foreman.api.deps import get_substrate_smoke_client
 from foreman.config import Settings
 from foreman.main import create_app
 from foreman.substrate.client import SubstrateClient
@@ -57,7 +57,7 @@ async def test_smoke_endpoint_ok_with_mocked_substrate(
     async def _override() -> AsyncIterator[SubstrateClient]:
         yield sub
 
-    app.dependency_overrides[get_substrate_client] = _override
+    app.dependency_overrides[get_substrate_smoke_client] = _override
     response = await auth_client.get("/api/v1/substrate/smoke")
     assert response.status_code == 200
     assert response.json()["ok"] is True
