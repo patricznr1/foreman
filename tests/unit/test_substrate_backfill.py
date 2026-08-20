@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 
 from foreman.substrate.backfill import (
+    _SOURCE_TYPES,
     NOREF_SENTINEL,
     BackfillStats,
     backfill_rows,
@@ -221,7 +222,7 @@ def test_reconstruct_alarm_raised() -> None:
     }
     assert (
         reconstruct_content("alarm_raised", payload)
-        == "Alarm E42 (critical/hardware) an Maschine 7 ausgelöst."
+        == "Alarm E42 (critical/hardware) an Maschine 7 ausgelöst (2026-06-01T10:00:00+00:00)."
     )
 
 
@@ -235,7 +236,7 @@ def test_reconstruct_alarm_raised_ohne_code() -> None:
     }
     assert (
         reconstruct_content("alarm_raised", payload)
-        == "Alarm ? (warning/process) an Maschine 3 ausgelöst."
+        == "Alarm ? (warning/process) an Maschine 3 ausgelöst (2026-06-01T10:00:00+00:00)."
     )
 
 
@@ -761,10 +762,11 @@ def test_herkunft_wird_fuer_jeden_typ_abgeleitet(
 def test_die_sechs_faelle_decken_alle_gebauten_typen_ab() -> None:
     """Gegen stilles Auseinanderlaufen: kommt ein siebter event_type dazu,
     fällt er hier auf und nicht erst im Betrieb."""
-    from foreman.substrate.backfill import _CONTENT_BUILDERS, _SOURCE_TYPES
+    from foreman.substrate.backfill import _SOURCE_TYPES
+    from foreman.substrate.content import CONTENT_BUILDERS
 
-    assert set(_SOURCE_TYPES) == set(_CONTENT_BUILDERS)
-    assert {t for t, _, _ in _HERKUNFT_FAELLE} == set(_CONTENT_BUILDERS)
+    assert set(_SOURCE_TYPES) == set(CONTENT_BUILDERS)
+    assert {t for t, _, _ in _HERKUNFT_FAELLE} == set(CONTENT_BUILDERS)
 
 
 def test_vorhandene_herkunft_wird_nicht_ueberschrieben() -> None:
@@ -851,3 +853,53 @@ def test_flag_nimmt_ein_datum_entgegen() -> None:
 
     args = build_argparser().parse_args(["--referenzen-zuruecksetzen-vor", "2026-08-01"])
     assert args.referenzen_zuruecksetzen_vor == datetime(2026, 8, 1, tzinfo=UTC)
+
+
+# ------------------------------------------------------------
+#  Eine Quelle für Live-Pfad und Nachtrag (Befund 20.08.2026)
+# ------------------------------------------------------------
+def test_zwei_alarme_gleichen_typs_sind_unterscheidbar() -> None:
+    """Der Grund, warum der Zeitpunkt im Text steht.
+
+    Beim Nachtrag der 65 Ereignisse fielen sechs Alarm-Paare über den
+    Inhalts-Hash zusammen — aus 65 Spiegelungen wurden 59 Einträge. Betroffen
+    waren Alarme desselben Typs an derselben Maschine; ohne Zeitpunkt ergaben
+    sie denselben Satz. Für die Frage "hatten wir das schon mal" ist die
+    WIEDERHOLUNG die eigentliche Information, und genau sie ging verloren.
+    """
+    gemeinsam = {"code": "AXIS_VIB_WARN", "severity": "warning", "category": "hardware"}
+    erster = reconstruct_content(
+        "alarm_raised", {**gemeinsam, "machine_id": 2, "raised_at": "2026-06-24T09:47:19+00:00"}
+    )
+    zweiter = reconstruct_content(
+        "alarm_raised", {**gemeinsam, "machine_id": 2, "raised_at": "2026-06-25T08:04:00+00:00"}
+    )
+    assert erster != zweiter, "zwei Vorfälle, ein Text — im Gedächtnis wird daraus einer"
+
+
+def test_live_pfad_und_nachtrag_teilen_dieselbe_quelle() -> None:
+    """Die Formulierung steht nur noch an EINER Stelle.
+
+    Vorher gab es zwei Fassungen — eine inline bei den Aufrufern, eine als
+    Rekonstruktion hier — zusammengehalten von einem Kommentar und von keinem
+    Test. Dieser Test hält fest, dass beide Wege dieselbe Funktion nehmen; ein
+    zweiter Satz kann damit gar nicht erst entstehen.
+    """
+    from foreman.substrate.content import CONTENT_BUILDERS, baue_inhalt
+
+    payload = {
+        "code": "E1",
+        "severity": "warning",
+        "category": "hardware",
+        "machine_id": 1,
+        "raised_at": "2026-06-01T10:00:00+00:00",
+    }
+    assert reconstruct_content("alarm_raised", payload) == baue_inhalt("alarm_raised", payload)
+    # Und: record_semantic_event nimmt keinen Text mehr entgegen — er kann ihn
+    # deshalb nicht abweichend mitgeben.
+    import inspect
+
+    from foreman.ingestion.semantic import record_semantic_event
+
+    assert "content" not in inspect.signature(record_semantic_event).parameters
+    assert set(_SOURCE_TYPES) == set(CONTENT_BUILDERS)

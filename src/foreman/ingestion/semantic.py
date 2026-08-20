@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.db.models import SemanticEvent
 from foreman.substrate.client import SubstrateClient
+from foreman.substrate.content import baue_inhalt
 
 logger = logging.getLogger("foreman.ingestion.semantic")
 
@@ -45,7 +46,6 @@ async def record_semantic_event(
     machine_id: int | None,
     event_type: str,
     payload: dict[str, Any],
-    content: str,
     substrate: SubstrateClient | None = None,
 ) -> SemanticEvent:
     """Schreibt eine semantic_events-Zeile und versucht best-effort den Dual-Write.
@@ -55,6 +55,14 @@ async def record_semantic_event(
     gewonnenen `substrate_ref` (oder NULL bei Fehlschlag/ohne Substrat). Die
     DB-Zeile entsteht IMMER — auch wenn das Substrat nicht erreichbar ist.
     """
+    # Der Text wird aus der payload GEBAUT, nicht vom Aufrufer mitgegeben
+    # (Befund 20.08.2026): Vorher schrieb ihn jeder Aufrufer selbst hin, und der
+    # nachtraegliche Backfill fuehrte eine zweite Fassung derselben Saetze. Zusammen
+    # gehalten wurden sie von einem Kommentar und von keinem Test. Jetzt gibt es
+    # nur noch eine Quelle (substrate/content.py) — Abweichung ist strukturell
+    # ausgeschlossen statt bloss unerwuenscht.
+    content = baue_inhalt(event_type, payload)
+
     substrate_ref: str | None = None
     if substrate is not None:
         try:
