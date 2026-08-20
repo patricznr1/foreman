@@ -200,11 +200,19 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_harness.py"]
 # NER-Test (echtes spaCy-Modell) ist opt-in; Default-Gate bleibt schnell.
 # Explizit ausführen: uv run pytest -m ner
-addopts = "-x --strict-markers -m 'not ner' --cov=foreman --cov-report=term-missing --cov-fail-under=85"
+# `release` ist wie `ner` opt-in und zusätzlich vom Default-Gate ausgeschlossen:
+# diese Tests fahren gegen ECHTE Gegenstellen und dürfen den schnellen Lauf nicht
+# an fremder Verfügbarkeit hängen. Explizit ausführen: uv run pytest -m release
+addopts = "-x --strict-markers -m 'not ner and not release' --cov=foreman --cov-report=term-missing --cov-fail-under=85"
 markers = [
     "integration: Test braucht eine laufende (Timescale-)DB",
     "smoke: End-to-End-Smoke-Pfad",
     "ner: Test lädt das echte spaCy-de-Modell (opt-in, ~560 MB)",
+    # Freigabe-Nachweis gegen eine echte Gegenstelle. WICHTIG: diese Tests
+    # SKIPPEN NICHT, wenn die Gegenstelle fehlt — sie schlagen fehl. Ein
+    # übersprungener Freigabe-Test sieht im Lauf aus wie ein bestandener und
+    # wäre damit genau das Häkchen, das Sicherheit vortäuscht.
+    "release: Nachweis gegen eine echte Gegenstelle (opt-in, schlägt fehl statt zu skippen)",
 ]
 
 [tool.coverage.run]

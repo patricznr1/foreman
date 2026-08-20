@@ -146,3 +146,63 @@ async def test_ohne_substrat_konfiguration_bleibt_ref_null(
     )
     assert total == 4
     assert with_ref == 0
+
+
+# ------------------------------------------------------------
+#  Herkunft und Rückweg in der Payload (Freigabe-Bedingung 3)
+# ------------------------------------------------------------
+async def test_payload_traegt_herkunft_und_den_schluessel_der_quellzeile(
+    db_session: AsyncSession,
+    raw_conn: asyncpg.Connection,
+    pseudonymizer: Pseudonymizer,
+    fake_redactor: Redactor,
+) -> None:
+    """Der Rückweg aus dem Gedächtnis in die eigene Datenbank, am echten Schema.
+
+    Bis zum 20.08.2026 trug keine der Payloads den Schlüssel ihrer Quellzeile:
+    `session.add` lief ohne `flush`, die ID war zum Zeitpunkt des Payload-Baus
+    noch None. Geprüft wird deshalb nicht nur, DASS ein Schlüssel drinsteht,
+    sondern dass er die Zeile auch WIRKLICH TRIFFT — eine Zahl, die auf nichts
+    zeigt, wäre schlimmer als keine.
+    """
+    substrate = _OkSubstrate()
+    adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"), seed=1)
+    await _service(db_session, pseudonymizer, fake_redactor, substrate).ingest(adapter)
+
+    zeilen = await raw_conn.fetch("SELECT event_type, payload FROM semantic_events ORDER BY id")
+    assert len(zeilen) == 4
+
+    import json
+
+    tabellen = {
+        "alarm": "alarms",
+        "production_run": "production_runs",
+        "maintenance": "maintenance_events",
+    }
+    gesehen: set[str] = set()
+    for zeile in zeilen:
+        payload = (
+            json.loads(zeile["payload"]) if isinstance(zeile["payload"], str) else zeile["payload"]
+        )
+        herkunft = payload.get("source_type")
+        assert herkunft in tabellen, f"{zeile['event_type']} ohne brauchbare Herkunft: {payload}"
+        schluessel = payload.get("source_id")
+        assert isinstance(schluessel, int) and schluessel > 0, (
+            f"{zeile['event_type']} ohne Schlüssel der Quellzeile: {payload}"
+        )
+        # Der Schlüssel muss die Zeile treffen, nicht nur vorhanden sein.
+        treffer = await raw_conn.fetchval(
+            # Tabellenname stammt aus der festen Abbildung oben, nie aus der payload.
+            f"SELECT count(*) FROM {tabellen[herkunft]} WHERE id = $1",
+            schluessel,
+        )
+        assert treffer == 1, f"source_id {schluessel} zeigt auf keine Zeile in {tabellen[herkunft]}"
+        gesehen.add(herkunft)
+
+    assert gesehen == {"alarm", "production_run", "maintenance"}
+
+    # Dieselbe Herkunft geht auch ans Substrat — nicht nur in die Spiegel-Zeile.
+    for _content, metadaten in substrate.calls:
+        assert metadaten is not None
+        assert metadaten.get("source_type") in tabellen
+        assert isinstance(metadaten.get("source_id"), int)
