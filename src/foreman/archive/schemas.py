@@ -15,7 +15,11 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 # Die drei durchsuchbaren Archiv-Quellen.
-SourceType = Literal["note", "maintenance", "alarm"]
+# "memory" ist die vierte Quelle (Substrat-Veredelung): ein Treffer aus dem
+# Gedaechtnis statt aus der eigenen Datenbank. Eigener Wert, weil die Herkunft
+# sichtbar bleiben muss — als note oder alarm getarnt waere er eine Behauptung
+# ueber die eigene Datenlage, die nicht stimmt.
+SourceType = Literal["note", "maintenance", "alarm", "memory"]
 
 
 class ArchiveHit(BaseModel):
@@ -24,7 +28,10 @@ class ArchiveHit(BaseModel):
     `timestamp` ist quellen-normalisiert (Notiz→created_at, Wartung→performed_at,
     Alarm→raised_at). `excerpt` ist der durchsuchbare Freitext gekürzt (Notiz→text,
     Wartung→description, Alarm→message). `detail` trägt quellenspezifische, PII-freie
-    Anzeige-Attribute: Notiz→{shift}; Wartung→{type}; Alarm→{severity, category, code}.
+    Anzeige-Attribute: Notiz→{shift}; Wartung→{type}; Alarm→{severity, category, code};
+    Gedaechtnis→{herkunft} plus, falls bekannt, {quelle, quelle_id} als Rueckweg auf
+    die Zeile, aus der die Erinnerung entstand. Fuer Altbestand fehlt dieser Rueckweg —
+    er wird NICHT geraten (siehe substrate/backfill.py::herkunft_ergaenzen).
     Reihenfolge der Liste = globaler RRF-Rang; KEIN Score-Feld nach außen.
     """
 

@@ -17,7 +17,13 @@ from typing import cast
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from foreman.api.deps import CurrentUser, EmbeddingProviderDep, SessionDep, SettingsDep
+from foreman.api.deps import (
+    CurrentUser,
+    EmbeddingProviderDep,
+    SessionDep,
+    SettingsDep,
+    SubstrateClientDep,
+)
 from foreman.archive.schemas import ArchiveHit, SourceType
 from foreman.archive.search import ALL_SOURCES, search_archive
 from foreman.notes.search import DEFAULT_SEARCH_K
@@ -64,6 +70,7 @@ async def search_archive_endpoint(
     session: SessionDep,
     provider: EmbeddingProviderDep,
     settings: SettingsDep,
+    substrate: SubstrateClientDep,
     current_user: CurrentUser,
     q: str = Query(min_length=1, description="Such-Anfrage (Freitext)."),
     machine_id: int | None = Query(default=None, description="Optionaler Maschinen-Filter."),
@@ -77,6 +84,10 @@ async def search_archive_endpoint(
     Quellen-Filter lassen sich einzelne Quellen aus- oder einblenden (Default: alle).
     """
     selected = _parse_sources(sources)
+    # Das Gedaechtnis nur, wenn es EINGESCHALTET ist — sonst bleibt der Schalter
+    # wirkungslos, egal was der Aufrufer als Quelle waehlt. Der Client wird nur
+    # dann durchgereicht; ohne ihn ist der vierte Strom strukturell still.
+    substrat = substrate if settings.archive_substrate_enabled else None
     return await search_archive(
         provider,
         session,
@@ -85,4 +96,6 @@ async def search_archive_endpoint(
         sources=selected,
         k=k,
         max_distance=settings.archive_vector_max_distance,
+        substrate=substrat,
+        substrate_k=settings.archive_substrate_k if settings.archive_substrate_enabled else 0,
     )

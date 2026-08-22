@@ -656,6 +656,20 @@ Die Archiv-Suche (`GET /worker_notes/search`, §4) ist seit Paket 1a **hybrid** 
 - **Scope 1a:** nur Schichtnotizen (`worker_notes`); Quellen-Filter (Wartung/Ereignisse) = Paket 1b, FE-Trennung = Paket 1c, Erfassungs-Dual-Write = Paket 2. Kein Synonym-/Thesaurus-Mapping, kein Embedder-Wechsel.
 - **Tests:** `tests/notes/test_hybrid_search.py` (echte DB: Exakt-Wort über Volltext, Cutoff verwirft fernen Vektor-Treffer, graceful ohne Vektor/bei Provider-Ausfall, `machine_id` in beiden Zweigen, `text_tsv`-Spalte+GIN-Index existieren) + `tests/notes/test_search_router.py` (HTTP-Vertrag: flache Liste ohne Score, Degradation 200 statt 503).
 
+### 15.10 Substrat-Veredelung: das Gedächtnis als vierte Quelle (Freigabe-Abschnitt 9)
+
+Die Archiv-Suche kann seit dem 20.08.2026 eine **vierte** Quelle einbeziehen: Erinnerungen aus dem Gedächtnis-Substrat. **Per Default AUS** (`FOREMAN_ARCHIVE_SUBSTRATE_ENABLED=false`).
+
+- **Warum ein Schalter:** Der Treffer trägt `source_type="memory"` — einen vierten Wert, den die Anzeige kennen muss. Ein unbekannter Wert bricht dort die Zod-Prüfung der Antwort und nähme die laufende Vorführung mit. Eingeschaltet wird erst, wenn beide Seiten ihn kennen.
+- **Eigener Quelltyp, keine Tarnung:** Als `note` oder `alarm` ausgegeben wäre eine Erinnerung eine Behauptung über die eigene Datenlage, die nicht stimmt. Die Herkunft bleibt sichtbar.
+- **`ArchiveHit` für Erinnerungen:** `id=0` (eine Erinnerung hat keinen Primärschlüssel — eine erfundene Zahl zeigte auf eine fremde Zeile) · `timestamp` aus `occurred_at`, ersatzweise `1970-01-01` (nicht „jetzt": ein Treffer ohne Zeit gehört in einer zeitlich sortierten Liste nach HINTEN, nicht fälschlich nach vorn) · `detail={herkunft: "gedaechtnis"}` plus `erinnerung`/`maschinenklasse`, falls bekannt.
+- **Entschärfung (Freigabe-Bedingung 5):** Der Inhalt läuft durch `core/sanitize.py::clean_excerpt`, NICHT durch das kürzende `_make_excerpt` — er kommt aus dem Gedächtnis zurück und ist untrusted (HTML, Markdown-Links, rohe URLs inkl. `javascript:`).
+- **`machine_id`:** Bei den eigenen Quellen ein harter WHERE-Filter; der Abruf ist semantisch und kennt ihn nicht. Er wird deshalb NACHTRÄGLICH angewandt — eine Erinnerung ohne bekannte Maschine fällt bei gesetztem Filter heraus, statt eine ungeprüfte Zugehörigkeit zu behaupten.
+- **Strikt best-effort:** Kein Substrat, abgeschaltet oder JEDER Fehler → leere Liste, die drei eigenen Quellen tragen allein. Kein 503 (dieselbe Zusage wie für den Embedding-Ausfall, §15.8). Abgeschaltet heißt: **keine Anfrage**, nicht nur kein Ergebnis.
+- **Fusion:** Der Strom geht als vierte Rangliste in dieselbe RRF-Fusion (k=60) — eine Erinnerung auf Rang 1 steht damit vor einem eigenen Treffer auf Rang 2, nicht hinter allen.
+- **Tests:** `tests/archive/test_substrat_veredelung.py` (18 Fälle; Testdaten in der Antwortform, die die Fassade real liefert — live abgenommen 20.08.2026). Gegenproben gefahren: Kürzen statt Entschärfen → rot · Maschinen-Filter entfernt → rot · „jetzt" statt 1970 → rot.
+- **OFFEN:** Frontend (`SourceType`, `SOURCE_LABEL`, `SOURCE_GLYPH`, Zod-Contract) und das Goldset (Freigabe-Bedingung 1, Schwelle: auf keiner Anfrage schlechter als die Baseline, auf ≥30 % ein zusätzlicher relevanter Treffer). Bis beides steht, bleibt der Schalter aus.
+
 ### 15.9 Archiv-Quellen: Wartung + Alarme (Paket 1b)
 
 Das Archiv kennt ab Paket 1b **drei Quellen** hinter einem **neuen, additiven** Endpoint `GET /api/v1/archive/search` (§4). Der alte `GET /api/v1/worker_notes/search` (§15.8) bleibt **unverändert** (FE-Ablösung erst Paket 1c). Subsystem `src/foreman/archive/` (analog `audit/`/`topology/`); der Notiz-Zweig reuse't den 1a-Hybrid — `notes/search.py` ist unberührt.
