@@ -358,17 +358,11 @@ class RecommendationService:
             # Pflicht: der Sim-Charakter wandert mit ins Gedächtnis (§16).
             "data_regime": recommendation.data_regime,
         }
-        content = (
-            f"Werker-Empfehlung zu Vorhersage {recommendation.prediction_id} an Maschine "
-            f"{recommendation.machine_id}: Entscheidung {recommendation.decision}, Horizont "
-            f"{recommendation.horizon_h} h (simulationsbasiert, nicht validiert)."
-        )
         await record_semantic_event(
             self.session,
             machine_id=recommendation.machine_id,
             event_type=RECOMMENDATION_EVENT_TYPE,
             payload=payload,
-            content=content,
             substrate=self.substrate,
         )
         # Der DB-Spiegel wird immer geschrieben; der Substrat-Dual-Write bleibt

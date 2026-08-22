@@ -376,10 +376,6 @@ class DriftService:
             machine_id=machine_id,
             event_type=DRIFT_EVENT_TYPE,
             payload=payload,
-            content=(
-                f"Verhaltens-Drift an Datenpunkt {finding.data_point_id} erkannt "
-                f"(Effektgröße {effect_size:.2f})."
-            ),
             substrate=self.substrate,
         )
         alarm = Alarm(

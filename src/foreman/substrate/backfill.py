@@ -47,6 +47,7 @@ from foreman.db.models import SemanticEvent
 from foreman.ingestion.semantic import extract_substrate_ref
 from foreman.logging_setup import setup_logging
 from foreman.substrate.client import SubstrateClient, SubstrateError
+from foreman.substrate.content import CONTENT_BUILDERS, baue_inhalt
 
 logger = logging.getLogger("foreman.substrate.backfill")
 
@@ -57,79 +58,13 @@ NOREF_SENTINEL = "backfilled:noref"
 
 
 # ------------------------------------------------------------
-#  Content-Rekonstruktion — wortgleich zu den ursprünglichen Aufrufern.
-#  JEDER Builder spiegelt EINE Formulierung aus dem Produktivcode; die Quelle
-#  (Datei:Zeile) steht im Kommentar. Wird dort der Text geändert, MUSS hier
-#  nachgezogen werden (Test test_substrate_backfill.py pinnt die Strings).
+#  Content-Rekonstruktion — die Formulierungen liegen seit dem 20.08.2026 in
+#  substrate/content.py und werden vom Live-Pfad UND von hier genutzt. Vorher
+#  standen sie zweimal im Repository, zusammengehalten nur von einem Kommentar:
+#  kein Test verglich die beiden Fassungen. Wer eine Seite änderte, ließ die
+#  andere still zurück — und der Nachtrag schrieb einen anderen Satz ins
+#  Gedächtnis als der Betrieb.
 # ------------------------------------------------------------
-def _content_alarm_raised(payload: Mapping[str, Any]) -> str:
-    # Quelle: ingestion/service.py (_write_alarm → _mirror, event_type="alarm_raised").
-    # Harter Zugriff auf 'code' (wie die übrigen Pflichtfelder): eine Zeile OHNE den
-    # Key ist defekt und wird übersprungen (KeyError → None), statt '?' zu erfinden.
-    # Bei regulär erzeugten Zeilen ist 'code' immer gesetzt (ggf. None → '?').
-    return (
-        f"Alarm {payload['code'] or '?'} ({payload['severity']}/{payload['category']}) "
-        f"an Maschine {payload['machine_id']} ausgelöst."
-    )
-
-
-def _content_production_run(payload: Mapping[str, Any]) -> str:
-    # Quelle: ingestion/service.py (_write_production_run → _mirror, event_type="production_run").
-    return (
-        f"Produktionslauf {payload['product_code']} auf Linie {payload['line_id']} "
-        f"gestartet ({payload['started_at']})."
-    )
-
-
-def _content_maintenance_performed(payload: Mapping[str, Any]) -> str:
-    # Quelle: ingestion/service.py (_write_maintenance → _mirror, event_type="maintenance_performed").
-    return (
-        f"Wartung ({payload['type']}) an Maschine {payload['machine_id']} "
-        f"durchgeführt ({payload['performed_at']})."
-    )
-
-
-def _content_drift_detected(payload: Mapping[str, Any]) -> str:
-    # Quelle: reasoners/drift/service.py (_emit_drift_event, DRIFT_EVENT_TYPE="drift_detected").
-    # Byte-genau: der Reasoner formatiert seinen Content selbst aus dem in der payload
-    # gespeicherten round(effect_size, 4) (:.2f) — diese Rekonstruktion trifft ihn exakt.
-    return (
-        f"Verhaltens-Drift an Datenpunkt {payload['data_point_id']} erkannt "
-        f"(Effektgröße {float(payload['effect_size']):.2f})."
-    )
-
-
-def _content_event_chain(payload: Mapping[str, Any]) -> str:
-    # Quelle: reasoners/event_chain/service.py (_mirror, EVENT_CHAIN_EVENT_TYPE).
-    hint = " (Hypothese)" if payload["is_hypothesis"] else ""
-    return (
-        f"Ereigniskette zu Alarm {payload['anchor_alarm_id']} an Maschine "
-        f"{payload['machine_id']}: {payload['event_count']} Ereignisse, "
-        f"Konfidenz {payload['confidence']}{hint}."
-    )
-
-
-def _content_failure_recommendation(payload: Mapping[str, Any]) -> str:
-    # Quelle: reasoners/failure/recommendation.py (_mirror, RECOMMENDATION_EVENT_TYPE).
-    return (
-        f"Werker-Empfehlung zu Vorhersage {payload['prediction_id']} an Maschine "
-        f"{payload['machine_id']}: Entscheidung {payload['decision']}, Horizont "
-        f"{payload['horizon_h']} h (simulationsbasiert, nicht validiert)."
-    )
-
-
-# Registry event_type → Content-Builder. Deckt ALLE Typen ab, die je über
-# record_semantic_event entstehen; der Park-Seed erzeugt nur die ersten drei.
-_CONTENT_BUILDERS: dict[str, Callable[[Mapping[str, Any]], str]] = {
-    "alarm_raised": _content_alarm_raised,
-    "production_run": _content_production_run,
-    "maintenance_performed": _content_maintenance_performed,
-    "drift_detected": _content_drift_detected,
-    "event_chain_reconstructed": _content_event_chain,
-    "failure_recommendation": _content_failure_recommendation,
-}
-
-
 # Abbildung event_type → source_type. Deterministisch, kein Rückschluss: der
 # event_type steht in der Zeile, die Herkunft folgt daraus eindeutig.
 # `alarm`/`maintenance` sind die beiden Werte, unter denen ein Treffer auch im
@@ -171,17 +106,21 @@ def herkunft_ergaenzen(event_type: str, payload: Mapping[str, Any]) -> dict[str,
 
 
 def reconstruct_content(event_type: str, payload: Mapping[str, Any]) -> str | None:
-    """Baut den Substrat-Text aus event_type + payload — wortgleich zum Aufrufer.
+    """Baut den Substrat-Text aus event_type + payload.
 
-    Liefert None, wenn der event_type unbekannt ist (oder die payload ein
-    erwartetes Feld nicht trägt): dann wird die Zeile übersprungen, statt einen
-    erfundenen Text ins Gedächtnis zu schreiben.
+    Nutzt dieselbe Quelle wie der Live-Pfad (substrate/content.py) und ist
+    dadurch zwangsläufig wortgleich — nicht mehr nur laut Kommentar.
+
+    Liefert None, wenn der event_type unbekannt ist oder die payload ein
+    erwartetes Feld nicht trägt: dann wird die Zeile übersprungen, statt einen
+    erfundenen Text ins Gedächtnis zu schreiben. `baue_inhalt` WIRFT in beiden
+    Fällen — auf dem Schreibweg ist das ein Programmierfehler, der sofort
+    auffallen soll; hier ist unvollständiger Altbestand ein zu erwartender Fall.
     """
-    builder = _CONTENT_BUILDERS.get(event_type)
-    if builder is None:
+    if event_type not in CONTENT_BUILDERS:
         return None
     try:
-        return builder(payload)
+        return baue_inhalt(event_type, payload)
     except (KeyError, TypeError, ValueError) as exc:
         logger.warning(
             "⏭️ payload für event_type=%s unvollständig (%s) — Zeile übersprungen.",

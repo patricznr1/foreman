@@ -270,10 +270,6 @@ class IngestionService:
                 "machine_id": event.machine_id,
                 "raised_at": event.occurred_at.isoformat(),
             },
-            content=(
-                f"Alarm {event.code or '?'} ({event.severity}/{event.category}) "
-                f"an Maschine {event.machine_id} ausgelöst."
-            ),
         )
 
     async def _write_production_run(self, event: ProductionRunRecord) -> None:
@@ -304,10 +300,6 @@ class IngestionService:
                 "started_at": event.started_at.isoformat(),
                 "ended_at": event.ended_at.isoformat() if event.ended_at else None,
             },
-            content=(
-                f"Produktionslauf {event.product_code} auf Linie {event.line_id} "
-                f"gestartet ({event.started_at.isoformat()})."
-            ),
         )
 
     async def _write_maintenance(self, event: MaintenanceRecord) -> None:
@@ -339,10 +331,6 @@ class IngestionService:
                 "performed_at": event.occurred_at.isoformat(),
                 "performed_by": performed_by,  # bereits tokenisiert
             },
-            content=(
-                f"Wartung ({event.type}) an Maschine {event.machine_id} "
-                f"durchgeführt ({event.occurred_at.isoformat()})."
-            ),
         )
 
     async def _write_worker_note(self, event: WorkerNoteRecord) -> None:
@@ -366,14 +354,13 @@ class IngestionService:
         # semantisches Ereignis i. S. v. §9; die semantische Suche läuft über das embedding).
 
     async def _mirror(
-        self, *, machine_id: int | None, event_type: str, payload: dict[str, object], content: str
+        self, *, machine_id: int | None, event_type: str, payload: dict[str, object]
     ) -> None:
         semantic_event = await record_semantic_event(
             self.session,
             machine_id=machine_id,
             event_type=event_type,
             payload=payload,
-            content=content,
             substrate=self.substrate,
         )
         self._stats.semantic_events += 1

@@ -441,18 +441,11 @@ class EventChainService:
             "referenced_source_ids": list(explanation.referenced_source_ids),
             "flagged_unsupported": list(explanation.flagged_unsupported),
         }
-        hint = " (Hypothese)" if explanation.is_hypothesis else ""
-        content = (
-            f"Ereigniskette zu Alarm {explanation.anchor_alarm_id} an Maschine "
-            f"{explanation.machine_id}: {len(chain.events)} Ereignisse, "
-            f"Konfidenz {explanation.confidence}{hint}."
-        )
         await record_semantic_event(
             self.session,
             machine_id=explanation.machine_id,
             event_type=EVENT_CHAIN_EVENT_TYPE,
             payload=payload,
-            content=content,
             substrate=self.substrate,
         )
         # Spiegel-Zeile sofort flushen (§12.4: der DB-Spiegel wird immer geschrieben);
