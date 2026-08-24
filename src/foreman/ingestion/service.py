@@ -39,7 +39,7 @@ from foreman.ingestion.normalized import (
     ProductionRunRecord,
     WorkerNoteRecord,
 )
-from foreman.ingestion.semantic import record_semantic_event
+from foreman.ingestion.semantic import notiz_payload, record_semantic_event
 from foreman.reads.queries import machines_for_data_points
 from foreman.realtime.channels import ChangeSet
 from foreman.realtime.notify import notify_changes
@@ -350,8 +350,24 @@ class IngestionService:
         # Eingebettet wird der NER-maskierte Text (kein Rohtext, §8).
         self._pending_notes.append(note)
         self._stats.worker_notes += 1
-        # Werker-Notizen werden NICHT ans Substrat gespiegelt (kein diskretes
-        # semantisches Ereignis i. S. v. §9; die semantische Suche läuft über das embedding).
+        # Dual-Write ans Gedächtnis (seit 24.08.2026). Bis dahin stand hier das
+        # Gegenteil: Notizen seien "kein diskretes semantisches Ereignis" und die
+        # semantische Suche laufe ohnehin über das Embedding. Beides stimmte —
+        # und übersah, dass damit KEIN beschreibender Text im Gedächtnis landet.
+        # Alarm, Wartung und Produktionslauf spiegeln nur ihre Struktur; eine
+        # Suche nach "mahlendes Geräusch" fand dort nichts, weil dort kein
+        # einziger solcher Satz stand. Die Notiz ist der einzige Ort, an dem der
+        # Text die Information IST.
+        #
+        # `flush` VOR der Spiegelung: ohne ihn trägt die Zeile noch keinen
+        # Schlüssel, und `source_id` bliebe None — der Treffer hätte im Archiv
+        # keinen Rückweg zur Quellzeile.
+        await self.session.flush()
+        await self._mirror(
+            machine_id=note.machine_id,
+            event_type="worker_note",
+            payload=notiz_payload(note, masked_text),
+        )
 
     async def _mirror(
         self, *, machine_id: int | None, event_type: str, payload: dict[str, object]

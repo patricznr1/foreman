@@ -25,8 +25,8 @@ Stand: 2026-08-24
 | C-015 | Die Ausfalleinschätzung entscheidet erst ab einer sehr hohen Modellsicherheit auf Ausfall. | gemessen | Entscheidungsschwelle 0,997 | 2026-06-15 | gueltig | intern |
 | C-016 | Die Ausfalleinschätzung ist auf einen Vorhersagehorizont von zwei Wochen ausgelegt. | konzipiert | — | 2026-06-15 | gueltig | intern, fach |
 | C-017 | Zahlen in einer Werker-Empfehlung stammen ausschliesslich aus dem Rechenmodell, nie aus dem Sprachmodell. | gemessen | Unbelegte Zahlen führen zur Ablehnung der Empfehlung, nicht zu einer Markierung | 2026-07-31 | gueltig | intern, fach, kunde |
-| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1070 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-24 | gueltig | intern, fach |
-| C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,28 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-22 | gueltig | intern, fach |
+| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1076 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-24 | gueltig | intern, fach |
+| C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,32 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-22 | gueltig | intern, fach |
 | C-020 | Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern. | geplant | — | 2026-07-31 | gueltig | intern, fach |
 | C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 754 bestanden in 147 Prüfdateien | 2026-08-24 | gueltig | intern, fach |
 | C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 150 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 316 Dateien ohne Befund | 2026-08-24 | gueltig | intern, fach |
@@ -49,6 +49,8 @@ Stand: 2026-08-24
 | C-039 | Der vierte Auswerte-Baustein zu Wartungszyklen ist nicht gebaut und hängt an einer echten Wartungshistorie. | geplant | — | 2026-07-31 | gueltig | intern |
 | C-042 | Beim Nachtrag der Spiegelung fielen sechs Alarmpaare zusammen, weil ihr Text sie nicht unterscheidbar machte. | gemessen | aus 65 nachgetragenen Ereignissen wurden 59 Erinnerungen; 6 Alarme gingen als vermeintliche Dublette verloren | 2026-08-20 | gueltig | intern |
 | C-043 | Die Antwortform der Gedächtnis-Schnittstelle ist gegen die betriebene Instanz abgenommen, nicht nur gegen Annahmen. | gemessen | 7 zurückgegebene Felder und 7 Metadatenfelder, gegen 6 gesendete Feldern geprüft | 2026-08-20 | gueltig | intern |
+| C-044 | Der Text einer Schichtnotiz verlässt die Anlage und wird im Gedächtnis abgelegt. | gemessen | 1 von 7 gespiegelten Ereignisarten trägt Freitext; die übrigen sechs nur Kennungen, Typen und Zeitpunkte | 2026-08-24 | gueltig | intern |
+| C-045 | Ein Löschverlangen für eine gespiegelte Erinnerung ist von der Plattform aus erfüllbar. | gemessen | 1 Löschweg, der bei Fehlschlag wirft statt ihn zu verschlucken | 2026-08-24 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -61,17 +63,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 43
+Einträge gesamt: 45
 
 Nach Status:
 
-- gemessen: 36
+- gemessen: 38
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 41
+- gueltig: 43
 - ueberholt: 2
 - ungeprueft: 0

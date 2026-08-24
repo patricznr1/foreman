@@ -245,3 +245,63 @@ def test_smoke_route_haengt_an_der_smoke_dependency() -> None:
     abhaengigkeiten = [d.call for d in route.dependant.dependencies]
     assert get_substrate_smoke_client in abhaengigkeiten
     assert get_substrate_client not in abhaengigkeiten
+
+
+# ------------------------------------------------------------
+#  forget — der Rückweg für ein Löschverlangen (Art. 17 DSGVO)
+# ------------------------------------------------------------
+
+
+async def test_forget_schickt_delete_auf_die_kennung() -> None:
+    """Der Klient muss löschen KÖNNEN — sonst ist ein Löschverlangen nicht erfüllbar.
+
+    ANLASS: Der Klient kannte remember, recall, reason, drift_status und reflect.
+    Das Gedächtnis kann löschen (mit Entwertung der abgeleiteten Aussagen), aber
+    FOREMAN hatte keinen Weg, es zu verlangen. Solange Inhalte hinausgehen, die
+    auf eine Person zurückführen können, ist das eine Lücke im Löschpfad.
+    """
+    gesehen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesehen["methode"] = request.method
+        gesehen["pfad"] = request.url.path
+        return httpx.Response(200, json={"deleted": True})
+
+    client = _make_client(handler)
+    antwort = await client.forget("abc-123")
+
+    assert gesehen["methode"] == "DELETE"
+    assert str(gesehen["pfad"]).endswith("/abc-123")
+    assert antwort == {"deleted": True}
+
+
+async def test_forget_meldet_einen_fehlschlag_statt_ihn_zu_verschlucken() -> None:
+    """Ein misslungenes Löschen darf NICHT wie ein gelungenes aussehen.
+
+    Aufbau-Kontrolle zum Test darüber: Ohne diese Zusicherung wäre nicht
+    unterscheidbar, ob der Aufruf wirkte oder nur nicht warf — genau das
+    Häkchen, das Sicherheit vortäuscht. Bei einem Löschverlangen ist die
+    Erfolgsmeldung der ganze Nachweis.
+    """
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, json={"detail": "kaputt"})
+
+    client = _make_client(handler)
+    with pytest.raises(SubstrateError):
+        await client.forget("abc-123")
+
+
+async def test_forget_lehnt_eine_leere_kennung_ab() -> None:
+    """Ohne Kennung würde der Pfad auf die Sammlung zeigen statt auf einen Eintrag.
+
+    Ein DELETE auf die Sammlung ist im günstigen Fall ein 405 — im ungünstigen
+    trifft es mehr als gemeint. Der Fehler gehört vor den Aufruf.
+    """
+
+    def handler(_request: httpx.Request) -> httpx.Response:  # pragma: no cover
+        raise AssertionError("es darf keine Anfrage rausgehen")
+
+    client = _make_client(handler)
+    with pytest.raises(ValueError, match="Kennung"):
+        await client.forget("   ")

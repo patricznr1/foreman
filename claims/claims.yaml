@@ -414,7 +414,7 @@ claims:
   - id: "C-018"
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
-    wert: "1070 bestanden, 2 übersprungen, 4 abgewählt"
+    wert: "1076 bestanden, 2 übersprungen, 4 abgewählt"
     bedingung: >-
       Automatischer Prüflauf vom 22.08.2026 auf dem Stand von main (fad4de5)
       gegen eine echte Zeitreihen-Datenbank, nicht gegen Attrappen. Die zwei
@@ -426,7 +426,7 @@ claims:
       einzeln anwählen.
     datum: "2026-08-24"
     fundstelle:
-      - "Eigener Lauf 24.08.2026: 1070 passed / 2 skipped / 4 deselected in 606 s (2 Prüfungen für die vierte Archiv-Quelle ergänzt)"
+      - "Eigener Lauf 24.08.2026: 1076 passed / 2 skipped / 4 deselected in 890 s (Prüfungen für die vierte Archiv-Quelle und die Notiz-Spiegelung ergänzt)"
       - "Commit fad4de5"
       - "Gegenprobe 24.08.2026: pytest --collect-only --no-cov meldet die Summe aus bestanden und übersprungen; tools/pruefe_registerzahlen.py hält beides gegeneinander"
     geltung: "gueltig"
@@ -444,7 +444,7 @@ claims:
   - id: "C-019"
     aussage: "Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze."
     status: "gemessen"
-    wert: "94,28 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
+    wert: "94,32 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
     bedingung: >-
       Gemessen im selben Prüflauf vom 22.08.2026 wie C-018, gegen eine echte
       Zeitreihen-Datenbank. Zweigabdeckung, nicht Zeilenabdeckung — so ist die
@@ -456,7 +456,7 @@ claims:
       Zahl gilt nur für einen Lauf mit Datenbank.
     datum: "2026-08-22"
     fundstelle:
-      - "Automatischer Prüflauf 22.08.2026: Total coverage 94.28 Prozent"
+      - "Eigener Lauf 24.08.2026: Total coverage 94.32 Prozent"
       - "pyproject.toml, Zeile 211 (Zweigabdeckung aktiv)"
     geltung: "gueltig"
     freigabe:
@@ -1000,3 +1000,60 @@ claims:
       zurechtkommt. Hier ist die Form am echten Gegenüber erhoben. Beim
       Wiederholen wird die Arbeitskopie des Protokolls überschrieben; die
       Fassung vom 20.08.2026 bleibt über die Versionierung greifbar.
+
+  - id: "C-044"
+    aussage: "Der Text einer Schichtnotiz verlässt die Anlage und wird im Gedächtnis abgelegt."
+    status: "gemessen"
+    wert: "1 von 7 gespiegelten Ereignisarten trägt Freitext; die übrigen sechs nur Kennungen, Typen und Zeitpunkte"
+    bedingung: >-
+      Gebaut am 24.08.2026, beide Schreibwege. Der Text ist zu diesem Zeitpunkt
+      durch die Namenserkennung gelaufen — beide Wege maskieren VOR dem
+      Speichern, die Spiegelung setzt danach an. Ein im Text überlebender Name
+      bliebe trotzdem ein Personenbezug; das Datenmodell sagt das selbst und
+      erklärt die Notiz ausdrücklich nicht für anonym. Mitgegeben werden
+      ausserdem Maschine, Schicht, Zeitpunkt und der Rückweg zur Quellzeile —
+      NICHT der Verfasser.
+    datum: "2026-08-24"
+    fundstelle:
+      - "src/foreman/substrate/content.py, Funktion _worker_note"
+      - "src/foreman/ingestion/semantic.py, Funktion notiz_payload"
+      - "GROUND_TRUTH.md, Abschnitt 12.4"
+      - "tests/integration/test_dual_write.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Eintrag steht hier, weil er JEDE Datenschutzaussage über das Produkt
+      berührt: Bis zum 24.08.2026 verliess kein beschreibender Text die Anlage,
+      und mehrere Unterlagen konnten sich darauf stützen. Das gilt nicht mehr.
+      Wer künftig schreibt "es verlassen nur strukturierte Daten die Anlage",
+      widerspricht diesem Eintrag. Der Grund für die Ausnahme: Bei den anderen
+      sechs Arten trägt die Struktur die Information, bei der Notiz der Text —
+      ohne ihn bekam das Gedächtnis einen leeren Merkzettel. Gegenstück ist der
+      Löschweg, der am selben Tag entstand (C-045).
+
+  - id: "C-045"
+    aussage: "Ein Löschverlangen für eine gespiegelte Erinnerung ist von der Plattform aus erfüllbar."
+    status: "gemessen"
+    wert: "1 Löschweg, der bei Fehlschlag wirft statt ihn zu verschlucken"
+    bedingung: >-
+      Gebaut am 24.08.2026 als Gegenstück zu C-044. Der Zugriffsweg auf das
+      Gedächtnis kannte bis dahin fünf Operationen, keine davon löschend — der
+      Dienst konnte löschen, die Plattform es nicht verlangen. Drei Prüfungen
+      sichern das ab: dass wirklich eine löschende Anfrage auf die Kennung
+      geht, dass ein Fehlschlag gemeldet wird, und dass eine leere Kennung vor
+      dem Aufruf abgelehnt wird.
+    datum: "2026-08-24"
+    fundstelle:
+      - "src/foreman/substrate/client.py, Methode forget"
+      - "tests/unit/test_substrate_client.py"
+      - "GROUND_TRUTH.md, Abschnitt 9"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Was dieser Eintrag NICHT behauptet: dass ein Löschverlangen damit
+      vollständig erfüllt wäre. Der Weg ist da und einzeln geprüft; ein
+      durchgehender Lauf vom Verlangen bis zur nachgewiesenen Entfernung ist
+      nicht gefahren. Bis er es ist, bleibt die Aussage auf die Fähigkeit
+      begrenzt, nicht auf ihre Wirkung.

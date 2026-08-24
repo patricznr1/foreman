@@ -736,10 +736,11 @@ def test_argparser_lehnt_ungueltige_werte_ab(argv: list[str]) -> None:
 # ------------------------------------------------------------
 #  Herkunft in der Payload (Freigabe-Bedingung 3)
 # ------------------------------------------------------------
-# Alle sechs event_type, die je über record_semantic_event entstehen — dieselbe
+# Alle sieben event_type, die je über record_semantic_event entstehen — dieselbe
 # Menge, die _CONTENT_BUILDERS abdeckt. Der zweite Wert ist die erwartete
 # Herkunft, der dritte sagt, ob ein Treffer dieses Typs im Archiv auflösbar ist.
 _HERKUNFT_FAELLE = [
+    ("worker_note", "note", True),
     ("alarm_raised", "alarm", True),
     ("maintenance_performed", "maintenance", True),
     ("production_run", "production_run", False),
@@ -753,13 +754,13 @@ _HERKUNFT_FAELLE = [
 def test_herkunft_wird_fuer_jeden_typ_abgeleitet(
     event_type: str, erwartet: str, _archiv: bool
 ) -> None:
-    """Alle sechs Formen, nicht nur die drei des Park-Seeds."""
+    """Alle sieben Formen, nicht nur die drei des Park-Seeds."""
     meta = herkunft_ergaenzen(event_type, {"machine_id": 7})
     assert meta["source_type"] == erwartet
     assert meta["machine_id"] == 7
 
 
-def test_die_sechs_faelle_decken_alle_gebauten_typen_ab() -> None:
+def test_die_sieben_faelle_decken_alle_gebauten_typen_ab() -> None:
     """Gegen stilles Auseinanderlaufen: kommt ein siebter event_type dazu,
     fällt er hier auf und nicht erst im Betrieb."""
     from foreman.substrate.backfill import _SOURCE_TYPES
