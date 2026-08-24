@@ -76,4 +76,35 @@ describe("ArchiveResultCard", () => {
     expect(screen.queryByRole("link", { name: "An Maschine ansehen" })).toBeNull();
     expect(screen.getByText(/ohne Maschinenbezug/)).toBeInTheDocument();
   });
+
+  it("zeigt bei einer Erinnerung die Maschinenklasse als Detail", () => {
+    // Die vierte Quelle traegt eigene Detail-Felder (§15.10). Ohne diesen Zweig
+    // erschiene eine Erinnerung ohne jede Einordnung — der Werker saehe einen
+    // Auszug ohne Herkunftshinweis ausser dem Kuerzel.
+    render(
+      <ArchiveResultCard
+        hit={hit({
+          source: "memory",
+          id: 0,
+          detail: { herkunft: "gedaechtnis", maschinenklasse: "cnc_machining_center" },
+        })}
+        largeCards={false}
+      />,
+    );
+    expect(screen.getByText(/cnc_machining_center/)).toBeInTheDocument();
+  });
+
+  it("erfindet keine Details, wenn die Erinnerung keine traegt", () => {
+    // Aufbau-Kontrolle zum Test darueber: `maschinenklasse` ist optional
+    // ("falls bekannt"). Fehlt sie, darf nichts erscheinen — kein "unbekannt",
+    // kein Platzhalter.
+    render(
+      <ArchiveResultCard
+        hit={hit({ source: "memory", id: 0, detail: { herkunft: "gedaechtnis" } })}
+        largeCards={false}
+      />,
+    );
+    expect(screen.queryByText(/Klasse/)).not.toBeInTheDocument();
+  });
+
 });

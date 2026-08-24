@@ -414,7 +414,7 @@ claims:
   - id: "C-018"
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
-    wert: "1068 bestanden, 2 übersprungen, 4 abgewählt"
+    wert: "1070 bestanden, 2 übersprungen, 4 abgewählt"
     bedingung: >-
       Automatischer Prüflauf vom 22.08.2026 auf dem Stand von main (fad4de5)
       gegen eine echte Zeitreihen-Datenbank, nicht gegen Attrappen. Die zwei
@@ -424,11 +424,11 @@ claims:
       Freigabe-Prüfungen (sprechen eine betriebene Instanz an). Beide sind im
       Pflichtlauf ausdrücklich ausgenommen; wer sie fahren will, muss sie
       einzeln anwählen.
-    datum: "2026-08-22"
+    datum: "2026-08-24"
     fundstelle:
-      - "Automatischer Prüflauf 22.08.2026 (Lauf 32589782455): 1068 passed / 2 skipped / 4 deselected in 254 s"
+      - "Eigener Lauf 24.08.2026: 1070 passed / 2 skipped / 4 deselected in 606 s (2 Prüfungen für die vierte Archiv-Quelle ergänzt)"
       - "Commit fad4de5"
-      - "Gegenprobe 24.08.2026: pytest --collect-only --no-cov meldet 1070 von 1074 gesammelt (4 abgewählt) — deckt sich mit 1068 bestanden + 2 übersprungen"
+      - "Gegenprobe 24.08.2026: pytest --collect-only --no-cov meldet die Summe aus bestanden und übersprungen; tools/pruefe_registerzahlen.py hält beides gegeneinander"
     geltung: "gueltig"
     freigabe:
       - "intern"
@@ -496,15 +496,15 @@ claims:
   - id: "C-021"
     aussage: "Die Prüfsuite des Oberflächen-Teils läuft vollständig grün."
     status: "gemessen"
-    wert: "744 bestanden in 146 Prüfdateien"
+    wert: "754 bestanden in 147 Prüfdateien"
     bedingung: >-
-      Automatischer Prüflauf vom 22.08.2026 auf dem Stand von main (fad4de5),
-      zusammen mit fehlerfreier Typprüfung und fehlerfreier Stilprüfung. Der
-      Wert ist gegenüber dem 10.08.2026 unverändert — die drei Änderungen
-      seither haben den Oberflächen-Teil nicht berührt.
-    datum: "2026-08-22"
+      Lauf vom 24.08.2026, zusammen mit fehlerfreier Typprüfung und
+      fehlerfreier Stilprüfung. Zwischen dem 10.08. und dem 22.08.2026 lag der
+      Wert unverändert bei 744 in 146 Dateien; die zehn neuen Prüfungen decken
+      die Darstellung der vierten Archiv-Quelle ab.
+    datum: "2026-08-24"
     fundstelle:
-      - "Automatischer Prüflauf 22.08.2026: 146 Prüfdateien, 744 bestanden"
+      - "Eigener Lauf 24.08.2026: 147 Prüfdateien, 754 bestanden (10 Prüfungen für die vierte Archiv-Quelle ergänzt)"
       - "Internes Sitzungsprotokoll 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES, 31.07.2026)"
     geltung: "gueltig"
     freigabe:

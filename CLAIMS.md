@@ -25,10 +25,10 @@ Stand: 2026-08-24
 | C-015 | Die Ausfalleinschätzung entscheidet erst ab einer sehr hohen Modellsicherheit auf Ausfall. | gemessen | Entscheidungsschwelle 0,997 | 2026-06-15 | gueltig | intern |
 | C-016 | Die Ausfalleinschätzung ist auf einen Vorhersagehorizont von zwei Wochen ausgelegt. | konzipiert | — | 2026-06-15 | gueltig | intern, fach |
 | C-017 | Zahlen in einer Werker-Empfehlung stammen ausschliesslich aus dem Rechenmodell, nie aus dem Sprachmodell. | gemessen | Unbelegte Zahlen führen zur Ablehnung der Empfehlung, nicht zu einer Markierung | 2026-07-31 | gueltig | intern, fach, kunde |
-| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1068 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-22 | gueltig | intern, fach |
+| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1070 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-24 | gueltig | intern, fach |
 | C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,28 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-22 | gueltig | intern, fach |
 | C-020 | Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern. | geplant | — | 2026-07-31 | gueltig | intern, fach |
-| C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 744 bestanden in 146 Prüfdateien | 2026-08-22 | gueltig | intern, fach |
+| C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 754 bestanden in 147 Prüfdateien | 2026-08-24 | gueltig | intern, fach |
 | C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 150 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 316 Dateien ohne Befund | 2026-08-24 | gueltig | intern, fach |
 | C-023 | Die Prüfläufe laufen gegen eine echte Zeitreihen-Datenbank statt gegen Attrappen. | gemessen | Ein Dienst-Container mit der produktiv eingesetzten Datenbankfassung wird für jeden Lauf gestartet | 2026-07-31 | gueltig | intern, fach |
 | C-024 | Der Freitext-Pfad des erklärenden Sprachmodells wird mit gezielten Angriffsmustern geprüft. | gemessen | Ein fester Angriffssatz läuft bei jedem Prüflauf durch die vollständige Erklär-Kette | 2026-07-31 | gueltig | intern, fach, kunde |

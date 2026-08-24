@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from foreman.api.deps import get_embedding_provider
+from foreman.archive import ALL_SOURCES
 from foreman.config import Settings
 from foreman.db.models import Alarm, Machine, MaintenanceEvent, WorkerNote
 from foreman.embeddings.errors import ProviderUnavailable
@@ -126,6 +127,41 @@ async def test_archive_route_unbekannte_quelle_422(app: FastAPI, auth_client: As
     app.dependency_overrides[get_embedding_provider] = lambda: _FixedProvider(_QUERY)
     resp = await auth_client.get(_SEARCH, params={"q": "Fett", "sources": "gibtsnicht"})
     assert resp.status_code == 422
+
+
+@pytest.mark.integration
+async def test_archive_route_422_nennt_alle_erlaubten_quellen(
+    app: FastAPI, auth_client: AsyncClient
+) -> None:
+    """Die Fehlermeldung zählt auf, was erlaubt IST — nicht eine veraltete Teilmenge.
+
+    ANLASS: Die Meldung nannte drei Quellen, während ALL_SOURCES längst vier
+    führte. Wer `memory` schickte, bekam es akzeptiert; wer sich vertippte,
+    bekam eine Liste, in der die vierte fehlte. Eine Fehlermeldung, die den
+    Aufrufer in die falsche Richtung schickt, ist schlimmer als eine knappe.
+    """
+    app.dependency_overrides[get_embedding_provider] = lambda: _FixedProvider(_QUERY)
+    resp = await auth_client.get(_SEARCH, params={"q": "Fett", "sources": "gibtsnicht"})
+    assert resp.status_code == 422
+    detail = resp.json()["detail"]
+    for quelle in ALL_SOURCES:
+        assert quelle in detail, f"Meldung nennt {quelle} nicht: {detail}"
+
+
+@pytest.mark.integration
+async def test_archive_route_nimmt_die_vierte_quelle_an(
+    app: FastAPI, auth_client: AsyncClient
+) -> None:
+    """`memory` ist eine gültige Quelle — auch bei ausgeschaltetem Schalter.
+
+    Der Schalter entscheidet, ob das Gedächtnis BEFRAGT wird (Router reicht den
+    Klienten dann nicht durch), nicht ob der Parameter gültig ist. Ein 422 hier
+    wäre der Unterschied zwischen "nichts gefunden" und "so darfst du nicht
+    fragen" — und würde die graceful-Zusage aus §15.10 brechen.
+    """
+    app.dependency_overrides[get_embedding_provider] = lambda: _FixedProvider(_QUERY)
+    resp = await auth_client.get(_SEARCH, params={"q": "Fett", "sources": "memory"})
+    assert resp.status_code == 200
 
 
 @pytest.mark.integration

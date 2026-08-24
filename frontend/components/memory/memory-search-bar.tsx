@@ -12,15 +12,27 @@
 "use client";
 
 import { type FormEvent, useEffect, useId, useState } from "react";
+import { VERFUEGBARE_QUELLEN } from "@/lib/memory/source";
 import type { SourceType } from "@/lib/memory/types";
 import { cx } from "@/lib/ui/cx";
 
-/** Quellen-Optionen in kanonischer Reihenfolge (auch fürs sources[]-Serialisieren). */
-const SOURCE_OPTIONS: { value: SourceType; label: string }[] = [
-  { value: "note", label: "Schichtnotizen" },
-  { value: "maintenance", label: "Wartung" },
-  { value: "alarm", label: "Alarme" },
-];
+/** Beschriftung je Quelle im Umschalter (Plural, anders als das Treffer-Label). */
+const SOURCE_OPTION_LABEL: Record<SourceType, string> = {
+  note: "Schichtnotizen",
+  maintenance: "Wartung",
+  alarm: "Alarme",
+  memory: "Gedächtnis",
+};
+
+/**
+ * Quellen-Optionen in kanonischer Reihenfolge (auch fürs sources[]-Serialisieren).
+ * Welche Quellen erscheinen, entscheidet AUSSCHLIESSLICH `VERFUEGBARE_QUELLEN` —
+ * die Beschriftungen oben sind vollständig, damit beim Umlegen des Schalters
+ * nur eine Stelle angefasst werden muss.
+ */
+const SOURCE_OPTIONS: { value: SourceType; label: string }[] = VERFUEGBARE_QUELLEN.map(
+  (value) => ({ value, label: SOURCE_OPTION_LABEL[value] }),
+);
 
 export interface MemorySearchBarProps {
   defaultQuery?: string;
@@ -46,7 +58,7 @@ export function MemorySearchBar({
   const [query, setQuery] = useState(defaultQuery);
   const [machineId, setMachineId] = useState<number | null>(null);
   const [active, setActive] = useState<Set<SourceType>>(
-    () => new Set<SourceType>(["note", "maintenance", "alarm"]),
+    () => new Set<SourceType>(VERFUEGBARE_QUELLEN),
   );
   const reasonId = useId();
   const noSources = active.size === 0;
@@ -59,7 +71,7 @@ export function MemorySearchBar({
   useEffect(() => {
     setQuery(defaultQuery);
     setMachineId(null);
-    setActive(new Set<SourceType>(["note", "maintenance", "alarm"]));
+    setActive(new Set<SourceType>(VERFUEGBARE_QUELLEN));
   }, [defaultQuery]);
 
   function toggleSource(value: SourceType): void {

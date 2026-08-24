@@ -10,6 +10,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { hitKey } from "@/lib/memory/source";
 import type { MemoryRoleView } from "@/lib/memory/roles";
 import type { ArchiveSearchResult } from "@/lib/memory/types";
 import { ArchiveResultCard } from "./archive-result-card";
@@ -66,7 +67,7 @@ export function MemoryResultList({ result, roleView, announce }: MemoryResultLis
         <div className="flex flex-col gap-3">
           {result.hits.map((hit) => (
             <ArchiveResultCard
-              key={`${hit.source}-${hit.id}`}
+              key={hitKey(hit)}
               hit={hit}
               largeCards={roleView.largeCards}
             />
