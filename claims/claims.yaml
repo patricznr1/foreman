@@ -1086,3 +1086,121 @@ claims:
       gegen Umdeutung ist bewusst eng — er erkennt eine Verneinung nur
       unmittelbar vor der Phrase. Weiter gefasst liesse er echte Umdeutungen
       durch; ein Test hält diese Abwägung fest.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Güte der Archiv-Suche — Goldset-Messung 24.08.2026
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-047"
+    aussage: "Für die Archiv-Suche existiert ein Bewertungssatz, dessen Relevanzurteile von drei voneinander unabhängigen Beurteilern getragen werden."
+    status: "gemessen"
+    wert: "18 Anfragen, 79 Relevanz-Zuordnungen, 86,6 % Übereinstimmung aller drei Beurteiler"
+    bedingung: >-
+      Erhoben am 24.08.2026 gegen den Bestand der laufenden Demo-Instanz
+      (36 Freitext-Einträge: 14 Schichtnotizen, 16 Wartungsvorgänge, 6 Alarme).
+      Die Anfragen wurden formuliert, bevor die Relevanz feststand; die Relevanz
+      wurde getrennt davon von drei Beurteilern mit unterschiedlichem Blickwinkel
+      (Instandhalter, Zuverlässigkeitsingenieur, strenger Prüfer) vergeben.
+      Aufgenommen wurde eine Zuordnung ab zwei von drei Stimmen. Von 82 genannten
+      Zuordnungen trugen 71 alle drei Beurteiler. Eine Kontroll-Anfrage ohne
+      Entsprechung im Bestand liessen alle drei erwartungsgemäss leer.
+    datum: "2026-08-24"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 15.10 (Freigabe-Bedingung 1)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Der Aufwand mit drei Beurteilern hat einen Grund: Ein Bewertungssatz, dessen
+      Relevanz von einem einzigen Urteil abhängt, misst dieses Urteil mit. Die
+      Übereinstimmungsquote ist deshalb selbst eine Kennzahl — fiele sie niedrig
+      aus, wäre nicht die Suche schlecht, sondern die Aufgabe schlecht gestellt.
+      Bekannte Grenze des Satzes: Der Bestand umfasst 19 Tage und enthält keinen
+      Vorgang, der sich wiederholt; die maschinenübergreifende Kette wird an
+      einem einzigen Vorfall gemessen.
+
+  - id: "C-048"
+    aussage: "Die Ähnlichkeitsschwelle der Archiv-Suche war nie an echten Daten justiert; nach der Justierung findet die Suche deutlich mehr."
+    status: "gemessen"
+    wert: "Schwelle 0,55 → 0,60: Trefferquote 0,185 → 0,256 (+38 %), Ranggüte 0,306 → 0,372 (+22 %)"
+    bedingung: >-
+      Gemessen am 24.08.2026 gegen die laufende Instanz über den Bewertungssatz
+      aus C-047, k=10. Fünf Schwellenwerte gefahren (0,55 · 0,60 · 0,65 · 0,75 ·
+      0,95). Der Ausgangswert 0,55 war im Code ausdrücklich als "konservativer
+      Start" bezeichnet und stammte nicht aus einer Messung. Bei 0,55 fielen
+      sämtliche bedeutungsbasierten Treffer heraus: sechs Anfragen mit reinen
+      Sinnverwandten des gesuchten Sachverhalts lieferten nichts, während die
+      wörtlichen Begriffe trafen — die Suche arbeitete faktisch als reine
+      Volltextsuche, ohne dass ein Fehler auffiel. Gewählt wurde 0,60, weil ab
+      0,65 der Anteil zutreffender Treffer unter ein Drittel fällt (0,300 bei
+      0,65 gegenüber 0,415 bei 0,60).
+    datum: "2026-08-24"
+    fundstelle:
+      - "src/foreman/config.py, archive_vector_max_distance"
+      - "GROUND_TRUTH.md, Abschnitt 15.8"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Der Befund ist allgemeiner als der eine Zahlenwert: Eine Schwelle, die
+      Treffer verwirft, meldet nichts, wenn sie zu streng steht. Der Ausfall sieht
+      von aussen aus wie ein leeres Archiv, nicht wie ein Defekt. Ohne einen
+      Bewertungssatz war er nicht zu bemerken.
+
+  - id: "C-049"
+    aussage: "Die Güte der quellenübergreifenden Archiv-Suche ist erstmals beziffert."
+    status: "gemessen"
+    wert: "Trefferquote 0,256 · Genauigkeit 0,415 · Ranggüte 0,372 (k=10, drei Quellen, Schwelle 0,60)"
+    bedingung: >-
+      Gemessen am 24.08.2026 gegen die laufende Instanz über den Bewertungssatz
+      aus C-047. Vier der 17 auswertbaren Anfragen liefern keinen einzigen
+      zutreffenden Treffer. Mittlere Antwortzeit 0,43 s. Die Zahlen gelten für
+      diesen Bestand und diesen Anfragesatz; sie sind eine Ausgangsmarke für
+      Vergleiche, keine allgemeine Güteangabe der Suche.
+    datum: "2026-08-24"
+    fundstelle:
+      - "src/foreman/archive/search.py"
+      - "GROUND_TRUTH.md, Abschnitt 15.9"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Ein wiederkehrendes Muster in den Fehlschlägen ist die deutsche
+      Wortzusammensetzung: Die Volltextsuche zerlegt sie nicht, weshalb
+      "Verschleiss" den Eintrag "Werkzeugverschleiss" nicht findet und
+      "Schmierung" die "Nachschmierung" nicht. Der bedeutungsbasierte Zweig
+      deckt bislang nur Schichtnotizen ab, nicht Wartung und Alarme.
+
+  - id: "C-050"
+    aussage: "Das Gedächtnis als vierte Archiv-Quelle erfüllt seine Freigabe-Bedingung im gegenwärtigen Zustand nicht."
+    status: "gemessen"
+    wert: "0 % der Anfragen mit zusätzlichem zutreffendem Treffer (gefordert: mindestens 30 %); auf 11 von 18 Anfragen verschlechterte Reihenfolge"
+    bedingung: >-
+      Gemessen am 24.08.2026 gegen die laufende Instanz über den Bewertungssatz
+      aus C-047, bei justierter Schwelle 0,60, im unmittelbaren Vergleich mit
+      und ohne die vierte Quelle. Trefferquote unverändert 0,256; Genauigkeit
+      0,415 → 0,223; Ranggüte 0,372 → 0,266; mittlere Antwortzeit 0,43 s → 2,40 s.
+      Ursache ist der Inhalt der Erinnerungen, nicht das Verfahren: Von sieben
+      Formulierungsbausteinen führt nur der für Schichtnotizen echten Freitext,
+      die übrigen geben allein die Struktur wieder. Eine Wartungserinnerung lautet
+      "Wartung (lubrication) an Maschine 1 durchgeführt" — der Vorgangsgrund, der
+      in der Beschreibung stünde, fehlt. Zusätzlich waren Schichtnotizen zum
+      Messzeitpunkt überhaupt nicht gespiegelt.
+    datum: "2026-08-24"
+    fundstelle:
+      - "src/foreman/substrate/content.py, CONTENT_BUILDERS"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Der Schalter blieb nach der Messung ausgeschaltet. Die Messung belegt genau
+      das, wogegen der Schalter gebaut wurde: Eine zusätzliche Quelle ohne Inhalt
+      verdrängt in der Ergebnisverschmelzung zutreffende Treffer nach hinten,
+      ohne eigene beizusteuern. Die Bedingung ist damit nicht widerlegt, sondern
+      noch nicht prüfbar — sie wird erneut gemessen, sobald die Erinnerungen
+      beschreibenden Text führen.

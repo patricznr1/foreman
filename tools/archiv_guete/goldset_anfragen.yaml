@@ -1,0 +1,86 @@
+# Goldset-Anfragen fuer die quellenuebergreifende Archiv-Suche (FOREMAN).
+# Stand: 2026-08-24 · Bestand: Demo-Instanz frontend-production-169a (36 Freitext-Eintraege).
+#
+# Die Anfragen sind so formuliert, wie ein Meister oder Werker sie eintippen wuerde —
+# in der Halle sucht niemand mit dem Wortlaut des gesuchten Eintrags. Genau das ist der
+# Pruefpunkt: Volltext allein findet nur, was woertlich uebereinstimmt.
+#
+# Relevanz wird NICHT hier festgelegt, sondern getrennt und unabhaengig beurteilt
+# (goldset_urteile.json), damit die Messung nicht das Urteil ihres Erbauers misst.
+
+schema_version: 1
+bestand: bestand_flach.json
+k: 10
+
+anfragen:
+  # --- A: Symptom sucht Ursache, quellenuebergreifend -------------------------
+  - id: G-01
+    anfrage: "Achse wird lauter beim Verfahren"
+    absicht: "Ein Werker hoert ein neues Geraeusch an einer Achse und sucht, ob das schon mal vorkam und was dahinter steckte."
+  - id: G-02
+    anfrage: "falsches Schmierfett eingesetzt"
+    absicht: "Verdacht auf einen Schmierstoff-Fehler. Die Ursache steht typischerweise in der Wartungshistorie, nicht in der Notiz."
+  - id: G-03
+    anfrage: "mahlendes Geraeusch beim Hochfahren"
+    absicht: "Konkretes Geraeuschbild an einer Achse — welche Faelle gab es, und was ergab die Inspektion?"
+  - id: G-04
+    anfrage: "Lagerschwingung ueber Warnschwelle"
+    absicht: "Der Meister sieht eine Schwingungswarnung und will wissen, welche Maschinen das schon hatten."
+
+  # --- B: wiederkehrendes Muster ---------------------------------------------
+  - id: G-05
+    anfrage: "Hydraulikdruck laesst nach"
+    absicht: "Druckabfall an einer Presse — gab es das schon, und wie ist es ausgegangen?"
+  - id: G-06
+    anfrage: "Fuegekraft steigt Werkzeug alt"
+    absicht: "Steigende Presskraft als Verschleissindikator — Notiz, Alarm und Wartungsintervall gehoeren zusammen."
+  - id: G-07
+    anfrage: "Werkzeugwechsel ueberfaellig"
+    absicht: "Wo wurde ein Wechselintervall gestreckt, und was war die Folge?"
+  - id: G-08
+    anfrage: "Dosierung schwankt Fuellmenge"
+    absicht: "Unruhige Dosierung an der Zufuehrung — die erste Meldung in einer laengeren Kette."
+
+  # --- C: Kette ueber mehrere Maschinen (FOREMANs Kernversprechen) ------------
+  - id: G-09
+    anfrage: "Teile sitzen nicht sauber woher kommt das"
+    absicht: "Der Werker an der Presse vermutet eine Ursache weiter vorne in der Linie und sucht die Gegenstelle."
+  - id: G-10
+    anfrage: "Ausschuss gestiegen seit heute"
+    absicht: "Die Endkontrolle meldet mehr Abweisungen — der Ursprung liegt zwei Stationen frueher."
+  - id: G-11
+    anfrage: "Problem kommt von der Zufuehrung"
+    absicht: "Ausdruecklicher Verdacht auf die vorgelagerte Station — welche Meldungen stuetzen ihn?"
+
+  # --- D: Erfahrungswissen, Bewertung einer Massnahme -------------------------
+  - id: G-12
+    anfrage: "bringt haeufigeres Schmieren etwas"
+    absicht: "Eine Bewertungsfrage. Die Antwort steht als Fazit in der Wartungshistorie, nicht als Symptom."
+  - id: G-13
+    anfrage: "Schmierintervall verkuerzt Erfahrung"
+    absicht: "Wurde ein verkuerztes Intervall schon einmal gefahren, und mit welchem Ergebnis?"
+  - id: G-14
+    anfrage: "Klemmzylinder schaltet traege"
+    absicht: "Traeges Schaltverhalten an der Zufuehrung — gab es dazu einen Befund bei der Inspektion?"
+
+  # --- E: maschinenbezogen (harter Filter) -----------------------------------
+  - id: G-15
+    anfrage: "Lager"
+    machine_id: 3
+    absicht: "Alles zum Lagerthema an genau dieser Maschine — knapper Suchbegriff, wie er real eingetippt wird."
+  - id: G-16
+    anfrage: "Schmierung"
+    machine_id: 2
+    absicht: "Schmierhistorie einer einzelnen Achse, an der ein Problem gemeldet wurde."
+  - id: G-17
+    anfrage: "Verschleiss"
+    machine_id: 8
+    absicht: "Verschleisslage an einer bestimmten Presse."
+
+  # --- F: Negativprobe (Kontrolle) -------------------------------------------
+  # Ohne diese Anfrage misst man nur, ob MEHR Treffer kommen, nicht ob sie stimmen.
+  # Im Bestand gibt es zu Kuehlschmierstoff nichts. Eine Quelle, die hier Treffer
+  # liefert, erzeugt Rauschen — und das muss die Messung sehen koennen.
+  - id: G-18
+    anfrage: "Kuehlschmierstoff Konzentration zu niedrig"
+    absicht: "KONTROLLE: kommt im Bestand nicht vor. Erwartung ist eine leere oder durchweg irrelevante Trefferliste."

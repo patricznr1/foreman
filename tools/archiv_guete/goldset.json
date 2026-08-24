@@ -1,0 +1,115 @@
+{
+ "G-01": {
+  "alarm:1": 2,
+  "alarm:2": 1,
+  "maintenance:1": 1,
+  "maintenance:2": 2,
+  "note:2": 2,
+  "note:3": 1
+ },
+ "G-02": {
+  "alarm:1": 1,
+  "maintenance:1": 1,
+  "maintenance:2": 2,
+  "note:2": 1
+ },
+ "G-03": {
+  "alarm:2": 2,
+  "maintenance:3": 1,
+  "maintenance:4": 2,
+  "note:3": 2
+ },
+ "G-04": {
+  "alarm:1": 2,
+  "alarm:2": 2,
+  "maintenance:2": 1,
+  "maintenance:4": 1,
+  "note:2": 1,
+  "note:3": 1
+ },
+ "G-05": {
+  "alarm:3": 2,
+  "alarm:4": 2,
+  "maintenance:10": 1,
+  "note:8": 2
+ },
+ "G-06": {
+  "alarm:5": 2,
+  "maintenance:11": 2,
+  "maintenance:12": 1,
+  "note:10": 2
+ },
+ "G-07": {
+  "alarm:5": 2,
+  "maintenance:11": 2,
+  "maintenance:12": 1,
+  "note:10": 2
+ },
+ "G-08": {
+  "alarm:6": 1,
+  "maintenance:9": 2,
+  "note:14": 1,
+  "note:6": 2,
+  "note:9": 1
+ },
+ "G-09": {
+  "alarm:6": 1,
+  "maintenance:9": 2,
+  "note:14": 1,
+  "note:6": 2,
+  "note:9": 2
+ },
+ "G-10": {
+  "alarm:6": 2,
+  "maintenance:16": 1,
+  "maintenance:9": 2,
+  "note:14": 2,
+  "note:6": 2,
+  "note:9": 1
+ },
+ "G-11": {
+  "alarm:6": 1,
+  "maintenance:9": 2,
+  "note:14": 2,
+  "note:6": 2,
+  "note:7": 1,
+  "note:9": 2
+ },
+ "G-12": {
+  "maintenance:1": 1,
+  "maintenance:5": 1,
+  "maintenance:6": 1,
+  "maintenance:7": 2,
+  "note:1": 1,
+  "note:4": 2
+ },
+ "G-13": {
+  "maintenance:1": 1,
+  "maintenance:5": 2,
+  "maintenance:6": 2,
+  "maintenance:7": 2,
+  "note:4": 2
+ },
+ "G-14": {
+  "maintenance:8": 1,
+  "maintenance:9": 2,
+  "note:6": 1,
+  "note:7": 2
+ },
+ "G-15": {
+  "alarm:2": 2,
+  "maintenance:3": 1,
+  "maintenance:4": 2,
+  "note:3": 2
+ },
+ "G-16": {
+  "alarm:1": 1,
+  "maintenance:2": 2,
+  "note:2": 1
+ },
+ "G-17": {
+  "alarm:5": 2,
+  "maintenance:11": 2,
+  "note:10": 2
+ }
+}

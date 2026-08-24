@@ -1,0 +1,290 @@
+[
+ {
+  "schluessel": "note:1",
+  "quelle": "note",
+  "id": 1,
+  "machine_id": 1,
+  "zeit": "2026-06-09",
+  "text": "AX-01 laeuft ruhig, kein Geraeusch, Achse sauber. Nichts zu vermerken."
+ },
+ {
+  "schluessel": "note:2",
+  "quelle": "note",
+  "id": 2,
+  "machine_id": 2,
+  "zeit": "2026-06-18",
+  "text": "AX-02 wird lauter, singt beim Verfahren. AX-01 daneben ruhig, beide gleich alt und gleich gewartet. Komisch."
+ },
+ {
+  "schluessel": "note:3",
+  "quelle": "note",
+  "id": 3,
+  "machine_id": 3,
+  "zeit": "2026-06-21",
+  "text": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+ },
+ {
+  "schluessel": "note:4",
+  "quelle": "note",
+  "id": 4,
+  "machine_id": 4,
+  "zeit": "2026-06-13",
+  "text": "AX-04 laeuft top, wie immer. Wird halt jede Woche nachgeschmiert — ob das noetig ist? Sieht aus wie AX-01, die kriegt's nur monatlich."
+ },
+ {
+  "schluessel": "note:5",
+  "quelle": "note",
+  "id": 5,
+  "machine_id": 5,
+  "zeit": "2026-06-08",
+  "text": "FD-01 laeuft sauber, Dosierung stabil. [PERSON] in der Frueh."
+ },
+ {
+  "schluessel": "note:7",
+  "quelle": "note",
+  "id": 7,
+  "machine_id": 6,
+  "zeit": "2026-06-18",
+  "text": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+ },
+ {
+  "schluessel": "note:6",
+  "quelle": "note",
+  "id": 6,
+  "machine_id": 6,
+  "zeit": "2026-06-08",
+  "text": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten."
+ },
+ {
+  "schluessel": "note:8",
+  "quelle": "note",
+  "id": 8,
+  "machine_id": 7,
+  "zeit": "2026-06-19",
+  "text": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig."
+ },
+ {
+  "schluessel": "note:10",
+  "quelle": "note",
+  "id": 10,
+  "machine_id": 8,
+  "zeit": "2026-06-19",
+  "text": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+ },
+ {
+  "schluessel": "note:9",
+  "quelle": "note",
+  "id": 9,
+  "machine_id": 8,
+  "zeit": "2026-06-08",
+  "text": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+ },
+ {
+  "schluessel": "note:11",
+  "quelle": "note",
+  "id": 11,
+  "machine_id": 9,
+  "zeit": "2026-06-10",
+  "text": "PR-03 laeuft sauber, Kraftverlauf wie immer. Keine Auffaelligkeiten."
+ },
+ {
+  "schluessel": "note:12",
+  "quelle": "note",
+  "id": 12,
+  "machine_id": 10,
+  "zeit": "2026-06-10",
+  "text": "RB-01 laeuft sauber, Taktzeit stabil, keine Auffaelligkeiten an den Gelenken."
+ },
+ {
+  "schluessel": "note:13",
+  "quelle": "note",
+  "id": 13,
+  "machine_id": 11,
+  "zeit": "2026-06-14",
+  "text": "RB-02 laeuft nur Frueh und Spaet, nachts steht er. Wenn er laeuft, ist er sauber. Nichts zu vermerken."
+ },
+ {
+  "schluessel": "note:14",
+  "quelle": "note",
+  "id": 14,
+  "machine_id": 12,
+  "zeit": "2026-06-08",
+  "text": "VS-01 weist seit heute Mittag deutlich mehr Teile ab, fast alle wegen Fuellung/Sitz. Kamera und Licht sind ok — kommt von vorne aus der Linie."
+ },
+ {
+  "schluessel": "maintenance:1",
+  "quelle": "maintenance",
+  "id": 1,
+  "machine_id": 1,
+  "zeit": "2026-06-06",
+  "text": "[lubrication] Nachschmierung Achslager AX-01 mit Schmierstoff X (Lithiumkomplex-Fett NLGI 2, Grundoelviskositaet ISO VG 150) — spezifikationskonform. Regelintervall 30 Tage."
+ },
+ {
+  "schluessel": "maintenance:2",
+  "quelle": "maintenance",
+  "id": 2,
+  "machine_id": 2,
+  "zeit": "2026-06-06",
+  "text": "[lubrication] Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, Grundoel ISO VG 46) — Grundoelviskositaet zu niedrig fuer Drehzahl/Last, NICHT spezifikationskonform (vorgesehenes Fett X war alle, Ersatz genommen)."
+ },
+ {
+  "schluessel": "maintenance:3",
+  "quelle": "maintenance",
+  "id": 3,
+  "machine_id": 3,
+  "zeit": "2026-06-06",
+  "text": "[lubrication] Nachschmierung Achslager AX-03 mit Schmierstoff X (Lithiumkomplex-Fett NLGI 2, ISO VG 150) — spezifikationskonform, Intervall 30 Tage."
+ },
+ {
+  "schluessel": "maintenance:4",
+  "quelle": "maintenance",
+  "id": 4,
+  "machine_id": 3,
+  "zeit": "2026-06-06",
+  "text": "[inspection] Inspektion Vertikalachse AX-03: Fuehrung und Lager geprueft, Schmierung bestaetigt. Hohe Grundlast durch Einbaulage dokumentiert (bekannt/normal)."
+ },
+ {
+  "schluessel": "maintenance:5",
+  "quelle": "maintenance",
+  "id": 5,
+  "machine_id": 4,
+  "zeit": "2026-06-04",
+  "text": "[lubrication] Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — spezifikationskonform. Verkuerztes Intervall 7 Tage (1/3)."
+ },
+ {
+  "schluessel": "maintenance:6",
+  "quelle": "maintenance",
+  "id": 6,
+  "machine_id": 4,
+  "zeit": "2026-06-11",
+  "text": "[lubrication] Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — verkuerztes Intervall 7 Tage (2/3). Lagerzustand unveraendert gut."
+ },
+ {
+  "schluessel": "maintenance:7",
+  "quelle": "maintenance",
+  "id": 7,
+  "machine_id": 4,
+  "zeit": "2026-06-18",
+  "text": "[lubrication] Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — verkuerztes Intervall 7 Tage (3/3). Kein Mehrwert gegenueber 30d-Intervall."
+ },
+ {
+  "schluessel": "maintenance:8",
+  "quelle": "maintenance",
+  "id": 8,
+  "machine_id": 5,
+  "zeit": "2026-06-05",
+  "text": "[inspection] Routine-Inspektion Teilezufuehrung A: Foerderschnecke, Klemmzylinder und Dosierung sichtgeprueft, ohne Befund. Wartungsplan eingehalten."
+ },
+ {
+  "schluessel": "maintenance:9",
+  "quelle": "maintenance",
+  "id": 9,
+  "machine_id": 6,
+  "zeit": "2026-06-05",
+  "text": "[inspection] Routine-Inspektion Teilezufuehrung B: Foerderschnecke und Klemmzylinder sichtgeprueft, leichtes Spiel an der Schnecke notiert, noch im Toleranzband belassen (kein Teiletausch). Naechste Pruefung im Regelintervall."
+ },
+ {
+  "schluessel": "maintenance:10",
+  "quelle": "maintenance",
+  "id": 10,
+  "machine_id": 7,
+  "zeit": "2026-06-06",
+  "text": "[inspection] Planmaessige Inspektion Hydraulikkreis PR-01: Druck im Sollband, Dichtungen sichtgeprueft, keine sichtbare Leckage. Regelintervall 14 Tage eingehalten."
+ },
+ {
+  "schluessel": "maintenance:11",
+  "quelle": "maintenance",
+  "id": 11,
+  "machine_id": 8,
+  "zeit": "2026-06-04",
+  "text": "[tool_change] Werkzeugwechsel Fuegepresse 2: Fuegestempel getauscht (Standzeitbeginn). Hinweis: Wechselintervall hier faktisch 90 Tage statt der fuer das schwere Produkt vorgesehenen 30 Tage — bewusst gestreckt."
+ },
+ {
+  "schluessel": "maintenance:12",
+  "quelle": "maintenance",
+  "id": 12,
+  "machine_id": 9,
+  "zeit": "2026-06-04",
+  "text": "[tool_change] Werkzeugwechsel Fuegepresse 3: Fuegestempel zum Standzeitbeginn getauscht. Wechselintervall 30 Tage gemaess Vorgabe."
+ },
+ {
+  "schluessel": "maintenance:13",
+  "quelle": "maintenance",
+  "id": 13,
+  "machine_id": 9,
+  "zeit": "2026-06-14",
+  "text": "[inspection] Planmaessige Inspektion PR-03: Ram-Antrieb, Hydraulik und Werkzeug geprueft, ohne Befund. Regelintervall eingehalten (Kontrast zu PR-02)."
+ },
+ {
+  "schluessel": "maintenance:14",
+  "quelle": "maintenance",
+  "id": 14,
+  "machine_id": 10,
+  "zeit": "2026-06-07",
+  "text": "[inspection] Routine-Inspektion Bestueckroboter 1: Getriebe und Gelenklager geprueft, Bahntreue im Sollband, ohne Befund. Wartungsplan eingehalten."
+ },
+ {
+  "schluessel": "maintenance:15",
+  "quelle": "maintenance",
+  "id": 15,
+  "machine_id": 11,
+  "zeit": "2026-06-07",
+  "text": "[inspection] Routine-Inspektion Bestueckroboter 2 (Reserve): Getriebe und Gelenklager geprueft, ohne Befund. Wartungsplan eingehalten."
+ },
+ {
+  "schluessel": "maintenance:16",
+  "quelle": "maintenance",
+  "id": 16,
+  "machine_id": 12,
+  "zeit": "2026-06-07",
+  "text": "[inspection] Routine-Inspektion Endkontrolle VS-01: Kamera-Kalibrierung und Beleuchtungsstaerke geprueft, im Sollband, ohne Befund."
+ },
+ {
+  "schluessel": "alarm:4",
+  "quelle": "alarm",
+  "id": 4,
+  "machine_id": 7,
+  "zeit": "2026-06-22",
+  "text": "[HYD_PRESS_LOW_CRIT/critical] Hydraulikdruck PR-01 kritisch — Dichtungswechsel erforderlich"
+ },
+ {
+  "schluessel": "alarm:2",
+  "quelle": "alarm",
+  "id": 2,
+  "machine_id": 3,
+  "zeit": "2026-06-22",
+  "text": "[AXIS_VIB_WARN/warning] Lagerschwingung AX-03 ueber Warnschwelle (Zone C/D)"
+ },
+ {
+  "schluessel": "alarm:5",
+  "quelle": "alarm",
+  "id": 5,
+  "machine_id": 8,
+  "zeit": "2026-06-20",
+  "text": "[TOOL_LOAD_HIGH/warning] PR-02 Fuegekraft ueber Erwartung — Werkzeugverschleiss vermutet"
+ },
+ {
+  "schluessel": "alarm:3",
+  "quelle": "alarm",
+  "id": 3,
+  "machine_id": 7,
+  "zeit": "2026-06-20",
+  "text": "[HYD_PRESS_LOW_WARN/warning] Hydraulikdruck PR-01 unter Warnschwelle (Leckage vermutet)"
+ },
+ {
+  "schluessel": "alarm:1",
+  "quelle": "alarm",
+  "id": 1,
+  "machine_id": 2,
+  "zeit": "2026-06-18",
+  "text": "[AXIS_VIB_WARN/warning] Lagerschwingung AX-02 ueber Warnschwelle (Zone C/D)"
+ },
+ {
+  "schluessel": "alarm:6",
+  "quelle": "alarm",
+  "id": 6,
+  "machine_id": 12,
+  "zeit": "2026-06-09",
+  "text": "[REJECT_RATE_HIGH/warning] Ausschussrate VS-01 ueber Warnschwelle (>3 %)"
+ }
+]

@@ -27,6 +27,23 @@ __all__ = [
 ]
 
 
+def _freitext(wert: Any) -> str | None:
+    """Normalisiert ein optionales Freitext-Feld für die Anhängung an einen Satz.
+
+    EINE Stelle für alle Bauer, die Freitext führen — sonst entstehen zwei
+    Auffassungen davon, was „leer" heisst, und eine Zeile bekommt je nach Bauer
+    ein angehängtes Leerzeichen oder nicht. Genau diese Art stiller Abweichung
+    war der Anlass, dieses Modul überhaupt anzulegen (Kopfkommentar).
+
+    `None`, ein leerer Text und ein Text aus reinem Weissraum sind gleich zu
+    behandeln: Sie tragen nichts bei und dürfen dem Satz kein Anhängsel geben.
+    """
+    if not isinstance(wert, str):
+        return None
+    geputzt = wert.strip()
+    return geputzt or None
+
+
 def _alarm_raised(payload: Mapping[str, Any]) -> str:
     """Alarm — mit Auslösezeitpunkt.
 
@@ -43,11 +60,26 @@ def _alarm_raised(payload: Mapping[str, Any]) -> str:
     Harter Zugriff auf die Pflichtfelder: eine Zeile ohne sie ist defekt und wird
     übersprungen (KeyError → None), statt '?' zu erfinden. Nur `code` selbst darf
     regulär None sein.
+
+    DIE MELDUNG GEHÖRT HINEIN (Befund 24.08.2026, gemessen): Der Code sagt, WELCHE
+    Art Alarm anlag, die Meldung sagt, WORUM es ging — „Fügekraft über Erwartung,
+    Werkzeugverschleiss vermutet" statt nur `TOOL_LOAD_HIGH`. Für die Frage
+    „hatten wir das schon mal" ist der Sachverhalt die Antwort, nicht das Kürzel.
+    Beleg: In der Goldset-Messung fand keine einzige Anfrage über die vierte
+    Quelle einen zusätzlichen zutreffenden Treffer, solange nur die Struktur
+    gespiegelt wurde (Register C-050).
+
+    WEICHER ZUGRIFF, mit Absicht: Alt-Zeilen tragen das Feld nicht. Ein harter
+    Zugriff liesse `baue_inhalt` werfen und der Nachtrag überspränge sie — der
+    gesamte Bestand fiele aus der Spiegelung, um ein Feld zu gewinnen, das er
+    ohnehin nicht hat. Ohne Meldung entsteht wortgleich der bisherige Satz.
     """
-    return (
+    kopf = (
         f"Alarm {payload['code'] or '?'} ({payload['severity']}/{payload['category']}) "
         f"an Maschine {payload['machine_id']} ausgelöst ({payload['raised_at']})."
     )
+    meldung = _freitext(payload.get("message"))
+    return f"{kopf} {meldung}" if meldung else kopf
 
 
 def _production_run(payload: Mapping[str, Any]) -> str:
@@ -58,10 +90,28 @@ def _production_run(payload: Mapping[str, Any]) -> str:
 
 
 def _maintenance_performed(payload: Mapping[str, Any]) -> str:
-    return (
+    """Wartungsvorgang — mit Beschreibung.
+
+    DIE BESCHREIBUNG GEHÖRT HINEIN (Befund 24.08.2026, gemessen), und zwar aus
+    einem Grund, der über Bequemlichkeit hinausgeht: Der *Grund* eines
+    Degradationsverlaufs lebt ausschliesslich im Freitext — nie als Datenpunkt
+    (GROUND_TRUTH §12.5, „Beobachtungsgrenze"). Ein Sensor sieht nicht, dass ein
+    Ersatzfett mit zu niedriger Grundölviskosität eingefüllt wurde; das steht in
+    der Beschreibung oder nirgends. Wird sie nicht gespiegelt, kann das Gedächtnis
+    die Ursache eines Vorgangs grundsätzlich nicht kennen — und „hatten wir das
+    schon mal" bleibt unbeantwortbar, egal wie gut abgerufen wird.
+
+    Gemessen: `type=lubrication` allein brachte über die vierte Quelle auf keiner
+    von 18 Anfragen einen zusätzlichen zutreffenden Treffer (Register C-050).
+
+    WEICHER ZUGRIFF wie bei `_alarm_raised` — Begründung dort.
+    """
+    kopf = (
         f"Wartung ({payload['type']}) an Maschine {payload['machine_id']} "
         f"durchgeführt ({payload['performed_at']})."
     )
+    beschreibung = _freitext(payload.get("description"))
+    return f"{kopf} {beschreibung}" if beschreibung else kopf
 
 
 def _drift_detected(payload: Mapping[str, Any]) -> str:
