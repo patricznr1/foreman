@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-08-10"
+stand: "2026-08-24"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -414,19 +414,21 @@ claims:
   - id: "C-018"
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
-    wert: "984 bestanden, 2 übersprungen, 2 abgewählt"
+    wert: "1068 bestanden, 2 übersprungen, 4 abgewählt"
     bedingung: >-
-      Lauf vom 10.08.2026 auf dem Stand von main (d821c7a) gegen eine echte
-      Zeitreihen-Datenbank derselben Fassung wie im automatischen Prüflauf,
-      nicht gegen Attrappen. Die zwei Übersprungenen brauchen ein lokal
-      laufendes Sprachmodell, die zwei Abgewählten ein 560 MB grosses
-      Sprachmodell für die Namenserkennung — beide sind im Pflichtlauf
-      ausdrücklich ausgenommen, wie im automatischen Prüflauf auch.
-    datum: "2026-08-10"
+      Automatischer Prüflauf vom 22.08.2026 auf dem Stand von main (fad4de5)
+      gegen eine echte Zeitreihen-Datenbank, nicht gegen Attrappen. Die zwei
+      Übersprungenen brauchen ein lokal laufendes Sprachmodell. Die vier
+      Abgewählten verteilen sich seit dem 20.08.2026 auf ZWEI Klassen: die
+      Namenserkennung (braucht ein 560 MB grosses Sprachmodell) und die
+      Freigabe-Prüfungen (sprechen eine betriebene Instanz an). Beide sind im
+      Pflichtlauf ausdrücklich ausgenommen; wer sie fahren will, muss sie
+      einzeln anwählen.
+    datum: "2026-08-22"
     fundstelle:
-      - "Eigener Lauf 10.08.2026, 984 passed / 2 skipped / 2 deselected in 546 s"
-      - "Commit d821c7a"
-      - "Gegenzählung: 904 Prüffunktionen in 125 Dateien unter tests/ (weniger als die Laufzahl, weil tabellengetriebene Fälle einmal im Quelltext stehen und mehrfach laufen)"
+      - "Automatischer Prüflauf 22.08.2026 (Lauf 32589782455): 1068 passed / 2 skipped / 4 deselected in 254 s"
+      - "Commit fad4de5"
+      - "Gegenprobe 24.08.2026: pytest --collect-only --no-cov meldet 1070 von 1074 gesammelt (4 abgewählt) — deckt sich mit 1068 bestanden + 2 übersprungen"
     geltung: "gueltig"
     freigabe:
       - "intern"
@@ -442,16 +444,19 @@ claims:
   - id: "C-019"
     aussage: "Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze."
     status: "gemessen"
-    wert: "94,47 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
+    wert: "94,28 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
     bedingung: >-
-      Gemessen im selben Lauf vom 10.08.2026 wie C-018, gegen eine echte
+      Gemessen im selben Prüflauf vom 22.08.2026 wie C-018, gegen eine echte
       Zeitreihen-Datenbank. Zweigabdeckung, nicht Zeilenabdeckung — so ist die
-      Messung im Manifest eingestellt. Ohne erreichbare Datenbank fällt der
+      Messung im Manifest eingestellt. Geführt wird der Wert des automatischen
+      Prüflaufs, weil dessen Umgebung festgelegt und damit wiederholbar ist;
+      ein Lauf auf einer Arbeitsmaschine weicht geringfügig ab (24.08.2026:
+      94,30 Prozent). Solche Zehntel sind Umgebung, keine Drift. Ohne erreichbare Datenbank fällt der
       Wert deutlich ab, weil die Integrationsprüfungen dann überspringen; die
       Zahl gilt nur für einen Lauf mit Datenbank.
-    datum: "2026-08-10"
+    datum: "2026-08-22"
     fundstelle:
-      - "Eigener Lauf 10.08.2026, Total coverage 94.47 Prozent"
+      - "Automatischer Prüflauf 22.08.2026: Total coverage 94.28 Prozent"
       - "pyproject.toml, Zeile 211 (Zweigabdeckung aktiv)"
     geltung: "gueltig"
     freigabe:
@@ -493,11 +498,13 @@ claims:
     status: "gemessen"
     wert: "744 bestanden in 146 Prüfdateien"
     bedingung: >-
-      Lauf vom 10.08.2026 auf dem Stand von main (d821c7a), zusammen mit
-      fehlerfreier Typprüfung und fehlerfreier Stilprüfung.
-    datum: "2026-08-10"
+      Automatischer Prüflauf vom 22.08.2026 auf dem Stand von main (fad4de5),
+      zusammen mit fehlerfreier Typprüfung und fehlerfreier Stilprüfung. Der
+      Wert ist gegenüber dem 10.08.2026 unverändert — die drei Änderungen
+      seither haben den Oberflächen-Teil nicht berührt.
+    datum: "2026-08-22"
     fundstelle:
-      - "Eigener Lauf 10.08.2026 nach dem Merge: 146 Prüfdateien, 744 bestanden"
+      - "Automatischer Prüflauf 22.08.2026: 146 Prüfdateien, 744 bestanden"
       - "Internes Sitzungsprotokoll 582b07d4-4f53-4199-a77f-2d4d82b1e937 (Abschnitt GATES, 31.07.2026)"
     geltung: "gueltig"
     freigabe:
@@ -513,13 +520,16 @@ claims:
   - id: "C-022"
     aussage: "Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch."
     status: "gemessen"
-    wert: "0 Typfehler über 148 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 305 Dateien ohne Befund"
+    wert: "0 Typfehler über 150 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 316 Dateien ohne Befund"
     bedingung: >-
-      Lauf vom 10.08.2026, gleicher Stand wie C-018. Die Typprüfung läuft im
-      strengsten Modus.
-    datum: "2026-08-10"
+      Lauf vom 24.08.2026 auf dem Stand von main (fad4de5), passend zum
+      automatischen Prüflauf vom 22.08.2026. Die Typprüfung läuft im strengsten
+      Modus. Die Dateizahlen wachsen mit dem Bestand — sie sind Stichtagswerte,
+      keine Zielgrössen.
+    datum: "2026-08-24"
     fundstelle:
-      - "Eigener Lauf 10.08.2026: mypy Success in 148 source files, ruff check All checks passed, ruff format 305 files already formatted, tsc und eslint ohne Ausgabe"
+      - "Eigener Lauf 24.08.2026: mypy Success in 150 source files, ruff check All checks passed, ruff format 316 files already formatted"
+      - "Automatischer Prüflauf 22.08.2026 (Lauf 32589782455) für den Oberflächen-Teil"
       - "GROUND_TRUTH.md, Abschnitt 10.2"
     geltung: "gueltig"
     freigabe:
@@ -903,3 +913,90 @@ claims:
       stehen, damit nachvollziehbar ist, warum eine kursierende Aussage über
       die Projektseite nicht mehr gilt. Der Widerspruch zu C-029 (Konten und
       Rollen entstehen nur über den Betreiber-Weg) ist damit aufgelöst.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Betriebsbefunde der Gedächtnis-Spiegelung (Nachtrag 24.08.2026)
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-041"
+    aussage: "Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag."
+    status: "gemessen"
+    wert: "65 Zeilen aus dem Zeitraum 24.06. bis 13.07.2026, alle mit ins Leere zeigender Kennung"
+    bedingung: >-
+      Erhoben am 20.08.2026 auf dem Betriebsbestand. Über vier unabhängige Wege
+      geprüft: unmittelbarer Zugriff über die Kennung, Aufstellung nach
+      Herkunft, Abgleich gegen die zweite Instanz und eine Suche im
+      persönlichen Bestand. Die Einträge sind auch nicht als gelöscht vermerkt —
+      sie sind nie angekommen. Kein Nenner erhoben: die Aussage gilt für alle
+      Zeilen dieses Zeitraums, die überhaupt eine Kennung trugen, nicht für
+      einen Anteil am Gesamtbestand.
+    datum: "2026-08-20"
+    fundstelle:
+      - "src/foreman/substrate/backfill.py, Funktion referenzen_zuruecksetzen (Absatz ANLASS)"
+      - "Commit b3574ea"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und
+      der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag
+      bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung
+      nicht ohne Weiteres als gespiegelt gelten darf.
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Befund trifft die Aussage des Feldes selbst: Es bedeutet "diese Zeile
+      ist im Gedächtnis gespiegelt", und für diese 65 war das falsch. Offen
+      bleibt eine Zusicherung ohne Prüfung: Die Funktion setzt laut eigener
+      Beschreibung nur zurück, was vor einem Stichtag entstand — dafür gibt es
+      keinen Verhaltenstest, nur zwei Tests der Aufrufparameter.
+
+  - id: "C-042"
+    aussage: "Beim Nachtrag der Spiegelung fielen sechs Alarmpaare zusammen, weil ihr Text sie nicht unterscheidbar machte."
+    status: "gemessen"
+    wert: "aus 65 nachgetragenen Ereignissen wurden 59 Erinnerungen; 6 Alarme gingen als vermeintliche Dublette verloren"
+    bedingung: >-
+      Beobachtet am 20.08.2026 beim Nachtrag der unter C-041 zurückgesetzten
+      Zeilen. Die Entdoppelung greift über einen Inhalts-Hash; zwei Alarme
+      desselben Codes an derselben Maschine ergaben ohne Zeitangabe denselben
+      Text. Benannt sind unter anderem zwei Schwingungswarnungen an Maschine 2,
+      zwei weitere an Maschine 3 und zwei Druckwarnungen an Maschine 7.
+    datum: "2026-08-20"
+    fundstelle:
+      - "src/foreman/substrate/content.py, Funktion _alarm_raised (Absatz DER ZEITPUNKT GEHÖRT HINEIN)"
+      - "GROUND_TRUTH.md, Abschnitt 12.4"
+      - "Commit 562e9cc"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Die Ursache ist behoben — der Alarmtext führt seit dem 20.08.2026 den
+      Auslösezeitpunkt, und ein Test fordert die Unterscheidbarkeit zweier
+      gleichartiger Alarme ein. NICHT belegt ist, ob die sechs verlorenen
+      Spiegelungen nachgezogen wurden: Der Nachtrag greift nur bei fehlender
+      Kennung, und diese Zeilen tragen eine Kennung auf die zusammengefallene
+      Erinnerung. Für die Frage "hatten wir das schon mal" ist ausgerechnet die
+      Wiederholung die Information, die dort verloren ging.
+
+  - id: "C-043"
+    aussage: "Die Antwortform der Gedächtnis-Schnittstelle ist gegen die betriebene Instanz abgenommen, nicht nur gegen Annahmen."
+    status: "gemessen"
+    wert: "7 zurückgegebene Felder und 7 Metadatenfelder, gegen 6 gesendete Feldern geprüft"
+    bedingung: >-
+      Lauf vom 20.08.2026 um 09:12 UTC gegen die betriebene Instanz in einem
+      eigenen Freigabe-Bereich, damit der Bestand unberührt bleibt. Die Prüfung
+      ist ausdrücklich abwählbar und läuft NICHT im Pflichtlauf mit — sie
+      spricht ein fremdes System an. Das Protokoll des Laufs liegt versioniert
+      im Bestand.
+    datum: "2026-08-20"
+    fundstelle:
+      - "docs/freigaben/laufprotokoll-substrat-antwortform.json"
+      - "tests/release/test_substrat_antwortform.py"
+      - "Commit b3574ea"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Gegenstück zu einer bekannten Fehlerklasse: Testdaten in einer erfundenen
+      Antwortform belegen nur, dass der eigene Code mit der eigenen Annahme
+      zurechtkommt. Hier ist die Form am echten Gegenüber erhoben. Beim
+      Wiederholen wird die Arbeitskopie des Protokolls überschrieben; die
+      Fassung vom 20.08.2026 bleibt über die Versionierung greifbar.
