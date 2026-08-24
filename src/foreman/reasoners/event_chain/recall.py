@@ -180,9 +180,8 @@ def _first_datetime(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) ->
 
 
 # Datenblock-Hülle der Gegenstelle. Sie zeichnet zurückgegebene Inhalte aus,
-# damit ein lesendes Modell sie nicht als Anweisung nimmt — bisher nur auf ihrer
-# Werkzeug-Schnittstelle, ab ihrer Umstellung auch auf dem HTTP-Weg, den FOREMAN
-# benutzt. `.*` mit DOTALL, weil ein Inhalt Zeilenumbrüche tragen darf; Anker auf
+# damit ein lesendes Modell sie nicht als Anweisung nimmt — auf ihrer
+# Werkzeug-Schnittstelle, und auf dem HTTP-Weg, sobald sie dort umgestellt ist. `.*` mit DOTALL, weil ein Inhalt Zeilenumbrüche tragen darf; Anker auf
 # beiden Seiten, damit eine halbe Hülle NICHT greift (sonst liesse sich über
 # einen abgeschnittenen Marker Inhalt unterschlagen).
 _DATENBLOCK_RE = re.compile(r"\A\s*<tool_result_data[^>]*>(.*)</tool_result_data>\s*\Z", re.DOTALL)

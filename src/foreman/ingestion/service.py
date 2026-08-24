@@ -350,14 +350,12 @@ class IngestionService:
         # Eingebettet wird der NER-maskierte Text (kein Rohtext, §8).
         self._pending_notes.append(note)
         self._stats.worker_notes += 1
-        # Dual-Write ans Gedächtnis (seit 24.08.2026). Bis dahin stand hier das
-        # Gegenteil: Notizen seien "kein diskretes semantisches Ereignis" und die
-        # semantische Suche laufe ohnehin über das Embedding. Beides stimmte —
-        # und übersah, dass damit KEIN beschreibender Text im Gedächtnis landet.
-        # Alarm, Wartung und Produktionslauf spiegeln nur ihre Struktur; eine
-        # Suche nach "mahlendes Geräusch" fand dort nichts, weil dort kein
-        # einziger solcher Satz stand. Die Notiz ist der einzige Ort, an dem der
-        # Text die Information IST.
+        # Dual-Write ans Gedächtnis (seit 24.08.2026). Die Notiz ist der einzige
+        # Ereignistyp, dessen FREITEXT mitgeht: Bei Alarm, Wartung und
+        # Produktionslauf trägt die Struktur die Information (Code, Typ,
+        # Zeitpunkt), bei der Notiz der Text selbst. Ohne ihn enthielte das
+        # Gedächtnis keinen beschreibenden Satz, an dem eine Suche nach einem
+        # Symptom ansetzen könnte.
         #
         # `flush` VOR der Spiegelung: ohne ihn trägt die Zeile noch keinen
         # Schlüssel, und `source_id` bliebe None — der Treffer hätte im Archiv

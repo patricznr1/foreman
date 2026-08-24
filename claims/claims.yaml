@@ -1059,35 +1059,30 @@ claims:
       begrenzt, nicht auf ihre Wirkung.
 
   - id: "C-046"
-    aussage: "Die Werker-Empfehlung wurde im Betrieb bei jedem Versuch verworfen, weil der Ausgabe-Wächter die geforderte Formulierung nicht durchliess."
+    aussage: "Den Validierungs-Vorbehalt formuliert das System, nicht das Sprachmodell."
     status: "gemessen"
-    wert: "1 von 1 beobachteten Versuchen verworfen; 14,6 Sekunden Modell-Laufzeit vor dem Verwerfen"
+    wert: "2 von 2 heiklen Angaben einer Empfehlung kommen deterministisch: Zahlen und Vorbehalt"
     bedingung: >-
-      Beobachtet am 24.08.2026 im Betriebsprotokoll der öffentlichen
-      Vorführ-Instanz, Vorhersage 16. Ursache gegengeprüft: Die Vorgabe an das
-      Modell verlangte, den Validierungs-Vorbehalt ausdrücklich zu benennen. Der
-      Wächter erkennt eine Sperrphrase aber nur dann als verneint, wenn
-      unmittelbar davor ein Verneinungswort steht — "nicht um eine validierte
-      Prognose" fiel damit durch, obwohl es genau das sagte, was verlangt war.
-      An zehn Beispielsätzen nachgestellt: drei natürliche Verneinungen werden
-      verworfen, eine echte Umdeutung ebenfalls.
+      Gegengeprüft auf dem Stand vom 24.08.2026. Die Vorgabe an das Modell
+      untersagt beides ausdrücklich; der Vorbehalt wird aus einer festen
+      Funktion angehängt, die Zahlen stammen aus der Vorhersage. Zwei Wächter
+      sichern es zusätzlich ab: einer verwirft eine Empfehlung mit unbelegter
+      Zahl, einer eine, die den Vorbehalt umdeutet. Beide verwerfen vollständig
+      und speichern nicht — sie kennzeichnen nicht bloss.
     datum: "2026-08-24"
     fundstelle:
-      - "Betriebsprotokoll 24.08.2026 14:18:56 — REJECT Umdeutung Vorbehalt, prediction_id=16"
-      - "src/foreman/reasoners/failure/recommendation.py, Funktion detect_overclaim"
+      - "src/foreman/reasoners/failure/prompts.py, RECOMMENDATION_SYSTEM_PROMPT"
+      - "src/foreman/reasoners/failure/recommendation.py, detect_overclaim"
       - "tests/reasoners/failure/test_prompts.py"
-    geltung: "ueberholt"
-    geltung_grund: >-
-      Am selben Tag behoben: Das Modell formuliert den Validierungs-Status jetzt
-      gar nicht mehr — dieselbe Auflösung wie zuvor bei den Zahlen. Was es nicht
-      formuliert, kann es nicht umdeuten; der Vorbehalt wird deterministisch
-      angehängt. Der Wächter bleibt unverändert streng. Der Eintrag bleibt
-      stehen, weil er die Fehlerklasse festhält: Eine Vorgabe verlangte etwas,
-      das eine Prüfung im selben System verbot.
+    geltung: "gueltig"
     freigabe:
       - "intern"
+      - "fach"
+      - "kunde"
     bemerkung: >-
-      Was der Eintrag NICHT belegt: die vom Nutzer zusätzlich beobachtete
-      502-Antwort. Die Anwendung bildet Ausfälle des Modell-Zugangs auf 503 ab —
-      eine 502 kommt vom vorgelagerten Vermittler, nicht aus dem Code, und im
-      Protokoll steht für diesen Aufruf kein Zeitüberschritt. Ungeklärt.
+      Der Grund ist nicht Misstrauen gegen das Modell, sondern Arbeitsteilung:
+      Eine Angabe, die strukturell garantiert sein soll, darf nicht davon
+      abhängen, wie ein Sprachmodell sie an diesem Tag formuliert. Der Wächter
+      gegen Umdeutung ist bewusst eng — er erkennt eine Verneinung nur
+      unmittelbar vor der Phrase. Weiter gefasst liesse er echte Umdeutungen
+      durch; ein Test hält diese Abwägung fest.

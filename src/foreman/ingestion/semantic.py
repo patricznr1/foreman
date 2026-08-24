@@ -88,12 +88,13 @@ async def record_semantic_event(
             # nur noch eine Quelle (substrate/content.py) — Abweichung ist strukturell
             # ausgeschlossen statt bloss unerwuenscht.
             #
-            # INNERHALB des try (seit 24.08.2026): Vorher lag der Aufruf davor. Ein
-            # unbekannter event_type oder ein fehlendes Pflichtfeld warf damit aus
-            # dieser Funktion heraus und riss den Insert des AUFRUFERS mit — beim
-            # Werker-Notiz-Pfad waere das der Kernpfad der Halle gewesen. Der Text
-            # wird ohnehin nur fuer die Spiegelung gebraucht; scheitert sein Bau,
-            # ist das derselbe Fall wie ein nicht erreichbares Substrat.
+            # INNERHALB des try (seit 24.08.2026): Ein unbekannter event_type oder
+            # ein fehlendes Pflichtfeld laesst `baue_inhalt` werfen. Ausserhalb des
+            # try wuerde das aus dieser Funktion herausschlagen und den Insert des
+            # AUFRUFERS mitnehmen — beim Werker-Notiz-Pfad also den Kernpfad der
+            # Halle. Der Text wird ohnehin nur fuer die Spiegelung gebraucht;
+            # scheitert sein Bau, ist das derselbe Fall wie ein nicht erreichbares
+            # Substrat.
             content = baue_inhalt(event_type, payload)
             response = await substrate.remember(content, metadata=payload)
             substrate_ref = extract_substrate_ref(response)

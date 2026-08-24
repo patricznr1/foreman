@@ -51,6 +51,7 @@ Stand: 2026-08-24
 | C-043 | Die Antwortform der Gedächtnis-Schnittstelle ist gegen die betriebene Instanz abgenommen, nicht nur gegen Annahmen. | gemessen | 7 zurückgegebene Felder und 7 Metadatenfelder, gegen 6 gesendete Feldern geprüft | 2026-08-20 | gueltig | intern |
 | C-044 | Der Text einer Schichtnotiz verlässt die Anlage und wird im Gedächtnis abgelegt. | gemessen | 1 von 7 gespiegelten Ereignisarten trägt Freitext; die übrigen sechs nur Kennungen, Typen und Zeitpunkte | 2026-08-24 | gueltig | intern |
 | C-045 | Ein Löschverlangen für eine gespiegelte Erinnerung ist von der Plattform aus erfüllbar. | gemessen | 1 Löschweg, der bei Fehlschlag wirft statt ihn zu verschlucken | 2026-08-24 | gueltig | intern |
+| C-046 | Den Validierungs-Vorbehalt formuliert das System, nicht das Sprachmodell. | gemessen | 2 von 2 heiklen Angaben einer Empfehlung kommen deterministisch: Zahlen und Vorbehalt | 2026-08-24 | gueltig | intern, fach, kunde |
 
 ## Nicht verwendbar
 
@@ -60,7 +61,6 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 |---|---|---|---|---|
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
-| C-046 | FOREMAN | Die Werker-Empfehlung wurde im Betrieb bei jedem Versuch verworfen, weil der Ausgabe-Wächter die geforderte Formulierung nicht durchliess. | ueberholt | Am selben Tag behoben: Das Modell formuliert den Validierungs-Status jetzt gar nicht mehr — dieselbe Auflösung wie zuvor bei den Zahlen. Was es nicht formuliert, kann es nicht umdeuten; der Vorbehalt wird deterministisch angehängt. Der Wächter bleibt unverändert streng. Der Eintrag bleibt stehen, weil er die Fehlerklasse festhält: Eine Vorgabe verlangte etwas, das eine Prüfung im selben System verbot. |
 
 ## Zählung
 
@@ -75,6 +75,6 @@ Nach Status:
 
 Nach Geltung:
 
-- gueltig: 43
-- ueberholt: 3
+- gueltig: 44
+- ueberholt: 2
 - ungeprueft: 0

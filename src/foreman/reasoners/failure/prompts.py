@@ -28,11 +28,10 @@ from foreman.reasoners.failure.schema import FailurePredictionRead
 #   unbelegte Zahl; die Werte zeigt das System separat in der Vorhersage-Karte.
 #   Validierungs-Status (Regel 4, seit 24.08.2026): `detect_overclaim` erkennt
 #   eine Sperrphrase nur dann als verneint, wenn UNMITTELBAR ein Verneinungswort
-#   davorsteht. "Es handelt sich nicht um eine validierte Prognose" fiel damit
-#   durch — die natürlichste deutsche Fassung genau dessen, was Regel 4 vorher
-#   VERLANGTE. Betriebslog 24.08.2026, prediction_id=16: REJECT Umdeutung
-#   Vorbehalt nach 14,6 s LLM-Laufzeit. Der Vorbehalt kommt aus
-#   `validation_caveat_for` und wird strukturell angehängt.
+#   davorsteht. Natürliches Deutsch schiebt fast immer ein Wort dazwischen ("nicht
+#   um eine validierte Prognose"), was der Guard nicht mehr als Verneinung liest.
+#   Der Vorbehalt kommt ohnehin aus `validation_caveat_for` und wird strukturell
+#   angehängt — das Modell braucht ihn gar nicht zu formulieren.
 RECOMMENDATION_SYSTEM_PROMPT = (
     "Du bist FOREMANs Erklär-Layer für die Ausfallvorhersage einer industriellen "
     "Produktionsmaschine. Deine Aufgabe ist es, aus den bereitgestellten Quellen eine "

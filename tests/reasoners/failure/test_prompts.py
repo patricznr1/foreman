@@ -31,16 +31,14 @@ def test_system_prompt_verlangt_zahlenfreie_qualitative_empfehlung() -> None:
 def test_system_prompt_verlangt_keine_eigene_vorbehalts_formulierung() -> None:
     """Der Vorbehalt kommt vom System, nicht vom Modell — sonst Dauer-Reject.
 
-    ANLASS (24.08.2026, aus dem Betriebslog): Regel 4 verlangte "Benenne
-    ausdrücklich, dass die Einschätzung ... nicht an realen Ausfällen validiert
-    ist". Der Negativ-Guard `detect_overclaim` erkennt eine Sperrphrase aber nur
-    dann als verneint, wenn UNMITTELBAR ein Verneinungswort davorsteht. Fast
-    jede natürliche deutsche Formulierung schiebt ein Wort dazwischen ("nicht UM
-    EINE validierte Prognose") und wurde damit verworfen — das Modell wurde
-    genau für das bestraft, was der Prompt von ihm verlangte.
+    Der Negativ-Guard `detect_overclaim` erkennt eine Sperrphrase nur dann als
+    verneint, wenn UNMITTELBAR ein Verneinungswort davorsteht. Natürliches
+    Deutsch schiebt fast immer ein Wort dazwischen ("nicht UM EINE validierte
+    Prognose") — eine Vorgabe, den Vorbehalt selbst zu formulieren, kollidiert
+    deshalb systematisch mit dem Guard.
 
-    Dieselbe Auflösung wie beim Zahlen-Fix: Was das Modell nicht formuliert,
-    kann es nicht umdeuten. Der Vorbehalt wird deterministisch aus
+    Dieselbe Auflösung wie bei den Zahlen: Was das Modell nicht formuliert, kann
+    es nicht umdeuten. Der Vorbehalt wird deterministisch aus
     `validation_caveat_for` angehängt.
     """
     prompt = RECOMMENDATION_SYSTEM_PROMPT.lower()
