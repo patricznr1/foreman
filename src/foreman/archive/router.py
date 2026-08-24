@@ -46,8 +46,12 @@ def _parse_sources(raw: list[str] | None) -> tuple[SourceType, ...] | None:
     if invalid:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            # Die erlaubten Quellen kommen aus ALL_SOURCES, nicht aus einer
+            # zweiten Aufzaehlung im Text: Sonst laufen Pruefung und Meldung
+            # auseinander, und der Aufrufer bekommt eine Liste, in der eine
+            # gueltige Quelle fehlt.
             detail=(
-                f"Unbekannte Quelle(n): {', '.join(invalid)}. Erlaubt: note, maintenance, alarm."
+                f"Unbekannte Quelle(n): {', '.join(invalid)}. Erlaubt: {', '.join(ALL_SOURCES)}."
             ),
         )
     # Reihenfolge-erhaltende Deduplizierung; gegen ALL_SOURCES validiert.
@@ -60,8 +64,11 @@ def _parse_sources(raw: list[str] | None) -> tuple[SourceType, ...] | None:
 # ausführliche OpenAPI-Beschreibung.
 _SOURCES_QUERY = Query(
     default=None,
-    description="Quellen-Auswahl (note, maintenance, alarm); wiederholbar oder CSV. "
-    "Fehlt der Parameter, werden alle Quellen durchsucht.",
+    description=(
+        f"Quellen-Auswahl ({', '.join(ALL_SOURCES)}); wiederholbar oder CSV. "
+        "Fehlt der Parameter, werden alle Quellen durchsucht. Ob das Gedächtnis "
+        "tatsächlich befragt wird, entscheidet zusätzlich der Betreiber-Schalter."
+    ),
 )
 
 

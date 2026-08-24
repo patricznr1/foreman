@@ -22,13 +22,14 @@ import {
   onDemandReducer,
 } from "@/lib/ondemand/machine";
 import { assembleArchiveResult } from "./view-model";
+import { VERFUEGBARE_QUELLEN } from "./source";
 import type { ArchiveSearchResult, SourceType } from "./types";
 import { searchArchiveEndpoint } from "./url";
 
 const CACHE_KEY = "foreman.archive.lastSearch";
 
-/** Default-Quellen: alle drei (das Backend durchsucht ohne sources ohnehin alle). */
-const ALL_SOURCES: SourceType[] = ["note", "maintenance", "alarm"];
+// Default-Quellen kommen aus der EINEN Liste in source.ts — hier keine zweite
+// Fassung fuehren (§15.10, gemeinsames Umlegen beider Schalter).
 
 export interface ArchiveSearchFilters {
   /** Optionaler Maschinen-Filter (geht als machine_id ans Backend). */
@@ -113,7 +114,7 @@ export function useMemorySearch(): UseMemorySearchResult {
     // ließe der Endpoint den Param weg (Backend sucht alle), die Herkunfts-Basis im
     // Ergebnis trüge aber eine leere Quellen-Liste (Anzeige ≠ tatsächlicher Suchlauf).
     const sources =
-      filters.sources && filters.sources.length > 0 ? filters.sources : ALL_SOURCES;
+      filters.sources && filters.sources.length > 0 ? filters.sources : [...VERFUEGBARE_QUELLEN];
     const controller = new AbortController();
     inflight.current?.abort();
     inflight.current = controller;

@@ -70,21 +70,36 @@ async def test_dual_write_setzt_substrate_ref_bei_erreichbarem_substrat(
     adapter = SimulationAdapter(load_scenario_by_name("minimal_bearing_drift"), seed=1)
     stats = await _service(db_session, pseudonymizer, fake_redactor, substrate).ingest(adapter)
 
-    # alarm(1) + production_runs(2) + maintenance(1) = 4 semantische Ereignisse.
+    # alarm(1) + production_runs(2) + maintenance(1) + worker_notes(2) = 6
+    # semantische Ereignisse. Die Notizen kamen am 24.08.2026 dazu.
     total = await raw_conn.fetchval("SELECT count(*) FROM semantic_events")
     with_ref = await raw_conn.fetchval(
         "SELECT count(*) FROM semantic_events WHERE substrate_ref IS NOT NULL"
     )
-    assert total == 4
-    assert with_ref == 4
-    assert stats.semantic_events == 4
-    assert stats.substrate_refs == 4
-    assert len(substrate.calls) == 4
-    # Werker-Notizen werden NICHT ans Substrat gespiegelt (kein semantic_event).
+    assert total == 6
+    assert with_ref == 6
+    assert stats.semantic_events == 6
+    assert stats.substrate_refs == 6
+    assert len(substrate.calls) == 6
     event_types = {
         row["event_type"] for row in await raw_conn.fetch("SELECT event_type FROM semantic_events")
     }
-    assert event_types == {"alarm_raised", "production_run", "maintenance_performed"}
+    assert event_types == {
+        "alarm_raised",
+        "production_run",
+        "maintenance_performed",
+        "worker_note",
+    }
+
+    # DER PUNKT DER NOTIZ-SPIEGELUNG: Bei den drei anderen Typen traegt die
+    # STRUKTUR die Information, ihr Freitext bleibt draussen. Bei der Notiz IST
+    # der Text die Information — steht er nicht im Inhalt, hat das Gedaechtnis
+    # einen leeren Merkzettel bekommen.
+    notiz_aufrufe = [
+        aufruf for aufruf in substrate.calls if aufruf[1].get("event_type") == "worker_note"
+    ] or [aufruf for aufruf in substrate.calls if "Schichtnotiz" in aufruf[0]]
+    assert notiz_aufrufe, "keine Notiz an das Gedaechtnis gegangen"
+    assert all("Schichtnotiz" in aufruf[0] for aufruf in notiz_aufrufe)
 
 
 async def test_substrat_ausfall_blockiert_datenaufnahme_nicht(
@@ -109,7 +124,7 @@ async def test_substrat_ausfall_blockiert_datenaufnahme_nicht(
     with_ref = await raw_conn.fetchval(
         "SELECT count(*) FROM semantic_events WHERE substrate_ref IS NOT NULL"
     )
-    assert total == 4
+    assert total == 6
     assert with_ref == 0
     assert stats.substrate_refs == 0
 
@@ -127,7 +142,7 @@ async def test_substrat_ohne_verwertbare_referenz_bleibt_ref_null(
     with_ref = await raw_conn.fetchval(
         "SELECT count(*) FROM semantic_events WHERE substrate_ref IS NOT NULL"
     )
-    assert total == 4
+    assert total == 6
     assert with_ref == 0
 
 
@@ -144,7 +159,7 @@ async def test_ohne_substrat_konfiguration_bleibt_ref_null(
     with_ref = await raw_conn.fetchval(
         "SELECT count(*) FROM semantic_events WHERE substrate_ref IS NOT NULL"
     )
-    assert total == 4
+    assert total == 6
     assert with_ref == 0
 
 
@@ -170,7 +185,7 @@ async def test_payload_traegt_herkunft_und_den_schluessel_der_quellzeile(
     await _service(db_session, pseudonymizer, fake_redactor, substrate).ingest(adapter)
 
     zeilen = await raw_conn.fetch("SELECT event_type, payload FROM semantic_events ORDER BY id")
-    assert len(zeilen) == 4
+    assert len(zeilen) == 6
 
     import json
 
@@ -178,6 +193,7 @@ async def test_payload_traegt_herkunft_und_den_schluessel_der_quellzeile(
         "alarm": "alarms",
         "production_run": "production_runs",
         "maintenance": "maintenance_events",
+        "note": "worker_notes",
     }
     gesehen: set[str] = set()
     for zeile in zeilen:
@@ -199,7 +215,7 @@ async def test_payload_traegt_herkunft_und_den_schluessel_der_quellzeile(
         assert treffer == 1, f"source_id {schluessel} zeigt auf keine Zeile in {tabellen[herkunft]}"
         gesehen.add(herkunft)
 
-    assert gesehen == {"alarm", "production_run", "maintenance"}
+    assert gesehen == {"alarm", "production_run", "maintenance", "note"}
 
     # Dieselbe Herkunft geht auch ans Substrat — nicht nur in die Spiegel-Zeile.
     for _content, metadaten in substrate.calls:

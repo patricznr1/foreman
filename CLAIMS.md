@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-08-10
+Stand: 2026-08-24
 
 ## FOREMAN
 
@@ -25,11 +25,11 @@ Stand: 2026-08-10
 | C-015 | Die Ausfalleinschätzung entscheidet erst ab einer sehr hohen Modellsicherheit auf Ausfall. | gemessen | Entscheidungsschwelle 0,997 | 2026-06-15 | gueltig | intern |
 | C-016 | Die Ausfalleinschätzung ist auf einen Vorhersagehorizont von zwei Wochen ausgelegt. | konzipiert | — | 2026-06-15 | gueltig | intern, fach |
 | C-017 | Zahlen in einer Werker-Empfehlung stammen ausschliesslich aus dem Rechenmodell, nie aus dem Sprachmodell. | gemessen | Unbelegte Zahlen führen zur Ablehnung der Empfehlung, nicht zu einer Markierung | 2026-07-31 | gueltig | intern, fach, kunde |
-| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 984 bestanden, 2 übersprungen, 2 abgewählt | 2026-08-10 | gueltig | intern, fach |
-| C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,47 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-10 | gueltig | intern, fach |
+| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1083 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-24 | gueltig | intern, fach |
+| C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,33 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-22 | gueltig | intern, fach |
 | C-020 | Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern. | geplant | — | 2026-07-31 | gueltig | intern, fach |
-| C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 744 bestanden in 146 Prüfdateien | 2026-08-10 | gueltig | intern, fach |
-| C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 148 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 305 Dateien ohne Befund | 2026-08-10 | gueltig | intern, fach |
+| C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 754 bestanden in 147 Prüfdateien | 2026-08-24 | gueltig | intern, fach |
+| C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 150 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 316 Dateien ohne Befund | 2026-08-24 | gueltig | intern, fach |
 | C-023 | Die Prüfläufe laufen gegen eine echte Zeitreihen-Datenbank statt gegen Attrappen. | gemessen | Ein Dienst-Container mit der produktiv eingesetzten Datenbankfassung wird für jeden Lauf gestartet | 2026-07-31 | gueltig | intern, fach |
 | C-024 | Der Freitext-Pfad des erklärenden Sprachmodells wird mit gezielten Angriffsmustern geprüft. | gemessen | Ein fester Angriffssatz läuft bei jedem Prüflauf durch die vollständige Erklär-Kette | 2026-07-31 | gueltig | intern, fach, kunde |
 | C-025 | Die Plattform ist als KI-System mit begrenztem Risiko eingestuft, mit Transparenzpflichten. | konzipiert | — | 2026-06-30 | gueltig | intern, fach, kunde |
@@ -47,6 +47,11 @@ Stand: 2026-08-10
 | C-037 | Die Kostenschätzung für den Cloud-Zugriff rechnet bewusst mit dem Listenpreis statt mit dem Einführungspreis. | geschaetzt | ca. 3 US-Dollar je Million Eingabe-Zeichenblöcke, ca. 15 je Million Ausgabe-Zeichenblöcke | 2026-07-30 | gueltig | intern |
 | C-038 | Die Antwortzeit der Plattform ist nicht erhoben; es liegen ausschliesslich Messpunkte des Gedächtnis-Dienstes vor. | gemessen | 0 erhobene Antwortzeit-Verteilungen für die Plattform selbst | 2026-08-10 | gueltig | intern |
 | C-039 | Der vierte Auswerte-Baustein zu Wartungszyklen ist nicht gebaut und hängt an einer echten Wartungshistorie. | geplant | — | 2026-07-31 | gueltig | intern |
+| C-042 | Beim Nachtrag der Spiegelung fielen sechs Alarmpaare zusammen, weil ihr Text sie nicht unterscheidbar machte. | gemessen | aus 65 nachgetragenen Ereignissen wurden 59 Erinnerungen; 6 Alarme gingen als vermeintliche Dublette verloren | 2026-08-20 | gueltig | intern |
+| C-043 | Die Antwortform der Gedächtnis-Schnittstelle ist gegen die betriebene Instanz abgenommen, nicht nur gegen Annahmen. | gemessen | 7 zurückgegebene Felder und 7 Metadatenfelder, gegen 6 gesendete Feldern geprüft | 2026-08-20 | gueltig | intern |
+| C-044 | Der Text einer Schichtnotiz verlässt die Anlage und wird im Gedächtnis abgelegt. | gemessen | 1 von 7 gespiegelten Ereignisarten trägt Freitext; die übrigen sechs nur Kennungen, Typen und Zeitpunkte | 2026-08-24 | gueltig | intern |
+| C-045 | Ein Löschverlangen für eine gespiegelte Erinnerung ist von der Plattform aus erfüllbar. | gemessen | 1 Löschweg, der bei Fehlschlag wirft statt ihn zu verschlucken | 2026-08-24 | gueltig | intern |
+| C-046 | Den Validierungs-Vorbehalt formuliert das System, nicht das Sprachmodell. | gemessen | 2 von 2 heiklen Angaben einer Empfehlung kommen deterministisch: Zahlen und Vorbehalt | 2026-08-24 | gueltig | intern, fach, kunde |
 
 ## Nicht verwendbar
 
@@ -55,20 +60,21 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 | ID | Produkt | Aussage | Geltung | Grund |
 |---|---|---|---|---|
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
+| C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
 
 ## Zählung
 
-Einträge gesamt: 40
+Einträge gesamt: 46
 
 Nach Status:
 
-- gemessen: 33
+- gemessen: 39
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 39
-- ueberholt: 1
+- gueltig: 44
+- ueberholt: 2
 - ungeprueft: 0

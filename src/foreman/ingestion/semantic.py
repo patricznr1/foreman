@@ -18,7 +18,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from foreman.db.models import SemanticEvent
+from foreman.db.models import SemanticEvent, WorkerNote
 from foreman.substrate.client import SubstrateClient
 from foreman.substrate.content import baue_inhalt
 
@@ -40,6 +40,29 @@ def extract_substrate_ref(data: dict[str, Any]) -> str | None:
     return None
 
 
+def notiz_payload(note: WorkerNote, masked_text: str) -> dict[str, object]:
+    """Baut die Spiegel-Nutzlast einer Schichtnotiz — für BEIDE Schreibwege.
+
+    Der `author` bleibt bewusst DRAUSSEN, obwohl die Wartung ihr `performed_by`
+    mitschickt. Bei der Wartung ist die ausführende Rolle Teil des Nachweises;
+    für die Frage "hatten wir das schon mal" trägt der Verfasser nichts bei.
+    Datensparsamkeit schlägt Symmetrie — ein Pseudonym, das keine Frage
+    beantwortet, gehört nicht an einen zweiten Ort.
+
+    `text` ist der NER-maskierte Text. Beide Schreibwege maskieren vor dem
+    Insert; diese Funktion bekommt ihn übergeben statt ihn aus dem Objekt zu
+    lesen, damit die Herkunft an der Aufrufstelle sichtbar bleibt.
+    """
+    return {
+        "machine_id": note.machine_id,
+        "shift": note.shift,
+        "text": masked_text,
+        "created_at": note.created_at.isoformat(),
+        "source_type": "note",
+        "source_id": note.id,
+    }
+
+
 async def record_semantic_event(
     session: AsyncSession,
     *,
@@ -55,17 +78,24 @@ async def record_semantic_event(
     gewonnenen `substrate_ref` (oder NULL bei Fehlschlag/ohne Substrat). Die
     DB-Zeile entsteht IMMER — auch wenn das Substrat nicht erreichbar ist.
     """
-    # Der Text wird aus der payload GEBAUT, nicht vom Aufrufer mitgegeben
-    # (Befund 20.08.2026): Vorher schrieb ihn jeder Aufrufer selbst hin, und der
-    # nachtraegliche Backfill fuehrte eine zweite Fassung derselben Saetze. Zusammen
-    # gehalten wurden sie von einem Kommentar und von keinem Test. Jetzt gibt es
-    # nur noch eine Quelle (substrate/content.py) — Abweichung ist strukturell
-    # ausgeschlossen statt bloss unerwuenscht.
-    content = baue_inhalt(event_type, payload)
-
     substrate_ref: str | None = None
     if substrate is not None:
         try:
+            # Der Text wird aus der payload GEBAUT, nicht vom Aufrufer mitgegeben
+            # (Befund 20.08.2026): Vorher schrieb ihn jeder Aufrufer selbst hin, und der
+            # nachtraegliche Backfill fuehrte eine zweite Fassung derselben Saetze. Zusammen
+            # gehalten wurden sie von einem Kommentar und von keinem Test. Jetzt gibt es
+            # nur noch eine Quelle (substrate/content.py) — Abweichung ist strukturell
+            # ausgeschlossen statt bloss unerwuenscht.
+            #
+            # INNERHALB des try (seit 24.08.2026): Ein unbekannter event_type oder
+            # ein fehlendes Pflichtfeld laesst `baue_inhalt` werfen. Ausserhalb des
+            # try wuerde das aus dieser Funktion herausschlagen und den Insert des
+            # AUFRUFERS mitnehmen — beim Werker-Notiz-Pfad also den Kernpfad der
+            # Halle. Der Text wird ohnehin nur fuer die Spiegelung gebraucht;
+            # scheitert sein Bau, ist das derselbe Fall wie ein nicht erreichbares
+            # Substrat.
+            content = baue_inhalt(event_type, payload)
             response = await substrate.remember(content, metadata=payload)
             substrate_ref = extract_substrate_ref(response)
             if substrate_ref is None:
@@ -82,7 +112,9 @@ async def record_semantic_event(
         except Exception as exc:
             logger.error(
                 "❌ Substrat-Dual-Write fehlgeschlagen (event_type=%s): %s — "
-                "Ereignis wird trotzdem in der DB gespiegelt (substrate_ref=NULL).",
+                "Ereignis wird trotzdem in der DB gespiegelt (substrate_ref=NULL). "
+                "Ein KeyError zeigt hier auf die Formulierung, nicht auf das Netz: "
+                "unbekannter event_type oder fehlendes Pflichtfeld in der payload.",
                 event_type,
                 exc,
             )

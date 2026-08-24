@@ -224,3 +224,91 @@ def test_zeit_und_rang_auch_aus_dem_metadaten_container() -> None:
     )
     assert item.occurred_at == datetime(2026, 5, 1, 8, 0, tzinfo=UTC)
     assert item.relevance == 0.5
+
+
+# ------------------------------------------------------------
+#  Datenblock-Markierung der Gegenstelle (Umstellung 24.08.2026)
+# ------------------------------------------------------------
+
+
+def test_datenblock_markierung_wird_abgeschaelt() -> None:
+    """Der Inhalt kommt heraus, nicht die Hülle.
+
+    ANLASS: Die Gegenstelle zeichnet zurückgegebene Inhalte als Datenblock aus,
+    damit ein lesendes Modell sie nicht als Anweisung nimmt. Bisher geschah das
+    nur auf ihrer Werkzeug-Schnittstelle; über den Weg, den FOREMAN benutzt,
+    gingen Trefferlisten unmarkiert raus. Sobald die Gegenstelle umstellt, stünde
+    die Hülle sonst im Auszug — und der Werker läse XML in seiner Trefferliste.
+
+    FOREMAN verlässt sich für die Sicherheit weiterhin auf die EIGENE Schicht
+    (`trusted=False` plus Spotlighting); die fremde Markierung wird abgeschält,
+    nicht als Schutz gewertet.
+    """
+    from foreman.reasoners.event_chain.recall import entpacke_datenblock
+
+    roh = (
+        '<tool_result_data origin="nexus" entry_id="abc-1" tier="stable">'
+        "Lager B lief warm."
+        "</tool_result_data>"
+    )
+    assert entpacke_datenblock(roh) == "Lager B lief warm."
+
+
+def test_unmarkierter_inhalt_bleibt_unveraendert() -> None:
+    """Aufbau-Kontrolle: der HEUTIGE Zustand muss weiter tragen.
+
+    Ohne diesen Zwilling wäre nicht unterscheidbar, ob die Entpackung wirkt oder
+    ob sie schlicht alles durchreicht. Und er ist die Bedingung dafür, dass die
+    Gegenstelle ihren Schalter umlegen kann, ohne dass hier etwas bricht: beide
+    Zustände müssen gleichzeitig funktionieren.
+    """
+    from foreman.reasoners.event_chain.recall import entpacke_datenblock
+
+    assert entpacke_datenblock("Lager B lief warm.") == "Lager B lief warm."
+
+
+def test_maskierte_zeichen_kommen_zurueck() -> None:
+    """Der Inhalt ist in der Hülle maskiert — sonst stünde '&lt;' im Auszug."""
+    from foreman.reasoners.event_chain.recall import entpacke_datenblock
+
+    roh = '<tool_result_data origin="nexus" tier="meta">Druck &lt; 3 bar &amp; Temperatur hoch</tool_result_data>'
+    assert entpacke_datenblock(roh) == "Druck < 3 bar & Temperatur hoch"
+
+
+def test_halbe_huelle_wird_nicht_angetastet() -> None:
+    """Nur eine VOLLSTÄNDIGE Hülle wird abgeschält.
+
+    Ein Text, der die Zeichenfolge zufällig oder böswillig nur teilweise
+    enthält, bleibt unverändert — sonst liesse sich über einen halben Marker
+    Inhalt abschneiden.
+    """
+    from foreman.reasoners.event_chain.recall import entpacke_datenblock
+
+    roh = '<tool_result_data origin="nexus">ohne Ende'
+    assert entpacke_datenblock(roh) == roh
+
+
+def test_treffer_aus_der_gegenstelle_wird_entpackt() -> None:
+    """Die Entpackung greift auf dem echten Weg, nicht nur in der Hilfsfunktion.
+
+    Belegt, dass sie an der Stelle sitzt, die `RecallItem.content` füllt — und
+    damit für BEIDE Konsumenten wirkt: Ereignisketten und Archiv-Suche.
+    """
+    from foreman.reasoners.event_chain.recall import map_recall_response
+
+    antwort = {
+        "results": [
+            {
+                "content": (
+                    '<tool_result_data origin="nexus" entry_id="e-9" tier="plastic">'
+                    "Spindel mahlte beim Hochlauf."
+                    "</tool_result_data>"
+                ),
+                "id": "e-9",
+            }
+        ]
+    }
+    items = map_recall_response(antwort, max_results=5)
+    assert len(items) == 1
+    assert items[0].content == "Spindel mahlte beim Hochlauf."
+    assert items[0].ref == "e-9"

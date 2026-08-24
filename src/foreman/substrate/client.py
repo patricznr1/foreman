@@ -50,6 +50,9 @@ class SubstrateClient:
             "reason": "/reason",
             "drift_status": "/drift_status",
             "reflect": "/reflect",
+            # Löschen adressiert einen EINZELNEN Eintrag: der Pfad bekommt die
+            # Kennung angehängt, anders als die POST-Wege oben.
+            "forget": "",
         }
         if client is not None:
             self._client = client
@@ -104,6 +107,16 @@ class SubstrateClient:
         # Antworten normalisieren: immer ein Dict zurückgeben.
         return data if isinstance(data, dict) else {"result": data}
 
+    async def _delete(self, path: str) -> dict[str, Any]:
+        """Wie `_post`, aber löschend — eigener Weg, weil DELETE keinen Rumpf trägt."""
+        try:
+            response = await self._client.delete(path)
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise SubstrateError(f"Substrat-Aufruf {path} fehlgeschlagen: {exc}") from exc
+        data: Any = response.json()
+        return data if isinstance(data, dict) else {"result": data}
+
     async def remember(
         self, content: str, *, metadata: dict[str, Any] | None = None
     ) -> dict[str, Any]:
@@ -112,6 +125,31 @@ class SubstrateClient:
         if metadata:
             payload["metadata"] = metadata
         return await self._post(self._paths["remember"], payload)
+
+    async def forget(self, entry_id: str) -> dict[str, Any]:
+        """Verlangt das Löschen einer Erinnerung.
+
+        DER RÜCKWEG FÜR EIN LÖSCHVERLANGEN (Art. 17 DSGVO). Seit die
+        Schichtnotiz gespiegelt wird (§12.4), verlässt beschreibender Text die
+        Anlage — NER-maskiert, aber mit dokumentiertem Restrisiko. Ohne diesen
+        Weg wäre ein Löschverlangen für den gespiegelten Teil nicht erfüllbar.
+
+        Das Gedächtnis nimmt beim Löschen auch die aus dem Eintrag gewonnenen
+        Aussagen mit, damit gelöschte Inhalte nicht über Umwege weiterwirken.
+        Diese Zusicherung liegt dort, nicht hier — FOREMAN verlangt das Löschen
+        und wertet die Antwort.
+
+        Ein Fehlschlag WIRFT. Bei einem Löschverlangen ist die Erfolgsmeldung
+        der ganze Nachweis; eine verschluckte Ausnahme wäre ein Häkchen ohne
+        Wirkung.
+        """
+        kennung = entry_id.strip()
+        if not kennung:
+            # Ohne Kennung zeigte der Pfad auf die Sammlung statt auf einen
+            # Eintrag — im günstigen Fall ein 405, im ungünstigen trifft es mehr
+            # als gemeint. Der Fehler gehört vor den Aufruf.
+            raise ValueError("Kennung der Erinnerung fehlt — Löschen ohne Ziel ist nicht zulässig")
+        return await self._delete(f"{self._paths['forget']}/{kennung}")
 
     async def recall(self, query: str, *, max_results: int = 5) -> dict[str, Any]:
         """Sucht Erinnerungen im Substrat."""

@@ -67,10 +67,11 @@ NOREF_SENTINEL = "backfilled:noref"
 # ------------------------------------------------------------
 # Abbildung event_type → source_type. Deterministisch, kein Rückschluss: der
 # event_type steht in der Zeile, die Herkunft folgt daraus eindeutig.
-# `alarm`/`maintenance` sind die beiden Werte, unter denen ein Treffer auch im
-# Archiv auflösbar ist (§15.9 kennt note/maintenance/alarm); die übrigen
-# bezeichnen Gedächtnis-Inhalt ohne Archiv-Entsprechung.
+# `note`/`alarm`/`maintenance` sind die drei Werte, unter denen ein Treffer auch im
+# Archiv auflösbar ist (§15.9); die übrigen bezeichnen Gedächtnis-Inhalt ohne
+# Archiv-Entsprechung. `note` kam am 24.08.2026 dazu (Notiz-Dual-Write).
 _SOURCE_TYPES: dict[str, str] = {
+    "worker_note": "note",
     "alarm_raised": "alarm",
     "production_run": "production_run",
     "maintenance_performed": "maintenance",

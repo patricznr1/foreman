@@ -92,7 +92,36 @@ def _failure_recommendation(payload: Mapping[str, Any]) -> str:
 
 # Registry event_type → Formulierung. Deckt ALLE Typen ab, die je über
 # `record_semantic_event` entstehen.
+def _worker_note(payload: Mapping[str, Any]) -> str:
+    """Schichtnotiz — hier IST der Freitext der Inhalt.
+
+    BEWUSSTE AUSNAHME von der Linie "kein Freitext ins Gedaechtnis" (§12.4):
+    Bei Alarm, Wartung und Produktionslauf traegt die STRUKTUR die Information —
+    Code, Typ, Zeitpunkt. Der zugehoerige Freitext ist Beiwerk und bleibt
+    draussen. Bei einer Schichtnotiz ist es umgekehrt: "mahlendes Geraeusch beim
+    Hochlauf, letzte Woche noch nicht da" IST die Information. Ohne den Text
+    bekaeme das Gedaechtnis einen leeren Merkzettel — es wuesste, DASS jemand
+    etwas notiert hat, aber nicht was.
+
+    DATENSCHUTZ: Der Text ist an dieser Stelle bereits NER-maskiert. Beide
+    Schreibwege maskieren VOR dem Insert (api/routers/worker_notes.py,
+    ingestion/service.py), der Dual-Write setzt danach an. Das Restrisiko bleibt
+    und wird nirgends als Anonymitaet ausgegeben (§8, Modell-Docstring).
+
+    SICHERHEIT: Kommt der Text ueber einen Abruf zurueck, fuehrt ihn FOREMAN als
+    untrusted (`trusted=False`, grounding_sources.py) und markiert ihn im Prompt.
+    Diese Zusicherung liegt bei FOREMAN, nicht beim Gedaechtnis-Dienst.
+
+    `machine_id` ist bei Notizen nullable — ohne Bezug wird das benannt statt
+    "Maschine None" zu schreiben.
+    """
+    maschine = payload["machine_id"]
+    bezug = f"zu Maschine {maschine}" if maschine is not None else "ohne Maschinenbezug"
+    return f"Schichtnotiz {bezug} ({payload['created_at']}): {payload['text']}"
+
+
 CONTENT_BUILDERS: dict[str, Callable[[Mapping[str, Any]], str]] = {
+    "worker_note": _worker_note,
     "alarm_raised": _alarm_raised,
     "production_run": _production_run,
     "maintenance_performed": _maintenance_performed,

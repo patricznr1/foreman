@@ -29,6 +29,13 @@ function detailChips(hit: ArchiveHitView): string[] {
   if (hit.source === "maintenance" && hit.detail.type) {
     chips.push(`Art: ${hit.detail.type}`);
   }
+  if (hit.source === "memory" && hit.detail.maschinenklasse) {
+    // Nur die Maschinenklasse — sie ordnet den Treffer fachlich ein. Die
+    // Herkunft selbst steht schon im Quellen-Label ("Aus dem Gedaechtnis"),
+    // und die Erinnerungs-Kennung ist ein interner Bezeichner, der in der
+    // Halle nichts traegt (§8 Hidden-Term, Hallensprache).
+    chips.push(`Klasse: ${hit.detail.maschinenklasse}`);
+  }
   if (hit.source === "alarm") {
     if (hit.detail.severity) {
       chips.push(`Schwere: ${hit.detail.severity}`);

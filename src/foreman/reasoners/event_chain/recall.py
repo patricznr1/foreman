@@ -11,9 +11,11 @@
 #  Sicherheit: Recall-Inhalte sind externer Freitext → in den Grounding-Quellen
 #         werden sie als untrusted geführt (siehe grounding_sources.py).
 # ============================================================
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from html import unescape
 from typing import Any
 
 from foreman.core.sanitize import clean_excerpt
@@ -177,6 +179,35 @@ def _first_datetime(scopes: Sequence[Mapping[str, Any]], keys: Sequence[str]) ->
     return None
 
 
+# Datenblock-Hülle der Gegenstelle. Sie zeichnet zurückgegebene Inhalte aus,
+# damit ein lesendes Modell sie nicht als Anweisung nimmt — auf ihrer
+# Werkzeug-Schnittstelle, und auf dem HTTP-Weg, sobald sie dort umgestellt ist. `.*` mit DOTALL, weil ein Inhalt Zeilenumbrüche tragen darf; Anker auf
+# beiden Seiten, damit eine halbe Hülle NICHT greift (sonst liesse sich über
+# einen abgeschnittenen Marker Inhalt unterschlagen).
+_DATENBLOCK_RE = re.compile(r"\A\s*<tool_result_data[^>]*>(.*)</tool_result_data>\s*\Z", re.DOTALL)
+
+
+def entpacke_datenblock(text: str) -> str:
+    """Schält die Datenblock-Hülle ab, falls die Gegenstelle sie setzt.
+
+    BEIDE ZUSTÄNDE MÜSSEN TRAGEN: Ohne Hülle bleibt der Text unverändert. Nur so
+    kann die Gegenstelle ihren Schalter umlegen, ohne dass hier etwas bricht —
+    dieselbe Logik wie beim Schalter der vierten Archiv-Quelle (§15.10).
+
+    ABGESCHÄLT, NICHT ALS SCHUTZ GEWERTET: Die Markierung richtet sich an ein
+    Modell, das den Rohtext direkt liest. FOREMAN baut seinen Prompt selbst und
+    führt Abruf-Treffer über `grounding_sources.py` als `trusted=False` mit
+    eigenem Spotlighting. Die fremde Hülle bliebe im Auszug stehen und stünde am
+    Ende in der Trefferliste eines Werkers — sie gehört heraus.
+
+    Der Inhalt ist in der Hülle maskiert; ohne Rückwandlung stünde "&lt;" im Text.
+    """
+    treffer = _DATENBLOCK_RE.match(text)
+    if treffer is None:
+        return text
+    return unescape(treffer.group(1)).strip()
+
+
 def _coerce_item(entry: Any) -> RecallItem | None:
     """Wandelt einen Roh-Treffer (str oder dict) in einen RecallItem (oder None).
 
@@ -185,7 +216,7 @@ def _coerce_item(entry: Any) -> RecallItem | None:
     gesetzt, wenn sie real vorhanden sind. Fehlen sie, bleiben sie `None`.
     """
     if isinstance(entry, str):
-        text = entry.strip()
+        text = entpacke_datenblock(entry).strip()
         return RecallItem(content=text) if text else None
     if isinstance(entry, dict):
         scopes = _scopes(entry)
@@ -193,7 +224,7 @@ def _coerce_item(entry: Any) -> RecallItem | None:
         for key in _CONTENT_KEYS:
             value = entry.get(key)
             if isinstance(value, str) and value.strip():
-                content = value.strip()
+                content = entpacke_datenblock(value).strip()
                 break
         if content is None:
             return None

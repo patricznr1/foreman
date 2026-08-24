@@ -26,9 +26,11 @@ from foreman.api.deps import (
     PseudonymizerDep,
     RedactorDep,
     SessionDep,
+    SubstrateClientDep,
 )
 from foreman.db.models import WorkerNote
 from foreman.embeddings import embed_best_effort
+from foreman.ingestion.semantic import notiz_payload, record_semantic_event
 from foreman.schemas.resources import WorkerNoteCreate, WorkerNoteRead
 
 router = APIRouter(prefix="/worker_notes", tags=["worker_notes"])
@@ -42,6 +44,7 @@ async def create_worker_note(
     pseudo: PseudonymizerDep,
     redactor: RedactorDep,
     provider: EmbeddingProviderDep,
+    substrate: SubstrateClientDep,
 ) -> WorkerNote:
     data = body.model_dump()
     raw_text = data.pop("text")
@@ -62,6 +65,17 @@ async def create_worker_note(
     session.add(obj)
     await session.flush()
     await session.refresh(obj)
+    # 4) Dual-Write ans Gedächtnis (best-effort, §12.4). NACH dem flush, damit
+    # `source_id` den echten Schlüssel trägt — ohne ihn hätte der Treffer im
+    # Archiv keinen Rückweg zur Zeile und würde als eigenständige Erinnerung
+    # gezeigt. Gespiegelt wird der MASKIERTE Text (nie das Rohfeld).
+    await record_semantic_event(
+        session,
+        machine_id=obj.machine_id,
+        event_type="worker_note",
+        payload=notiz_payload(obj, masked_text),
+        substrate=substrate,
+    )
     return obj
 
 
