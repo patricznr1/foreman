@@ -28,6 +28,50 @@ def test_system_prompt_verlangt_zahlenfreie_qualitative_empfehlung() -> None:
     assert "nur exakt so, wie sie in den quellen stehen" not in prompt
 
 
+def test_system_prompt_verlangt_keine_eigene_vorbehalts_formulierung() -> None:
+    """Der Vorbehalt kommt vom System, nicht vom Modell — sonst Dauer-Reject.
+
+    ANLASS (24.08.2026, aus dem Betriebslog): Regel 4 verlangte "Benenne
+    ausdrücklich, dass die Einschätzung ... nicht an realen Ausfällen validiert
+    ist". Der Negativ-Guard `detect_overclaim` erkennt eine Sperrphrase aber nur
+    dann als verneint, wenn UNMITTELBAR ein Verneinungswort davorsteht. Fast
+    jede natürliche deutsche Formulierung schiebt ein Wort dazwischen ("nicht UM
+    EINE validierte Prognose") und wurde damit verworfen — das Modell wurde
+    genau für das bestraft, was der Prompt von ihm verlangte.
+
+    Dieselbe Auflösung wie beim Zahlen-Fix: Was das Modell nicht formuliert,
+    kann es nicht umdeuten. Der Vorbehalt wird deterministisch aus
+    `validation_caveat_for` angehängt.
+    """
+    prompt = RECOMMENDATION_SYSTEM_PROMPT.lower()
+    # Die Anweisung, den Vorbehalt SELBST zu formulieren, darf nicht zurückkehren.
+    assert "benenne ausdrücklich, dass die einschätzung auf simulierten" not in prompt
+    # Stattdessen: ausdrücklicher Verzicht, mit dem Hinweis auf die Systemquelle.
+    assert "validierungs" in prompt or "vorbehalt" in prompt
+    assert "system" in prompt
+
+
+def test_negativ_guard_verwirft_natuerliche_verneinungen() -> None:
+    """Hält die Fehlerklasse fest, die den Prompt-Verzicht nötig macht.
+
+    Der Guard bleibt bewusst eng — ein weiteres Negations-Fenster liesse echte
+    Umdeutungen durch ("ohne Zweifel eine validierte Prognose"). Der Preis ist,
+    dass korrekte Verneinungen mit Zwischenwörtern ebenfalls fallen. Dieser Test
+    dokumentiert den Preis, damit niemand den Guard "repariert", ohne die
+    Abwägung zu kennen.
+    """
+    from foreman.reasoners.failure.recommendation import detect_overclaim
+
+    # Geht durch: Verneinung steht unmittelbar davor.
+    assert detect_overclaim("Dies ist keine validierte Prognose.") is None
+    # Fällt: dieselbe Aussage, ein Wort dazwischen. NICHT falsch formuliert —
+    # nur für den Guard nicht als Verneinung erkennbar.
+    assert detect_overclaim("Es handelt sich nicht um eine validierte Prognose.") is not None
+    assert detect_overclaim("Es handelt sich nicht um eine gesicherte Prognose.") is not None
+    # Fällt ebenfalls, und hier zu Recht: die echte Umdeutung.
+    assert detect_overclaim("Ohne Zweifel eine validierte Prognose.") is not None
+
+
 def test_user_prompt_traegt_zitier_anker_ohne_inline_zahlen() -> None:
     prediction = FailurePredictionRead(
         id=12,

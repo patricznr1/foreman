@@ -414,7 +414,7 @@ claims:
   - id: "C-018"
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
-    wert: "1076 bestanden, 2 übersprungen, 4 abgewählt"
+    wert: "1083 bestanden, 2 übersprungen, 4 abgewählt"
     bedingung: >-
       Automatischer Prüflauf vom 22.08.2026 auf dem Stand von main (fad4de5)
       gegen eine echte Zeitreihen-Datenbank, nicht gegen Attrappen. Die zwei
@@ -426,7 +426,7 @@ claims:
       einzeln anwählen.
     datum: "2026-08-24"
     fundstelle:
-      - "Eigener Lauf 24.08.2026: 1076 passed / 2 skipped / 4 deselected in 890 s (Prüfungen für die vierte Archiv-Quelle und die Notiz-Spiegelung ergänzt)"
+      - "Eigener Lauf 24.08.2026: 1083 passed / 2 skipped / 4 deselected in 717 s (vierte Archiv-Quelle, Notiz-Spiegelung, Empfehlungs-Prompt und Datenblock-Entpackung)"
       - "Commit fad4de5"
       - "Gegenprobe 24.08.2026: pytest --collect-only --no-cov meldet die Summe aus bestanden und übersprungen; tools/pruefe_registerzahlen.py hält beides gegeneinander"
     geltung: "gueltig"
@@ -444,7 +444,7 @@ claims:
   - id: "C-019"
     aussage: "Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze."
     status: "gemessen"
-    wert: "94,32 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
+    wert: "94,33 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
     bedingung: >-
       Gemessen im selben Prüflauf vom 22.08.2026 wie C-018, gegen eine echte
       Zeitreihen-Datenbank. Zweigabdeckung, nicht Zeilenabdeckung — so ist die
@@ -456,7 +456,7 @@ claims:
       Zahl gilt nur für einen Lauf mit Datenbank.
     datum: "2026-08-22"
     fundstelle:
-      - "Eigener Lauf 24.08.2026: Total coverage 94.32 Prozent"
+      - "Eigener Lauf 24.08.2026: Total coverage 94.33 Prozent"
       - "pyproject.toml, Zeile 211 (Zweigabdeckung aktiv)"
     geltung: "gueltig"
     freigabe:
@@ -1057,3 +1057,37 @@ claims:
       durchgehender Lauf vom Verlangen bis zur nachgewiesenen Entfernung ist
       nicht gefahren. Bis er es ist, bleibt die Aussage auf die Fähigkeit
       begrenzt, nicht auf ihre Wirkung.
+
+  - id: "C-046"
+    aussage: "Die Werker-Empfehlung wurde im Betrieb bei jedem Versuch verworfen, weil der Ausgabe-Wächter die geforderte Formulierung nicht durchliess."
+    status: "gemessen"
+    wert: "1 von 1 beobachteten Versuchen verworfen; 14,6 Sekunden Modell-Laufzeit vor dem Verwerfen"
+    bedingung: >-
+      Beobachtet am 24.08.2026 im Betriebsprotokoll der öffentlichen
+      Vorführ-Instanz, Vorhersage 16. Ursache gegengeprüft: Die Vorgabe an das
+      Modell verlangte, den Validierungs-Vorbehalt ausdrücklich zu benennen. Der
+      Wächter erkennt eine Sperrphrase aber nur dann als verneint, wenn
+      unmittelbar davor ein Verneinungswort steht — "nicht um eine validierte
+      Prognose" fiel damit durch, obwohl es genau das sagte, was verlangt war.
+      An zehn Beispielsätzen nachgestellt: drei natürliche Verneinungen werden
+      verworfen, eine echte Umdeutung ebenfalls.
+    datum: "2026-08-24"
+    fundstelle:
+      - "Betriebsprotokoll 24.08.2026 14:18:56 — REJECT Umdeutung Vorbehalt, prediction_id=16"
+      - "src/foreman/reasoners/failure/recommendation.py, Funktion detect_overclaim"
+      - "tests/reasoners/failure/test_prompts.py"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Am selben Tag behoben: Das Modell formuliert den Validierungs-Status jetzt
+      gar nicht mehr — dieselbe Auflösung wie zuvor bei den Zahlen. Was es nicht
+      formuliert, kann es nicht umdeuten; der Vorbehalt wird deterministisch
+      angehängt. Der Wächter bleibt unverändert streng. Der Eintrag bleibt
+      stehen, weil er die Fehlerklasse festhält: Eine Vorgabe verlangte etwas,
+      das eine Prüfung im selben System verbot.
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Was der Eintrag NICHT belegt: die vom Nutzer zusätzlich beobachtete
+      502-Antwort. Die Anwendung bildet Ausfälle des Modell-Zugangs auf 503 ab —
+      eine 502 kommt vom vorgelagerten Vermittler, nicht aus dem Code, und im
+      Protokoll steht für diesen Aufruf kein Zeitüberschritt. Ungeklärt.

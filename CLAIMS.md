@@ -25,8 +25,8 @@ Stand: 2026-08-24
 | C-015 | Die Ausfalleinschätzung entscheidet erst ab einer sehr hohen Modellsicherheit auf Ausfall. | gemessen | Entscheidungsschwelle 0,997 | 2026-06-15 | gueltig | intern |
 | C-016 | Die Ausfalleinschätzung ist auf einen Vorhersagehorizont von zwei Wochen ausgelegt. | konzipiert | — | 2026-06-15 | gueltig | intern, fach |
 | C-017 | Zahlen in einer Werker-Empfehlung stammen ausschliesslich aus dem Rechenmodell, nie aus dem Sprachmodell. | gemessen | Unbelegte Zahlen führen zur Ablehnung der Empfehlung, nicht zu einer Markierung | 2026-07-31 | gueltig | intern, fach, kunde |
-| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1076 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-24 | gueltig | intern, fach |
-| C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,32 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-22 | gueltig | intern, fach |
+| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1083 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-24 | gueltig | intern, fach |
+| C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,33 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-22 | gueltig | intern, fach |
 | C-020 | Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern. | geplant | — | 2026-07-31 | gueltig | intern, fach |
 | C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 754 bestanden in 147 Prüfdateien | 2026-08-24 | gueltig | intern, fach |
 | C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 150 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 316 Dateien ohne Befund | 2026-08-24 | gueltig | intern, fach |
@@ -60,14 +60,15 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 |---|---|---|---|---|
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
+| C-046 | FOREMAN | Die Werker-Empfehlung wurde im Betrieb bei jedem Versuch verworfen, weil der Ausgabe-Wächter die geforderte Formulierung nicht durchliess. | ueberholt | Am selben Tag behoben: Das Modell formuliert den Validierungs-Status jetzt gar nicht mehr — dieselbe Auflösung wie zuvor bei den Zahlen. Was es nicht formuliert, kann es nicht umdeuten; der Vorbehalt wird deterministisch angehängt. Der Wächter bleibt unverändert streng. Der Eintrag bleibt stehen, weil er die Fehlerklasse festhält: Eine Vorgabe verlangte etwas, das eine Prüfung im selben System verbot. |
 
 ## Zählung
 
-Einträge gesamt: 45
+Einträge gesamt: 46
 
 Nach Status:
 
-- gemessen: 38
+- gemessen: 39
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
@@ -75,5 +76,5 @@ Nach Status:
 Nach Geltung:
 
 - gueltig: 43
-- ueberholt: 2
+- ueberholt: 3
 - ungeprueft: 0

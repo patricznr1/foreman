@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from foreman.ingestion.semantic import extract_substrate_ref, record_semantic_event
 
 
