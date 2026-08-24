@@ -269,6 +269,11 @@ class IngestionService:
                 "category": event.category,
                 "machine_id": event.machine_id,
                 "raised_at": event.occurred_at.isoformat(),
+                # Maskiert, obwohl die Quellzeile es NICHT ist (§15.9, offener
+                # Befund): Was das System verlässt, wird behandelt wie der
+                # Notiz-Freitext — der Spiegel darf nicht die schwächere Grenze
+                # sein. Der Befund an der Quellzeile bleibt davon unberührt.
+                "message": self._maskiert(event.message),
             },
         )
 
@@ -330,6 +335,10 @@ class IngestionService:
                 "component_id": event.component_id,
                 "performed_at": event.occurred_at.isoformat(),
                 "performed_by": performed_by,  # bereits tokenisiert
+                # Siehe Begründung bei `alarm_raised`. Hier wiegt sie schwerer:
+                # Der Grund eines Degradationsverlaufs steht ausschliesslich in
+                # dieser Beschreibung (§12.5, Beobachtungsgrenze).
+                "description": self._maskiert(event.description),
             },
         )
 
@@ -366,6 +375,26 @@ class IngestionService:
             event_type="worker_note",
             payload=notiz_payload(note, masked_text),
         )
+
+    def _maskiert(self, text: str | None) -> str | None:
+        """NER-Maskierung für Freitext, der in die Spiegelung geht.
+
+        Warum überhaupt: `alarms.message` und `maintenance_events.description`
+        laufen im Schreibpfad NICHT durch die Maskierung (§15.9, gemeldeter und
+        weiterhin offener Befund) — anders als `worker_notes.text`. Solange diese
+        Felder nur in der eigenen Datenbank lagen, war das eine Inkonsistenz.
+        Sobald sie gespiegelt werden, verlassen sie das System, und dann muss die
+        Grenze dieselbe sein wie beim Notiz-Freitext.
+
+        Bewusst NUR auf dem Spiegelweg: Die Quellzeile unverändert zu lassen ist
+        keine Nachlässigkeit, sondern die kleinere Änderung — sie hier
+        mitzumaskieren wäre ein Eingriff in den Bestand und in den Rückweg zur
+        Quelle, den dieser Change nicht braucht. Der Befund aus §15.9 bleibt
+        offen und ist damit nicht als erledigt zu betrachten.
+        """
+        if text is None:
+            return None
+        return self.redactor.redact_person_names(text)
 
     async def _mirror(
         self, *, machine_id: int | None, event_type: str, payload: dict[str, object]

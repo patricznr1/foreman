@@ -25,9 +25,7 @@ def main() -> None:
     bewerter_liste = roh["result"]["urteile"] if "result" in roh else roh["urteile"]
 
     # stimmen[anfrage_id][schluessel] = [(bewerter, stufe), ...]
-    stimmen: dict[str, dict[str, list[tuple[str, int]]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
+    stimmen: dict[str, dict[str, list[tuple[str, int]]]] = defaultdict(lambda: defaultdict(list))
     namen = []
     for eintrag in bewerter_liste:
         name = eintrag["bewerter"]
@@ -44,7 +42,11 @@ def main() -> None:
         goldset[aid] = {}
         for schluessel, liste in sorted(stimmen[aid].items()):
             if len(liste) >= MINDESTSTIMMEN:
-                stufe = int(round(statistics.median([s for _, s in liste])))
+                # Bei Uneinigkeit (Stufen 1 und 2) rundet round() auf 2 — im
+                # Zweifel die hoehere Stufe. Das ist eine Entscheidung, keine
+                # Nebenwirkung: Zwei Beurteiler, die einen Eintrag ueberhaupt
+                # nennen, halten ihn fuer erheblich.
+                stufe = round(statistics.median([s for _, s in liste]))
                 goldset[aid][schluessel] = stufe
                 if len(liste) == MINDESTSTIMMEN:
                     knapp.append(f"{aid}/{schluessel}")
@@ -66,18 +68,14 @@ def main() -> None:
     for aid, treffer in goldset.items():
         gesamt += len(treffer)
         zwei = sum(1 for s in treffer.values() if s == 2)
-        print(
-            f"{aid:6s} {len(treffer):4d} {zwei:7d}  {', '.join(sorted(treffer))[:52]}"
-        )
+        print(f"{aid:6s} {len(treffer):4d} {zwei:7d}  {', '.join(sorted(treffer))[:52]}")
     print("-" * 76)
     print(f"Relevante Zuordnungen gesamt : {gesamt}")
     print(f"davon knapp (genau {MINDESTSTIMMEN} Stimmen) : {len(knapp)}")
     print(f"verworfen (nur 1 Stimme)     : {len(verworfen)}")
 
     # Uebereinstimmung: Anteil der Zuordnungen, die ALLE Bewerter nannten.
-    alle = sum(
-        1 for a in stimmen.values() for liste in a.values() if len(liste) == len(namen)
-    )
+    alle = sum(1 for a in stimmen.values() for liste in a.values() if len(liste) == len(namen))
     genannt = sum(len(a) for a in stimmen.values())
     print(
         f"\nUebereinstimmung: {alle} von {genannt} genannten Zuordnungen von ALLEN {len(namen)} "
