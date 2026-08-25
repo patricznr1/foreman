@@ -33,7 +33,7 @@ from foreman.api.deps import get_embedding_provider, get_redactor
 from foreman.config import Settings, get_settings
 from foreman.core.pseudonymize import Pseudonymizer, build_pseudonymizer
 from foreman.core.roles import Role
-from foreman.db.models import User
+from foreman.db.models import Machine, User
 from foreman.db.provisioning import create_user
 from foreman.db.session import get_session
 from foreman.main import create_app
@@ -332,12 +332,21 @@ async def ensure_user(test_settings: Settings, email: str, role: Role) -> None:
 
 @pytest_asyncio.fixture
 async def auth_token(client: AsyncClient, test_settings: Settings) -> str:
-    """Legt einen Test-Nutzer (Rolle `shift_lead`) an und gibt ein gültiges JWT
-    zurück. shift_lead ist der operative Standard-Nutzer der Suite — er darf die
-    Trigger-/Quittier-Routen (§21.18), damit die bestehenden Reasoner-Tests den
-    Erfolgs-Pfad prüfen; rollenspezifische Sperren testet `auth_headers_for`."""
+    """Legt den Standard-Test-Nutzer (Rolle `manager`) an und gibt ein gültiges JWT zurück.
+
+    `manager` ist die einzige Rolle, die BEIDES mitbringt: den unbeschränkten
+    Maschinen-Ausschnitt (Matrix 3.1) und die Berechtigung für die Trigger-/
+    Quittier-Routen (§21.18). Genau das brauchen die Fachtests der Suite — sie
+    prüfen Tokenisierung, Maskierung, Grounding und Persistenz, nicht die
+    Zugriffskontrolle. Ein Nutzer mit beschränktem Ausschnitt würde ihnen einen
+    403 in den Weg legen, der mit ihrer Aussage nichts zu tun hat.
+
+    Die Zugriffskontrolle selbst prüfen die Tests, die dafür gebaut sind:
+    `test_ressourcen_scope.py` (Maschinen-Ausschnitt), `test_reasoner_rbac.py`
+    (Rollen-Matrix) und `test_realtime_authz.py` (Abo-Autorisierung) — alle mit
+    eigenen Nutzern über `auth_headers_for` bzw. `grant_machine_scope`."""
     email = "tester@foreman.de"
-    await ensure_user(test_settings, email, Role.SHIFT_LEAD)
+    await ensure_user(test_settings, email, Role.MANAGER)
     response = await client.post("/auth/login", json={"email": email, "password": TEST_PASSWORD})
     token: str = response.json()["access_token"]
     return token
@@ -365,6 +374,48 @@ def auth_headers_for(
         return {"Authorization": f"Bearer {token}"}
 
     return _make
+
+
+@pytest_asyncio.fixture
+def grant_machine_scope(
+    test_settings: Settings,
+) -> Callable[[str, int], Awaitable[None]]:
+    """Macht einem Test-Nutzer EINE Maschine sichtbar — rollengerecht (Matrix 3.1).
+
+    `worker` bekommt die Maschine zugewiesen, `shift_lead` die Linie, an der sie
+    hängt; unbeschränkte Rollen brauchen nichts und bleiben unangetastet. Eine
+    Stelle dafür, damit kein Test die Zuweisung selbst nachbaut und dabei die
+    Rollenlogik verfehlt — ein `worker` mit gesetzten `assigned_line_ids` sähe
+    weiterhin nichts, ohne dass es auffiele.
+
+    Gebraucht überall dort, wo ein Fachtest mit beschränkter Rolle arbeitet: ohne
+    die Zuweisung greift der Maschinen-Ausschnitt zuerst, und der Test prüft dann
+    eine andere Sperre als die, für die er gebaut wurde.
+    """
+
+    async def _grant(email: str, machine_id: int) -> None:
+        engine = create_async_engine(test_settings.database_url, poolclass=NullPool)
+        maker = async_sessionmaker(engine, expire_on_commit=False)
+        try:
+            async with maker() as session:
+                user = await session.scalar(select(User).where(User.email == email))
+                assert user is not None, f"❌ Test-Nutzer {email} existiert nicht."
+                if user.role == Role.WORKER.value:
+                    user.assigned_machine_ids = sorted({*user.assigned_machine_ids, machine_id})
+                elif user.role == Role.SHIFT_LEAD.value:
+                    line_id = await session.scalar(
+                        select(Machine.line_id).where(Machine.id == machine_id)
+                    )
+                    assert line_id is not None, (
+                        f"❌ Maschine {machine_id} hängt an keiner Linie — ein `shift_lead` "
+                        "kann sie deshalb nie sehen. Die Maschine mit `line_id` anlegen."
+                    )
+                    user.assigned_line_ids = sorted({*user.assigned_line_ids, line_id})
+                await session.commit()
+        finally:
+            await engine.dispose()
+
+    return _grant
 
 
 @pytest.fixture

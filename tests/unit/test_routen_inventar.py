@@ -20,13 +20,11 @@ WARUM OHNE DATENBANK. Der Test braucht `test_settings`, aber nicht
 ist, statt still übersprungen zu werden — ein Wächter, der in der CI
 weggeskippt wird, ist keiner.
 
-DIE ÜBERGANGSLISTE. `OFFEN_STAND_2026_08_25` führt die Routen, die beim
-Einführen dieses Tests bereits ohne Autorisierungs-Dependency waren. Sie sind
-ein Befund, kein Normalzustand. Der Aufbau folgt dem Baseline-Prinzip aus
-`.claude-quality-baseline.json`: Vorhandene Schulden blockieren nicht, aber
-sie können weder wachsen noch stillschweigend bestehen bleiben —
-`test_uebergangsliste_ist_aktuell` erzwingt, dass jede abgesicherte Route
-sofort von der Liste verschwindet.
+DIE ÜBERGANGSLISTE. `OFFEN_STAND_2026_08_25` führt den Stand des Ausrollens:
+die Routen, die den gemeinsamen Dependency noch nicht führen. Der Aufbau folgt
+dem Baseline-Prinzip: Der Übergang blockiert nicht, kann aber weder wachsen noch
+stillschweigend stehen bleiben — `test_uebergangsliste_ist_aktuell` erzwingt,
+dass jede umgestellte Route sofort von der Liste verschwindet.
 """
 
 import inspect
@@ -42,8 +40,14 @@ from foreman.main import create_app
 # Sammlung unten findet deshalb beide.
 IDENTITAETS_DEPS = {"get_current_user", "_require"}
 
-# Der Helfer, der die sichtbaren Maschinen eines Nutzers bestimmt.
-SCOPE_HELFER = {"visible_machine_scope"}
+# Autorisierung auf RESSOURCEN-Ebene. Zwei zulässige Formen, in dieser Rangfolge:
+# (1) der gemeinsame Dependency `get_machine_scope` — im Dependency-Baum sichtbar
+#     und damit strukturell prüfbar, nicht über eine Zeichenkette;
+# (2) für die Routen, die ausdrücklich das WS-Thema spiegeln: der Aufruf im Rumpf.
+# Geprüft wird dort die AUSFÜHRBARE Form (`await …(`), nicht der bloße Name — sonst
+# genügte eine Erwähnung im Docstring, um die Route abgesichert aussehen zu lassen.
+SCOPE_DEPS = {"get_machine_scope"}
+SCOPE_IM_RUMPF = ("await can_subscribe(", "await visible_machine_scope(")
 
 # Ressourcen-Kennungen: Führt eine Route eine davon, entscheidet nicht die
 # Rolle über den Zugriff, sondern die Zugehörigkeit der konkreten Ressource.
@@ -63,8 +67,9 @@ AUSGENOMMEN = {
     "/redoc": "Schema, keine Daten",
 }
 
-# Befund vom 25.08.2026: beim Einführen dieses Tests offene Routen.
-# Aus der Messung erzeugt, nicht abgetippt. Diese Liste MUSS schrumpfen.
+# Übergangsstand des Ausrollens vom 25.08.2026: die Routen, die den gemeinsamen
+# Dependency noch nicht führen. Aus der Messung gegen `create_app()` erzeugt, nie
+# abgetippt. Sie schrumpft mit jeder Etappe auf null.
 OFFEN_STAND_2026_08_25: set[str] = {
     "GET /api/v1/alarms",
     "GET /api/v1/alarms/{alarm_id}",
@@ -76,20 +81,13 @@ OFFEN_STAND_2026_08_25: set[str] = {
     "GET /api/v1/lines/{line_id}",
     "GET /api/v1/machines",
     "GET /api/v1/machines/{machine_id}",
-    "GET /api/v1/maintenance_events",
-    "GET /api/v1/maintenance_events/{event_id}",
     "GET /api/v1/production_runs",
     "GET /api/v1/production_runs/{run_id}",
     "GET /api/v1/reasoners/drift/alarms",
     "GET /api/v1/reasoners/event_chain/explanations",
     "GET /api/v1/reasoners/event_chain/explanations/{explanation_id}",
     "GET /api/v1/reasoners/event_chain/explanations/{explanation_id}/siblings",
-    "GET /api/v1/reasoners/failure/predictions",
-    "GET /api/v1/reasoners/failure/predictions/{prediction_id}",
-    "GET /api/v1/reasoners/failure/predictions/{prediction_id}/recommendation",
     "GET /api/v1/substrate/smoke",
-    "GET /api/v1/worker_notes",
-    "GET /api/v1/worker_notes/{note_id}",
     "POST /api/v1/alarms",
     "POST /api/v1/components",
     "POST /api/v1/data_points",
@@ -212,6 +210,10 @@ def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
     Filterung BRAUCHT, ist eine fachliche Entscheidung. Der Test macht die
     Kandidaten sichtbar; er entscheidet nicht an Patrics Stelle.
     """
+    # Anmerkung zur Aussagekraft: Ein vorhandener Dependency belegt, dass der
+    # Ausschnitt AUFGELÖST wird — nicht, dass die Route ihn auch ANWENDET. Diese
+    # zweite Hälfte kann nur ein Verhaltenstest zeigen; sie steht in
+    # tests/integration/test_ressourcen_scope.py, je Sperre als Paar.
     kandidaten = []
     for route in _zu_pruefen(app_routen):
         namen = _dependency_namen(route)
@@ -219,11 +221,13 @@ def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
             continue  # fehlt schon die Identität — steht im Test darüber
         if not (namen & RESSOURCEN_KENNUNGEN):
             continue
+        if namen & SCOPE_DEPS:
+            continue  # trägt den gemeinsamen Dependency — strukturell belegt
         try:
             rumpf = inspect.getsource(route.endpoint)
         except (OSError, TypeError):
             continue
-        if not any(helfer in rumpf for helfer in SCOPE_HELFER):
+        if not any(aufruf in rumpf for aufruf in SCOPE_IM_RUMPF):
             kandidaten.append(_kennung(route))
 
     if kandidaten:

@@ -6,6 +6,9 @@
 #         (1) `author` → HMAC-Token über die user_id (nie Klartext),
 #         (2) `text` → NER-Maskierung (Personennamen → [PERSON]) VOR dem Insert.
 #         Restrisiko bleibt; der Freitext wird nie als anonym deklariert.
+#  Maschinen-Scope (§20.4): jede Route führt `MachineScopeDep` — ein Schichtbericht
+#         gehört zu genau einer Maschine, und wer die Maschine nicht sehen darf,
+#         sieht auch ihre Berichte nicht. Der Strich ist derselbe wie im Live-Push.
 #  Identitätsbindung (§19): der Verfasser kommt aus dem Token, nicht aus dem Body
 #         — die Zuschreibung folgt der Authentifizierung, nicht den Nutzdaten.
 #         Unbekannte Felder ergeben 422 (`extra="forbid"`), statt still zu verfallen.
@@ -23,6 +26,7 @@ from sqlalchemy import select
 from foreman.api.deps import (
     CurrentUser,
     EmbeddingProviderDep,
+    MachineScopeDep,
     PseudonymizerDep,
     RedactorDep,
     SessionDep,
@@ -45,7 +49,13 @@ async def create_worker_note(
     redactor: RedactorDep,
     provider: EmbeddingProviderDep,
     substrate: SubstrateClientDep,
+    scope: MachineScopeDep,
 ) -> WorkerNote:
+    # 0) Der Bericht gehört an eine Maschine, die der Verfasser auch sehen darf.
+    # Ohne diese Prüfung wäre der Schreibpfad der Weg, Freitext in einen fremden
+    # Maschinenkontext einzustellen.
+    if body.machine_id is not None:
+        await scope.require(body.machine_id)
     data = body.model_dump()
     raw_text = data.pop("text")
     # 1) Freitext VOR dem Insert maskieren. 2) Autor aus dem TOKEN tokenisieren —
@@ -82,21 +92,30 @@ async def create_worker_note(
 @router.get("", response_model=list[WorkerNoteRead])
 async def list_worker_notes(
     session: SessionDep,
+    scope: MachineScopeDep,
     machine_id: int | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[WorkerNote]:
-    stmt = select(WorkerNote).order_by(WorkerNote.id.desc())
-    if machine_id is not None:
-        stmt = stmt.where(WorkerNote.machine_id == machine_id)
+    """Schichtberichte im Maschinen-Ausschnitt des Anfragenden (jüngste zuerst)."""
+    stmt = await scope.limit_to(
+        select(WorkerNote).order_by(WorkerNote.id.desc()),
+        WorkerNote.machine_id,
+        machine_id=machine_id,
+    )
     result = await session.scalars(stmt.limit(limit).offset(offset))
     return result.all()
 
 
 @router.get("/{note_id}", response_model=WorkerNoteRead)
-async def get_worker_note(note_id: int, session: SessionDep) -> WorkerNote:
+async def get_worker_note(note_id: int, session: SessionDep, scope: MachineScopeDep) -> WorkerNote:
+    """Ein Schichtbericht — 404 auch dann, wenn er zu einer fremden Maschine gehört.
+
+    Bewusst dieselbe Antwort wie für eine unbekannte Kennung: Ein 403 würde die
+    Existenz der Zeile bestätigen und die Kennungen durchprobierbar machen.
+    """
     obj = await session.get(WorkerNote, note_id)
-    if obj is None:
+    if obj is None or not await scope.can_see(obj.machine_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Schichtbericht nicht gefunden"
         )

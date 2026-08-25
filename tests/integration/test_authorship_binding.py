@@ -138,12 +138,34 @@ async def _machine_id(client: AsyncClient, headers: dict[str, str]) -> int:
     return int(machine["id"])
 
 
+async def _sichtbare_maschine(
+    client: AsyncClient,
+    headers: dict[str, str],
+    email: str,
+    grant: Callable[[str, int], Awaitable[None]],
+) -> int:
+    """Maschine anlegen und dem Nutzer nach Matrix 3.1 sichtbar machen.
+
+    Die Tests darunter prüfen die IDENTITÄTSBINDUNG des Nachweisfeldes, nicht den
+    Maschinen-Ausschnitt. Ohne die Zuweisung griffe der Ausschnitt zuerst und die
+    Tests prüften eine andere Sperre als die, für die sie gebaut sind — ein 403
+    wäre dann kein Beleg mehr für die Rollenregel darunter.
+    """
+    machine_id = await _machine_id(client, headers)
+    await grant(email, machine_id)
+    return machine_id
+
+
 async def test_maintenance_defaults_to_token_identity(
-    client: AsyncClient, auth_headers_for: AuthHeaders, pseudonymizer: Pseudonymizer
+    client: AsyncClient,
+    auth_headers_for: AuthHeaders,
+    pseudonymizer: Pseudonymizer,
+    grant_machine_scope: Callable[[str, int], Awaitable[None]],
 ) -> None:
     """Ohne `performed_by` wird der eingeloggte Nutzer eingetragen (nicht NULL)."""
-    headers = await auth_headers_for("bind-mt-wrk@foreman.de", "worker")
-    machine_id = await _machine_id(client, headers)
+    email = "bind-mt-wrk@foreman.de"
+    headers = await auth_headers_for(email, "worker")
+    machine_id = await _sichtbare_maschine(client, headers, email, grant_machine_scope)
     own = await _own_id(client, headers)
 
     response = await client.post(
@@ -159,11 +181,20 @@ async def test_maintenance_defaults_to_token_identity(
 
 
 async def test_maintenance_worker_cannot_write_for_others(
-    client: AsyncClient, auth_headers_for: AuthHeaders
+    client: AsyncClient,
+    auth_headers_for: AuthHeaders,
+    grant_machine_scope: Callable[[str, int], Awaitable[None]],
 ) -> None:
-    """Ein Werker trägt nur für sich selbst ein — fremdes `performed_by` → 403."""
-    headers = await auth_headers_for("bind-mt-wrk2@foreman.de", "worker")
-    machine_id = await _machine_id(client, headers)
+    """Ein Werker trägt nur für sich selbst ein — fremdes `performed_by` → 403.
+
+    Die Maschine ist dem Werker ausdrücklich zugewiesen, damit der Maschinen-
+    Ausschnitt NICHT zuerst greift: Sonst käme derselbe 403 aus einer anderen
+    Regel und der Test wäre grün, ohne die Delegations-Sperre zu berühren.
+    Deshalb prüft er zusätzlich die Begründung.
+    """
+    email = "bind-mt-wrk2@foreman.de"
+    headers = await auth_headers_for(email, "worker")
+    machine_id = await _sichtbare_maschine(client, headers, email, grant_machine_scope)
 
     response = await client.post(
         "/api/v1/maintenance_events",
@@ -172,16 +203,24 @@ async def test_maintenance_worker_cannot_write_for_others(
     )
 
     assert response.status_code == 403
+    assert response.json()["detail"] == (
+        "Deine Rolle darf Wartungen nur für die eigene Person eintragen"
+    )
 
 
 @pytest.mark.parametrize("role", ["shift_lead", "technician", "manager"])
 async def test_supervising_roles_may_record_for_others(
-    client: AsyncClient, auth_headers_for: AuthHeaders, pseudonymizer: Pseudonymizer, role: str
+    client: AsyncClient,
+    auth_headers_for: AuthHeaders,
+    pseudonymizer: Pseudonymizer,
+    grant_machine_scope: Callable[[str, int], Awaitable[None]],
+    role: str,
 ) -> None:
     """Der Nachtrag für eine dritte Person ist ein legitimer Vorgang der
     aufsichtsführenden Rollen — und wird tokenisiert abgelegt."""
-    headers = await auth_headers_for(f"bind-mt-{role}@foreman.de", role)
-    machine_id = await _machine_id(client, headers)
+    email = f"bind-mt-{role}@foreman.de"
+    headers = await auth_headers_for(email, role)
+    machine_id = await _sichtbare_maschine(client, headers, email, grant_machine_scope)
 
     response = await client.post(
         "/api/v1/maintenance_events",

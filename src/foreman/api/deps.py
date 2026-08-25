@@ -10,10 +10,11 @@ from __future__ import annotations
 import os
 from collections.abc import AsyncIterator, Callable
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Any
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.config import Settings, get_settings
@@ -24,6 +25,7 @@ from foreman.db.models import User
 from foreman.db.session import get_session
 from foreman.embeddings import EmbeddingProvider, LocalEmbeddingProvider, get_embedding_settings
 from foreman.llm import LiteLLMGateway, LLMGateway, get_llm_settings
+from foreman.realtime.authz import can_see_machine, visible_machine_scope
 from foreman.reasoners.failure.model import DEFAULT_ARTIFACT_PATH, FailureModel, load_model
 from foreman.substrate.client import SubstrateClient
 
@@ -88,6 +90,106 @@ def require_roles(*allowed: str) -> Callable[[User], User]:
         return user
 
     return _require
+
+
+# --- Maschinen-Scope an der Route (§20.4, Rollenmatrix 3.1) ---
+class MachineScope:
+    """Der Maschinen-Ausschnitt, den der anfragende Nutzer lesen darf.
+
+    Die Auth-Middleware beantwortet „wer bist du". Diese Klasse beantwortet die
+    zweite Frage, die sie nie stellt: „darfst du GENAU DIESE Ressource sehen".
+    Ein `worker` mit gültigem Token hat die richtige Rolle für die Notizliste —
+    er darf nur nicht die Berichte fremder Maschinen darin finden.
+
+    EINE Quelle für die beiden Formen, in denen eine Ressourcen-Route fragt:
+    `limit_to` beschneidet eine LISTE auf den erlaubten Ausschnitt, `require`
+    entscheidet über eine AUSDRÜCKLICH angefragte Maschine, `can_see` über eine
+    bereits geladene Zeile. Alle drei hängen an `visible_machine_scope` — demselben
+    Resolver, den der Live-Push nutzt. Der Strich hält damit auf HTTP wie auf dem
+    WebSocket; getrennte Umsetzungen wären die Stelle, an der die Transporte
+    auseinanderlaufen.
+
+    Der Ausschnitt wird je Anfrage EINMAL aufgelöst: `shift_lead` kostet dabei eine
+    Linien-Auflösung, die sonst bei jeder Prüfung derselben Anfrage erneut anfiele.
+    """
+
+    def __init__(self, session: AsyncSession, user: User) -> None:
+        self._session = session
+        self._user = user
+        self._ids: list[int] | None = None
+        self._resolved = False
+
+    @property
+    def user(self) -> User:
+        """Der anfragende Nutzer — für Routen, die zusätzlich die Rolle brauchen."""
+        return self._user
+
+    async def machine_ids(self) -> list[int] | None:
+        """Die sichtbaren Maschinen. `None` heißt unbeschränkt, `[]` heißt keine."""
+        if not self._resolved:
+            self._ids = await visible_machine_scope(self._session, self._user)
+            self._resolved = True
+        return self._ids
+
+    async def can_see(self, machine_id: int | None) -> bool:
+        """Ob eine bereits geladene Zeile im Ausschnitt liegt (default-deny).
+
+        `machine_id=None` steht für eine Zeile ohne Maschinenbezug: Für eine
+        beschränkte Rolle gibt es dann nichts, woran die Zugehörigkeit hinge —
+        also nein. Unbeschränkte Rollen sehen sie weiterhin.
+        """
+        ids = await self.machine_ids()
+        if ids is None:
+            return True
+        return machine_id is not None and machine_id in ids
+
+    async def require(self, machine_id: int) -> None:
+        """403, wenn die ausdrücklich angefragte Maschine außerhalb des Ausschnitts liegt.
+
+        Für Maschinen-Kennungen, die aus Query oder Rumpf kommen — dort ist die
+        Existenz kein Geheimnis (Stammdatum) und die klare Absage die ehrlichere
+        Antwort. Beim Einzelabruf über eine Datensatz-Kennung wird stattdessen
+        `can_see` geprüft und die bestehende 404-Antwort verwendet, damit ein 403
+        die Existenz der Zeile nicht bestätigt.
+        """
+        if not await can_see_machine(self._session, self._user, machine_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Kein Zugriff auf diese Maschine",
+            )
+
+    async def limit_to(
+        self, stmt: Select[Any], column: Any, *, machine_id: int | None = None
+    ) -> Select[Any]:
+        """Beschränkt ein Listen-SELECT auf den erlaubten Ausschnitt.
+
+        `machine_id` ist die AUSDRÜCKLICH angefragte Maschine (Query-Parameter).
+        Liegt sie außerhalb des Ausschnitts, endet die Anfrage mit 403 — eine
+        stillschweigend leere Liste würde die Absage als „nichts vorhanden" tarnen.
+        Ohne Angabe wird auf den gesamten Ausschnitt beschränkt: unbeschränkte Rolle
+        → Statement unverändert; leerer Ausschnitt → `IN ()` liefert nichts, was der
+        default-deny-Vorgabe entspricht.
+
+        Beide Fälle liegen HIER und nicht in den Routen — sonst übernähme früher oder
+        später eine Route nur die halbe Prüfung.
+        """
+        if machine_id is not None:
+            await self.require(machine_id)
+            return stmt.where(column == machine_id)
+        ids = await self.machine_ids()
+        return stmt if ids is None else stmt.where(column.in_(ids))
+
+
+async def get_machine_scope(session: SessionDep, user: CurrentUser) -> MachineScope:
+    """FastAPI-Dependency: der Maschinen-Ausschnitt des anfragenden Nutzers.
+
+    Bringt die Identität mit (`CurrentUser`), sodass eine Route, die diesen
+    Dependency führt, beide Prüfstufen an einer Stelle hat.
+    """
+    return MachineScope(session, user)
+
+
+MachineScopeDep = Annotated[MachineScope, Depends(get_machine_scope)]
 
 
 def get_pseudonymizer(settings: SettingsDep) -> Pseudonymizer:
