@@ -20,7 +20,13 @@ from alembic.config import Config
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncEngine,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.pool import NullPool
 
 from foreman.api.deps import get_embedding_provider, get_redactor
@@ -52,6 +58,55 @@ _TRUNCATE_SQL = text(
 _RESET_CAGGS = ("readings_1m",)
 
 
+# Wie oft ein Refresh bei einem Sperrkonflikt wiederholt wird, und wie lange
+# dazwischen gewartet wird. Beides klein gehalten: Der Konflikt löst sich, sobald
+# der fremde Lauf fertig ist — das dauert Millisekunden, nicht Sekunden.
+_CAGG_VERSUCHE = 5
+_CAGG_WARTEZEIT_S = 0.2
+
+
+async def _refresh_mit_wiederholung(conn: AsyncConnection, cagg: str) -> None:
+    """Refresht ein Aggregat und wiederholt bei einem Sperrkonflikt.
+
+    ANLASS (zweimal am 25.08.2026, einmal örtlich, einmal in der CI):
+    TimescaleDB betreibt einen eigenen Hintergrund-Scheduler, der dieselben
+    Aggregate materialisiert. Trifft er mit diesem Refresh zusammen, bricht der
+    Aufruf mit einem Sperrkonflikt ab — und weil er in einer Fixture steckt,
+    scheitert der Test schon beim AUFBAU. Getroffen wird dabei irgendein Test,
+    nicht der schuldige: Beide Male fiel es auf einen Archiv-Routentest, der mit
+    Aggregaten nichts zu tun hat.
+
+    EIN SPERRKONFLIKT IST EIN WEGFEHLER, kein Befund über die Daten: Der fremde
+    Lauf ist in Millisekunden fertig, danach gelingt derselbe Aufruf. Deshalb
+    wiederholen statt scheitern.
+
+    NICHT VERSCHLUCKT: Nach `_CAGG_VERSUCHE` Anläufen fliegt die Ausnahme weiter.
+    Ein still übersprungener Reset hinterliesse materialisierte Buckets, und die
+    tauchen später als Geister-Werte eines fremden Datenpunkts auf — ein Fehler,
+    der weit schwerer zu finden wäre als ein roter Aufbau.
+    """
+    for versuch in range(1, _CAGG_VERSUCHE + 1):
+        try:
+            # ORM-Ausnahme: `refresh_continuous_aggregate` ist eine Prozedur von
+            # TimescaleDB, keine Tabelle — das ORM hat dafür keine Entsprechung.
+            await conn.execute(
+                text(
+                    f"CALL refresh_continuous_aggregate('{cagg}'::regclass, "
+                    "NULL::timestamptz, NULL::timestamptz)"
+                )
+            )
+            return
+        except DBAPIError as fehler:
+            # 55P03 = lock_not_available. Jede andere Ursache ist kein Wettlauf
+            # und darf NICHT wiederholt werden — sie wiederholte sich nur, ohne
+            # besser zu werden.
+            if getattr(fehler.orig, "sqlstate", None) != "55P03":
+                raise
+            if versuch == _CAGG_VERSUCHE:
+                raise
+            await asyncio.sleep(_CAGG_WARTEZEIT_S)
+
+
 async def _reset_caggs(engine: AsyncEngine) -> None:
     """Räumt die materialisierten CAGG-Buckets nach dem TRUNCATE ab (Test-Isolation).
 
@@ -65,12 +120,7 @@ async def _reset_caggs(engine: AsyncEngine) -> None:
     async with engine.connect() as conn:
         await conn.execution_options(isolation_level="AUTOCOMMIT")
         for cagg in _RESET_CAGGS:
-            await conn.execute(
-                text(
-                    f"CALL refresh_continuous_aggregate('{cagg}'::regclass, "
-                    "NULL::timestamptz, NULL::timestamptz)"
-                )
-            )
+            await _refresh_mit_wiederholung(conn, cagg)
 
 
 def _db_reachable(database_url: str) -> bool:
