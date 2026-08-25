@@ -37,7 +37,6 @@ Stand: 2026-08-25
 | C-027 | Personenbezogene Felder werden vor der Speicherung durch ein nicht rückrechenbares Kürzel ersetzt. | gemessen | Verfasser und Ausführende werden tokenisiert; Werker-Freitext wird zusätzlich auf Namen geschwärzt | 2026-07-31 | gueltig | intern, fach, kunde |
 | C-028 | Wartungs- und Alarmtexte werden nicht auf Personennamen geschwärzt und im Archiv unverändert ausgeliefert. | gemessen | 2 von 3 Freitextfeldern ohne Namensschwärzung | 2026-07-31 | gueltig | intern |
 | C-029 | Konten und Rollen entstehen ausschliesslich über den Betreiber-Weg, nicht über die Schnittstelle. | gemessen | Drei serverseitig durchgesetzte Striche: keine Selbstanlage, Rollenprüfung auf den schreibenden Wegen, Identität aus dem Zugangsnachweis | 2026-07-31 | gueltig | intern, fach, kunde |
-| C-030 | Die lesenden Listen sind nicht nach Zuständigkeit gefiltert; die Rollensicht ist dort nur eine Anzeigehilfe. | gemessen | 3 Listen ohne serverseitige Zuständigkeitsprüfung | 2026-07-31 | gueltig | intern |
 | C-031 | Die Plattform schaltet nichts; sie erklärt und empfiehlt, entschieden wird von einem Menschen. | gemessen | Keine schreibende oder auslösende Schnittstelle nach aussen; sicherheitsrelevante Meldungen gelten erst nach Quittierung als erledigt | 2026-07-31 | gueltig | intern, fach, kunde |
 | C-032 | Jede KI-erzeugte Ausgabe an Drittsysteme trägt eine Kennzeichnung ihrer Herkunft und ihres Prüfbedarfs. | gemessen | Vier Pflichtangaben je Ausgabe, bei Einschätzungen drei weitere zum Validierungsstand | 2026-07-31 | gueltig | intern, fach, kunde |
 | C-033 | Das Langzeitgedächtnis ist ein eigenständiger Dienst ausserhalb dieses Systems und austauschbar angebunden. | gemessen | Kein Code des Gedächtnis-Dienstes in diesem Bestand; Anbindung ausschliesslich über eine Netzschnittstelle | 2026-07-31 | gueltig | intern, fach, kunde |
@@ -72,6 +71,7 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 | ID | Produkt | Aussage | Geltung | Grund |
 |---|---|---|---|---|
+| C-030 | FOREMAN | Die lesenden Listen sind nicht nach Zuständigkeit gefiltert; die Rollensicht ist dort nur eine Anzeigehilfe. | ueberholt | Am 25.08.2026 durch C-057 im Umfang widerlegt: Die Zahl 3 war aus der Beschreibung im Repository abgelesen, nicht an der Anwendung erhoben. Gegen die real gebaute Anwendung sind es 31 von 47 Routen. |
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
 
@@ -88,6 +88,6 @@ Nach Status:
 
 Nach Geltung:
 
-- gueltig: 57
-- ueberholt: 2
+- gueltig: 56
+- ueberholt: 3
 - ungeprueft: 0

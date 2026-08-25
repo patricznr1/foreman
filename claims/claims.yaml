@@ -693,13 +693,25 @@ claims:
     fundstelle:
       - "GROUND_TRUTH.md, Abschnitt 21.18"
       - "GROUND_TRUTH.md, Abschnitt 21.9 (markierte Anschlusspunkte)"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Am 25.08.2026 durch C-057 im Umfang widerlegt: Die Zahl 3 war aus der
+      Beschreibung im Repository abgelesen, nicht an der Anwendung erhoben.
+      Gegen die real gebaute Anwendung sind es 31 von 47 Routen.
     freigabe:
       - "intern"
     bemerkung: >-
       Begrenzt jede Aussage über rollenbasierte Sichtbarkeit. Eine Unterlage
       darf nicht behaupten, ein Werker sehe nur seinen Bereich — er sieht in
       der Anzeige nur seinen Bereich, die Schnittstelle liefert mehr.
+
+      ÜBERHOLT am 25.08.2026 durch C-057, und zwar in der Größenordnung: Die
+      Zahl 3 stammt aus der Beschreibung im Repository (GROUND_TRUTH 21.18),
+      nicht aus der Anwendung. Gegen die real gebaute Anwendung erhoben sind es
+      31 von 47 Routen. Der Eintrag bleibt stehen, weil er die Aussage in die
+      richtige Richtung begrenzte; sein Umfang war jedoch zu klein und sein
+      Status "gemessen" bezeichnete eine Ablesung, keine Erhebung. Wer eine
+      Aussage über Sichtbarkeit prüft, nimmt C-057.
 
   # ──────────────────────────────────────────────────────────────────────
   # Tragende Architektur-Zusicherungen
@@ -1392,6 +1404,7 @@ claims:
     datum: "2026-08-25"
     fundstelle:
       - "tests/unit/test_routen_inventar.py (Erhebung und laufende Absicherung)"
+      - "C-030 (Vorgänger, seit 25.08.2026 überholt — dort 3 statt 31)"
       - "GET /api/v1/alarms"
       - "GET /api/v1/alarms/{alarm_id}"
       - "GET /api/v1/components"
