@@ -6,7 +6,7 @@
 #         (1) `author` → HMAC-Token über die user_id (nie Klartext),
 #         (2) `text` → NER-Maskierung (Personennamen → [PERSON]) VOR dem Insert.
 #         Restrisiko bleibt; der Freitext wird nie als anonym deklariert.
-#  Maschinen-Scope (§20.4): jede Route führt `MachineScopeDep` — ein Schichtbericht
+#  Maschinen-Scope (§20.4): jede Route führt `ResourceScopeDep` — ein Schichtbericht
 #         gehört zu genau einer Maschine, und wer die Maschine nicht sehen darf,
 #         sieht auch ihre Berichte nicht. Der Strich ist derselbe wie im Live-Push.
 #  Identitätsbindung (§19): der Verfasser kommt aus dem Token, nicht aus dem Body
@@ -26,9 +26,9 @@ from sqlalchemy import select
 from foreman.api.deps import (
     CurrentUser,
     EmbeddingProviderDep,
-    MachineScopeDep,
     PseudonymizerDep,
     RedactorDep,
+    ResourceScopeDep,
     SessionDep,
     SubstrateClientDep,
 )
@@ -49,7 +49,7 @@ async def create_worker_note(
     redactor: RedactorDep,
     provider: EmbeddingProviderDep,
     substrate: SubstrateClientDep,
-    scope: MachineScopeDep,
+    scope: ResourceScopeDep,
 ) -> WorkerNote:
     # 0) Der Bericht gehört an eine Maschine, die der Verfasser auch sehen darf.
     # Ohne diese Prüfung wäre der Schreibpfad der Weg, Freitext in einen fremden
@@ -92,7 +92,7 @@ async def create_worker_note(
 @router.get("", response_model=list[WorkerNoteRead])
 async def list_worker_notes(
     session: SessionDep,
-    scope: MachineScopeDep,
+    scope: ResourceScopeDep,
     machine_id: int | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
@@ -108,7 +108,7 @@ async def list_worker_notes(
 
 
 @router.get("/{note_id}", response_model=WorkerNoteRead)
-async def get_worker_note(note_id: int, session: SessionDep, scope: MachineScopeDep) -> WorkerNote:
+async def get_worker_note(note_id: int, session: SessionDep, scope: ResourceScopeDep) -> WorkerNote:
     """Ein Schichtbericht — 404 auch dann, wenn er zu einer fremden Maschine gehört.
 
     Bewusst dieselbe Antwort wie für eine unbekannte Kennung: Ein 403 würde die

@@ -25,7 +25,12 @@ from foreman.db.models import User
 from foreman.db.session import get_session
 from foreman.embeddings import EmbeddingProvider, LocalEmbeddingProvider, get_embedding_settings
 from foreman.llm import LiteLLMGateway, LLMGateway, get_llm_settings
-from foreman.realtime.authz import can_see_machine, visible_machine_scope
+from foreman.realtime.authz import (
+    can_see_line,
+    can_see_machine,
+    visible_line_scope,
+    visible_machine_scope,
+)
 from foreman.reasoners.failure.model import DEFAULT_ARTIFACT_PATH, FailureModel, load_model
 from foreman.substrate.client import SubstrateClient
 
@@ -92,9 +97,9 @@ def require_roles(*allowed: str) -> Callable[[User], User]:
     return _require
 
 
-# --- Maschinen-Scope an der Route (§20.4, Rollenmatrix 3.1) ---
-class MachineScope:
-    """Der Maschinen-Ausschnitt, den der anfragende Nutzer lesen darf.
+# --- Ressourcen-Scope an der Route (§20.4, Rollenmatrix 3.1) ---
+class ResourceScope:
+    """Der Ausschnitt der Anlage, den der anfragende Nutzer lesen darf.
 
     Die Auth-Middleware beantwortet „wer bist du". Diese Klasse beantwortet die
     zweite Frage, die sie nie stellt: „darfst du GENAU DIESE Ressource sehen".
@@ -109,8 +114,13 @@ class MachineScope:
     WebSocket; getrennte Umsetzungen wären die Stelle, an der die Transporte
     auseinanderlaufen.
 
-    Der Ausschnitt wird je Anfrage EINMAL aufgelöst: `shift_lead` kostet dabei eine
-    Linien-Auflösung, die sonst bei jeder Prüfung derselben Anfrage erneut anfiele.
+    Zwei Ebenen, dieselbe Rollenmatrix: Maschinen (`machine_ids`, `can_see`,
+    `require`, `limit_to`) und die Linien darüber (`line_ids`, `can_see_line`,
+    `require_line`, `limit_to_lines`). Die Linien-Sicht ist aus der Maschinen-Sicht
+    abgeleitet, nicht getrennt gepflegt — wer eine Maschine sieht, sieht ihre Linie.
+
+    Jeder Ausschnitt wird je Anfrage EINMAL aufgelöst: Die Auflösung kostet eine
+    Abfrage, die sonst bei jeder Prüfung derselben Anfrage erneut anfiele.
     """
 
     def __init__(self, session: AsyncSession, user: User) -> None:
@@ -118,6 +128,8 @@ class MachineScope:
         self._user = user
         self._ids: list[int] | None = None
         self._resolved = False
+        self._line_ids: list[int] | None = None
+        self._lines_resolved = False
 
     @property
     def user(self) -> User:
@@ -179,17 +191,57 @@ class MachineScope:
         ids = await self.machine_ids()
         return stmt if ids is None else stmt.where(column.in_(ids))
 
+    # --- Linien-Ebene: dieselben drei Formen, ein Stockwerk höher ---
 
-async def get_machine_scope(session: SessionDep, user: CurrentUser) -> MachineScope:
+    async def line_ids(self) -> list[int] | None:
+        """Die sichtbaren Linien. `None` heißt unbeschränkt, `[]` heißt keine."""
+        if not self._lines_resolved:
+            self._line_ids = await visible_line_scope(self._session, self._user)
+            self._lines_resolved = True
+        return self._line_ids
+
+    async def can_see_line(self, line_id: int | None) -> bool:
+        """Ob eine bereits geladene Zeile im Linien-Ausschnitt liegt (default-deny)."""
+        ids = await self.line_ids()
+        if ids is None:
+            return True
+        return line_id is not None and line_id in ids
+
+    async def require_line(self, line_id: int) -> None:
+        """403, wenn die ausdrücklich angefragte Linie außerhalb des Ausschnitts liegt."""
+        if not await can_see_line(self._session, self._user, line_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Kein Zugriff auf diese Linie",
+            )
+
+    async def limit_to_lines(
+        self, stmt: Select[Any], column: Any, *, line_id: int | None = None
+    ) -> Select[Any]:
+        """Wie `limit_to`, nur entlang der Linien-Zugehörigkeit.
+
+        Bewusst eine eigene Methode statt eines Schalters an `limit_to`: Welche
+        Ebene gilt, hängt an der Spalte, und ein vertauschter Schalter fiele nicht
+        auf — eine Liste käme dann mit den falschen Kennungen gefiltert zurück und
+        sähe trotzdem plausibel aus.
+        """
+        if line_id is not None:
+            await self.require_line(line_id)
+            return stmt.where(column == line_id)
+        ids = await self.line_ids()
+        return stmt if ids is None else stmt.where(column.in_(ids))
+
+
+async def get_resource_scope(session: SessionDep, user: CurrentUser) -> ResourceScope:
     """FastAPI-Dependency: der Maschinen-Ausschnitt des anfragenden Nutzers.
 
     Bringt die Identität mit (`CurrentUser`), sodass eine Route, die diesen
     Dependency führt, beide Prüfstufen an einer Stelle hat.
     """
-    return MachineScope(session, user)
+    return ResourceScope(session, user)
 
 
-MachineScopeDep = Annotated[MachineScope, Depends(get_machine_scope)]
+ResourceScopeDep = Annotated[ResourceScope, Depends(get_resource_scope)]
 
 
 def get_pseudonymizer(settings: SettingsDep) -> Pseudonymizer:

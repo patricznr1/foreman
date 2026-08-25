@@ -19,6 +19,23 @@ pytestmark = pytest.mark.integration
 AuthFor = Callable[[str, str], Awaitable[dict[str, str]]]
 
 
+async def _sichtbare_maschine(
+    client: AsyncClient,
+    headers: dict[str, str],
+    email: str,
+    grant: Callable[[str, int], Awaitable[None]],
+) -> int:
+    """Maschine anlegen und dem anlegenden Nutzer sichtbar machen (Matrix 3.1).
+
+    Diese Datei prüft die ROLLEN-Sperre der Trigger-/Quittier-Routen. Der
+    Maschinen-Ausschnitt liegt eine Ebene davor; ohne die Zuweisung käme der
+    Aufbau nicht einmal bis zu der Sperre, um die es hier geht.
+    """
+    machine_id = await _machine(client, headers)
+    await grant(email, machine_id)
+    return machine_id
+
+
 async def _machine(client: AsyncClient, headers: dict[str, str]) -> int:
     line = (await client.post("/api/v1/lines", json={"label": "Linie 1"}, headers=headers)).json()
     machine = (
@@ -51,21 +68,37 @@ async def _drift_alarm(client: AsyncClient, headers: dict[str, str], machine_id:
 # --- Drift-Quittierung: Schichtleiter/Techniker/Manager dürfen, Werker NICHT ---
 
 
-async def test_acknowledge_worker_ist_403(client: AsyncClient, auth_headers_for: AuthFor) -> None:
-    lead = await auth_headers_for("rbac-ack-lead@x.de", "shift_lead")
-    machine_id = await _machine(client, lead)
+async def test_acknowledge_worker_ist_403(
+    client: AsyncClient,
+    auth_headers_for: AuthFor,
+    grant_machine_scope: Callable[[str, int], Awaitable[None]],
+) -> None:
+    lead_email = "rbac-ack-lead@x.de"
+    lead = await auth_headers_for(lead_email, "shift_lead")
+    machine_id = await _sichtbare_maschine(client, lead, lead_email, grant_machine_scope)
     alarm_id = await _drift_alarm(client, lead, machine_id)
 
-    worker = await auth_headers_for("rbac-ack-wrk@x.de", "worker")
+    worker_email = "rbac-ack-wrk@x.de"
+    worker = await auth_headers_for(worker_email, "worker")
+    await grant_machine_scope(worker_email, machine_id)
     resp = await client.post(
         f"/api/v1/reasoners/drift/alarms/{alarm_id}/acknowledge", headers=worker
     )
+    # Die Maschine ist dem Werker ausdrücklich zugewiesen: Der 403 kann deshalb nur
+    # aus der ROLLEN-Sperre kommen, nicht aus dem Ressourcen-Ausschnitt. Die
+    # Begründung wird mitgeprüft, damit die beiden Regeln unterscheidbar bleiben.
     assert resp.status_code == 403
+    assert resp.json()["detail"] == "Diese Aktion ist deiner Rolle nicht erlaubt"
 
 
-async def test_acknowledge_manager_darf(client: AsyncClient, auth_headers_for: AuthFor) -> None:
-    lead = await auth_headers_for("rbac-ack-lead2@x.de", "shift_lead")
-    machine_id = await _machine(client, lead)
+async def test_acknowledge_manager_darf(
+    client: AsyncClient,
+    auth_headers_for: AuthFor,
+    grant_machine_scope: Callable[[str, int], Awaitable[None]],
+) -> None:
+    lead_email = "rbac-ack-lead2@x.de"
+    lead = await auth_headers_for(lead_email, "shift_lead")
+    machine_id = await _sichtbare_maschine(client, lead, lead_email, grant_machine_scope)
     alarm_id = await _drift_alarm(client, lead, machine_id)
 
     manager = await auth_headers_for("rbac-ack-mgr@x.de", "manager")

@@ -28,9 +28,27 @@ AuthHeaders = Callable[[str, str], Awaitable[dict[str, str]]]
 
 
 async def _maschinen_paar(raw_conn: asyncpg.Connection) -> tuple[int, int]:
-    """Legt zwei Maschinen an und liefert (eigene, fremde)."""
-    eigene = await raw_conn.fetchval("INSERT INTO machines (label) VALUES ('M-eigen') RETURNING id")
-    fremde = await raw_conn.fetchval("INSERT INTO machines (label) VALUES ('M-fremd') RETURNING id")
+    """Legt zwei Maschinen auf je eigener Linie an und liefert (eigene, fremde).
+
+    Getrennte Linien, damit auch die Linien-Ebene prüfbar ist: Läge beides auf
+    derselben Linie, sähe ein Werker über den abgeleiteten Linien-Ausschnitt die
+    fremde Linie mit — und die Sperre wäre nicht mehr von einer Lücke zu
+    unterscheiden.
+    """
+    eigene_linie, fremde_linie = await _linien_paar(raw_conn)
+    eigene = await raw_conn.fetchval(
+        "INSERT INTO machines (label, line_id) VALUES ('M-eigen', $1) RETURNING id", eigene_linie
+    )
+    fremde = await raw_conn.fetchval(
+        "INSERT INTO machines (label, line_id) VALUES ('M-fremd', $1) RETURNING id", fremde_linie
+    )
+    return int(eigene), int(fremde)
+
+
+async def _linien_paar(raw_conn: asyncpg.Connection) -> tuple[int, int]:
+    """Legt zwei Linien an und liefert (eigene, fremde)."""
+    eigene = await raw_conn.fetchval("INSERT INTO lines (label) VALUES ('L-eigen') RETURNING id")
+    fremde = await raw_conn.fetchval("INSERT INTO lines (label) VALUES ('L-fremd') RETURNING id")
     return int(eigene), int(fremde)
 
 
@@ -79,11 +97,41 @@ async def _vorhersage(raw_conn: asyncpg.Connection, machine_id: int) -> int:
     return int(zeile)
 
 
-# Die drei Bestände dieser Etappe, je mit Listen-Pfad und Datensatz-Erzeuger.
+async def _alarm(raw_conn: asyncpg.Connection, machine_id: int) -> int:
+    zeile = await raw_conn.fetchval(
+        """
+        INSERT INTO alarms (machine_id, severity, category, message)
+        VALUES ($1, 'warning', 'process', 'Vibration erhöht') RETURNING id
+        """,
+        machine_id,
+    )
+    return int(zeile)
+
+
+async def _komponente(raw_conn: asyncpg.Connection, machine_id: int) -> int:
+    zeile = await raw_conn.fetchval(
+        "INSERT INTO components (machine_id, label) VALUES ($1, 'Spindel') RETURNING id",
+        machine_id,
+    )
+    return int(zeile)
+
+
+async def _datenpunkt(raw_conn: asyncpg.Connection, machine_id: int) -> int:
+    zeile = await raw_conn.fetchval(
+        "INSERT INTO data_points (machine_id, name, kind) VALUES ($1, 'vib', 'analog') RETURNING id",
+        machine_id,
+    )
+    return int(zeile)
+
+
+# Alle Bestände, die an einer MASCHINE hängen — je mit Listen-Pfad und Erzeuger.
 BESTAENDE = [
     pytest.param("/api/v1/worker_notes", _notiz, id="worker_notes"),
     pytest.param("/api/v1/maintenance_events", _wartung, id="maintenance_events"),
     pytest.param("/api/v1/reasoners/failure/predictions", _vorhersage, id="failure_predictions"),
+    pytest.param("/api/v1/alarms", _alarm, id="alarms"),
+    pytest.param("/api/v1/components", _komponente, id="components"),
+    pytest.param("/api/v1/data_points", _datenpunkt, id="data_points"),
 ]
 
 
@@ -200,75 +248,75 @@ async def test_eigener_datensatz_ist_abrufbar(
 # --- Schreibpfade: der Scope gilt auch beim Anlegen ---
 
 
-async def test_notiz_fuer_fremde_maschine_wird_nicht_angelegt(
-    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
-) -> None:
-    """Ein Schichtbericht an einer fremden Maschine ist kein zulässiger Beitrag."""
-    eigene, fremde = await _maschinen_paar(raw_conn)
-    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-post@x.de", eigene)
-
-    antwort = await client.post(
+# Jeder Schreibpfad mit Maschinen-Kennung im Rumpf, mit Tabelle für die Gegenprobe.
+SCHREIBPFADE = [
+    pytest.param(
         "/api/v1/worker_notes",
-        json={"machine_id": fremde, "text": "Fremdeintrag"},
-        headers=headers,
-    )
+        "worker_notes",
+        {"text": "Eintrag"},
+        id="worker_notes",
+    ),
+    pytest.param(
+        "/api/v1/maintenance_events",
+        "maintenance_events",
+        {"type": "inspection"},
+        id="maintenance_events",
+    ),
+    pytest.param(
+        "/api/v1/alarms",
+        "alarms",
+        {"severity": "warning", "category": "process", "message": "Vibration"},
+        id="alarms",
+    ),
+    pytest.param("/api/v1/components", "components", {"label": "Spindel"}, id="components"),
+    pytest.param(
+        "/api/v1/data_points", "data_points", {"name": "vib", "kind": "analog"}, id="data_points"
+    ),
+]
+
+
+@pytest.mark.parametrize("pfad,tabelle,rumpf", SCHREIBPFADE)
+async def test_anlegen_an_fremder_maschine_wird_abgelehnt(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    pfad: str,
+    tabelle: str,
+    rumpf: dict[str, object],
+) -> None:
+    """Der Ausschnitt gilt auch beim Schreiben — sonst wäre er nur eine Leseregel.
+
+    Geprüft wird nicht nur die Absage, sondern auch, dass NICHTS in der Tabelle
+    landet: Eine 403-Antwort über einer erfolgten Zeile wäre die schlechteste
+    aller Varianten.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    headers = await _werker_mit(raw_conn, auth_headers_for, f"scope-w-{tabelle}@x.de", eigene)
+
+    antwort = await client.post(pfad, json={**rumpf, "machine_id": fremde}, headers=headers)
 
     assert antwort.status_code == 403, antwort.text
-    assert (
-        await raw_conn.fetchval("SELECT count(*) FROM worker_notes WHERE machine_id = $1", fremde)
-        == 0
+    verblieben = await raw_conn.fetchval(
+        f"SELECT count(*) FROM {tabelle} WHERE machine_id = $1",
+        fremde,
     )
+    assert verblieben == 0
 
 
-async def test_notiz_fuer_eigene_maschine_wird_angelegt(
-    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+@pytest.mark.parametrize("pfad,tabelle,rumpf", SCHREIBPFADE)
+async def test_anlegen_an_eigener_maschine_gelingt(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    pfad: str,
+    tabelle: str,
+    rumpf: dict[str, object],
 ) -> None:
     """Zwilling: derselbe Werker schreibt an seiner eigenen Maschine weiter."""
     eigene, _ = await _maschinen_paar(raw_conn)
-    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-post-ok@x.de", eigene)
+    headers = await _werker_mit(raw_conn, auth_headers_for, f"scope-wok-{tabelle}@x.de", eigene)
 
-    antwort = await client.post(
-        "/api/v1/worker_notes",
-        json={"machine_id": eigene, "text": "Eigener Eintrag"},
-        headers=headers,
-    )
-
-    assert antwort.status_code == 201, antwort.text
-
-
-async def test_wartung_fuer_fremde_maschine_wird_nicht_angelegt(
-    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
-) -> None:
-    eigene, fremde = await _maschinen_paar(raw_conn)
-    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-wartung@x.de", eigene)
-
-    antwort = await client.post(
-        "/api/v1/maintenance_events",
-        json={"machine_id": fremde, "type": "lubrication"},
-        headers=headers,
-    )
-
-    assert antwort.status_code == 403, antwort.text
-    assert (
-        await raw_conn.fetchval(
-            "SELECT count(*) FROM maintenance_events WHERE machine_id = $1", fremde
-        )
-        == 0
-    )
-
-
-async def test_wartung_fuer_eigene_maschine_wird_angelegt(
-    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
-) -> None:
-    """Zwilling zum Test darüber."""
-    eigene, _ = await _maschinen_paar(raw_conn)
-    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-wartung-ok@x.de", eigene)
-
-    antwort = await client.post(
-        "/api/v1/maintenance_events",
-        json={"machine_id": eigene, "type": "lubrication"},
-        headers=headers,
-    )
+    antwort = await client.post(pfad, json={**rumpf, "machine_id": eigene}, headers=headers)
 
     assert antwort.status_code == 201, antwort.text
 
@@ -361,3 +409,196 @@ async def test_empfehlung_zur_eigenen_vorhersage_meldet_nur_ihr_fehlen(
 
     assert antwort.status_code == 404, antwort.text
     assert antwort.json()["detail"] == "Empfehlung nicht gefunden"
+
+
+# --- Die Anlagenstruktur selbst: Maschine und Linie ---
+
+
+async def _linie_von(raw_conn: asyncpg.Connection, machine_id: int) -> int:
+    """Die Linie, an der eine Maschine hängt."""
+    line_id = await raw_conn.fetchval("SELECT line_id FROM machines WHERE id = $1", machine_id)
+    assert line_id is not None, f"❌ Maschine {machine_id} hängt an keiner Linie."
+    return int(line_id)
+
+
+async def test_maschinenliste_zeigt_nur_die_eigenen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Hier ist die Maschine nicht der Bezug, sondern die Ressource selbst."""
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-mliste@x.de", eigene)
+
+    antwort = await client.get("/api/v1/machines", headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    kennungen = {eintrag["id"] for eintrag in antwort.json()}
+    assert eigene in kennungen
+    assert fremde not in kennungen
+
+
+async def test_fremde_maschine_wird_abgewiesen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """403 statt 404: Die Maschinen-Kennung ist ein Stammdatum, keine geheime Zeile.
+
+    Der Anfragende kennt sie aus seiner eigenen Liste; zu verschweigen gäbe es
+    nichts, und die klare Absage ist die ehrlichere Antwort. Anders als beim
+    Einzelabruf über eine Datensatz-Kennung, wo ein 403 die Existenz verriete.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-mdet@x.de", eigene)
+
+    antwort = await client.get(f"/api/v1/machines/{fremde}", headers=headers)
+
+    assert antwort.status_code == 403, antwort.text
+
+
+async def test_eigene_maschine_ist_abrufbar(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Zwilling zum Test darüber."""
+    eigene, _ = await _maschinen_paar(raw_conn)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-mdet-ok@x.de", eigene)
+
+    antwort = await client.get(f"/api/v1/machines/{eigene}", headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    assert antwort.json()["id"] == eigene
+
+
+async def test_linienliste_folgt_den_eigenen_maschinen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Der Linien-Ausschnitt eines Werkers ist aus seinen Maschinen abgeleitet.
+
+    Er hat kein eigenes Zuweisungsfeld für Linien — er sieht genau die Linien, an
+    denen seine Maschinen hängen. Das prüft dieser Test in beide Richtungen.
+    """
+    eigene_maschine, fremde_maschine = await _maschinen_paar(raw_conn)
+    eigene_linie = await _linie_von(raw_conn, eigene_maschine)
+    fremde_linie = await _linie_von(raw_conn, fremde_maschine)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-lliste@x.de", eigene_maschine)
+
+    antwort = await client.get("/api/v1/lines", headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    kennungen = {eintrag["id"] for eintrag in antwort.json()}
+    assert eigene_linie in kennungen, "Die Linie der eigenen Maschine fehlt."
+    assert fremde_linie not in kennungen, "Eine fremde Linie ist sichtbar."
+
+
+async def test_fremde_linie_wird_abgewiesen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    eigene_maschine, fremde_maschine = await _maschinen_paar(raw_conn)
+    fremde_linie = await _linie_von(raw_conn, fremde_maschine)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-ldet@x.de", eigene_maschine)
+
+    antwort = await client.get(f"/api/v1/lines/{fremde_linie}", headers=headers)
+
+    assert antwort.status_code == 403, antwort.text
+
+
+async def test_eigene_linie_ist_abrufbar(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Zwilling zum Test darüber."""
+    eigene_maschine, _ = await _maschinen_paar(raw_conn)
+    eigene_linie = await _linie_von(raw_conn, eigene_maschine)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-ldet-ok@x.de", eigene_maschine)
+
+    antwort = await client.get(f"/api/v1/lines/{eigene_linie}", headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    assert antwort.json()["id"] == eigene_linie
+
+
+# --- Produktionskontext: hängt an der Linie, nicht an einer Maschine ---
+
+
+async def _produktionslauf(raw_conn: asyncpg.Connection, line_id: int) -> int:
+    zeile = await raw_conn.fetchval(
+        "INSERT INTO production_runs (line_id, product_code) VALUES ($1, 'P-1') RETURNING id",
+        line_id,
+    )
+    return int(zeile)
+
+
+async def test_produktionslaeufe_folgen_der_linie(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    eigene_maschine, fremde_maschine = await _maschinen_paar(raw_conn)
+    eigener = await _produktionslauf(raw_conn, await _linie_von(raw_conn, eigene_maschine))
+    fremder = await _produktionslauf(raw_conn, await _linie_von(raw_conn, fremde_maschine))
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-prod@x.de", eigene_maschine)
+
+    antwort = await client.get("/api/v1/production_runs", headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    kennungen = {eintrag["id"] for eintrag in antwort.json()}
+    assert eigener in kennungen
+    assert fremder not in kennungen
+
+
+async def test_fremder_produktionslauf_ist_nicht_abrufbar(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """404 wie bei jeder Datensatz-Kennung — kein Existenz-Orakel."""
+    eigene_maschine, fremde_maschine = await _maschinen_paar(raw_conn)
+    fremder = await _produktionslauf(raw_conn, await _linie_von(raw_conn, fremde_maschine))
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-proddet@x.de", eigene_maschine)
+
+    antwort = await client.get(f"/api/v1/production_runs/{fremder}", headers=headers)
+
+    assert antwort.status_code == 404, antwort.text
+
+
+async def test_eigener_produktionslauf_ist_abrufbar(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Zwilling zum Test darüber."""
+    eigene_maschine, _ = await _maschinen_paar(raw_conn)
+    eigener = await _produktionslauf(raw_conn, await _linie_von(raw_conn, eigene_maschine))
+    headers = await _werker_mit(
+        raw_conn, auth_headers_for, "scope-proddet-ok@x.de", eigene_maschine
+    )
+
+    antwort = await client.get(f"/api/v1/production_runs/{eigener}", headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    assert antwort.json()["id"] == eigener
+
+
+async def test_produktionslauf_an_fremder_linie_wird_abgelehnt(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    eigene_maschine, fremde_maschine = await _maschinen_paar(raw_conn)
+    fremde_linie = await _linie_von(raw_conn, fremde_maschine)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-prodpost@x.de", eigene_maschine)
+
+    antwort = await client.post(
+        "/api/v1/production_runs",
+        json={"line_id": fremde_linie, "product_code": "P-2"},
+        headers=headers,
+    )
+
+    assert antwort.status_code == 403, antwort.text
+
+
+async def test_produktionslauf_an_eigener_linie_gelingt(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Zwilling zum Test darüber."""
+    eigene_maschine, _ = await _maschinen_paar(raw_conn)
+    eigene_linie = await _linie_von(raw_conn, eigene_maschine)
+    headers = await _werker_mit(
+        raw_conn, auth_headers_for, "scope-prodpost-ok@x.de", eigene_maschine
+    )
+
+    antwort = await client.post(
+        "/api/v1/production_runs",
+        json={"line_id": eigene_linie, "product_code": "P-2"},
+        headers=headers,
+    )
+
+    assert antwort.status_code == 201, antwort.text

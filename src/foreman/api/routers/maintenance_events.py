@@ -4,7 +4,7 @@
 #  Architektur-Einordnung: HTTP-Schicht (Schicht 2).
 #  Datenschutz (§8): `performed_by` wird im Schreibpfad zu einem HMAC-Token
 #         über die user_id tokenisiert — nie Klartext.
-#  Maschinen-Scope (§20.4): jede Route führt `MachineScopeDep` — ein Wartungs-
+#  Maschinen-Scope (§20.4): jede Route führt `ResourceScopeDep` — ein Wartungs-
 #         nachweis gehört zu genau einer Maschine und folgt deren Sichtbarkeit.
 #  Identitätsbindung (§19): `performed_by` ist ein Nachweis-Feld (§8, auditiert
 #         re-identifizierbar). Default ist die Token-Identität; ein abweichender
@@ -18,7 +18,7 @@ from collections.abc import Sequence
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, MachineScopeDep, PseudonymizerDep, SessionDep
+from foreman.api.deps import CurrentUser, PseudonymizerDep, ResourceScopeDep, SessionDep
 from foreman.core.roles import Role
 from foreman.db.models import MaintenanceEvent
 from foreman.schemas.resources import MaintenanceEventCreate, MaintenanceEventRead
@@ -36,7 +36,7 @@ async def create_maintenance_event(
     current_user: CurrentUser,
     session: SessionDep,
     pseudo: PseudonymizerDep,
-    scope: MachineScopeDep,
+    scope: ResourceScopeDep,
 ) -> MaintenanceEvent:
     # Der Nachweis wird an der Maschine geführt, an der er erbracht wurde — sie muss
     # im Ausschnitt des Eintragenden liegen. Die Rollenfrage darunter (Nachtrag für
@@ -67,7 +67,7 @@ async def create_maintenance_event(
 @router.get("", response_model=list[MaintenanceEventRead])
 async def list_maintenance_events(
     session: SessionDep,
-    scope: MachineScopeDep,
+    scope: ResourceScopeDep,
     machine_id: int | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
@@ -84,7 +84,7 @@ async def list_maintenance_events(
 
 @router.get("/{event_id}", response_model=MaintenanceEventRead)
 async def get_maintenance_event(
-    event_id: int, session: SessionDep, scope: MachineScopeDep
+    event_id: int, session: SessionDep, scope: ResourceScopeDep
 ) -> MaintenanceEvent:
     """Ein Wartungsereignis — 404 auch für eine Maschine außerhalb des Ausschnitts."""
     obj = await session.get(MaintenanceEvent, event_id)
