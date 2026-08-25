@@ -31,8 +31,9 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-from collections.abc import Sequence
-from typing import Any
+from collections.abc import Mapping, Sequence
+from datetime import datetime
+from typing import Any, NamedTuple
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -44,10 +45,30 @@ from foreman.substrate.client import SubstrateClient
 
 logger = logging.getLogger(__name__)
 
-# event_type → (Quelltabelle, Spalte mit dem Freitext, Zielschlüssel in der payload)
-ANREICHERUNG: dict[str, tuple[type[Any], str, str]] = {
-    "maintenance_performed": (MaintenanceEvent, "description", "description"),
-    "alarm_raised": (Alarm, "message", "message"),
+
+class Quelle(NamedTuple):
+    """Wie eine gespiegelte Zeile zu ihrer Quellzeile zurückfindet.
+
+    ZWEI WEGE, und der zweite ist der eigentliche Grund für diese Klasse: Zeilen
+    aus der Zeit vor der Notiz-Spiegelung tragen **kein** `source_id` — der
+    Rückweg wurde erst mit ihr eingeführt. Gegen die laufende Instanz erhoben
+    (25.08.2026): alle 44 Altzeilen sind ohne Rückweg. Ein Nachtrag, der nur
+    `source_id` kennt, erreicht damit genau die Zeilen nicht, für die er gebaut ist.
+    """
+
+    modell: type[Any]
+    freitext: str  # Spalte in der Quelltabelle
+    zeitspalte: str  # Zeitpunkt-Spalte im Modell …
+    zeitschluessel: str  # … und ihr Gegenstück in der payload
+    kennspalte: str  # unterscheidendes Merkmal im Modell …
+    kennschluessel: str  # … und in der payload
+
+
+ANREICHERUNG: dict[str, Quelle] = {
+    "maintenance_performed": Quelle(
+        MaintenanceEvent, "description", "performed_at", "performed_at", "type", "type"
+    ),
+    "alarm_raised": Quelle(Alarm, "message", "raised_at", "raised_at", "code", "code"),
 }
 
 
@@ -72,16 +93,62 @@ class NachtragStats:
         )
 
 
-async def _quelltext(
-    session: AsyncSession, modell: type[Any], spalte: str, quell_id: Any
-) -> str | None:
-    """Liest den Freitext aus der Quellzeile. None, wenn die Zeile fehlt."""
-    if quell_id is None:
+def _als_zeitpunkt(wert: Any) -> datetime | None:
+    """Liest den Zeitpunkt aus der payload — dort steht er als ISO-Zeichenkette."""
+    if isinstance(wert, datetime):
+        return wert
+    if not isinstance(wert, str):
         return None
-    zeile = await session.get(modell, quell_id)
+    try:
+        return datetime.fromisoformat(wert)
+    except ValueError:
+        return None
+
+
+async def _quellzeile(session: AsyncSession, quelle: Quelle, payload: Mapping[str, Any]) -> Any:
+    """Findet die Quellzeile — über den Rückweg, sonst über natürliche Merkmale.
+
+    Der Ersatzweg schlägt NUR zu, wenn genau EINE Zeile passt. Bei mehreren
+    bleibt es beim Nichts: Eine falsch zugeordnete Beschreibung wäre schlimmer
+    als eine fehlende — sie schriebe einem Vorgang den Grund eines anderen zu,
+    und niemand könnte das später auseinanderhalten.
+    """
+    quell_id = payload.get("source_id")
+    if quell_id is not None:
+        return await session.get(quelle.modell, quell_id)
+
+    zeitpunkt = _als_zeitpunkt(payload.get(quelle.zeitschluessel))
+    maschine = payload.get("machine_id")
+    kennung = payload.get(quelle.kennschluessel)
+    if zeitpunkt is None or maschine is None:
+        return None
+
+    treffer = (
+        (
+            await session.execute(
+                select(quelle.modell).where(
+                    quelle.modell.machine_id == maschine,
+                    getattr(quelle.modell, quelle.zeitspalte) == zeitpunkt,
+                    getattr(quelle.modell, quelle.kennspalte) == kennung,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if len(treffer) != 1:
+        return None
+    return treffer[0]
+
+
+async def _quelltext(
+    session: AsyncSession, quelle: Quelle, payload: Mapping[str, Any]
+) -> str | None:
+    """Liest den Freitext aus der Quellzeile. None, wenn sie nicht auffindbar ist."""
+    zeile = await _quellzeile(session, quelle, payload)
     if zeile is None:
         return None
-    wert = getattr(zeile, spalte, None)
+    wert = getattr(zeile, quelle.freitext, None)
     return wert if isinstance(wert, str) else None
 
 
@@ -103,7 +170,8 @@ async def nachtragen(
 
     for zeile in zeilen:
         stats.geprueft += 1
-        modell, spalte, schluessel = ANREICHERUNG[zeile.event_type]
+        quelle = ANREICHERUNG[zeile.event_type]
+        schluessel = quelle.freitext
         payload = dict(zeile.payload or {})
 
         if payload.get(schluessel) is not None:
@@ -111,7 +179,7 @@ async def nachtragen(
             stats.bereits_vollstaendig += 1
             continue
 
-        roh = await _quelltext(session, modell, spalte, payload.get("source_id"))
+        roh = await _quelltext(session, quelle, payload)
         if roh is None:
             # Quellzeile weg oder Feld leer: KEIN erfundener Text. Die Zeile
             # behält ihre bisherige, gültige Spiegelung — sie zu löschen wäre

@@ -259,3 +259,118 @@ async def test_alarm_wird_ebenso_angereichert(db_session: AsyncSession) -> None:
     assert stats.angereichert == 1
     danach = await _lade(db_session, zeile.id)
     assert "Lagerschwingung" in danach.payload["message"]
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Altzeilen OHNE Rückweg — der eigentliche Anwendungsfall
+# ──────────────────────────────────────────────────────────────────────
+
+
+async def _altzeile_ohne_rueckweg(
+    session: AsyncSession, machine_id: int, *, beschreibung: str, zeitpunkt: object, ref: str
+) -> SemanticEvent:
+    """Nutzlast, wie sie vor Einführung von source_id geschrieben wurde.
+
+    Gegen die laufende Instanz erhoben (25.08.2026): So sehen alle 44 Altzeilen
+    aus — kein `source_type`, kein `source_id`.
+    """
+    wartung = MaintenanceEvent(
+        machine_id=machine_id, type="lubrication", description=beschreibung, performed_at=zeitpunkt
+    )
+    session.add(wartung)
+    await session.flush()
+    zeile = SemanticEvent(
+        machine_id=machine_id,
+        event_type="maintenance_performed",
+        payload={
+            "type": "lubrication",
+            "machine_id": machine_id,
+            "performed_at": zeitpunkt.isoformat(),
+            "performed_by": "v1:abc",
+        },
+        substrate_ref=ref,
+    )
+    session.add(zeile)
+    await session.flush()
+    return zeile
+
+
+async def test_altzeile_ohne_source_id_wird_ueber_merkmale_gefunden(
+    db_session: AsyncSession,
+) -> None:
+    """Der Fall, für den dieses Werkzeug überhaupt gebaut ist.
+
+    Der Rückweg `source_id` kam erst mit der Notiz-Spiegelung. Ein Nachtrag, der
+    nur ihn kennt, erreicht genau die Zeilen nicht, die er erreichen soll — der
+    erste Trockenlauf gegen die Instanz meldete deshalb 44 von 44 als
+    unauffindbar. Ersatzweise identifizieren Maschine, Zeitpunkt und Art die
+    Quellzeile.
+    """
+    import datetime as _dt
+
+    machine_id = await _maschine(db_session)
+    zeitpunkt = _dt.datetime(2026, 6, 5, 18, 47, 17, 894280, tzinfo=_dt.UTC)
+    zeile = await _altzeile_ohne_rueckweg(
+        db_session,
+        machine_id,
+        beschreibung="Ersatzfett genommen, nicht spezifikationskonform.",
+        zeitpunkt=zeitpunkt,
+        ref="alt-ohne-rueckweg",
+    )
+    substrat = _Substrat()
+
+    stats = await nachtragen(db_session, substrat, _Redactor())
+
+    assert stats.angereichert == 1, "die Altzeile wurde nicht gefunden"
+    assert stats.quelle_fehlt == 0
+    danach = await _lade(db_session, zeile.id)
+    assert "nicht spezifikationskonform" in danach.payload["description"]
+    assert danach.substrate_ref is None
+
+
+async def test_mehrdeutige_merkmale_ordnen_nichts_zu(db_session: AsyncSession) -> None:
+    """Aufbau-Kontrolle zum Ersatzweg — die wichtigere Hälfte.
+
+    Passen mehrere Quellzeilen auf dieselben Merkmale, wird KEINE genommen. Eine
+    falsch zugeordnete Beschreibung wäre schlimmer als eine fehlende: Sie schriebe
+    einem Vorgang den Grund eines anderen zu, und später könnte das niemand mehr
+    auseinanderhalten. Ohne diesen Test bliebe offen, ob der Ersatzweg auf
+    Eindeutigkeit prüft oder einfach den ersten Treffer nimmt.
+    """
+    import datetime as _dt
+
+    machine_id = await _maschine(db_session)
+    zeitpunkt = _dt.datetime(2026, 6, 5, 12, 0, tzinfo=_dt.UTC)
+    # ZWEI Wartungen mit identischen Merkmalen, verschiedene Beschreibungen.
+    for text in ("Erste Beschreibung.", "Zweite Beschreibung."):
+        db_session.add(
+            MaintenanceEvent(
+                machine_id=machine_id,
+                type="lubrication",
+                description=text,
+                performed_at=zeitpunkt,
+            )
+        )
+    await db_session.flush()
+    zeile = SemanticEvent(
+        machine_id=machine_id,
+        event_type="maintenance_performed",
+        payload={
+            "type": "lubrication",
+            "machine_id": machine_id,
+            "performed_at": zeitpunkt.isoformat(),
+        },
+        substrate_ref="alt-mehrdeutig",
+    )
+    db_session.add(zeile)
+    await db_session.flush()
+    substrat = _Substrat()
+
+    stats = await nachtragen(db_session, substrat, _Redactor())
+
+    assert stats.quelle_fehlt == 1
+    assert stats.angereichert == 0
+    assert substrat.geloescht == []
+    danach = await _lade(db_session, zeile.id)
+    assert danach.substrate_ref == "alt-mehrdeutig"
+    assert "description" not in danach.payload
