@@ -46,24 +46,10 @@ async def can_subscribe(session: AsyncSession, user: User, topic: str) -> bool:
     if kind == "overview":
         return user.role in _OVERVIEW_ROLES
     if kind == "machine" and entity_id is not None:
-        return await _can_see_machine(session, user, entity_id)
+        return await can_see_machine(session, user, entity_id)
     if kind == "trend" and entity_id is not None:
         machine_id = await _machine_of_data_point(session, entity_id)
-        return machine_id is not None and await _can_see_machine(session, user, machine_id)
-    return False
-
-
-async def _can_see_machine(session: AsyncSession, user: User, machine_id: int) -> bool:
-    """Scope-Prüfung pro Maschine entlang der Rollenmatrix (default-deny)."""
-    if user.role in _UNRESTRICTED_ROLES:
-        return True
-    if user.role == ROLE_WORKER:
-        return machine_id in user.assigned_machine_ids
-    if user.role == ROLE_SHIFT_LEAD:
-        machine = await session.get(Machine, machine_id)
-        if machine is None or machine.line_id is None:
-            return False
-        return machine.line_id in user.assigned_line_ids
+        return machine_id is not None and await can_see_machine(session, user, machine_id)
     return False
 
 
@@ -110,3 +96,16 @@ async def visible_machine_scope(session: AsyncSession, user: User) -> list[int] 
     if user.role == ROLE_SHIFT_LEAD:
         return await _machines_of_user_lines(session, user)
     return []
+
+
+async def can_see_machine(session: AsyncSession, user: User, machine_id: int) -> bool:
+    """Ob `user` GENAU DIESE Maschine sehen darf (default-deny).
+
+    Leitet die Antwort aus `visible_machine_scope` ab statt aus einer eigenen
+    Rollenverzweigung. Damit können Einzelprüfung und Listenfilter nicht
+    auseinanderlaufen, und HTTP zieht denselben Strich wie das Abo: `can_subscribe`
+    fragt hier, und `MachineScope` (api/deps.py) fragt denselben Resolver.
+    Zwei getrennte Herleitungen wären die Stelle, an der die Pfade divergieren.
+    """
+    scope = await visible_machine_scope(session, user)
+    return scope is None or machine_id in scope

@@ -4,6 +4,8 @@
 #  Architektur-Einordnung: HTTP-Schicht (Schicht 2).
 #  Datenschutz (§8): `performed_by` wird im Schreibpfad zu einem HMAC-Token
 #         über die user_id tokenisiert — nie Klartext.
+#  Maschinen-Scope (§20.4): jede Route führt `MachineScopeDep` — ein Wartungs-
+#         nachweis gehört zu genau einer Maschine und folgt deren Sichtbarkeit.
 #  Identitätsbindung (§19): `performed_by` ist ein Nachweis-Feld (§8, auditiert
 #         re-identifizierbar). Default ist die Token-Identität; ein abweichender
 #         Wert ist der Nachtrag für eine dritte Person und den aufsichtsführenden
@@ -16,7 +18,7 @@ from collections.abc import Sequence
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, PseudonymizerDep, SessionDep
+from foreman.api.deps import CurrentUser, MachineScopeDep, PseudonymizerDep, SessionDep
 from foreman.core.roles import Role
 from foreman.db.models import MaintenanceEvent
 from foreman.schemas.resources import MaintenanceEventCreate, MaintenanceEventRead
@@ -34,7 +36,12 @@ async def create_maintenance_event(
     current_user: CurrentUser,
     session: SessionDep,
     pseudo: PseudonymizerDep,
+    scope: MachineScopeDep,
 ) -> MaintenanceEvent:
+    # Der Nachweis wird an der Maschine geführt, an der er erbracht wurde — sie muss
+    # im Ausschnitt des Eintragenden liegen. Die Rollenfrage darunter (Nachtrag für
+    # eine dritte Person) ist eine andere und ersetzt diese nicht.
+    await scope.require(body.machine_id)
     data = body.model_dump()
     if data.get("performed_at") is None:
         data.pop("performed_at", None)  # Server-Default greift
@@ -60,21 +67,28 @@ async def create_maintenance_event(
 @router.get("", response_model=list[MaintenanceEventRead])
 async def list_maintenance_events(
     session: SessionDep,
+    scope: MachineScopeDep,
     machine_id: int | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[MaintenanceEvent]:
-    stmt = select(MaintenanceEvent).order_by(MaintenanceEvent.id)
-    if machine_id is not None:
-        stmt = stmt.where(MaintenanceEvent.machine_id == machine_id)
+    """Wartungsereignisse im Maschinen-Ausschnitt des Anfragenden."""
+    stmt = await scope.limit_to(
+        select(MaintenanceEvent).order_by(MaintenanceEvent.id),
+        MaintenanceEvent.machine_id,
+        machine_id=machine_id,
+    )
     result = await session.scalars(stmt.limit(limit).offset(offset))
     return result.all()
 
 
 @router.get("/{event_id}", response_model=MaintenanceEventRead)
-async def get_maintenance_event(event_id: int, session: SessionDep) -> MaintenanceEvent:
+async def get_maintenance_event(
+    event_id: int, session: SessionDep, scope: MachineScopeDep
+) -> MaintenanceEvent:
+    """Ein Wartungsereignis — 404 auch für eine Maschine außerhalb des Ausschnitts."""
     obj = await session.get(MaintenanceEvent, event_id)
-    if obj is None:
+    if obj is None or not await scope.can_see(obj.machine_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Wartungsereignis nicht gefunden"
         )
