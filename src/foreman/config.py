@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     substrate_reason_path: str = "/reason"
     substrate_drift_status_path: str = "/drift_status"
     substrate_reflect_path: str = "/reflect"
+    # Löschen adressiert einen EINZELNEN Eintrag: die Kennung wird angehängt,
+    # anders als bei den POST-Wegen. Leerer Vorgabewert = Kennung direkt an der
+    # Basis-Adresse.
+    substrate_forget_path: str = ""
 
     # --- Pseudonymisierung (HMAC, §8 / Research §5.3 a) ---
     # Werte aus der .env: FOREMAN_PSEUDO_KEY_VERSION, FOREMAN_PSEUDO_KEY_VERSIONS,

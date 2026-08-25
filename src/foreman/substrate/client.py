@@ -93,6 +93,12 @@ class SubstrateClient:
                 "reason": settings.substrate_reason_path,
                 "drift_status": settings.substrate_drift_status_path,
                 "reflect": settings.substrate_reflect_path,
+                # MUSS hier stehen: Ein übergebenes `paths` ERSETZT den
+                # Vorgabewert im Konstruktor vollständig. Fehlt der Eintrag,
+                # wirft `forget` einen KeyError — und zwar nur im Betrieb, weil
+                # ein von Hand gebauter Klient den Vorgabewert behält. Genau so
+                # blieb der Löschweg unbemerkt unerreichbar (Befund 25.08.2026).
+                "forget": settings.substrate_forget_path,
             },
             client=client,
         )

@@ -305,3 +305,62 @@ async def test_forget_lehnt_eine_leere_kennung_ab() -> None:
     client = _make_client(handler)
     with pytest.raises(ValueError, match="Kennung"):
         await client.forget("   ")
+
+
+# ------------------------------------------------------------
+#  Der Weg aus der Konfiguration — nicht der von Hand gebaute
+# ------------------------------------------------------------
+
+
+def test_from_settings_liefert_jeden_pfad_den_der_klient_benutzt() -> None:
+    """Was der Konstruktor als Vorgabe kennt, muss die Konfiguration auch liefern.
+
+    ANLASS (Befund 25.08.2026, im Betrieb aufgeschlagen): `forget` stand im
+    Vorgabewert des Konstruktors, fehlte aber in dem Verzeichnis, das
+    `from_settings` baut. Ein übergebenes `paths` ERSETZT den Vorgabewert
+    vollständig — im Betrieb war der Löschweg damit unerreichbar und warf
+    KeyError. Auffallen konnte das nicht: Jeder Test baute seinen Klienten von
+    Hand und behielt dadurch den vollständigen Vorgabewert.
+
+    Dieser Test vergleicht deshalb die SCHLÜSSELMENGEN statt einzelner Namen —
+    wer eine Methode samt Vorgabepfad hinzufügt, wird hier daran erinnert, sie
+    auch aus der Konfiguration erreichbar zu machen.
+    """
+    aus_konfiguration = SubstrateClient.from_settings(
+        Settings(substrate_base_url="https://gedaechtnis.example")
+    )
+    von_hand = SubstrateClient(base_url="https://gedaechtnis.example")
+
+    assert set(aus_konfiguration._paths) == set(von_hand._paths), (
+        "from_settings liefert nicht dieselben Pfade wie der Vorgabewert des "
+        "Konstruktors — ein über die Konfiguration gebauter Klient kann eine "
+        "Methode nicht aufrufen."
+    )
+
+
+async def test_forget_funktioniert_ueber_einen_aus_der_konfiguration_gebauten_klienten() -> None:
+    """Die Sache selbst, auf dem Weg, den der Betrieb geht.
+
+    Aufbau-Kontrolle zum Test darüber: Der Schlüsselvergleich allein bliebe grün,
+    wenn der Pfad zwar existierte, aber falsch zusammengesetzt würde. Hier wird
+    tatsächlich gelöscht — über `from_settings`, nicht über einen von Hand
+    gebauten Klienten.
+    """
+    gesehen: dict[str, object] = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        gesehen["methode"] = request.method
+        gesehen["pfad"] = request.url.path
+        return httpx.Response(200, json={"deleted": True})
+
+    transport = httpx.MockTransport(handler)
+    client = SubstrateClient.from_settings(
+        Settings(substrate_base_url="https://gedaechtnis.example"),
+        client=httpx.AsyncClient(base_url="https://gedaechtnis.example", transport=transport),
+    )
+
+    antwort = await client.forget("abc-123")
+
+    assert gesehen["methode"] == "DELETE"
+    assert str(gesehen["pfad"]).endswith("/abc-123")
+    assert antwort == {"deleted": True}
