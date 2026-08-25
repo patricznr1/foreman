@@ -184,8 +184,15 @@ async def nachtragen(
         schluessel = quelle.freitext
         payload = dict(zeile.payload or {})
 
-        if payload.get(schluessel) is not None:
-            # Schon angereichert — ein zweiter Lauf fasst sie nicht an.
+        # VOLLSTÄNDIG heisst: Freitext UND Rückweg. Nur auf den Freitext zu
+        # prüfen liess Zeilen zurück, die aus einem früheren Lauf zwar ihre
+        # Beschreibung hatten, den Rückweg aber nicht — er kam später dazu. Sie
+        # galten als erledigt und wurden nie wieder angefasst (belegt am
+        # 25.08.2026: 22 Zeilen). Eine Vollständigkeits-Prüfung, die weniger
+        # prüft als der Lauf schreibt, schliesst genau die Zeilen aus, für die
+        # der nächste Lauf gebaut wurde.
+        fehlt = [f for f in (schluessel, "source_type", "source_id") if payload.get(f) is None]
+        if not fehlt:
             stats.bereits_vollstaendig += 1
             continue
 
@@ -201,7 +208,8 @@ async def nachtragen(
             stats.ohne_freitext += 1
             continue
 
-        payload[schluessel] = redactor.redact_person_names(roh)
+        if payload.get(schluessel) is None:
+            payload[schluessel] = redactor.redact_person_names(roh)
         # DEN RUECKWEG MITGEBEN, wenn er fehlt: `source_type`/`source_id` kamen
         # erst mit der Notiz-Spiegelung; Altzeilen tragen sie nicht. Ohne sie ist
         # die entstehende Erinnerung spaeter keiner Quellzeile zuzuordnen — genau
