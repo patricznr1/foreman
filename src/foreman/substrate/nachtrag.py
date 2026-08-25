@@ -20,6 +20,11 @@
 #         verdrängen sich die beiden gegenseitig, und die Verdichtung sähe eine
 #         Wiederholung, wo keine ist. Genau die Wiederholung ist aber das Signal,
 #         auf das es bei "hatten wir das schon mal" ankommt (§12.4).
+#  EIN 404 BEIM LÖSCHEN IST KEIN FEHLSCHLAG: Liegt unter der Kennung nichts
+#         mehr, ist das Ziel erreicht. Als Wegstörung behandelt käme die Zeile
+#         in jedem künftigen Lauf wieder, dauerhaft — die Kennung taucht ja nie
+#         wieder auf. Sie wird deshalb GETRENNT gezählt (`schon_geloescht`), denn
+#         ihre Zahl sagt, wie weit Bestand und Gedächtnis auseinanderliefen.
 #  REIHENFOLGE IST TRAGEND: Erst löschen, dann die Referenz aufheben. Bricht der
 #         Lauf dazwischen ab, zeigt die Zeile auf eine gelöschte Erinnerung —
 #         der Nachtrag greift beim nächsten Lauf erneut und das Löschen ist
@@ -41,7 +46,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from foreman.config import get_settings
 from foreman.core.redact import PresidioRedactor, Redactor
 from foreman.db.models import Alarm, MaintenanceEvent, SemanticEvent
-from foreman.substrate.client import SubstrateClient
+from foreman.substrate.client import SubstrateClient, SubstrateNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +87,11 @@ class NachtragStats:
         self.quelle_fehlt = 0
         self.bereits_vollstaendig = 0
         self.geloescht = 0
+        # GETRENNT von `geloescht`: Beide Fälle führen weiter, aber sie bedeuten
+        # Verschiedenes. Zusammengerechnet wäre hinterher nicht feststellbar, wie
+        # viele Referenzen ins Leere zeigten — und genau das ist der Hinweis
+        # darauf, dass Bestand und Gedächtnis auseinandergelaufen sind.
+        self.schon_geloescht = 0
         self.loeschen_fehlgeschlagen = 0
 
     def __str__(self) -> str:
@@ -89,6 +99,7 @@ class NachtragStats:
             f"geprüft={self.geprueft} angereichert={self.angereichert} "
             f"ohne_freitext={self.ohne_freitext} quelle_fehlt={self.quelle_fehlt} "
             f"schon_vollständig={self.bereits_vollstaendig} gelöscht={self.geloescht} "
+            f"schon_gelöscht={self.schon_geloescht} "
             f"löschen_fehlgeschlagen={self.loeschen_fehlgeschlagen}"
         )
 
@@ -202,6 +213,21 @@ async def nachtragen(
             try:
                 await substrate.forget(alte_ref)
                 stats.geloescht += 1
+            except SubstrateNotFoundError:
+                # ZIEL ERREICHT, nicht Fehlschlag: Unter dieser Kennung liegt
+                # nichts (mehr). Als Wegstörung behandelt, bliebe die Zeile
+                # unangetastet und käme in JEDEM künftigen Lauf wieder — dauerhaft,
+                # weil die Kennung nie wieder auftaucht. Das ist die andere Hälfte
+                # der Fehlerzweig-Regel: Eine Störung des Weges darf keinen
+                # Eintrag verbrauchen, ein erledigter Eintrag darf nicht ewig
+                # wiederkehren.
+                stats.schon_geloescht += 1
+                logger.warning(
+                    "⚠️ Erinnerung zu semantic_event=%s ref=%s war bereits fort — "
+                    "Zeile wird trotzdem angereichert.",
+                    zeile.id,
+                    alte_ref,
+                )
             except Exception as fehler:
                 # Der Weg ist gestört, nicht der Eintrag: Die Zeile bleibt
                 # unangetastet und kommt beim nächsten Lauf wieder dran. Sie

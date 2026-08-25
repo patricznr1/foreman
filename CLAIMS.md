@@ -60,6 +60,8 @@ Stand: 2026-08-25
 | C-052 | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | gemessen | Die Schnittstelle der Gegenstelle bietet keinen Löschweg — 6 Wege vorhanden, keiner davon löschend | 2026-08-25 | gueltig | intern |
 | C-053 | Die Verdichtung des Gedächtnisses wird von der Plattform nicht angestossen. | gemessen | 62 von 63 Erinnerungen auf der mittleren Ebene, 1 auf der gefestigten; 1 von 63 im Wissensnetz verarbeitet | 2026-08-25 | gueltig | intern |
 | C-054 | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | gemessen | 22 von 44 Spiegelungen ohne zugehörige Quellzeile | 2026-08-25 | gueltig | intern |
+| C-055 | Die Plattform kann das Entfernen einer einzelnen gespiegelten Erinnerung bei der Gegenstelle anfordern. | gemessen | Anforderung nach dem vereinbarten Muster, mit unterscheidbarer Antwort auf einen nicht vorhandenen Eintrag | 2026-08-25 | gueltig | intern |
+| C-056 | Für die Plattform liegt keine Einstufung nach den einschlägigen Regelwerken vor. | gemessen | Kein Verzeichnis für die Einstufung, keine Sektion in der Wahrheitsdatei — 4 Regelwerke offen | 2026-08-25 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -72,17 +74,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 54
+Einträge gesamt: 56
 
 Nach Status:
 
-- gemessen: 47
+- gemessen: 49
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 52
+- gueltig: 54
 - ueberholt: 2
 - ungeprueft: 0

@@ -69,10 +69,16 @@ class Settings(BaseSettings):
     substrate_reason_path: str = "/reason"
     substrate_drift_status_path: str = "/drift_status"
     substrate_reflect_path: str = "/reflect"
-    # Löschen adressiert einen EINZELNEN Eintrag: die Kennung wird angehängt,
-    # anders als bei den POST-Wegen. Leerer Vorgabewert = Kennung direkt an der
-    # Basis-Adresse.
-    substrate_forget_path: str = ""
+    # Löschen adressiert einen EINZELNEN Eintrag: Bereich und Kennung werden
+    # angehängt, anders als bei den POST-Wegen, die beides im Rumpf führen.
+    # Die Gegenstelle erwartet /{bereich}/{kennung} hinter diesem Basispfad.
+    #
+    # HIER STEHT NUR DER BASISPFAD — der Bereich kommt aus `substrate_namespace`
+    # und wird beim Bau des Klienten angehängt. Stünde er in BEIDEN Einstellungen,
+    # könnten sie auseinanderlaufen: Ein Klient, der seinen Bereich abweichend
+    # gesetzt bekommt (der Round-Trip-Smoke tut genau das), schriebe dann in den
+    # einen und löschte im anderen.
+    substrate_forget_path: str = "/api/substrate/forget"
 
     # --- Pseudonymisierung (HMAC, §8 / Research §5.3 a) ---
     # Werte aus der .env: FOREMAN_PSEUDO_KEY_VERSION, FOREMAN_PSEUDO_KEY_VERSIONS,
