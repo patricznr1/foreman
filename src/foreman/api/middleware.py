@@ -30,6 +30,9 @@ OPEN_PATHS: frozenset[str] = frozenset(
         "/openapi.json",
     }
 )
+# Pfade, unter denen die Doku eigene Unterseiten führt (z. B.
+# /docs/oauth2-redirect). Der Vergleich unten nimmt sie als NAMEN, nicht als
+# Anfangsbuchstaben: `/docs-admin` fängt zwar mit „/docs" an, ist aber keine Doku.
 _OPEN_PREFIXES: tuple[str, ...] = ("/docs", "/redoc", "/openapi.json")
 
 
@@ -41,16 +44,29 @@ class AuthMiddleware:
         self._settings = settings
 
     def _is_open(self, path: str) -> bool:
-        return path in OPEN_PATHS or path.startswith(_OPEN_PREFIXES)
+        """Ob dieser Pfad ohne Token erreichbar ist.
+
+        Der Präfix-Zweig verlangt einen Trennstrich: `/docs/oauth2-redirect` gehört
+        zur Doku, `/docs-admin` nicht. Ohne den Strich hinge die Grenze daran, dass
+        zufällig kein geschützter Pfad mit einem Doku-Namen beginnt — eine Regel,
+        die aus Zufall hält und beim nächsten Endpunkt kippt.
+        """
+        if path in OPEN_PATHS:
+            return True
+        return any(path.startswith(prefix + "/") for prefix in _OPEN_PREFIXES)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 
+        # KEINE Ausnahme für OPTIONS: FOREMAN richtet keine CORS-Middleware ein,
+        # das Frontend spricht über einen Proxy (frontend/next.config.ts). Eine
+        # tokenfreie Methode deckt hier nichts ab, was gebraucht würde, gäbe aber
+        # jedem die Möglichkeit, Pfade auf ihre Existenz abzuklopfen. Kommt CORS
+        # später, gehört die Ausnahme in die CORSMiddleware, nicht in die Auth.
         path: str = scope.get("path", "")
-        method: str = scope.get("method", "GET")
-        if method == "OPTIONS" or self._is_open(path):
+        if self._is_open(path):
             await self.app(scope, receive, send)
             return
 

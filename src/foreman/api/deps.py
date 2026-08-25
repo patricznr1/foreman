@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Iterable
 from functools import lru_cache
 from typing import Annotated, Any
 
@@ -25,12 +25,7 @@ from foreman.db.models import User
 from foreman.db.session import get_session
 from foreman.embeddings import EmbeddingProvider, LocalEmbeddingProvider, get_embedding_settings
 from foreman.llm import LiteLLMGateway, LLMGateway, get_llm_settings
-from foreman.realtime.authz import (
-    can_see_line,
-    can_see_machine,
-    visible_line_scope,
-    visible_machine_scope,
-)
+from foreman.realtime.authz import can_see_line, visible_line_scope, visible_machine_scope
 from foreman.reasoners.failure.model import DEFAULT_ARTIFACT_PATH, FailureModel, load_model
 from foreman.substrate.client import SubstrateClient
 
@@ -164,7 +159,24 @@ class ResourceScope:
         `can_see` geprüft und die bestehende 404-Antwort verwendet, damit ein 403
         die Existenz der Zeile nicht bestätigt.
         """
-        if not await can_see_machine(self._session, self._user, machine_id):
+        await self.require_all((machine_id,))
+
+    async def require_all(self, machine_ids: Iterable[int]) -> None:
+        """403, sobald AUCH NUR EINE der Maschinen außerhalb des Ausschnitts liegt.
+
+        Für Anfragen, die mehrere Maschinen auf einmal berühren — ein Messwert-Batch
+        erreicht über seine Datenpunkte leicht Dutzende. Der Ausschnitt wird einmal
+        aufgelöst statt je Kennung.
+
+        Alles-oder-nichts ist hier die richtige Härte: Ein Batch, aus dem still die
+        unerlaubten Zeilen fielen, meldete Erfolg über eine Aufnahme, die so nie
+        stattgefunden hat.
+        """
+        ids = await self.machine_ids()
+        if ids is None:
+            return
+        erlaubt = set(ids)
+        if any(machine_id not in erlaubt for machine_id in machine_ids):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Kein Zugriff auf diese Maschine",

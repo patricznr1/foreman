@@ -602,3 +602,210 @@ async def test_produktionslauf_an_eigener_linie_gelingt(
     )
 
     assert antwort.status_code == 201, antwort.text
+
+
+# --- Reasoner-Bestände: erzeugte Warnungen und Erklärungen ---
+
+
+async def _drift_warnung(raw_conn: asyncpg.Connection, machine_id: int) -> int:
+    """Eine Warnung mit dem Kennzeichen des Abweichungs-Reasoners."""
+    zeile = await raw_conn.fetchval(
+        """
+        INSERT INTO alarms (machine_id, severity, category, code, message)
+        VALUES ($1, 'warning', 'process', 'DRIFT', 'Abweichung erkannt') RETURNING id
+        """,
+        machine_id,
+    )
+    return int(zeile)
+
+
+async def _erklaerung(raw_conn: asyncpg.Connection, machine_id: int) -> int:
+    """Eine Ereignisketten-Erklärung samt Anker-Warnung."""
+    anker = await _alarm(raw_conn, machine_id)
+    zeile = await raw_conn.fetchval(
+        """
+        INSERT INTO reasoner_explanations (
+            anchor_alarm_id, machine_id, reasoner, narrative,
+            referenced_source_ids, flagged_unsupported, is_hypothesis, confidence
+        ) VALUES ($1, $2, 'event_chain', 'Kette', '[]', '[]', false, 'low')
+        RETURNING id
+        """,
+        anker,
+        machine_id,
+    )
+    return int(zeile)
+
+
+@pytest.mark.parametrize(
+    "pfad,erzeuger",
+    [
+        pytest.param("/api/v1/reasoners/drift/alarms", _drift_warnung, id="drift_alarms"),
+        pytest.param("/api/v1/reasoners/event_chain/explanations", _erklaerung, id="event_chain"),
+    ],
+)
+async def test_reasoner_liste_zeigt_nur_die_eigenen_maschinen(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    pfad: str,
+    erzeuger: Callable[[asyncpg.Connection, int], Awaitable[int]],
+) -> None:
+    """Was ein Reasoner erzeugt, folgt der Sichtbarkeit der Maschine, über die er es sagt."""
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    eigener = await erzeuger(raw_conn, eigene)
+    fremder = await erzeuger(raw_conn, fremde)
+    headers = await _werker_mit(raw_conn, auth_headers_for, f"scope-r-{pfad[-6:]}@x.de", eigene)
+
+    antwort = await client.get(pfad, headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    kennungen = {eintrag["id"] for eintrag in antwort.json()}
+    assert eigener in kennungen, "Der eigene Datensatz fehlt — die Sperre greift zu weit."
+    assert fremder not in kennungen
+
+
+@pytest.mark.parametrize(
+    "pfad,erzeuger",
+    [
+        pytest.param("/api/v1/reasoners/drift/alarms", _drift_warnung, id="drift_alarms"),
+        pytest.param("/api/v1/reasoners/event_chain/explanations", _erklaerung, id="event_chain"),
+    ],
+)
+async def test_reasoner_liste_fremder_maschine_wird_abgewiesen(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    pfad: str,
+    erzeuger: Callable[[asyncpg.Connection, int], Awaitable[int]],
+) -> None:
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    await erzeuger(raw_conn, fremde)
+    headers = await _werker_mit(raw_conn, auth_headers_for, f"scope-rf-{pfad[-6:]}@x.de", eigene)
+
+    antwort = await client.get(pfad, params={"machine_id": fremde}, headers=headers)
+
+    assert antwort.status_code == 403, antwort.text
+
+
+async def test_fremde_erklaerung_ist_nicht_abrufbar(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    fremde_erklaerung = await _erklaerung(raw_conn, fremde)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-erk@x.de", eigene)
+
+    antwort = await client.get(
+        f"/api/v1/reasoners/event_chain/explanations/{fremde_erklaerung}", headers=headers
+    )
+
+    assert antwort.status_code == 404, antwort.text
+
+
+async def test_eigene_erklaerung_ist_abrufbar(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Zwilling zum Test darüber."""
+    eigene, _ = await _maschinen_paar(raw_conn)
+    eigene_erklaerung = await _erklaerung(raw_conn, eigene)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-erk-ok@x.de", eigene)
+
+    antwort = await client.get(
+        f"/api/v1/reasoners/event_chain/explanations/{eigene_erklaerung}", headers=headers
+    )
+
+    assert antwort.status_code == 200, antwort.text
+    assert antwort.json()["id"] == eigene_erklaerung
+
+
+async def test_schwestern_einer_fremden_erklaerung_bleiben_verborgen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Die Schwester-Referenzen erben den Ausschnitt ihrer Erklärung.
+
+    Sie tragen keine eigene Maschinen-Kennung — ohne die geerbte Prüfung wären sie
+    der Nebeneingang zu genau der Erklärung, die die Route darüber sperrt.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    fremde_erklaerung = await _erklaerung(raw_conn, fremde)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-schwester@x.de", eigene)
+
+    antwort = await client.get(
+        f"/api/v1/reasoners/event_chain/explanations/{fremde_erklaerung}/siblings",
+        headers=headers,
+    )
+
+    assert antwort.status_code == 404, antwort.text
+
+
+async def test_schwestern_der_eigenen_erklaerung_sind_abrufbar(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Zwilling: derselbe Weg auf die eigene Maschine antwortet mit der Liste.
+
+    Sie ist leer, weil dieser Aufbau keine Schwestern einfriert — geprüft wird der
+    Weg dorthin, nicht der Inhalt. Ohne diesen Zwilling bliebe der Test darüber
+    auch dann grün, wenn die Route grundsätzlich nie antwortete.
+    """
+    eigene, _ = await _maschinen_paar(raw_conn)
+    eigene_erklaerung = await _erklaerung(raw_conn, eigene)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-schwester-ok@x.de", eigene)
+
+    antwort = await client.get(
+        f"/api/v1/reasoners/event_chain/explanations/{eigene_erklaerung}/siblings",
+        headers=headers,
+    )
+
+    assert antwort.status_code == 200, antwort.text
+    assert antwort.json() == []
+
+
+# --- Aufnahme von Messwerten: der Ausschnitt gilt vor dem Schreiben ---
+
+
+async def test_messwerte_fuer_fremde_maschine_werden_nicht_aufgenommen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Ein Batch erreicht die Maschinen über seine Datenpunkte — auch das ist Zugriff."""
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    fremder_punkt = await _datenpunkt(raw_conn, fremde)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-mess@x.de", eigene)
+
+    antwort = await client.post(
+        "/api/v1/readings",
+        json={
+            "readings": [
+                {"time": "2026-08-26T10:00:00Z", "data_point_id": fremder_punkt, "value": 1.5}
+            ]
+        },
+        headers=headers,
+    )
+
+    assert antwort.status_code == 403, antwort.text
+    assert (
+        await raw_conn.fetchval(
+            "SELECT count(*) FROM readings WHERE data_point_id = $1", fremder_punkt
+        )
+        == 0
+    )
+
+
+async def test_messwerte_fuer_eigene_maschine_werden_aufgenommen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Zwilling zum Test darüber."""
+    eigene, _ = await _maschinen_paar(raw_conn)
+    eigener_punkt = await _datenpunkt(raw_conn, eigene)
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-mess-ok@x.de", eigene)
+
+    antwort = await client.post(
+        "/api/v1/readings",
+        json={
+            "readings": [
+                {"time": "2026-08-26T10:00:00Z", "data_point_id": eigener_punkt, "value": 1.5}
+            ]
+        },
+        headers=headers,
+    )
+
+    assert antwort.status_code == 201, antwort.text
+    assert antwort.json()["written"] == 1

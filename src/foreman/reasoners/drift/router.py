@@ -19,7 +19,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import PseudonymizerDep, SessionDep, require_roles
+from foreman.api.deps import PseudonymizerDep, ResourceScopeDep, SessionDep, require_roles
 from foreman.audit.writer import hitl_acknowledge_entry, record
 from foreman.db.models import Alarm, User
 from foreman.realtime.authz import ROLE_MANAGER, ROLE_SHIFT_LEAD, ROLE_TECHNICIAN
@@ -36,6 +36,7 @@ AckUser = Annotated[User, Depends(require_roles(ROLE_SHIFT_LEAD, ROLE_TECHNICIAN
 @router.get("/alarms", response_model=list[AlarmRead])
 async def list_drift_alarms(
     session: SessionDep,
+    scope: ResourceScopeDep,
     machine_id: int | None = Query(default=None),
     acknowledged: bool | None = Query(
         default=None, description="Nur (un)quittierte Warnungen; None = alle."
@@ -43,10 +44,12 @@ async def list_drift_alarms(
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[Alarm]:
-    """Listet die vom Drift-Reasoner erzeugten Warnungen (code=DRIFT)."""
-    stmt = select(Alarm).where(Alarm.code == DRIFT_ALARM_CODE).order_by(Alarm.raised_at.desc())
-    if machine_id is not None:
-        stmt = stmt.where(Alarm.machine_id == machine_id)
+    """Warnungen des Drift-Reasoners (code=DRIFT) im Maschinen-Ausschnitt."""
+    stmt = await scope.limit_to(
+        select(Alarm).where(Alarm.code == DRIFT_ALARM_CODE).order_by(Alarm.raised_at.desc()),
+        Alarm.machine_id,
+        machine_id=machine_id,
+    )
     if acknowledged is True:
         stmt = stmt.where(Alarm.acknowledged_at.is_not(None))
     elif acknowledged is False:
