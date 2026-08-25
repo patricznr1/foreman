@@ -63,6 +63,8 @@ Stand: 2026-08-25
 | C-055 | Die Plattform kann das Entfernen einer einzelnen gespiegelten Erinnerung bei der Gegenstelle anfordern. | gemessen | Anforderung nach dem vereinbarten Muster, mit unterscheidbarer Antwort auf einen nicht vorhandenen Eintrag | 2026-08-25 | gueltig | intern |
 | C-056 | Für die Plattform liegt keine Einstufung nach den einschlägigen Regelwerken vor. | gemessen | Kein Verzeichnis für die Einstufung, keine Sektion in der Wahrheitsdatei — 4 Regelwerke offen | 2026-08-25 | gueltig | intern |
 | C-057 | Die Zugriffskontrolle der Schnittstelle wirkt auf der Ebene der Anmeldung, nicht auf der Ebene der einzelnen Ressource. | gemessen | 31 von 47 geprüften Routen ohne Feststellung des Aufrufers an der Route selbst | 2026-08-25 | gueltig | intern |
+| C-060 | Die Freigabe-Bedingung für das Gedächtnis als vierte Archiv-Quelle ist mit der heutigen Antwortform nicht messbar. | gemessen | 0 von 77 ausgelieferten Erinnerungs-Treffern konnte einer Quellzeile zugeordnet werden | 2026-08-25 | gueltig | intern |
+| C-061 | Werden die Erinnerungs-Treffer ihrer Quellzeile zugeordnet, verbessert die vierte Quelle die Archiv-Suche deutlich. | gemessen | Trefferquote 0,256 auf 0,558; Ranggüte 0,372 auf 0,619; 70,6 % der Anfragen mit zusätzlichem zutreffendem Treffer, keine mit verlorenem | 2026-08-25 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -75,17 +77,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 57
+Einträge gesamt: 59
 
 Nach Status:
 
-- gemessen: 50
+- gemessen: 52
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 55
+- gueltig: 57
 - ueberholt: 2
 - ungeprueft: 0
