@@ -565,3 +565,53 @@ async def test_gespeicherter_rueckweg_schlaegt_den_ersatzweg(db_session: AsyncSe
     danach = await _lade(db_session, zeile.id)
     assert "ZWEITE Beschreibung" in danach.payload["description"]
     assert danach.payload["source_id"] == gemeinte_id
+
+
+async def test_zeile_mit_freitext_aber_ohne_rueckweg_wird_nachgeholt(
+    db_session: AsyncSession,
+) -> None:
+    """Der Fall, der die Vollständigkeits-Prüfung zu eng gemacht hat.
+
+    Belegt am 25.08.2026 gegen die laufende Instanz: 22 Zeilen hatten aus einem
+    früheren Lauf ihre Beschreibung, den Rückweg aber nicht — er kam erst später
+    dazu. Weil die Prüfung nur den Freitext ansah, galten sie als erledigt und
+    wurden nie wieder angefasst. Eine Vollständigkeits-Prüfung, die weniger prüft
+    als der Lauf schreibt, schliesst genau die Zeilen aus, für die der nächste
+    Lauf gebaut wurde.
+    """
+    import datetime as _dt
+
+    machine_id = await _maschine(db_session)
+    zeitpunkt = _dt.datetime(2026, 6, 5, 18, 47, 17, 894280, tzinfo=_dt.UTC)
+    wartung = MaintenanceEvent(
+        machine_id=machine_id,
+        type="lubrication",
+        description="Ersatzfett, nicht spezifikationskonform.",
+        performed_at=zeitpunkt,
+    )
+    db_session.add(wartung)
+    await db_session.flush()
+    zeile = SemanticEvent(
+        machine_id=machine_id,
+        event_type="maintenance_performed",
+        payload={
+            # Freitext ist da (früherer Lauf), Rückweg fehlt.
+            "description": "[MASKIERT]Ersatzfett, nicht spezifikationskonform.",
+            "type": "lubrication",
+            "machine_id": machine_id,
+            "performed_at": zeitpunkt.isoformat(),
+        },
+        substrate_ref="alt-halbfertig",
+    )
+    db_session.add(zeile)
+    await db_session.flush()
+
+    stats = await nachtragen(db_session, _Substrat(), _Redactor())
+
+    assert stats.bereits_vollstaendig == 0, "die Zeile wurde fälschlich als erledigt gewertet"
+    assert stats.angereichert == 1
+    danach = await _lade(db_session, zeile.id)
+    assert danach.payload["source_type"] == "maintenance"
+    assert danach.payload["source_id"] > 0
+    # Der vorhandene Freitext bleibt, wie er ist — er wird nicht neu maskiert.
+    assert danach.payload["description"].count("[MASKIERT]") == 1
