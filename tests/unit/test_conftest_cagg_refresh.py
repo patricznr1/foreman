@@ -11,14 +11,19 @@
 #         geprüft. Ein echter Wettlauf mit dem Hintergrund-Scheduler liesse sich
 #         nicht verlässlich herstellen — und ein Test, der ihn nur manchmal
 #         auslöst, belegt nichts.
+#  Der Prüfling kommt über die Fixture `cagg_refresh`, nicht über einen Import:
+#         `tests` ist kein Paket, ein `from tests.conftest import …` trüge nur
+#         dort, wo das Arbeitsverzeichnis zufällig im Suchpfad liegt.
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import pytest
 from sqlalchemy.exc import DBAPIError
-from tests.conftest import _CAGG_VERSUCHE, _refresh_mit_wiederholung
+
+Refresh = tuple[Callable[..., Awaitable[None]], int]
 
 
 class _SperrkonfliktError(Exception):
@@ -47,28 +52,32 @@ class _Verbindung:
             raise _fehler(self._sqlstate)
 
 
-async def test_sperrkonflikt_wird_wiederholt_und_gelingt_dann() -> None:
+async def test_sperrkonflikt_wird_wiederholt_und_gelingt_dann(cagg_refresh: Refresh) -> None:
     """Der Regelfall: Der fremde Lauf ist fertig, der zweite Anlauf greift durch."""
+    refresh, _ = cagg_refresh
     conn = _Verbindung(scheitert_oft=2)
-    await _refresh_mit_wiederholung(conn, "readings_1m")  # type: ignore[arg-type]
+    await refresh(conn, "readings_1m")
     assert conn.versuche == 3, "es wurde nicht bis zum Erfolg wiederholt"
 
 
-async def test_dauerhafter_sperrkonflikt_wirft_statt_zu_verschlucken() -> None:
+async def test_dauerhafter_sperrkonflikt_wirft_statt_zu_verschlucken(
+    cagg_refresh: Refresh,
+) -> None:
     """Nach den Versuchen fliegt die Ausnahme weiter.
 
     Ein still übersprungener Reset hinterliesse materialisierte Buckets, und die
     tauchen später als Geister-Werte eines fremden Datenpunkts auf — ein Fehler,
     der weit schwerer zu finden wäre als ein roter Aufbau.
     """
-    conn = _Verbindung(scheitert_oft=_CAGG_VERSUCHE + 5)
+    refresh, versuche = cagg_refresh
+    conn = _Verbindung(scheitert_oft=versuche + 5)
     with pytest.raises(DBAPIError):
-        await _refresh_mit_wiederholung(conn, "readings_1m")  # type: ignore[arg-type]
-    assert conn.versuche == _CAGG_VERSUCHE, "es wurde öfter versucht als vorgesehen"
+        await refresh(conn, "readings_1m")
+    assert conn.versuche == versuche, "es wurde öfter versucht als vorgesehen"
 
 
 @pytest.mark.parametrize("sqlstate", ["42P01", "23505", "57014", "08006"])
-async def test_andere_ursachen_schlagen_sofort_durch(sqlstate: str) -> None:
+async def test_andere_ursachen_schlagen_sofort_durch(cagg_refresh: Refresh, sqlstate: str) -> None:
     """AUFBAU-KONTROLLE zur Wiederholung — die wichtigere Hälfte.
 
     Ohne diesen Fall wäre „ein Sperrkonflikt wird wiederholt" auch mit „alles wird
@@ -76,14 +85,16 @@ async def test_andere_ursachen_schlagen_sofort_durch(sqlstate: str) -> None:
     wird durch Warten nicht besser; die Wiederholung verzögerte nur den Befund
     und verwischte seine Ursache.
     """
+    refresh, _ = cagg_refresh
     conn = _Verbindung(scheitert_oft=99, sqlstate=sqlstate)
     with pytest.raises(DBAPIError):
-        await _refresh_mit_wiederholung(conn, "readings_1m")  # type: ignore[arg-type]
+        await refresh(conn, "readings_1m")
     assert conn.versuche == 1, f"SQLSTATE {sqlstate} wurde fälschlich wiederholt"
 
 
-async def test_gelingt_der_erste_anlauf_wird_nicht_wiederholt() -> None:
+async def test_gelingt_der_erste_anlauf_wird_nicht_wiederholt(cagg_refresh: Refresh) -> None:
     """Der Normalfall kostet keinen zusätzlichen Aufruf."""
+    refresh, _ = cagg_refresh
     conn = _Verbindung(scheitert_oft=0)
-    await _refresh_mit_wiederholung(conn, "readings_1m")  # type: ignore[arg-type]
+    await refresh(conn, "readings_1m")
     assert conn.versuche == 1

@@ -107,6 +107,19 @@ async def _refresh_mit_wiederholung(conn: AsyncConnection, cagg: str) -> None:
             await asyncio.sleep(_CAGG_WARTEZEIT_S)
 
 
+@pytest.fixture
+def cagg_refresh() -> tuple[Callable[..., Awaitable[None]], int]:
+    """Reicht die Refresh-Wiederholung samt Versuchszahl an einen Test weiter.
+
+    Warum als Fixture statt als Import: `tests` ist kein Paket, und ein
+    `from tests.conftest import …` trägt nur dort, wo das Arbeitsverzeichnis
+    zufällig im Suchpfad liegt — örtlich ja, im Prüflauf nicht. Über eine Fixture
+    findet pytest die Funktion auf seinem eigenen Weg, ohne dass die
+    Verzeichnisstruktur dafür umgebaut werden müsste.
+    """
+    return _refresh_mit_wiederholung, _CAGG_VERSUCHE
+
+
 async def _reset_caggs(engine: AsyncEngine) -> None:
     """Räumt die materialisierten CAGG-Buckets nach dem TRUNCATE ab (Test-Isolation).
 

@@ -1375,3 +1375,39 @@ claims:
       bemerken als ein fehlender Weg, weil er wie eine Erfüllung aussieht. Solange
       dieser Eintrag gilt, trägt keine Aussage über die Plattform eine Freigabe
       über intern hinaus, die sich auf Regelkonformität stützt.
+
+  - id: "C-057"
+    aussage: "Die Zugriffskontrolle der Schnittstelle wirkt auf der Ebene der Anmeldung, nicht auf der Ebene der einzelnen Ressource."
+    status: "gemessen"
+    wert: "31 von 47 geprüften Routen ohne Feststellung des Aufrufers an der Route selbst"
+    bedingung: >-
+      Erhoben am 25.08.2026 gegen die real gebaute Anwendung (create_app), nicht
+      gegen den Quelltext: Von 47 geprüften Routen mit Ressourcenbezug führen 31
+      keine Abhängigkeit, die den Aufrufer feststellt. Die vorgeschaltete Schicht
+      verlangt für alles ausser vier bewusst offenen Pfaden ein gültiges Merkmal —
+      sie beantwortet damit, WER anfragt, nicht, ob dieser Jemand genau diese
+      Ressource sehen darf. Fünf weitere Routen führen zwar die Feststellung des
+      Aufrufers, rufen aber den vorhandenen Helfer für den Sichtbereich nicht auf,
+      obwohl sie eine Ressourcen-Kennung entgegennehmen.
+    datum: "2026-08-25"
+    fundstelle:
+      - "tests/unit/test_routen_inventar.py (Erhebung und laufende Absicherung)"
+      - "GET /api/v1/alarms"
+      - "GET /api/v1/alarms/{alarm_id}"
+      - "GET /api/v1/components"
+      - "GET /api/v1/components/{component_id}"
+      - "GET /api/v1/data_points"
+      - "GET /api/v1/data_points/{data_point_id}"
+      - "… vollständige Liste in OFFEN_STAND_2026_08_25"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Eintrag entsteht zusammen mit seinem Prüfmittel: Der genannte Test hält
+      den Stand fest und wird rot, sobald eine WEITERE Route ohne Prüfung
+      hinzukommt oder ein Eintrag der Liste erledigt ist, ohne gestrichen zu
+      werden. Die Zahl ist damit nachführbar und nicht nur eine Momentaufnahme.
+      Kontrollpunkt gefahren: Mit einer eingebauten zusätzlichen Route wurde der
+      Test rot und nannte sie namentlich; nach Rücknahme wieder grün. Solange
+      dieser Eintrag gilt, trägt keine Aussage über die Zugriffskontrolle dieser
+      Plattform eine Freigabe über intern hinaus.

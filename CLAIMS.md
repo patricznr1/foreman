@@ -62,6 +62,7 @@ Stand: 2026-08-25
 | C-054 | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | gemessen | 22 von 44 Spiegelungen ohne zugehörige Quellzeile | 2026-08-25 | gueltig | intern |
 | C-055 | Die Plattform kann das Entfernen einer einzelnen gespiegelten Erinnerung bei der Gegenstelle anfordern. | gemessen | Anforderung nach dem vereinbarten Muster, mit unterscheidbarer Antwort auf einen nicht vorhandenen Eintrag | 2026-08-25 | gueltig | intern |
 | C-056 | Für die Plattform liegt keine Einstufung nach den einschlägigen Regelwerken vor. | gemessen | Kein Verzeichnis für die Einstufung, keine Sektion in der Wahrheitsdatei — 4 Regelwerke offen | 2026-08-25 | gueltig | intern |
+| C-057 | Die Zugriffskontrolle der Schnittstelle wirkt auf der Ebene der Anmeldung, nicht auf der Ebene der einzelnen Ressource. | gemessen | 31 von 47 geprüften Routen ohne Feststellung des Aufrufers an der Route selbst | 2026-08-25 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -74,17 +75,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 56
+Einträge gesamt: 57
 
 Nach Status:
 
-- gemessen: 49
+- gemessen: 50
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 54
+- gueltig: 55
 - ueberholt: 2
 - ungeprueft: 0
