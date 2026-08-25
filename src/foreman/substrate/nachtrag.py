@@ -67,13 +67,23 @@ class Quelle(NamedTuple):
     zeitschluessel: str  # … und ihr Gegenstück in der payload
     kennspalte: str  # unterscheidendes Merkmal im Modell …
     kennschluessel: str  # … und in der payload
+    # Wie die Quellzeile in der Nutzlast heisst. Dieselben Bezeichner, die der
+    # Live-Pfad schreibt — sonst entstuenden zwei Schreibweisen fuer dieselbe
+    # Herkunft, und ein Leser muesste beide kennen.
+    source_type: str
 
 
 ANREICHERUNG: dict[str, Quelle] = {
     "maintenance_performed": Quelle(
-        MaintenanceEvent, "description", "performed_at", "performed_at", "type", "type"
+        MaintenanceEvent,
+        "description",
+        "performed_at",
+        "performed_at",
+        "type",
+        "type",
+        "maintenance",
     ),
-    "alarm_raised": Quelle(Alarm, "message", "raised_at", "raised_at", "code", "code"),
+    "alarm_raised": Quelle(Alarm, "message", "raised_at", "raised_at", "code", "code", "alarm"),
 }
 
 
@@ -152,17 +162,6 @@ async def _quellzeile(session: AsyncSession, quelle: Quelle, payload: Mapping[st
     return treffer[0]
 
 
-async def _quelltext(
-    session: AsyncSession, quelle: Quelle, payload: Mapping[str, Any]
-) -> str | None:
-    """Liest den Freitext aus der Quellzeile. None, wenn sie nicht auffindbar ist."""
-    zeile = await _quellzeile(session, quelle, payload)
-    if zeile is None:
-        return None
-    wert = getattr(zeile, quelle.freitext, None)
-    return wert if isinstance(wert, str) else None
-
-
 async def nachtragen(
     session: AsyncSession,
     substrate: SubstrateClient | None,
@@ -190,8 +189,9 @@ async def nachtragen(
             stats.bereits_vollstaendig += 1
             continue
 
-        roh = await _quelltext(session, quelle, payload)
-        if roh is None:
+        quellzeile = await _quellzeile(session, quelle, payload)
+        roh = getattr(quellzeile, quelle.freitext, None) if quellzeile is not None else None
+        if not isinstance(roh, str):
             # Quellzeile weg oder Feld leer: KEIN erfundener Text. Die Zeile
             # behält ihre bisherige, gültige Spiegelung — sie zu löschen wäre
             # ein Verlust ohne Gewinn.
@@ -202,6 +202,13 @@ async def nachtragen(
             continue
 
         payload[schluessel] = redactor.redact_person_names(roh)
+        # DEN RUECKWEG MITGEBEN, wenn er fehlt: `source_type`/`source_id` kamen
+        # erst mit der Notiz-Spiegelung; Altzeilen tragen sie nicht. Ohne sie ist
+        # die entstehende Erinnerung spaeter keiner Quellzeile zuzuordnen — genau
+        # der Mangel aus C-060, und er faellt hier ohne Zusatzaufwand weg: Die
+        # Quellzeile ist an dieser Stelle bereits gefunden.
+        payload.setdefault("source_type", quelle.source_type)
+        payload.setdefault("source_id", quellzeile.id)
         stats.angereichert += 1
 
         if trockenlauf:

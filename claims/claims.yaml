@@ -1485,3 +1485,35 @@ claims:
       und der zugrunde liegende Bestand enthält keinen wiederkehrenden Vorgang
       (C-047). Vor einer Freigabe ist die Messung mit durchgereichter Herkunft zu
       wiederholen; bis dahin bleibt der Schalter aus.
+
+  - id: "C-062"
+    aussage: "Ein Treffer aus dem Gedächtnis lässt sich seiner Quellzeile zuordnen."
+    status: "gemessen"
+    wert: "Herkunftsangabe im Treffer, sobald die Erinnerung sie trägt; sonst kein Eintrag statt einer geratenen Zuordnung"
+    bedingung: >-
+      Gebaut am 25.08.2026 als Antwort auf C-060. Die Spiegel-Nutzlast führt Art
+      und Kennung der Quellzeile und geht als Beiwerk an die Gegenstelle mit; der
+      Abruf reicht beide jetzt zurück, und der Archiv-Treffer trägt sie als
+      eigenes Anzeige-Attribut. NICHT als Quellenart des Treffers: Die Herkunft
+      bleibt sichtbar das Gedächtnis, denn als Wartungseintrag ausgegeben wäre
+      die Erinnerung eine Behauptung über die eigene Datenlage, die nicht stimmt.
+      Beide Angaben werden verlangt — eine Art ohne Kennung zeigt auf eine ganze
+      Tabelle, eine Kennung ohne Art auf eine Zahl ohne Bezug. Der Nachtrag
+      ergänzt sie im Altbestand, weil er die Quellzeile ohnehin gefunden hat;
+      ohne diesen Schritt bliebe der Bestand auch nach der Anreicherung
+      unzuordenbar. Zehn Prüffälle, sechs Gegenproben gefahren.
+    datum: "2026-08-25"
+    fundstelle:
+      - "src/foreman/reasoners/event_chain/recall.py, RecallItem"
+      - "src/foreman/archive/search.py (Erinnerungs-Zweig)"
+      - "src/foreman/substrate/nachtrag.py"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Hebt C-060 NICHT auf: Die Zuordnung ist jetzt möglich, die Freigabe-Messung
+      damit aber noch nicht wiederholt. Erst ein erneuter Lauf gegen einen
+      Bestand, dessen Erinnerungen die Herkunft tragen, belegt, ob die vierte
+      Quelle die Schwellen erfüllt. Der Altbestand bekommt sie beim nächsten
+      Nachtrag; bis dahin bleibt der Schalter aus.

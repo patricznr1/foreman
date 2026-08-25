@@ -46,6 +46,8 @@ _META_KEYS = ("metadata", "payload", "meta")
 _MACHINE_ID_KEYS = ("machine_id", "machineId")
 _MACHINE_CLASS_KEYS = ("machine_class", "machineClass")
 _EXPLANATION_ID_KEYS = ("explanation_id", "explanationId")
+_SOURCE_TYPE_KEYS = ("source_type", "sourceType")
+_SOURCE_ID_KEYS = ("source_id", "sourceId")
 # Rang-Grundlage. Die Fassade liefert `relevance`; die generischen Namen decken
 # andere Substrat-Fassungen ab, ohne dass hier etwas erfunden wird.
 _RELEVANCE_KEYS = ("relevance", "score", "similarity", "relevance_score")
@@ -75,6 +77,21 @@ class RecallItem:
     # `None` — nichts wird geschätzt.
     occurred_at: datetime | None = None
     relevance: float | None = None
+    # Rückweg auf die Quellzeile, aus der die Erinnerung entstand. Die
+    # Spiegel-Nutzlast führt beides (§12.4) und geht als Metadaten mit; hier
+    # kommt es zurück — falls der Treffer es trägt.
+    #
+    # WARUM ES GEBRAUCHT WIRD (gemessen 25.08.2026, C-060): Ohne diesen Rückweg
+    # trägt ein Erinnerungs-Treffer im Archiv die Kennung 0 und ist keiner
+    # Quellzeile zuzuordnen. Das hat zwei Wirkungen, die wie zwei Mängel
+    # aussehen und einer sind: Doppelfunde zwischen `note` und `memory` lassen
+    # sich nicht auflösen, UND eine Güte-Messung kann einen solchen Treffer
+    # rechnerisch nie als zutreffend werten.
+    #
+    # ALTBESTAND TRÄGT ES NICHT: Zeilen aus der Zeit vor der Notiz-Spiegelung
+    # kennen die Felder nicht. Dann bleibt es `None` — geraten wird nichts.
+    source_type: str | None = None
+    source_id: int | None = None
 
 
 def build_recall_query(anchor: Alarm, machine: Machine | None) -> str:
@@ -237,6 +254,8 @@ def _coerce_item(entry: Any) -> RecallItem | None:
             explanation_id=_first_int(scopes, _EXPLANATION_ID_KEYS),
             occurred_at=_first_datetime(scopes, _OCCURRED_AT_KEYS),
             relevance=_first_float(scopes, _RELEVANCE_KEYS),
+            source_type=_first_str(scopes, _SOURCE_TYPE_KEYS),
+            source_id=_first_int(scopes, _SOURCE_ID_KEYS),
         )
     return None
 

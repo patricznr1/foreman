@@ -468,3 +468,100 @@ async def test_stoerung_laesst_die_zeile_weiterhin_unangetastet(
     danach = await _lade(db_session, zeile.id)
     assert danach.substrate_ref == "kaputt"
     assert "description" not in danach.payload
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Der Rückweg auf die Quellzeile
+# ──────────────────────────────────────────────────────────────────────
+
+
+async def test_nachtrag_schreibt_den_rueckweg_in_die_nutzlast(db_session: AsyncSession) -> None:
+    """Ohne ihn bliebe der Altbestand auch nach dem Nachtrag unzuordenbar.
+
+    `source_type`/`source_id` kamen erst mit der Notiz-Spiegelung; Altzeilen
+    tragen sie nicht. Der Nachtrag hat die Quellzeile an dieser Stelle bereits
+    gefunden — sie nicht mitzuschreiben hiesse, die Zuordnung ein zweites Mal
+    verloren zu geben (C-060).
+    """
+    import datetime as _dt
+
+    machine_id = await _maschine(db_session)
+    zeitpunkt = _dt.datetime(2026, 6, 5, 18, 47, 17, 894280, tzinfo=_dt.UTC)
+    zeile = await _altzeile_ohne_rueckweg(
+        db_session,
+        machine_id,
+        beschreibung="Ersatzfett genommen, nicht spezifikationskonform.",
+        zeitpunkt=zeitpunkt,
+        ref="alt-ohne-rueckweg",
+    )
+
+    stats = await nachtragen(db_session, _Substrat(), _Redactor())
+
+    assert stats.angereichert == 1
+    danach = await _lade(db_session, zeile.id)
+    assert danach.payload["source_type"] == "maintenance"
+    assert isinstance(danach.payload["source_id"], int)
+    assert danach.payload["source_id"] > 0
+
+    # Und der Rückweg zeigt auf die RICHTIGE Zeile, nicht irgendeine.
+    wartung = await db_session.get(MaintenanceEvent, danach.payload["source_id"])
+    assert wartung is not None
+    assert wartung.description == "Ersatzfett genommen, nicht spezifikationskonform."
+
+
+async def test_gespeicherter_rueckweg_schlaegt_den_ersatzweg(db_session: AsyncSession) -> None:
+    """Der gespeicherte Rückweg gewinnt gegen die Merkmalssuche — das ist die Sache.
+
+    Beide Wege führen zu einer Quellzeile, aber sie sind nicht gleichwertig: Der
+    gespeicherte stammt aus dem Schreibvorgang selbst, der Ersatzweg ist eine
+    Rekonstruktion über Maschine, Zeitpunkt und Art. Passen mehrere Zeilen auf
+    dieselben Merkmale, liefert der Ersatzweg NICHTS — der gespeicherte Rückweg
+    trifft trotzdem.
+
+    Genau das wird hier hergestellt: zwei Wartungen mit identischen Merkmalen,
+    die Nutzlast zeigt per `source_id` auf die zweite. Ohne den Vorrang des
+    gespeicherten Weges bliebe die Zeile unbearbeitet.
+    """
+    import datetime as _dt
+
+    machine_id = await _maschine(db_session)
+    zeitpunkt = _dt.datetime(2026, 6, 6, tzinfo=_dt.UTC)
+    gemeint = None
+    for text in ("Erste Beschreibung.", "ZWEITE Beschreibung, die gemeint ist."):
+        w = MaintenanceEvent(
+            machine_id=machine_id,
+            type="lubrication",
+            description=text,
+            performed_at=zeitpunkt,
+        )
+        db_session.add(w)
+        await db_session.flush()
+        gemeint = w
+    assert gemeint is not None
+    # Kennung JETZT festhalten: Der Nachtrag committet, danach ist das Objekt
+    # abgelaufen und ein Zugriff löste ein Nachladen aus.
+    gemeinte_id = gemeint.id
+
+    zeile = SemanticEvent(
+        machine_id=machine_id,
+        event_type="maintenance_performed",
+        payload={
+            "source_type": "maintenance",
+            "source_id": gemeinte_id,
+            "type": "lubrication",
+            "machine_id": machine_id,
+            "performed_at": zeitpunkt.isoformat(),
+        },
+        substrate_ref="alt-eindeutig",
+    )
+    db_session.add(zeile)
+    await db_session.flush()
+
+    stats = await nachtragen(db_session, _Substrat(), _Redactor())
+
+    # Der Ersatzweg allein wäre hier ratlos (zwei Treffer) — der gespeicherte
+    # Rückweg trifft trotzdem, und zwar die GEMEINTE Zeile.
+    assert stats.angereichert == 1, "der gespeicherte Rückweg wurde nicht genutzt"
+    danach = await _lade(db_session, zeile.id)
+    assert "ZWEITE Beschreibung" in danach.payload["description"]
+    assert danach.payload["source_id"] == gemeinte_id

@@ -298,3 +298,74 @@ def test_anzeige_kennt_dieselben_quelltypen_wie_der_vertrag() -> None:
         schluessel = set(re.findall(r"^\s*([a-z_]+):", block.group(1), re.M))
         fehlend = erwartet - schluessel
         assert not fehlend, f"{name} kennt {fehlend} nicht — diese Treffer blieben unbeschriftet"
+
+
+# ------------------------------------------------------------
+#  Der Rückweg auf die Quellzeile
+# ------------------------------------------------------------
+
+
+async def test_rueckweg_auf_die_quellzeile_kommt_im_treffer_an() -> None:
+    """Ohne ihn ist ein Erinnerungs-Treffer keiner Quellzeile zuzuordnen.
+
+    Das hat zwei Wirkungen, die wie zwei Mängel aussehen und einer sind
+    (gemessen 25.08.2026, C-060): Doppelfunde zwischen `note` und `memory`
+    bleiben unauflösbar, UND eine Güte-Messung kann einen solchen Treffer
+    rechnerisch nie als zutreffend werten — sie hat keinen Schlüssel, gegen den
+    sie ihn halten könnte.
+    """
+    (hit,) = await _nur_gedaechtnis(_mit_treffern(_erinnerung()))
+
+    assert hit.detail["quelle"] == {"art": "maintenance", "id": 4711}
+
+
+async def test_die_herkunft_bleibt_memory_trotz_rueckweg() -> None:
+    """AUFBAU-KONTROLLE: Der Rückweg sagt, WORAUF sich die Erinnerung bezieht —
+    nicht, WAS sie ist.
+
+    Als `maintenance` ausgegeben wäre sie eine Behauptung über die eigene
+    Datenlage, die nicht stimmt: Die Wartungszeile wurde nie befragt, nur ihre
+    Spiegelung. Genau das schliesst „Eigener Quelltyp, keine Tarnung" aus
+    (§15.10). Ohne diesen Test liesse sich der Rückweg später bequem in
+    `source_type`/`id` schreiben, und die Herkunft verschwände.
+    """
+    (hit,) = await _nur_gedaechtnis(_mit_treffern(_erinnerung()))
+
+    assert hit.source_type == "memory"
+    assert hit.id == 0
+    assert hit.detail["herkunft"] == "gedaechtnis"
+
+
+async def test_altbestand_ohne_rueckweg_bekommt_keinen_erfundenen() -> None:
+    """Zeilen aus der Zeit vor der Notiz-Spiegelung tragen die Felder nicht.
+
+    Dann fehlt der Eintrag ganz, statt mit einer geratenen Zahl gefüllt zu
+    werden — eine falsche Zuordnung wäre schlimmer als eine fehlende: Sie
+    schriebe einer Erinnerung eine fremde Quellzeile zu, und niemand könnte das
+    später auseinanderhalten.
+    """
+    (hit,) = await _nur_gedaechtnis(_mit_treffern(_erinnerung(metadata={"machine_id": 3})))
+
+    assert "quelle" not in hit.detail
+    assert hit.detail["herkunft"] == "gedaechtnis"
+
+
+@pytest.mark.parametrize(
+    "unvollstaendig",
+    [
+        {"machine_id": 3, "source_type": "maintenance"},  # Kennung fehlt
+        {"machine_id": 3, "source_id": 4711},  # Art fehlt
+        {"machine_id": 3, "source_type": "maintenance", "source_id": 0},  # Kennung unbrauchbar
+        {"machine_id": 3, "source_type": "", "source_id": 4711},  # Art leer
+    ],
+)
+async def test_halber_rueckweg_wird_nicht_ausgeliefert(unvollstaendig: dict[str, Any]) -> None:
+    """Ein Rückweg aus einer Hälfte führt nirgendwohin.
+
+    Aufbau-Kontrolle zum Fall darüber: Ohne sie bliebe offen, ob wirklich BEIDE
+    Felder verlangt werden. Eine Art ohne Kennung zeigt auf eine ganze Tabelle,
+    eine Kennung ohne Art auf eine Zahl ohne Bezug.
+    """
+    (hit,) = await _nur_gedaechtnis(_mit_treffern(_erinnerung(metadata=unvollstaendig)))
+
+    assert "quelle" not in hit.detail
