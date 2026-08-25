@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.db.models import Alarm, Machine, MaintenanceEvent, SemanticEvent
+from foreman.substrate.client import SubstrateNotFoundError
 from foreman.substrate.nachtrag import nachtragen
 
 pytestmark = pytest.mark.integration
@@ -373,4 +374,97 @@ async def test_mehrdeutige_merkmale_ordnen_nichts_zu(db_session: AsyncSession) -
     assert substrat.geloescht == []
     danach = await _lade(db_session, zeile.id)
     assert danach.substrate_ref == "alt-mehrdeutig"
+    assert "description" not in danach.payload
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Eine bereits fortgeschaffte Erinnerung blockiert die Zeile nicht
+# ──────────────────────────────────────────────────────────────────────
+
+
+class _SubstratOhneEintrag:
+    """Gegenstelle, die für eine Kennung meldet: hier liegt nichts (mehr)."""
+
+    def __init__(self, *, nicht_da: str) -> None:
+        self.geloescht: list[str] = []
+        self._nicht_da = nicht_da
+
+    async def forget(self, entry_id: str) -> None:
+        if entry_id == self._nicht_da:
+            raise SubstrateNotFoundError("❌ unter dieser Kennung liegt nichts (Test)")
+        self.geloescht.append(entry_id)
+
+
+async def test_bereits_fortgeschaffte_erinnerung_laesst_die_zeile_durchlaufen(
+    db_session: AsyncSession,
+) -> None:
+    """Geprüft wird die WIRKUNG, nicht der Eintritt in den Zweig (B1).
+
+    Ein Test, der nur den Zähler abfragt, belegt nicht, dass der Nachtrag danach
+    weiterläuft. Entscheidend ist, was mit der Zeile geschieht: Sie muss ihre
+    neue Nutzlast bekommen und für die Neuspiegelung freigegeben sein. Sonst
+    dreht sie sich dauerhaft im Kreis — die Kennung taucht ja nie wieder auf.
+    """
+    machine_id = await _maschine(db_session)
+    zeile = await _altzeile_wartung(
+        db_session, machine_id, beschreibung="Ersatzfett genommen.", ref="laengst-weg"
+    )
+    substrat = _SubstratOhneEintrag(nicht_da="laengst-weg")
+
+    stats = await nachtragen(db_session, substrat, _Redactor())
+
+    # Getrennt gezählt: weder Erfolg noch Fehlschlag.
+    assert stats.schon_geloescht == 1
+    assert stats.geloescht == 0, "in `geloescht` mitgezählt — die Zahl verlöre ihre Aussage"
+    assert stats.loeschen_fehlgeschlagen == 0
+    assert stats.angereichert == 1
+
+    # Und die Wirkung: Nutzlast angereichert, Referenz aufgehoben.
+    danach = await _lade(db_session, zeile.id)
+    assert danach.payload["description"].startswith(_Redactor.MARKE)
+    assert "Ersatzfett" in danach.payload["description"]
+    assert danach.substrate_ref is None, "die Zeile bliebe im Kreis stehen"
+
+
+async def test_zweiter_lauf_nach_bereits_fortgeschaffter_erinnerung_ist_ruhig(
+    db_session: AsyncSession,
+) -> None:
+    """Die Zeile ist danach erledigt und kommt nicht wieder.
+
+    Das ist die Hälfte der Fehlerzweig-Regel, die dem 404-Zweig seinen Sinn gibt:
+    Eine Störung des Weges darf keinen Eintrag verbrauchen — ein erledigter
+    Eintrag darf nicht ewig wiederkehren.
+    """
+    machine_id = await _maschine(db_session)
+    await _altzeile_wartung(db_session, machine_id, beschreibung="Ein Grund.", ref="laengst-weg")
+    substrat = _SubstratOhneEintrag(nicht_da="laengst-weg")
+
+    await nachtragen(db_session, substrat, _Redactor())
+    zweiter = await nachtragen(db_session, substrat, _Redactor())
+
+    assert zweiter.schon_geloescht == 0
+    assert zweiter.angereichert == 0
+    assert zweiter.bereits_vollstaendig == 1
+
+
+async def test_stoerung_laesst_die_zeile_weiterhin_unangetastet(
+    db_session: AsyncSession,
+) -> None:
+    """AUFBAU-KONTROLL-ZWILLING zum 404-Fall (B3).
+
+    Ohne ihn wäre die Aussage "eine fortgeschaffte Erinnerung läuft durch" auch
+    mit "alles läuft durch" erklärbar. Eine echte Störung muss die Zeile
+    weiterhin unberührt lassen, damit der nächste Lauf sie erneut greift.
+    """
+    machine_id = await _maschine(db_session)
+    zeile = await _altzeile_wartung(db_session, machine_id, beschreibung="Ein Grund.", ref="kaputt")
+
+    stats = await nachtragen(db_session, _Substrat(wirft_bei="kaputt"), _Redactor())
+
+    assert stats.loeschen_fehlgeschlagen == 1
+    assert stats.schon_geloescht == 0, "eine Störung wurde als erledigt gewertet"
+    assert stats.angereichert == 0
+
+    danach = await _lade(db_session, zeile.id)
+    assert danach.substrate_ref == "kaputt"
     assert "description" not in danach.payload

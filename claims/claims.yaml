@@ -1311,3 +1311,67 @@ claims:
       beschreiben Vorgänge, die niemand mehr nachschlagen kann, belegen aber
       Plätze in einer Trefferliste. Sie gehören zum selben offenen Punkt wie die
       Ersetzung der Altbestände.
+
+  - id: "C-055"
+    aussage: "Die Plattform kann das Entfernen einer einzelnen gespiegelten Erinnerung bei der Gegenstelle anfordern."
+    status: "gemessen"
+    wert: "Anforderung nach dem vereinbarten Muster, mit unterscheidbarer Antwort auf einen nicht vorhandenen Eintrag"
+    bedingung: >-
+      Gegen den Code erhoben am 25.08.2026 und über Tests gegen einen echten
+      HTTP-Transport belegt: Die Anforderung zeigt auf Basispfad, Bereich und
+      Kennung; der Bereich hat dabei genau eine Quelle, sodass ein Klient nicht
+      im einen Bereich schreiben und im anderen entfernen kann. Eine Antwort
+      "nicht vorhanden" ist von einer Störung des Weges unterscheidbar, ohne als
+      Erfolg ausgegeben zu werden. ZWEI EINSCHRÄNKUNGEN, die zur Aussage gehören:
+      Erstens ist die Gegenstelle zum Eintragsdatum GEBAUT, aber noch nicht
+      ausgeliefert — bis dahin läuft keine Anforderung durch. Zweitens nimmt die
+      Gegenstelle beim Entfernen die unmittelbar aus dem Eintragstext gewonnenen
+      Aussagen mit zurück, NICHT aber daraus abgeleitete Sachverhalte; das ist
+      dort ein bekannter offener Punkt. Die Aussage beschreibt damit, was der Weg
+      tut, und nicht, dass ein Anspruch vollständig erfüllt wäre.
+    datum: "2026-08-25"
+    fundstelle:
+      - "src/foreman/substrate/client.py, forget und _delete"
+      - "tests/unit/test_substrate_client.py"
+      - "GROUND_TRUTH.md, Abschnitt 9"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Freigabe bewusst nur intern. Die Aussage klingt nach einer vollständigen
+      Zusicherung eines Betroffenenrechts und ist eine eingeschränkte: Sie gilt
+      für die Anforderung, nicht für deren Wirkung in der Tiefe, und sie setzt
+      eine ausgelieferte Gegenstelle voraus. C-052 hält den vorherigen Zustand
+      fest und bleibt bis zur Auslieferung gültig. Für FOREMAN gibt es zudem
+      keine Einstufung nach den einschlägigen Regelwerken, gegen die dieser Weg
+      geprüft werden könnte — siehe C-056.
+
+  - id: "C-056"
+    aussage: "Für die Plattform liegt keine Einstufung nach den einschlägigen Regelwerken vor."
+    status: "gemessen"
+    wert: "Kein Verzeichnis für die Einstufung, keine Sektion in der Wahrheitsdatei — 4 Regelwerke offen"
+    bedingung: >-
+      Gegen das Repository erhoben am 25.08.2026: Es gibt kein compliance/-
+      Verzeichnis und die GROUND_TRUTH führt keine Sektion Regulatorik. Damit ist
+      für alle vier hausüblich geprüften Regelwerke — EU-Verordnung über
+      künstliche Intelligenz, Datenschutz-Grundverordnung, ISO/IEC 27001 Annex A
+      und FDA 21 CFR Part 11 — weder festgestellt, dass sie greifen, noch dass sie
+      nicht greifen. Die Entscheidung steht aus, ein Termin dafür ist nicht
+      gesetzt. Vereinzelte Einschätzungen im Repository (C-025, C-026 zur
+      Risikoklasse) sind konzipiert, nicht festgestellt, und ersetzen die
+      Einstufung nicht.
+    datum: "2026-08-25"
+    fundstelle:
+      - "GROUND_TRUTH.md (keine Sektion Regulatorik)"
+      - "Repository-Wurzel (kein compliance/-Verzeichnis)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Eintrag entsteht aus einem konkreten Anlass und nicht als Formalie: Mit
+      dem Löschweg (C-055) setzt die Plattform ein Betroffenenrecht um — und es
+      gibt keine Einstufung, gegen die sich prüfen liesse, ob das genügt, wofür es
+      genügen soll. Ein umgesetzter Weg ohne festgestellten Rahmen ist schwerer zu
+      bemerken als ein fehlender Weg, weil er wie eine Erfüllung aussieht. Solange
+      dieser Eintrag gilt, trägt keine Aussage über die Plattform eine Freigabe
+      über intern hinaus, die sich auf Regelkonformität stützt.

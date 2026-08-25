@@ -26,6 +26,18 @@ class SubstrateError(RuntimeError):
     """Fehler bei der Kommunikation mit dem Gedächtnis-Substrat (Deutsch, §6)."""
 
 
+class SubstrateNotFoundError(SubstrateError):
+    """Unter dieser Kennung liegt im angefragten Bereich nichts.
+
+    Eine UNTERART von `SubstrateError`, damit bestehende Aufrufer, die nur die
+    Oberklasse fangen, unverändert weiterlaufen. Wer den Unterschied braucht,
+    fängt sie gezielt — beim Löschen etwa trennt sie „ist schon weg" von „der
+    Weg ist gestört". Das eine ist das erreichte Ziel, das andere ein noch
+    ausstehender Versuch; sie gleich zu behandeln hiesse, eine Zeile entweder
+    dauerhaft im Kreis zu drehen oder vorschnell abzuhaken.
+    """
+
+
 class SubstrateClient:
     """HTTP-Client für das Gedächtnis-Substrat.
 
@@ -79,6 +91,13 @@ class SubstrateClient:
             raise SubstrateNotConfiguredError(
                 "SUBSTRATE_BASE_URL ist nicht gesetzt — Substrat-Anbindung fehlt."
             )
+        # EINE Quelle für den Bereich: derselbe aufgelöste Wert geht in den
+        # Klienten UND in den Löschpfad. Getrennt gepflegt könnten sie
+        # auseinanderlaufen — ein Klient mit abweichendem Bereich (der
+        # Round-Trip-Smoke setzt einen) schriebe in den einen und löschte im
+        # anderen. Die Falle ist heute gestellt, nicht ausgelöst: Der Smoke ruft
+        # `forget` nicht auf.
+        ns = namespace or settings.substrate_namespace
         return cls(
             base_url=settings.substrate_base_url,
             # SecretStr → Klartext erst hier, unmittelbar vor dem Header-Bau (§8).
@@ -86,7 +105,7 @@ class SubstrateClient:
                 settings.substrate_token.get_secret_value() if settings.substrate_token else None
             ),
             timeout_s=settings.substrate_timeout_s,
-            namespace=namespace or settings.substrate_namespace,
+            namespace=ns,
             paths={
                 "remember": settings.substrate_remember_path,
                 "recall": settings.substrate_recall_path,
@@ -98,7 +117,14 @@ class SubstrateClient:
                 # wirft `forget` einen KeyError — und zwar nur im Betrieb, weil
                 # ein von Hand gebauter Klient den Vorgabewert behält. Genau so
                 # blieb der Löschweg unbemerkt unerreichbar (Befund 25.08.2026).
-                "forget": settings.substrate_forget_path,
+                #
+                # Der Bereich wird HIER angehängt, nicht in der Einstellung: Die
+                # Gegenstelle adressiert /{bereich}/{kennung}, und `forget`
+                # schickt weder Rumpf noch Abfrageteil — der Pfad ist die einzige
+                # Stelle, an der der Bereich mitgeht. `rstrip` fängt einen
+                # Basispfad mit Schrägstrich am Ende ab, sonst entstünde ein
+                # doppelter Trenner.
+                "forget": f"{settings.substrate_forget_path.rstrip('/')}/{ns}",
             },
             client=client,
         )
@@ -114,11 +140,30 @@ class SubstrateClient:
         return data if isinstance(data, dict) else {"result": data}
 
     async def _delete(self, path: str) -> dict[str, Any]:
-        """Wie `_post`, aber löschend — eigener Weg, weil DELETE keinen Rumpf trägt."""
+        """Wie `_post`, aber löschend — eigener Weg, weil DELETE keinen Rumpf trägt.
+
+        EIN 404 IST EINE EIGENE AUSNAHME, kein Erfolg: Er bedeutet, dass es unter
+        dieser Kennung in diesem Bereich nichts (mehr) gibt. Für einen Aufrufer
+        ist das etwas grundlegend anderes als eine Störung des Weges — im einen
+        Fall ist das Ziel erreicht, im anderen steht der Versuch noch aus. Ohne
+        die Unterscheidung ginge der Statuscode in `SubstrateError` verloren und
+        beide Fälle sähen gleich aus.
+
+        Umgedeutet wird trotzdem nichts: Auch der 404 WIRFT. Nur die ART wird
+        unterscheidbar; was daraus folgt, entscheidet der Aufrufer.
+        """
         try:
             response = await self._client.delete(path)
             response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == httpx.codes.NOT_FOUND:
+                raise SubstrateNotFoundError(
+                    f"Substrat-Aufruf {path}: unter dieser Kennung liegt nichts."
+                ) from exc
+            raise SubstrateError(f"Substrat-Aufruf {path} fehlgeschlagen: {exc}") from exc
         except httpx.HTTPError as exc:
+            # Netz-, Zeit- und Protokollfehler tragen keine Antwort — sie sind
+            # immer eine Störung des Weges.
             raise SubstrateError(f"Substrat-Aufruf {path} fehlgeschlagen: {exc}") from exc
         data: Any = response.json()
         return data if isinstance(data, dict) else {"result": data}

@@ -16,6 +16,7 @@ from foreman.substrate.client import (
     SubstrateClient,
     SubstrateError,
     SubstrateNotConfiguredError,
+    SubstrateNotFoundError,
 )
 from foreman.substrate.smoke import run_substrate_smoke
 
@@ -364,3 +365,189 @@ async def test_forget_funktioniert_ueber_einen_aus_der_konfiguration_gebauten_kl
     assert gesehen["methode"] == "DELETE"
     assert str(gesehen["pfad"]).endswith("/abc-123")
     assert antwort == {"deleted": True}
+
+
+# ------------------------------------------------------------
+#  Der Bereich steht im Löschpfad — eine Quelle, nicht zwei
+# ------------------------------------------------------------
+
+
+def _aus_konfiguration(
+    handler: Callable[[httpx.Request], httpx.Response],
+    *,
+    forget_path: str = "/api/substrate/forget",
+    namespace: str = "foreman",
+    ueberschreib_namespace: str | None = None,
+) -> SubstrateClient:
+    """Klient auf dem Weg, den der Betrieb geht — mit echtem Transport (B4)."""
+    transport = httpx.MockTransport(handler)
+    return SubstrateClient.from_settings(
+        Settings(
+            substrate_base_url="http://substrate.test",
+            substrate_forget_path=forget_path,
+            substrate_namespace=namespace,
+        ),
+        namespace=ueberschreib_namespace,
+        client=httpx.AsyncClient(transport=transport, base_url="http://substrate.test"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("basispfad", "namespace"),
+    [
+        ("/api/substrate/forget", "foreman"),
+        ("/api/substrate/forget/", "foreman"),  # Schrägstrich am Ende darf nicht doppeln
+        ("/api/substrate/forget", "foreman-demo"),  # Bindestrich im Bereich
+    ],
+)
+async def test_forget_haengt_bereich_und_kennung_an_den_basispfad(
+    basispfad: str, namespace: str
+) -> None:
+    """Geprüft wird die TATSÄCHLICH angefragte Adresse, nicht das Pfad-Verzeichnis (B6).
+
+    Ein Verzeichnis kann richtig gefüllt sein und der Aufruf trotzdem falsch
+    zusammengesetzt werden. Die Gegenstelle adressiert
+    /{basispfad}/{bereich}/{kennung}; `forget` schickt weder Rumpf noch
+    Abfrageteil, der Pfad ist also die einzige Stelle, an der der Bereich mitgeht.
+    """
+    gesehen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesehen["pfad"] = request.url.path
+        gesehen["methode"] = request.method
+        return httpx.Response(200, json={"entry_id": "abc-123", "status": "deleted"})
+
+    client = _aus_konfiguration(handler, forget_path=basispfad, namespace=namespace)
+    await client.forget("abc-123")
+
+    assert gesehen["methode"] == "DELETE"
+    assert gesehen["pfad"] == f"/api/substrate/forget/{namespace}/abc-123"
+
+
+async def test_abweichender_bereich_wirkt_auch_im_loeschpfad() -> None:
+    """EINE Quelle für den Bereich — sonst schreibt der Klient anderswo, als er löscht.
+
+    Der Round-Trip-Smoke baut seinen Klienten mit abweichendem Bereich. Käme der
+    Bereich im Löschpfad aus einer zweiten Einstellung, zeigte das Löschen auf den
+    Betriebsbestand, während das Schreiben im Smoke-Bestand landet. Heute ruft der
+    Smoke `forget` nicht auf — die Falle ist gestellt, nicht ausgelöst, und dieser
+    Test hält sie geschlossen.
+    """
+    gesehen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesehen["pfad"] = request.url.path
+        return httpx.Response(200, json={"status": "deleted"})
+
+    client = _aus_konfiguration(
+        handler, namespace="foreman", ueberschreib_namespace="foreman-smoke"
+    )
+    await client.forget("xyz")
+
+    assert gesehen["pfad"] == "/api/substrate/forget/foreman-smoke/xyz"
+    assert client._namespace == "foreman-smoke", "Klient und Löschpfad liefen auseinander"
+
+
+async def test_leere_kennung_wird_vor_dem_aufruf_abgelehnt() -> None:
+    """B5: Ohne Kennung zeigte der Pfad auf die Sammlung statt auf einen Eintrag."""
+    gerufen = False
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal gerufen
+        gerufen = True
+        return httpx.Response(200, json={})
+
+    client = _aus_konfiguration(handler)
+    for leer in ("", "   ", "\n"):
+        with pytest.raises(ValueError):
+            await client.forget(leer)
+    assert not gerufen, "es wurde trotz fehlender Kennung eine Anfrage geschickt"
+
+
+# ------------------------------------------------------------
+#  404 ist unterscheidbar — aber kein Erfolg
+# ------------------------------------------------------------
+
+
+async def test_404_wirft_die_eigene_ausnahme() -> None:
+    """Ist-schon-weg muss von Weg-ist-gestoert trennbar sein.
+
+    Umgedeutet wird nichts: Es WIRFT weiterhin. Nur die Art wird unterscheidbar,
+    damit ein Aufrufer entscheiden kann — vorher ging der Statuscode in
+    `SubstrateError` verloren und beide Fälle sahen gleich aus.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"detail": "kein solcher Eintrag"})
+
+    client = _aus_konfiguration(handler)
+    with pytest.raises(SubstrateNotFoundError):
+        await client.forget("weg")
+
+
+async def test_die_eigene_ausnahme_bleibt_ein_substrate_error() -> None:
+    """Aufbau-Kontrolle: Bestehende Aufrufer fangen die Oberklasse und laufen weiter."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={})
+
+    client = _aus_konfiguration(handler)
+    with pytest.raises(SubstrateError):
+        await client.forget("weg")
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 409, 500, 503])
+async def test_andere_fehlerstatus_bleiben_gewoehnliche_substrate_error(status: int) -> None:
+    """Zwilling zum 404-Fall (B3).
+
+    Ohne ihn wäre die Aussage "404 ist besonders" auch mit "alles ist besonders"
+    erklärbar. Ein 500 heisst gefunden, aber nicht gelöscht — eine Störung, die
+    NICHT als erledigt durchgehen darf.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status, json={"detail": "nein"})
+
+    client = _aus_konfiguration(handler)
+    with pytest.raises(SubstrateError) as fehler:
+        await client.forget("abc")
+    assert not isinstance(fehler.value, SubstrateNotFoundError), (
+        f"HTTP {status} wurde faelschlich als nicht-gefunden gewertet"
+    )
+
+
+async def test_netzfehler_bleibt_gewoehnlicher_substrate_error() -> None:
+    """Ein Verbindungsfehler trägt gar keine Antwort — immer eine Wegstörung."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("keine Verbindung (Test)")
+
+    client = _aus_konfiguration(handler)
+    with pytest.raises(SubstrateError) as fehler:
+        await client.forget("abc")
+    assert not isinstance(fehler.value, SubstrateNotFoundError)
+
+
+async def test_erfolgreiches_loeschen_liefert_den_rumpf_durch() -> None:
+    """Die Gegenstelle antwortet 200 MIT Rumpf, nicht 204.
+
+    `_delete` liest den Rumpf bedingungslos; ein 204 ohne Inhalt liefe hier in
+    einen Auswertungsfehler. Die Antwortform gehört deshalb in die Abnahme und
+    nicht nur in die Absprache.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "entry_id": "abc-123",
+                "namespace": "foreman",
+                "status": "deleted",
+                "tiers": ["plastic"],
+            },
+        )
+
+    client = _aus_konfiguration(handler)
+    antwort = await client.forget("abc-123")
+    assert antwort["status"] == "deleted"
+    assert antwort["entry_id"] == "abc-123"
