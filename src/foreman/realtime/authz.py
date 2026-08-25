@@ -98,14 +98,54 @@ async def visible_machine_scope(session: AsyncSession, user: User) -> list[int] 
     return []
 
 
+async def visible_line_scope(session: AsyncSession, user: User) -> list[int] | None:
+    """Linien-Ausschnitt einer Rolle für lesende Sichten (Matrix 3.1).
+
+    Das Gegenstück zu `visible_machine_scope` eine Ebene höher: unrestricted
+    (manager/technician) → None (kein Filter); `shift_lead` → seine zugewiesenen
+    Linien; `worker` → die Linien, an denen seine Maschinen hängen. Eine unbekannte
+    Rolle bekommt einen leeren Ausschnitt (default-deny).
+
+    Für den `worker` ABGELEITET und nicht getrennt gepflegt: Wer eine Maschine
+    sieht, sieht die Linie, an der sie hängt — und keine andere. Ein zweites
+    Zuweisungsfeld wäre die Stelle, an der Maschinen- und Linien-Sicht
+    auseinanderlaufen.
+    """
+    if user.role in _UNRESTRICTED_ROLES:
+        return None
+    if user.role == ROLE_SHIFT_LEAD:
+        return list(user.assigned_line_ids)
+    if user.role == ROLE_WORKER:
+        result = await session.scalars(
+            select(Machine.line_id).where(
+                Machine.id.in_(user.assigned_machine_ids), Machine.line_id.is_not(None)
+            )
+        )
+        # `is_not(None)` steht schon im Prädikat; die Prüfung hier hält den Typ
+        # sauber und trägt auch, wenn jemand das Prädikat später anfasst.
+        return sorted({int(line_id) for line_id in result.all() if line_id is not None})
+    return []
+
+
 async def can_see_machine(session: AsyncSession, user: User, machine_id: int) -> bool:
     """Ob `user` GENAU DIESE Maschine sehen darf (default-deny).
 
     Leitet die Antwort aus `visible_machine_scope` ab statt aus einer eigenen
     Rollenverzweigung. Damit können Einzelprüfung und Listenfilter nicht
     auseinanderlaufen, und HTTP zieht denselben Strich wie das Abo: `can_subscribe`
-    fragt hier, und `MachineScope` (api/deps.py) fragt denselben Resolver.
+    fragt hier, und `ResourceScope` (api/deps.py) fragt denselben Resolver.
     Zwei getrennte Herleitungen wären die Stelle, an der die Pfade divergieren.
     """
     scope = await visible_machine_scope(session, user)
     return scope is None or machine_id in scope
+
+
+async def can_see_line(session: AsyncSession, user: User, line_id: int) -> bool:
+    """Ob `user` GENAU DIESE Linie sehen darf (default-deny).
+
+    Wie `can_see_machine` eine Ebene höher und aus demselben Grund aus dem
+    Resolver abgeleitet: Einzelprüfung und Listenfilter dürfen nicht getrennt
+    hergeleitet werden.
+    """
+    scope = await visible_line_scope(session, user)
+    return scope is None or line_id in scope

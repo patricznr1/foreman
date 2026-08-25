@@ -30,8 +30,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from foreman.api.deps import (
     FailureModelDep,
     GatewayDep,
-    MachineScope,
-    MachineScopeDep,
+    ResourceScope,
+    ResourceScopeDep,
     SessionDep,
     SubstrateClientDep,
     require_roles,
@@ -59,7 +59,7 @@ TriggerUser = Annotated[User, Depends(require_roles(ROLE_SHIFT_LEAD, ROLE_MANAGE
 
 
 async def _sichtbare_vorhersage(
-    session: AsyncSession, scope: MachineScope, prediction_id: int
+    session: AsyncSession, scope: ResourceScope, prediction_id: int
 ) -> FailurePredictionRecord:
     """Lädt eine Vorhersage, die im Ausschnitt des Anfragenden liegt — sonst 404.
 
@@ -89,7 +89,7 @@ async def predict_failure(
     session: SessionDep,
     model: FailureModelDep,
     current_user: TriggerUser,
-    scope: MachineScopeDep,
+    scope: ResourceScopeDep,
 ) -> FailurePredictionRecord:
     """Erzeugt on-demand eine Ausfallvorhersage für eine Maschine und persistiert sie.
     403 außerhalb des eigenen Maschinen-Ausschnitts, 404, wenn die Maschine nicht existiert."""
@@ -113,7 +113,7 @@ async def predict_failure(
 @router.get("/predictions", response_model=list[FailurePredictionRead])
 async def list_predictions(
     session: SessionDep,
-    scope: MachineScopeDep,
+    scope: ResourceScopeDep,
     machine_id: int | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
@@ -130,7 +130,7 @@ async def list_predictions(
 
 @router.get("/predictions/{prediction_id}", response_model=FailurePredictionRead)
 async def get_prediction(
-    prediction_id: int, session: SessionDep, scope: MachineScopeDep
+    prediction_id: int, session: SessionDep, scope: ResourceScopeDep
 ) -> FailurePredictionRecord:
     """Liefert eine einzelne persistierte Vorhersage. 404, wenn nicht im Ausschnitt."""
     return await _sichtbare_vorhersage(session, scope, prediction_id)
@@ -150,7 +150,7 @@ async def create_recommendation(
     gateway: GatewayDep,
     substrate: SubstrateClientDep,
     current_user: TriggerUser,
-    scope: MachineScopeDep,
+    scope: ResourceScopeDep,
 ) -> FailureRecommendationRecord:
     """Erzeugt on-demand eine LLM-Werker-Empfehlung zu einer Vorhersage und persistiert sie.
 
@@ -175,7 +175,7 @@ async def create_recommendation(
 
 @router.get("/predictions/{prediction_id}/recommendation", response_model=WorkerRecommendationRead)
 async def get_recommendation(
-    prediction_id: int, session: SessionDep, scope: MachineScopeDep
+    prediction_id: int, session: SessionDep, scope: ResourceScopeDep
 ) -> FailureRecommendationRecord:
     """Liefert die jüngste persistierte Empfehlung zu einer Vorhersage. 404, wenn keine.
 

@@ -41,12 +41,12 @@ from foreman.main import create_app
 IDENTITAETS_DEPS = {"get_current_user", "_require"}
 
 # Autorisierung auf RESSOURCEN-Ebene. Zwei zulässige Formen, in dieser Rangfolge:
-# (1) der gemeinsame Dependency `get_machine_scope` — im Dependency-Baum sichtbar
+# (1) der gemeinsame Dependency `get_resource_scope` — im Dependency-Baum sichtbar
 #     und damit strukturell prüfbar, nicht über eine Zeichenkette;
 # (2) für die Routen, die ausdrücklich das WS-Thema spiegeln: der Aufruf im Rumpf.
 # Geprüft wird dort die AUSFÜHRBARE Form (`await …(`), nicht der bloße Name — sonst
 # genügte eine Erwähnung im Docstring, um die Route abgesichert aussehen zu lassen.
-SCOPE_DEPS = {"get_machine_scope"}
+SCOPE_DEPS = {"get_resource_scope"}
 SCOPE_IM_RUMPF = ("await can_subscribe(", "await visible_machine_scope(")
 
 # Ressourcen-Kennungen: Führt eine Route eine davon, entscheidet nicht die
@@ -71,29 +71,11 @@ AUSGENOMMEN = {
 # Dependency noch nicht führen. Aus der Messung gegen `create_app()` erzeugt, nie
 # abgetippt. Sie schrumpft mit jeder Etappe auf null.
 OFFEN_STAND_2026_08_25: set[str] = {
-    "GET /api/v1/alarms",
-    "GET /api/v1/alarms/{alarm_id}",
-    "GET /api/v1/components",
-    "GET /api/v1/components/{component_id}",
-    "GET /api/v1/data_points",
-    "GET /api/v1/data_points/{data_point_id}",
-    "GET /api/v1/lines",
-    "GET /api/v1/lines/{line_id}",
-    "GET /api/v1/machines",
-    "GET /api/v1/machines/{machine_id}",
-    "GET /api/v1/production_runs",
-    "GET /api/v1/production_runs/{run_id}",
     "GET /api/v1/reasoners/drift/alarms",
     "GET /api/v1/reasoners/event_chain/explanations",
     "GET /api/v1/reasoners/event_chain/explanations/{explanation_id}",
     "GET /api/v1/reasoners/event_chain/explanations/{explanation_id}/siblings",
     "GET /api/v1/substrate/smoke",
-    "POST /api/v1/alarms",
-    "POST /api/v1/components",
-    "POST /api/v1/data_points",
-    "POST /api/v1/lines",
-    "POST /api/v1/machines",
-    "POST /api/v1/production_runs",
     "POST /api/v1/readings",
 }
 
