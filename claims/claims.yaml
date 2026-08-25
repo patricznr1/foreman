@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-08-24"
+stand: "2026-08-25"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -1204,3 +1204,110 @@ claims:
       ohne eigene beizusteuern. Die Bedingung ist damit nicht widerlegt, sondern
       noch nicht prüfbar — sie wird erneut gemessen, sobald die Erinnerungen
       beschreibenden Text führen.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Zustand der Gedächtnis-Anbindung — erhoben 25.08.2026
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-051"
+    aussage: "Der Rückweg für ein Löschverlangen war über die Betriebskonfiguration nicht erreichbar; er ist es seit dem 25.08.2026."
+    status: "gemessen"
+    wert: "Aufruf schlug im Betrieb fehl, während alle Tests bestanden — 22 von 22 Versuchen"
+    bedingung: >-
+      Aufgefallen beim ersten scharfen Lauf des Nachtrags gegen die laufende
+      Instanz. Die Fabrikmethode baute das Verzeichnis der Dienstwege ohne den
+      Löschweg und ersetzte damit den Vorgabewert des Konstruktors vollständig.
+      Auffallen konnte das nicht: Jeder Test baut seinen Klienten von Hand und
+      behält dadurch den vollständigen Vorgabewert. Ein Test vergleicht jetzt die
+      Schlüsselmengen beider Wege; ein zweiter löscht tatsächlich über die
+      Konfiguration, damit ein vorhandener, aber falsch zusammengesetzter Weg
+      nicht durchrutscht. Gegenprobe gefahren: mit dem alten Zustand schlägt der
+      Mengenvergleich an, danach ist der Kontrollpunkt grün.
+    datum: "2026-08-25"
+    fundstelle:
+      - "src/foreman/substrate/client.py, from_settings"
+      - "tests/unit/test_substrate_client.py"
+      - "GROUND_TRUTH.md, Abschnitt 9"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Die allgemeine Lehre steht über dem Einzelfall: Ein Test, der seinen
+      Prüfling selbst zusammensetzt, prüft nicht den Weg, den der Betrieb geht.
+      Der Mengenvergleich ist deshalb bewusst strukturell — wer künftig eine
+      Methode samt Vorgabeweg ergänzt, wird daran erinnert, sie auch aus der
+      Konfiguration erreichbar zu machen.
+
+  - id: "C-052"
+    aussage: "Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar."
+    status: "gemessen"
+    wert: "Die Schnittstelle der Gegenstelle bietet keinen Löschweg — 6 Wege vorhanden, keiner davon löschend"
+    bedingung: >-
+      Gegen den Code der Gegenstelle erhoben am 25.08.2026: Ihre Fassade führt
+      Ablegen, Abrufen, Rückschau, Abweichungsstand, Schlussfolgern und
+      Verdichten. Ein löschender Weg fehlt. Auf Seiten der Plattform ist der
+      Löschweg vollständig gebaut und seit C-051 auch erreichbar; er wartet auf
+      sein Gegenstück. Solange gilt: Was gespiegelt wurde, kann nicht auf
+      Verlangen entfernt werden.
+    datum: "2026-08-25"
+    fundstelle:
+      - "src/foreman/substrate/client.py, forget"
+      - "GROUND_TRUTH.md, Abschnitt 9"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Eintrag steht bewusst als eigener Punkt und nicht als Nebensatz zu
+      C-051. Eine erreichbare Methode ohne Gegenstelle sieht im Code aus wie ein
+      erfüllter Anspruch. Er ist erst erfüllt, wenn ein Löschverlangen
+      tatsächlich durchläuft — bis dahin ist dies ein offener Punkt und wird
+      auch so ausgewiesen.
+
+  - id: "C-053"
+    aussage: "Die Verdichtung des Gedächtnisses wird von der Plattform nicht angestossen."
+    status: "gemessen"
+    wert: "62 von 63 Erinnerungen auf der mittleren Ebene, 1 auf der gefestigten; 1 von 63 im Wissensnetz verarbeitet"
+    bedingung: >-
+      Zustand des Plattform-Bereichs im Gedächtnis, erhoben am 25.08.2026 über
+      die Rückschau der Gegenstelle. Die Gegenstelle bietet einen Weg, die
+      Verdichtung je Bereich auszulösen; die Plattform ruft ihn nicht auf. Ein
+      von Hand ausgelöster Lauf durchlief alle vier Phasen und meldete vier
+      Ereignisse, bewegte aber nichts zwischen den Ebenen — der Bestand liegt
+      bereits dauerhaft gespeichert vor. Die Ursache liegt damit nicht im
+      Auslösen, sondern im Inhalt: Aus Einträgen, die allein die Struktur eines
+      Vorgangs wiedergeben, lässt sich nichts verdichten.
+    datum: "2026-08-25"
+    fundstelle:
+      - "src/foreman/substrate/client.py"
+      - "GROUND_TRUTH.md, Abschnitt 12.4"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Zusammen mit C-050 ergibt das eine Reihenfolge: erst der Inhalt, dann die
+      Verdichtung, dann die Freigabe der vierten Archiv-Quelle. Ein Verdichtungs-
+      lauf auf inhaltsleerem Bestand verbessert nichts und würde die Messung nur
+      um eine Stellschraube erweitern, die nichts erklärt.
+
+  - id: "C-054"
+    aussage: "Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt."
+    status: "gemessen"
+    wert: "22 von 44 Spiegelungen ohne zugehörige Quellzeile"
+    bedingung: >-
+      Erhoben am 25.08.2026 gegen die laufende Instanz. Den 32 Spiegelungen von
+      Wartungsvorgängen stehen 16 Wartungen gegenüber, den 12 Spiegelungen von
+      Alarmen 6 Alarme: Der Datenbestand wurde zwischenzeitlich neu aufgebaut,
+      die zugehörigen Erinnerungen blieben bestehen. Der Nachtrag lässt diese
+      Zeilen unangetastet und erfindet keinen Text; entfernen lassen sich die
+      verwaisten Erinnerungen erst, wenn ein Löschweg besteht (C-052).
+    datum: "2026-08-25"
+    fundstelle:
+      - "src/foreman/substrate/nachtrag.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Für die Güte der Archiv-Suche ist das erheblich: Diese Erinnerungen
+      beschreiben Vorgänge, die niemand mehr nachschlagen kann, belegen aber
+      Plätze in einer Trefferliste. Sie gehören zum selben offenen Punkt wie die
+      Ersetzung der Altbestände.

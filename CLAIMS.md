@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-08-24
+Stand: 2026-08-25
 
 ## FOREMAN
 
@@ -52,6 +52,14 @@ Stand: 2026-08-24
 | C-044 | Der Text einer Schichtnotiz verlässt die Anlage und wird im Gedächtnis abgelegt. | gemessen | 1 von 7 gespiegelten Ereignisarten trägt Freitext; die übrigen sechs nur Kennungen, Typen und Zeitpunkte | 2026-08-24 | gueltig | intern |
 | C-045 | Ein Löschverlangen für eine gespiegelte Erinnerung ist von der Plattform aus erfüllbar. | gemessen | 1 Löschweg, der bei Fehlschlag wirft statt ihn zu verschlucken | 2026-08-24 | gueltig | intern |
 | C-046 | Den Validierungs-Vorbehalt formuliert das System, nicht das Sprachmodell. | gemessen | 2 von 2 heiklen Angaben einer Empfehlung kommen deterministisch: Zahlen und Vorbehalt | 2026-08-24 | gueltig | intern, fach, kunde |
+| C-047 | Für die Archiv-Suche existiert ein Bewertungssatz, dessen Relevanzurteile von drei voneinander unabhängigen Beurteilern getragen werden. | gemessen | 18 Anfragen, 79 Relevanz-Zuordnungen, 86,6 % Übereinstimmung aller drei Beurteiler | 2026-08-24 | gueltig | intern, fach |
+| C-048 | Die Ähnlichkeitsschwelle der Archiv-Suche war nie an echten Daten justiert; nach der Justierung findet die Suche deutlich mehr. | gemessen | Schwelle 0,55 → 0,60: Trefferquote 0,185 → 0,256 (+38 %), Ranggüte 0,306 → 0,372 (+22 %) | 2026-08-24 | gueltig | intern, fach |
+| C-049 | Die Güte der quellenübergreifenden Archiv-Suche ist erstmals beziffert. | gemessen | Trefferquote 0,256 · Genauigkeit 0,415 · Ranggüte 0,372 (k=10, drei Quellen, Schwelle 0,60) | 2026-08-24 | gueltig | intern, fach |
+| C-050 | Das Gedächtnis als vierte Archiv-Quelle erfüllt seine Freigabe-Bedingung im gegenwärtigen Zustand nicht. | gemessen | 0 % der Anfragen mit zusätzlichem zutreffendem Treffer (gefordert: mindestens 30 %); auf 11 von 18 Anfragen verschlechterte Reihenfolge | 2026-08-24 | gueltig | intern, fach |
+| C-051 | Der Rückweg für ein Löschverlangen war über die Betriebskonfiguration nicht erreichbar; er ist es seit dem 25.08.2026. | gemessen | Aufruf schlug im Betrieb fehl, während alle Tests bestanden — 22 von 22 Versuchen | 2026-08-25 | gueltig | intern |
+| C-052 | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | gemessen | Die Schnittstelle der Gegenstelle bietet keinen Löschweg — 6 Wege vorhanden, keiner davon löschend | 2026-08-25 | gueltig | intern |
+| C-053 | Die Verdichtung des Gedächtnisses wird von der Plattform nicht angestossen. | gemessen | 62 von 63 Erinnerungen auf der mittleren Ebene, 1 auf der gefestigten; 1 von 63 im Wissensnetz verarbeitet | 2026-08-25 | gueltig | intern |
+| C-054 | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | gemessen | 22 von 44 Spiegelungen ohne zugehörige Quellzeile | 2026-08-25 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -64,17 +72,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 46
+Einträge gesamt: 54
 
 Nach Status:
 
-- gemessen: 39
+- gemessen: 47
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 44
+- gueltig: 52
 - ueberholt: 2
 - ungeprueft: 0
