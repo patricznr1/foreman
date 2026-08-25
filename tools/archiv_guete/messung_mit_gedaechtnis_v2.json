@@ -1,0 +1,1271 @@
+{
+ "lauf": "mit_gedaechtnis_v2",
+ "basis": "https://frontend-production-169a.up.railway.app",
+ "quellen": [
+  "note",
+  "maintenance",
+  "alarm",
+  "memory"
+ ],
+ "k": 10,
+ "laeufe": [
+  {
+   "anfrage_id": "G-01",
+   "anfrage": "Achse wird lauter beim Verfahren",
+   "machine_id": null,
+   "dauer_s": 1.22,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst."
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:2",
+     "source_type": "note",
+     "id": 2,
+     "machine_id": 2,
+     "excerpt": "AX-02 wird lauter, singt beim Verfahren. AX-01 daneben ruhig, beide gleich alt und gleich gewartet. Komisch."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 6,
+     "excerpt": "Wartung (inspection) an Maschine 6 durchgeführt (2026-06-05T17:03:51.561708+00:00). Routine-Inspektion Teilezufuehrung B: Foerderschnecke und [PERSON], leichtes Spiel an der Schnecke notiert, noch im…"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "excerpt": "Wartung (inspection) an Maschine 3 durchgeführt (2026-06-06T18:03:51.561708+00:00). Inspektion Vertikalachse AX-03: Fuehrung und Lager geprueft, Schmierung bestaetigt. Hohe Grundlast durch Einbaulage…"
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, [PERSON] ISO VG 46) — Grundoelviskositaet…"
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:1",
+     "source_type": "note",
+     "id": 1,
+     "machine_id": 1,
+     "excerpt": "AX-01 laeuft ruhig, kein Geraeusch, Achse sauber. Nichts zu vermerken."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-17T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-02",
+   "anfrage": "falsches Schmierfett eingesetzt",
+   "machine_id": null,
+   "dauer_s": 1.22,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, [PERSON] ISO VG 46) — Grundoelviskositaet…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "excerpt": "Wartung (lubrication) an Maschine 1 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "excerpt": "Wartung (lubrication) an Maschine 3 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 8,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-17T18:47:17.894280+00:00)."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-03",
+   "anfrage": "mahlendes Geraeusch beim Hochfahren",
+   "machine_id": null,
+   "dauer_s": 0.97,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst."
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst (2026-06-20T18:03:51.561708+00:00). PR-02 Fuegekraft ueber Erwartung — [PERSON] vermutet"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:1",
+     "source_type": "note",
+     "id": 1,
+     "machine_id": 1,
+     "excerpt": "AX-01 laeuft ruhig, kein Geraeusch, Achse sauber. Nichts zu vermerken."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "excerpt": "Wartung (lubrication) an Maschine 1 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:11",
+     "source_type": "note",
+     "id": 11,
+     "machine_id": 9,
+     "excerpt": "PR-03 laeuft sauber, Kraftverlauf wie immer. Keine Auffaelligkeiten."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:12",
+     "source_type": "note",
+     "id": 12,
+     "machine_id": 10,
+     "excerpt": "RB-01 laeuft sauber, Taktzeit stabil, keine Auffaelligkeiten an den Gelenken."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-17T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:2",
+     "source_type": "note",
+     "id": 2,
+     "machine_id": 2,
+     "excerpt": "AX-02 wird lauter, singt beim Verfahren. AX-01 daneben ruhig, beide gleich alt und gleich gewartet. Komisch."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-04",
+   "anfrage": "Lagerschwingung ueber Warnschwelle",
+   "machine_id": null,
+   "dauer_s": 0.99,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Alarm AXIS_VIB_WARN (warning/hardware) an Maschine 2 ausgelöst (2026-06-18T18:03:51.561708+00:00). Lagerschwingung AX-02 ueber Warnschwelle (Zone C/D)"
+    },
+    {
+     "rang": 2,
+     "schluessel": "alarm:1",
+     "source_type": "alarm",
+     "id": 1,
+     "machine_id": 2,
+     "excerpt": "Lagerschwingung AX-02 ueber Warnschwelle (Zone C/D)"
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "excerpt": "Alarm AXIS_VIB_WARN (warning/hardware) an Maschine 3 ausgelöst (2026-06-22T17:03:51.561708+00:00). Lagerschwingung AX-03 ueber Warnschwelle (Zone C/D)"
+    },
+    {
+     "rang": 5,
+     "schluessel": "alarm:2",
+     "source_type": "alarm",
+     "id": 2,
+     "machine_id": 3,
+     "excerpt": "Lagerschwingung AX-03 ueber Warnschwelle (Zone C/D)"
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst."
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Alarm HYD_PRESS_LOW_WARN (warning/hardware) an Maschine 7 ausgelöst (2026-06-20T17:03:51.561708+00:00). Hydraulikdruck PR-01 unter Warnschwelle (Leckage vermutet)"
+    },
+    {
+     "rang": 10,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "excerpt": "Alarm REJECT_RATE_HIGH (warning/quality) an Maschine 12 ausgelöst (2026-06-09T00:03:51.561708+00:00). [PERSON] VS-01 ueber Warnschwelle (>3 %)"
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-05",
+   "anfrage": "Hydraulikdruck laesst nach",
+   "machine_id": null,
+   "dauer_s": 1.08,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Alarm HYD_PRESS_LOW_WARN (warning/hardware) an Maschine 7 ausgelöst (2026-06-20T17:03:51.561708+00:00). Hydraulikdruck PR-01 unter Warnschwelle (Leckage vermutet)"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Alarm HYD_PRESS_LOW_CRIT (critical/hardware) an Maschine 7 ausgelöst (2026-06-22T19:03:51.561708+00:00). Hydraulikdruck PR-01 kritisch — Dichtungswechsel erforderlich"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Wartung (inspection) an Maschine 7 durchgeführt (2026-06-06T18:03:51.561708+00:00). Planmaessige Inspektion Hydraulikkreis PR-01: Druck im Sollband, Dichtungen sichtgeprueft, keine sichtbare Leckage.…"
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Alarm HYD_PRESS_LOW_WARN (warning/hardware) an Maschine 7 ausgelöst."
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Alarm HYD_PRESS_LOW_CRIT (critical/hardware) an Maschine 7 ausgelöst."
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:11",
+     "source_type": "note",
+     "id": 11,
+     "machine_id": 9,
+     "excerpt": "PR-03 laeuft sauber, Kraftverlauf wie immer. Keine Auffaelligkeiten."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-06",
+   "anfrage": "Fuegekraft steigt Werkzeug alt",
+   "machine_id": null,
+   "dauer_s": 1.08,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst (2026-06-20T18:03:51.561708+00:00). PR-02 Fuegekraft ueber Erwartung — [PERSON] vermutet"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Wartung (tool_change) an Maschine 8 durchgeführt (2026-06-04T08:03:51.561708+00:00). Werkzeugwechsel Fuegepresse 2: [PERSON] getauscht (Standzeitbeginn). Hinweis: [PERSON] hier faktisch 90 Tage statt…"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "excerpt": "Wartung (tool_change) an Maschine 9 durchgeführt (2026-06-04T08:03:51.561708+00:00). Werkzeugwechsel Fuegepresse 3: Fuegestempel zum Standzeitbeginn getauscht. [PERSON] 30 Tage gemaess Vorgabe."
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "excerpt": "Wartung (tool_change) an Maschine 9 durchgeführt (2026-06-03T09:47:17.894280+00:00)."
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Wartung (tool_change) an Maschine 8 durchgeführt (2026-06-03T09:47:17.894280+00:00)."
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-07",
+   "anfrage": "Werkzeugwechsel ueberfaellig",
+   "machine_id": null,
+   "dauer_s": 1.25,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Wartung (tool_change) an Maschine 8 durchgeführt (2026-06-04T08:03:51.561708+00:00). Werkzeugwechsel Fuegepresse 2: [PERSON] getauscht (Standzeitbeginn). Hinweis: [PERSON] hier faktisch 90 Tage statt…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Wartung (tool_change) an Maschine 8 durchgeführt (2026-06-03T09:47:17.894280+00:00)."
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "excerpt": "Wartung (tool_change) an Maschine 9 durchgeführt (2026-06-03T09:47:17.894280+00:00)."
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "excerpt": "Wartung (tool_change) an Maschine 9 durchgeführt (2026-06-04T08:03:51.561708+00:00). Werkzeugwechsel Fuegepresse 3: Fuegestempel zum Standzeitbeginn getauscht. [PERSON] 30 Tage gemaess Vorgabe."
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 6,
+     "excerpt": "Wartung (inspection) an Maschine 6 durchgeführt (2026-06-05T17:03:51.561708+00:00). Routine-Inspektion Teilezufuehrung B: Foerderschnecke und [PERSON], leichtes Spiel an der Schnecke notiert, noch im…"
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-08",
+   "anfrage": "Dosierung schwankt Fuellmenge",
+   "machine_id": null,
+   "dauer_s": 1.3,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-06-05T15:03:51.561708+00:00). [PERSON] Teilezufuehrung A: Foerderschnecke, Klemmzylinder und Dosierung sichtgeprueft, ohne Befund. Wartungsplan e…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, [PERSON] ISO VG 46) — Grundoelviskositaet…"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:5",
+     "source_type": "note",
+     "id": 5,
+     "machine_id": 5,
+     "excerpt": "FD-01 laeuft sauber, Dosierung stabil. [PERSON] in der Frueh."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": null,
+     "excerpt": "FOREMAN Substrat-Smoke foreman-smoke-6fe87e25cbce47f4b602a504360ab823"
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst (2026-06-20T18:03:51.561708+00:00). PR-02 Fuegekraft ueber Erwartung — [PERSON] vermutet"
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-09",
+   "anfrage": "Teile sitzen nicht sauber woher kommt das",
+   "machine_id": null,
+   "dauer_s": 1.28,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "excerpt": "Wartung (lubrication) an Maschine 3 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 6,
+     "excerpt": "Wartung (inspection) an Maschine 6 durchgeführt (2026-06-05T17:03:51.561708+00:00). Routine-Inspektion Teilezufuehrung B: Foerderschnecke und [PERSON], leichtes Spiel an der Schnecke notiert, noch im…"
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-17T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-06-05T15:03:51.561708+00:00). [PERSON] Teilezufuehrung A: Foerderschnecke, Klemmzylinder und Dosierung sichtgeprueft, ohne Befund. Wartungsplan e…"
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-10",
+   "anfrage": "Ausschuss gestiegen seit heute",
+   "machine_id": null,
+   "dauer_s": 0.89,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "excerpt": "Wartung (tool_change) an Maschine 9 durchgeführt (2026-06-03T09:47:17.894280+00:00)."
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Wartung (tool_change) an Maschine 8 durchgeführt (2026-06-03T09:47:17.894280+00:00)."
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:14",
+     "source_type": "note",
+     "id": 14,
+     "machine_id": 12,
+     "excerpt": "VS-01 weist seit heute Mittag deutlich mehr Teile ab, fast alle wegen Fuellung/Sitz. Kamera und Licht sind ok — kommt von vorne aus der Linie."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "excerpt": "Wartung (inspection) an Maschine 9 durchgeführt (2026-06-13T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Wartung (inspection) an Maschine 7 durchgeführt (2026-06-05T19:47:17.894280+00:00)."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-06-04T16:47:17.894280+00:00)."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-11",
+   "anfrage": "Problem kommt von der Zufuehrung",
+   "machine_id": null,
+   "dauer_s": 1.17,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-06-05T15:03:51.561708+00:00). [PERSON] Teilezufuehrung A: Foerderschnecke, Klemmzylinder und Dosierung sichtgeprueft, ohne Befund. Wartungsplan e…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 6,
+     "excerpt": "Wartung (inspection) an Maschine 6 durchgeführt (2026-06-05T17:03:51.561708+00:00). Routine-Inspektion Teilezufuehrung B: Foerderschnecke und [PERSON], leichtes Spiel an der Schnecke notiert, noch im…"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst (2026-06-20T18:03:51.561708+00:00). PR-02 Fuegekraft ueber Erwartung — [PERSON] vermutet"
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "excerpt": "Alarm TOOL_LOAD_HIGH (warning/process) an Maschine 8 ausgelöst."
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "excerpt": "Alarm REJECT_RATE_HIGH (warning/quality) an Maschine 12 ausgelöst."
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-12",
+   "anfrage": "bringt haeufigeres Schmieren etwas",
+   "machine_id": null,
+   "dauer_s": 1.28,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "excerpt": "Wartung (lubrication) an Maschine 1 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-01 mit Schmierstoff X (Lithiumkomplex-Fett NLGI 2, Grundoelviskositaet ISO VG 150) — s…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, [PERSON] ISO VG 46) — Grundoelviskositaet…"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-04T17:03:51.561708+00:00). Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — spezifikationskonform. Verkuerztes Interv…"
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-18T17:03:51.561708+00:00). Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — verkuerztes Intervall 7 Tage (3/3). Kein…"
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-11T17:03:51.561708+00:00). Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — verkuerztes Intervall 7 Tage (2/3). Lager…"
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-13",
+   "anfrage": "Schmierintervall verkuerzt Erfahrung",
+   "machine_id": null,
+   "dauer_s": 1.33,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-18T17:03:51.561708+00:00). Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — verkuerztes Intervall 7 Tage (3/3). Kein…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-04T17:03:51.561708+00:00). Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — spezifikationskonform. Verkuerztes Interv…"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-11T17:03:51.561708+00:00). Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — verkuerztes Intervall 7 Tage (2/3). Lager…"
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "excerpt": "Wartung (lubrication) an Maschine 3 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-03 mit [PERSON] (Lithiumkomplex-Fett NLGI 2, ISO VG 150) — spezifikationskonform, Inte…"
+    },
+    {
+     "rang": 8,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, [PERSON] ISO VG 46) — Grundoelviskositaet…"
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-14",
+   "anfrage": "Klemmzylinder schaltet traege",
+   "machine_id": null,
+   "dauer_s": 1.23,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-06-05T15:03:51.561708+00:00). [PERSON] Teilezufuehrung A: Foerderschnecke, Klemmzylinder und Dosierung sichtgeprueft, ohne Befund. Wartungsplan e…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Alarm HYD_PRESS_LOW_CRIT (critical/hardware) an Maschine 7 ausgelöst (2026-06-22T19:03:51.561708+00:00). Hydraulikdruck PR-01 kritisch — Dichtungswechsel erforderlich"
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "excerpt": "Alarm HYD_PRESS_LOW_WARN (warning/hardware) an Maschine 7 ausgelöst (2026-06-20T17:03:51.561708+00:00). Hydraulikdruck PR-01 unter Warnschwelle (Leckage vermutet)"
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 6,
+     "excerpt": "Wartung (inspection) an Maschine 6 durchgeführt (2026-06-05T17:03:51.561708+00:00). Routine-Inspektion Teilezufuehrung B: Foerderschnecke und [PERSON], leichtes Spiel an der Schnecke notiert, noch im…"
+    },
+    {
+     "rang": 8,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": null,
+     "excerpt": "Konsolidierungsprobe A 20260820T095319Z - prueft ob eine registrierte Identitaet den fluechtigen Tier verlaesst"
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-15",
+   "anfrage": "Lager",
+   "machine_id": 3,
+   "dauer_s": 1.06,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "excerpt": "Alarm AXIS_VIB_WARN (warning/hardware) an Maschine 3 ausgelöst (2026-06-22T17:03:51.561708+00:00). Lagerschwingung AX-03 ueber Warnschwelle (Zone C/D)"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch."
+    },
+    {
+     "rang": 3,
+     "schluessel": "maintenance:4",
+     "source_type": "maintenance",
+     "id": 4,
+     "machine_id": 3,
+     "excerpt": "Inspektion Vertikalachse AX-03: Fuehrung und Lager geprueft, Schmierung bestaetigt. Hohe Grundlast durch Einbaulage dokumentiert (bekannt/normal)."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-16",
+   "anfrage": "Schmierung",
+   "machine_id": 2,
+   "dauer_s": 1.16,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, [PERSON] ISO VG 46) — Grundoelviskositaet…"
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-17",
+   "anfrage": "Verschleiss",
+   "machine_id": 8,
+   "dauer_s": 0.84,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-18",
+   "anfrage": "Kuehlschmierstoff Konzentration zu niedrig",
+   "machine_id": null,
+   "dauer_s": 1.17,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-06T17:03:51.561708+00:00). Nachschmierung Achslager AX-02 mit Schmierstoff Y (Mehrzweckfett NLGI 2, [PERSON] ISO VG 46) — Grundoelviskositaet…"
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger."
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "excerpt": "Wartung (lubrication) an Maschine 3 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen."
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-17T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten."
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "excerpt": "Wartung (lubrication) an Maschine 2 durchgeführt (2026-06-05T18:47:17.894280+00:00)."
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON]."
+    },
+    {
+     "rang": 9,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "excerpt": "Wartung (lubrication) an Maschine 4 durchgeführt (2026-06-11T17:03:51.561708+00:00). Nachschmierung Achslager AX-04 mit Schmierstoff X (NLGI 2, ISO VG 150) — verkuerztes Intervall 7 Tage (2/3). Lager…"
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:5",
+     "source_type": "note",
+     "id": 5,
+     "machine_id": 5,
+     "excerpt": "FD-01 laeuft sauber, Dosierung stabil. [PERSON] in der Frueh."
+    }
+   ]
+  }
+ ]
+}

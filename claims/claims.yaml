@@ -1411,3 +1411,64 @@ claims:
       Test rot und nannte sie namentlich; nach Rücknahme wieder grün. Solange
       dieser Eintrag gilt, trägt keine Aussage über die Zugriffskontrolle dieser
       Plattform eine Freigabe über intern hinaus.
+
+  - id: "C-060"
+    aussage: "Die Freigabe-Bedingung für das Gedächtnis als vierte Archiv-Quelle ist mit der heutigen Antwortform nicht messbar."
+    status: "gemessen"
+    wert: "0 von 77 ausgelieferten Erinnerungs-Treffern konnte einer Quellzeile zugeordnet werden"
+    bedingung: >-
+      Gemessen am 25.08.2026 gegen die laufende Instanz, nachdem der Nachtrag
+      gelaufen war und die Erinnerungen erstmals beschreibenden Text trugen. Der
+      Bewertungssatz aus C-047 beurteilt Quellzeilen; ein Treffer aus dem
+      Gedächtnis führt jedoch die Kennung 0, weil eine Erinnerung keinen
+      Primärschlüssel hat und die Antwort die Herkunftsangaben der
+      Spiegel-Nutzlast nicht durchreicht. Ein solcher Treffer kann damit
+      RECHNERISCH NIE als zutreffend gezählt werden — die zweite Schwelle
+      (mindestens 30 Prozent der Anfragen mit einem zusätzlichen zutreffenden
+      Treffer) ist nicht widerlegt, sondern nicht prüfbar. Dieselbe fehlende
+      Herkunftsangabe blockiert die bereits vermerkte Doppelfund-Auflösung; es
+      ist ein Mangel mit zwei Wirkungen, nicht zwei Mängel.
+    datum: "2026-08-25"
+    fundstelle:
+      - "src/foreman/archive/search.py (Erinnerungs-Zweig, id=0)"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+      - "tools/archiv_guete/"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Befund entstand erst, nachdem der Inhalt stimmte. Solange die
+      Erinnerungen nur Struktur trugen, sah das Ergebnis wie eine gescheiterte
+      Freigabe aus; jetzt zeigt sich, dass die Messung an dieser Stelle gar nicht
+      greifen kann. Die Lehre ist die des ganzen Tages: Ein Aufbau, der ein
+      Ergebnis rechnerisch ausschliesst, liefert trotzdem eine Zahl.
+
+  - id: "C-061"
+    aussage: "Werden die Erinnerungs-Treffer ihrer Quellzeile zugeordnet, verbessert die vierte Quelle die Archiv-Suche deutlich."
+    status: "gemessen"
+    wert: "Trefferquote 0,256 auf 0,558; Ranggüte 0,372 auf 0,619; 70,6 % der Anfragen mit zusätzlichem zutreffendem Treffer, keine mit verlorenem"
+    bedingung: >-
+      HILFSAUSWERTUNG vom 25.08.2026, ausdrücklich nicht die Freigabe-Messung:
+      Sie ordnet jeden Erinnerungs-Treffer nachträglich über Maschine und
+      Zeitpunkt seiner Quellzeile zu — dasselbe Verfahren wie im Nachtrag und aus
+      demselben Grund nur bei Eindeutigkeit. Grundlage sind dieselben 18 Anfragen
+      und derselbe Bewertungssatz wie in C-049. Von 77 ausgelieferten
+      Erinnerungs-Treffern liessen sich 42 zuordnen; 30 nicht, weil ihre
+      Quellzeile nicht mehr besteht (C-054). Besonders deutlich bei Anfragen, an
+      denen die Volltextsuche an deutschen Wortzusammensetzungen scheitert: vier
+      Anfragen ohne jeden zutreffenden Treffer bekommen aus dem Gedächtnis genau
+      den gesuchten Vorgang.
+    datum: "2026-08-25"
+    fundstelle:
+      - "tools/archiv_guete/ordne_gedaechtnis_zu.py"
+      - "docs/messungen/2026-08-24_archiv_goldset.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Die Zahlen belegen NICHT die Freigabe — sie belegen, was eine durchgereichte
+      Herkunftsangabe sichtbar machen würde (C-060). Zwei Vorbehalte gehören
+      dazu: Die Zuordnung geschieht nachträglich und ausserhalb des Produktpfades,
+      und der zugrunde liegende Bestand enthält keinen wiederkehrenden Vorgang
+      (C-047). Vor einer Freigabe ist die Messung mit durchgereichter Herkunft zu
+      wiederholen; bis dahin bleibt der Schalter aus.
