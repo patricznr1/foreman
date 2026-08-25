@@ -64,6 +64,7 @@ Stand: 2026-08-25
 | C-057 | Die Zugriffskontrolle der Schnittstelle wirkt auf der Ebene der Anmeldung, nicht auf der Ebene der einzelnen Ressource. | gemessen | 31 von 47 geprüften Routen ohne Feststellung des Aufrufers an der Route selbst | 2026-08-25 | gueltig | intern |
 | C-060 | Die Freigabe-Bedingung für das Gedächtnis als vierte Archiv-Quelle ist mit der heutigen Antwortform nicht messbar. | gemessen | 0 von 77 ausgelieferten Erinnerungs-Treffern konnte einer Quellzeile zugeordnet werden | 2026-08-25 | gueltig | intern |
 | C-061 | Werden die Erinnerungs-Treffer ihrer Quellzeile zugeordnet, verbessert die vierte Quelle die Archiv-Suche deutlich. | gemessen | Trefferquote 0,256 auf 0,558; Ranggüte 0,372 auf 0,619; 70,6 % der Anfragen mit zusätzlichem zutreffendem Treffer, keine mit verlorenem | 2026-08-25 | gueltig | intern |
+| C-062 | Ein Treffer aus dem Gedächtnis lässt sich seiner Quellzeile zuordnen. | gemessen | Herkunftsangabe im Treffer, sobald die Erinnerung sie trägt; sonst kein Eintrag statt einer geratenen Zuordnung | 2026-08-25 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -77,17 +78,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 59
+Einträge gesamt: 60
 
 Nach Status:
 
-- gemessen: 52
+- gemessen: 53
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 56
+- gueltig: 57
 - ueberholt: 3
 - ungeprueft: 0

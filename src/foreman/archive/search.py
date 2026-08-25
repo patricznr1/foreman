@@ -199,11 +199,25 @@ def _memory_hit(item: RecallItem) -> ArchiveHit:
         detail["erinnerung"] = item.ref
     if item.machine_class:
         detail["maschinenklasse"] = item.machine_class
+    # DER RUECKWEG AUF DIE QUELLZEILE, falls die Erinnerung ihn kennt (§12.4).
+    # Er steht im `detail` und NICHT in `source_type`/`id` des Treffers: Die
+    # Herkunft bleibt sichtbar `memory` — als `maintenance` ausgegeben waere die
+    # Erinnerung eine Behauptung ueber die eigene Datenlage, die nicht stimmt
+    # ("Eigener Quelltyp, keine Tarnung", §15.10). Der Rueckweg sagt, WORAUF sie
+    # sich bezieht, nicht WAS sie ist.
+    #
+    # WOZU (gemessen 25.08.2026, C-060): Ohne ihn ist ein Erinnerungs-Treffer
+    # keiner Quellzeile zuzuordnen. Doppelfunde zwischen `note` und `memory`
+    # bleiben dann unaufloesbar, und eine Guete-Messung kann einen solchen
+    # Treffer rechnerisch nie als zutreffend werten.
+    if item.source_type and item.source_id:
+        detail["quelle"] = {"art": item.source_type, "id": item.source_id}
 
     return ArchiveHit(
         source_type="memory",
         # Kein Primaerschluessel vorhanden — 0 statt einer erfundenen Zahl, die
-        # auf eine fremde Zeile zeigen wuerde.
+        # auf eine fremde Zeile zeigen wuerde. Der Rueckweg auf die Quellzeile
+        # steht in `detail["quelle"]`, wenn die Erinnerung ihn kennt.
         id=0,
         machine_id=item.machine_id,
         # Ohne Zeitstempel waere der Treffer nicht einsortierbar; der Abruf liefert
