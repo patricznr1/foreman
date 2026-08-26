@@ -9,7 +9,8 @@
 [![CI](https://github.com/patricznr1/foreman/actions/workflows/ci.yml/badge.svg)](https://github.com/patricznr1/foreman/actions/workflows/ci.yml)
 ![mypy](https://img.shields.io/badge/mypy-strict-blue)
 ![coverage](https://img.shields.io/badge/coverage-%E2%89%A585%25%20enforced-brightgreen)
-![Status](https://img.shields.io/badge/status-active%20development-orange)
+[![Project Status: WIP](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Security Policy](https://img.shields.io/badge/security-policy%20%2B%20threat%20model-informational)](SECURITY.md)
 ![Python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
@@ -259,6 +260,40 @@ Integration tests run against a real TimescaleDB (`timescale/timescaledb-ha:pg16
 Three of the four reasoners are built. Still open: **maintenance-cycle analysis** (reasoner #4 — data-dependent, it needs a real maintenance history) and the two remaining dashboard sections. Roadmap and binding state live in the [GROUND_TRUTH](GROUND_TRUTH.md); what may be *claimed* about any of it lives in [CLAIMS.md](CLAIMS.md).
 
 ---
+
+---
+
+## Reviewing this repository
+
+FOREMAN is published so it can be looked at, and it is built in the open while it is
+still being built. Two things follow from that, and both are written down rather than
+left to be inferred.
+
+**The public demo and the target deployment are different on purpose.** The demo is
+internet-reachable, runs on synthetic data and hands out its credentials in this README.
+The platform is designed for an on-premises plant network with real data and per-user
+accounts. Several controls sit at the network boundary in the second picture and are
+genuinely absent in the first. Which one a finding refers to changes what it means.
+
+**A repository shows the application layer.** Configuration values, TLS, network
+segmentation, secrets storage and the external memory service are not in it —
+`.env.example` lists which variables exist, not what they are set to.
+
+- [`SECURITY.md`](SECURITY.md) — threat model, trust boundaries, the two deployment
+  profiles, and what does and does not count as a vulnerability here
+- [`security/findings.yaml`](security/findings.yaml) — twelve findings a review is likely
+  to surface, each with the observation, whether it is correct, the deployment assumption
+  behind any acceptance, and its status. Five are accepted risks with that condition
+  recorded, four are open work, two are already closed, one is a documented false
+  positive. Verified in CI by `scripts/check_findings.py`.
+- [`REVIEW.md`](REVIEW.md) · [`AGENTS.md`](AGENTS.md) — the same context for automated
+  reviewers and coding agents
+- [`SECURITY-INSIGHTS.yml`](SECURITY-INSIGHTS.yml) — machine-readable posture
+  ([OpenSSF Security Insights](https://security-insights.openssf.org/))
+
+None of these ask a reviewer to omit anything. They exist so that the step between a
+finding and a verdict is written down instead of improvised — and a finding that
+contradicts what they claim is the most useful report this project can receive.
 
 ## Author
 
