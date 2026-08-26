@@ -14,7 +14,10 @@ services:
   timescaledb:
     # Standard-Postgres hat KEIN TimescaleDB — dieses Image bringt
     # TimescaleDB + pgvector mit (Research §5).
-    image: timescale/timescaledb-ha:pg16
+    # Auf den Digest festgelegt wie die Images im Dockerfile — auch fuer den
+    # lokalen Aufbau, damit „bei mir laeuft es" und „bei dir nicht" nicht an
+    # zwei verschiedenen Datenbank-Fassungen liegen kann.
+    image: timescale/timescaledb-ha:pg16@sha256:92809e70c72a5fd169aa3bb7d9c6b1974d6afdf8da786d890f12ae9e7616a67c
     container_name: foreman_timescaledb
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER fehlt (.env)}
