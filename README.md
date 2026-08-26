@@ -290,10 +290,10 @@ segmentation, secrets storage and the external memory service are not in it —
 
 - [`SECURITY.md`](SECURITY.md) — threat model, trust boundaries, the two deployment
   profiles, and what does and does not count as a vulnerability here
-- [`security/findings.yaml`](security/findings.yaml) — fifteen findings a review is likely
+- [`security/findings.yaml`](security/findings.yaml) — twenty findings a review is likely
   to surface, each with the observation, whether it is correct, the deployment assumption
   behind any acceptance, and its status. Five are accepted risks with that condition
-  recorded, four are open work, five are already closed, one is a documented false
+  recorded, seven are open work, seven are already closed, one is a documented false
   positive. Verified in CI by `scripts/check_findings.py`, including these counts.
 - [`REVIEW.md`](REVIEW.md) · [`AGENTS.md`](AGENTS.md) — the same context for automated
   reviewers and coding agents

@@ -189,18 +189,24 @@ assumption is, what the status is (`accepted` · `planned` · `fixed` · `disput
 where the evidence sits. `scripts/check_findings.py` verifies in CI that every referenced
 path still exists and that no review date has lapsed.
 
-The register is not an argument that nothing is wrong. Of its fifteen entries, five are
-accepted risks with the condition of that acceptance written down, **four are open work**,
-five are already closed, and one is a documented false positive. Two of the open four —
+The register is not an argument that nothing is wrong. Of its twenty entries, five are
+accepted risks with the condition of that acceptance written down, **seven are open work**,
+seven are already closed, and one is a documented false positive. Two of the open seven —
 a liveness probe that is the only probe, and a security guard whose default is "off" —
 are unqualified defects with no justification offered.
 
-All five closed entries were the same class: documentation claiming a control the code
-did not have. An API-wide rate limiter; CI gates for secret scanning and dependency
-auditing; a cyclomatic-complexity gate; a posture file that did not match its own declared
-schema; and two guarantees stated more strongly than they hold. Three of the five were
-closed by building the thing rather than by editing the claim. Three were raised by an
-outside reader rather than found here, which is the register working as intended.
+Five of the seven closed entries were documentation claiming a control the code did not
+have: an API-wide rate limiter; CI gates for secret scanning and dependency auditing; a
+cyclomatic-complexity gate; a posture file that did not match its own declared schema; and
+two guarantees stated more strongly than they hold. The other two were authorization
+defects — two reasoner triggers that checked the caller's role but not which machines the
+caller may see. Those two are the more serious kind, and they are worth reading in full
+(F-016, F-017): the check existed in the neighbouring reasoner and in the read routes
+beside them, which is precisely why it was easy to miss where it was absent.
+
+Most of these entries were raised by outside readers rather than found here. That is the
+register working as intended, and it is also the honest answer to the question of how much
+a maintainer finds in their own work.
 
 It exists so that the *triage step* — the step between a finding and a verdict — is
 written down instead of improvised.

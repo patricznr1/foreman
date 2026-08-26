@@ -17,7 +17,11 @@ from datetime import UTC, datetime
 
 import asyncpg
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
+
+from foreman.api.deps import get_llm_gateway
+from foreman.llm.errors import BackendUnavailable
 
 pytestmark = pytest.mark.integration
 
@@ -978,3 +982,173 @@ async def test_archivsuche_findet_auch_alarme_nur_im_ausschnitt(
     kennungen = {eintrag["id"] for eintrag in antwort.json()}
     assert int(eigener_alarm) in kennungen
     assert int(fremder_alarm) not in kennungen
+
+
+# --- Reasoner-Auslöser: die Kennung kommt indirekt, der Ausschnitt gilt trotzdem ---
+#
+# Beide Auslöser bekommen keine Maschinen-Kennung, sondern eine Alarm-Kennung. Die
+# Maschine ergibt sich erst aus dem geladenen Alarm — und genau deshalb ist die
+# Prüfung hier leicht zu übersehen: Es sieht nicht nach einer Maschinen-Route aus.
+# Sie sind je als Paar geprüft, wie alle Sperren in dieser Datei: fremd abgewiesen,
+# eigen durchgelassen. Ohne den zweiten Teil bliebe der Sperr-Test auch dann grün,
+# wenn der Alarm in der Testdatenbank gar nicht existierte.
+
+
+async def _drift_alarm(raw_conn: asyncpg.Connection, machine_id: int) -> int:
+    """Ein Alarm mit code=DRIFT — nur solche lassen sich quittieren."""
+    zeile = await raw_conn.fetchval(
+        """
+        INSERT INTO alarms (machine_id, severity, category, code, message)
+        VALUES ($1, 'warning', 'process', 'DRIFT', 'Kennwert driftet') RETURNING id
+        """,
+        machine_id,
+    )
+    return int(zeile)
+
+
+async def test_kette_zu_fremdem_anker_wird_nicht_rekonstruiert(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    grant_machine_scope,
+) -> None:
+    """Der Anker benennt einen Alarm, nicht die Maschine — der Ausschnitt gilt trotzdem.
+
+    Die Rolle allein genügt nicht: `shift_lead` darf rekonstruieren, aber nur für
+    Maschinen seiner Linien. Der Lauf trüge sonst Alarme, Werker-Notizen und
+    Wartungsereignisse einer fremden Maschine zusammen und gäbe sie in der Antwort
+    heraus.
+
+    404 statt 403, wie beim Einzelabruf eines Alarms: Ein 403 würde bestätigen,
+    dass der Alarm existiert.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    headers = await auth_headers_for("scope-kette-fremd@x.de", "shift_lead")
+    await grant_machine_scope("scope-kette-fremd@x.de", eigene)
+    fremder_anker = await _alarm(raw_conn, fremde)
+
+    antwort = await client.post(
+        "/api/v1/reasoners/event_chain/reconstruct",
+        json={"anchor_alarm_id": fremder_anker},
+        headers=headers,
+    )
+
+    assert antwort.status_code == 404, antwort.text
+    # Und nichts davon ist gespeichert worden: Ein abgewiesener Auslöser darf keine
+    # Erklärung hinterlassen, auch keine leere.
+    erklaerungen = await raw_conn.fetchval(
+        "SELECT count(*) FROM reasoner_explanations WHERE machine_id = $1", fremde
+    )
+    assert erklaerungen == 0, "❌ Trotz Abweisung wurde eine Erklärung persistiert."
+
+
+class _StummesGateway:
+    """Gateway-Stub, der jeden Aufruf als bekannten Betriebsfehler beantwortet.
+
+    Gebraucht für den Kontroll-Zwilling unten: Der prüft, ob der Ausschnitt
+    DURCHLÄSST — nicht, ob der Reasoner etwas zustande bringt. Ohne Stub hinge das
+    Ergebnis daran, ob gerade ein lokales Modell läuft, und im ungünstigen Fall
+    ginge aus einem Pflichttest ein echter, kostenpflichtiger Aufruf hinaus.
+    """
+
+    async def complete(self, *_args: object, **_kwargs: object) -> object:
+        raise BackendUnavailable("Stub für den Scope-Test", attempted=("stub",))
+
+
+async def test_kette_zum_eigenen_anker_kommt_durch_den_ausschnitt(
+    app: FastAPI,
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    grant_machine_scope: Callable[[str, int], Awaitable[None]],
+) -> None:
+    """Kontroll-Zwilling: derselbe Aufruf auf eigener Maschine wird NICHT abgewiesen.
+
+    Geprüft wird ausschließlich, dass der Ausschnitt durchlässt. Die Antwort ist
+    503, und ein 503 kann nur entstehen, wenn die Route bis zum Gateway gekommen
+    ist — der Ausschnitt hat sie also passieren lassen. Das ist ein schärferer
+    Beleg als „irgendetwas außer 404", weil es die Stelle benennt, bis zu der die
+    Anfrage gekommen sein muss.
+
+    Ohne diesen Zwilling bliebe der Test darüber auch dann grün, wenn jede
+    Rekonstruktion an irgendetwas anderem scheiterte.
+    """
+    eigene, _ = await _maschinen_paar(raw_conn)
+    headers = await auth_headers_for("scope-kette-eigen@x.de", "shift_lead")
+    await grant_machine_scope("scope-kette-eigen@x.de", eigene)
+    eigener_anker = await _alarm(raw_conn, eigene)
+
+    app.dependency_overrides[get_llm_gateway] = lambda: _StummesGateway()
+    try:
+        antwort = await client.post(
+            "/api/v1/reasoners/event_chain/reconstruct",
+            json={"anchor_alarm_id": eigener_anker},
+            headers=headers,
+        )
+    finally:
+        # Der Override gehört diesem Test. Bliebe er stehen, liefe der nächste Test
+        # gegen ein Gateway, das er nie bestellt hat.
+        app.dependency_overrides.pop(get_llm_gateway, None)
+
+    assert antwort.status_code == 503, (
+        "❌ Erwartet war der Gateway-Fehler (503) — die Route muss also bis zum "
+        f"Gateway gekommen sein. Bekommen: {antwort.status_code} {antwort.text[:200]}"
+    )
+
+
+async def test_fremde_drift_warnung_wird_nicht_quittiert(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    grant_machine_scope,
+) -> None:
+    """Quittieren heißt „ein Mensch hat das behandelt" — das darf nur, wer sie sieht.
+
+    Für Manager und Techniker fallen Rolle und Ausschnitt zusammen, für einen
+    Schichtleiter nicht: Er sieht seine Linien. Ohne Ausschnitts-Prüfung könnte er
+    die Meldung einer fremden Linie als erledigt markieren, und die Meldung wäre für
+    die Zuständigen aus der Liste der offenen Punkte verschwunden.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    headers = await auth_headers_for("scope-ack-fremd@x.de", "shift_lead")
+    await grant_machine_scope("scope-ack-fremd@x.de", eigene)
+    fremde_warnung = await _drift_alarm(raw_conn, fremde)
+
+    antwort = await client.post(
+        f"/api/v1/reasoners/drift/alarms/{fremde_warnung}/acknowledge", headers=headers
+    )
+
+    assert antwort.status_code == 404, antwort.text
+    # Der eigentliche Schaden wäre die Schreibwirkung, nicht die Antwort: Die Warnung
+    # muss unquittiert geblieben sein.
+    quittiert_am = await raw_conn.fetchval(
+        "SELECT acknowledged_at FROM alarms WHERE id = $1", fremde_warnung
+    )
+    assert quittiert_am is None, "❌ Trotz Abweisung wurde die fremde Warnung quittiert."
+
+
+async def test_eigene_drift_warnung_laesst_sich_quittieren(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    grant_machine_scope,
+) -> None:
+    """Kontroll-Zwilling: auf eigener Linie geht die Quittierung durch und wirkt.
+
+    Ohne ihn bliebe der Test darüber auch dann grün, wenn Quittieren generell
+    scheiterte — an der Rolle, am Alarmcode, an der Testdatenbank.
+    """
+    eigene, _ = await _maschinen_paar(raw_conn)
+    headers = await auth_headers_for("scope-ack-eigen@x.de", "shift_lead")
+    await grant_machine_scope("scope-ack-eigen@x.de", eigene)
+    eigene_warnung = await _drift_alarm(raw_conn, eigene)
+
+    antwort = await client.post(
+        f"/api/v1/reasoners/drift/alarms/{eigene_warnung}/acknowledge", headers=headers
+    )
+
+    assert antwort.status_code == 200, antwort.text
+    quittiert_am = await raw_conn.fetchval(
+        "SELECT acknowledged_at FROM alarms WHERE id = $1", eigene_warnung
+    )
+    assert quittiert_am is not None, "❌ Die Quittierung kam durch, wirkte aber nicht."
