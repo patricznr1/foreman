@@ -44,7 +44,7 @@ dependencies = [
     "presidio-anonymizer>=2.2",
     "spacy>=3.7",
     # --- Drift-Reasoner (F4): ADWIN über river (BSD-3); Prometheus-Metriken ---
-    "river>=0.21",
+    "river>=0.26.1",
     "prometheus-client>=0.20",
     # --- Modell-Gateway (F-LLM): LiteLLM als Inferenz-Backend hinter der eigenen
     #     LLMGateway-Abstraktion. Ausschließlich Implementierungsdetail in
