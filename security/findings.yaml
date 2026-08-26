@@ -540,3 +540,155 @@ findings:
       - "README.md"
       - "AGENTS.md"
     review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  # F-016 to F-020 came from a second external review on 2026-08-26. The first two
+  # are authorization defects in the reasoner triggers and are closed. The other
+  # three are hardening and governance, open and stated as such.
+  # ---------------------------------------------------------------------------
+
+  - id: F-016
+    title: "Event-chain reconstruction did not apply the resource scope"
+    where:
+      - "src/foreman/reasoners/event_chain/router.py"
+      - "tests/integration/test_ressourcen_scope.py"
+    observation: >
+      POST /api/v1/reasoners/event_chain/reconstruct checked the role but not the
+      resource scope. It takes an anchor alarm id in the request body; the service
+      loads that alarm, derives its machine, and gathers alarms, worker notes and
+      maintenance events of that machine into the returned and persisted
+      explanation. A shift_lead is restricted to the machines of their lines, so
+      passing an alarm id from another line would have returned data outside their
+      scope. The neighbouring failure reasoner performs exactly this check.
+    observation_is_correct: true
+    severity_as_scanned: "high — cross-line data access for a restricted role"
+    severity_after_triage: >
+      high for profile B, where roles are genuinely restricted; not exploitable in
+      the public demo, whose single account is a manager and therefore unrestricted
+      by the role matrix in the first place
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [B]
+    justification: >
+      None. The check belongs there and was missing.
+    remedy: >
+      The route now takes ResourceScopeDep and resolves the anchor through a helper
+      that returns 404 both when the alarm does not exist and when it lies outside
+      the caller's scope — the same shape as the single-alarm read in
+      api/routers/alarms.py, and for the same reason: a 403 would confirm that the
+      alarm exists. The check runs before the reasoner starts, not on its result,
+      because by then the data would already have been gathered.
+
+      Two behaviour tests were added as a pair: a foreign anchor is refused with 404
+      and leaves no persisted explanation; an own anchor is not refused. The pair
+      matters — without the second test the first would stay green even if every
+      reconstruction failed for an unrelated reason. Counter-check run: with the fix
+      removed the refusal test fails and the twin still passes.
+    evidence:
+      - "src/foreman/reasoners/event_chain/router.py"
+      - "tests/integration/test_ressourcen_scope.py"
+    review_by: "2027-02-26"
+
+  - id: F-017
+    title: "Drift acknowledgement did not apply the resource scope"
+    where:
+      - "src/foreman/reasoners/drift/router.py"
+      - "tests/integration/test_ressourcen_scope.py"
+    observation: >
+      POST /api/v1/reasoners/drift/alarms/{alarm_id}/acknowledge checked the role
+      but not the resource scope, while the GET listing in the same file applies it.
+      A shift_lead could therefore mark a drift warning on another line as handled.
+    observation_is_correct: true
+    severity_as_scanned: "medium to high — integrity, not confidentiality"
+    severity_after_triage: >
+      the damage here is the write, not the read: an acknowledgement means "a human
+      has dealt with this", and it removes the warning from the open items of the
+      people actually responsible for that line. Rated below F-016 because no data
+      leaves, and irrelevant for manager and technician, who are unrestricted
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [B]
+    justification: >
+      None. The listing next to it had the check; the write did not.
+    remedy: >
+      The handler now takes ResourceScopeDep, and the existing not-found branch also
+      covers a machine outside the caller's scope — one condition, one answer, no
+      second code path to drift away from the first. Behaviour tests as a pair: a
+      foreign warning is refused with 404 and stays unacknowledged in the database;
+      an own warning is acknowledged and the timestamp is set. Counter-check run
+      with the fix removed.
+    evidence:
+      - "src/foreman/reasoners/drift/router.py"
+      - "tests/integration/test_ressourcen_scope.py"
+    review_by: "2027-02-26"
+
+  - id: F-018
+    title: "CI gates are not enforced by repository governance"
+    where:
+      - ".github/workflows/ci.yml"
+    observation: >
+      The default branch is not protected, no required status checks are configured
+      and no repository rulesets exist. The pipeline has gates; GitHub does not
+      require them to have passed before main changes.
+    observation_is_correct: true
+    severity_as_scanned: "medium — governance"
+    severity_after_triage: >
+      no technical vulnerability: every change to date went through a pull request
+      with green CI, and there is a single maintainer with no other write access.
+      What is missing is the enforcement, and that distinction is exactly what a
+      reviewer should hold against this repository
+    status: planned
+    profile: [A, B]
+    remedy: >
+      Protect the default branch: require the CI checks to pass, require a pull
+      request before merging, disallow force pushes and branch deletion. This is a
+      deliberate change to how the maintainer works — it makes a direct push to main
+      impossible, including in a hurry — and is therefore recorded here for decision
+      rather than applied silently.
+    review_by: "2026-11-26"
+
+  - id: F-019
+    title: "The JWT algorithm is a runtime setting rather than a fixed decision"
+    where:
+      - "src/foreman/config.py"
+      - "src/foreman/core/security.py"
+    observation: >
+      jwt_algorithm defaults to HS256 but can be set through the environment, and
+      both encode and decode read the same setting.
+    observation_is_correct: true
+    severity_as_scanned: "low — hardening"
+    severity_after_triage: >
+      not the classic algorithm-confusion flaw, because signing and verification use
+      the same configured value; there is no path by which an attacker chooses the
+      algorithm. What remains is that a security decision sits where an operational
+      one belongs, and a misconfiguration would be accepted rather than rejected
+    status: planned
+    profile: [A, B]
+    remedy: >
+      Fix the algorithm in code, or accept only an explicit allow-list of supported
+      values, so that an unsupported setting fails at startup instead of at the
+      first token.
+    review_by: "2026-11-26"
+
+  - id: F-020
+    title: "The frontend BFF has no explicit origin check on mutating requests"
+    where:
+      - "frontend/next.config.ts"
+    observation: >
+      The BFF holds the JWT in an httpOnly, SameSite=Lax cookie and attaches it as a
+      bearer token towards the backend. Mutating requests are not additionally
+      checked against Origin or Sec-Fetch-Site, and no CSRF token is used.
+    observation_is_correct: true
+    severity_as_scanned: "low — defence in depth"
+    severity_after_triage: >
+      SameSite=Lax already blocks the classic cross-site POST, and no exploit path
+      has been demonstrated. The reason to add a check anyway is deployment: on
+      shared or sibling-subdomain infrastructure the cookie attribute alone is a
+      thinner boundary than it looks
+    status: planned
+    profile: [A, B]
+    remedy: >
+      Check Origin (or Sec-Fetch-Site) on every mutating BFF route and reject what
+      does not match the deployment's own origin, keeping SameSite and httpOnly as
+      they are.
+    review_by: "2026-11-26"

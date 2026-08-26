@@ -44,7 +44,7 @@ project:
       Report privately through GitHub Security Advisories. Single maintainer:
       expect acknowledgement within a week. If a report comes from an automated
       scan, please state which findings apply here and why — security/findings.yaml
-      records fifteen that are already triaged.
+      records twenty that are already triaged.
     in-scope:
       - "Authentication bypass or cross-machine / cross-tenant data access"
       - "Privilege escalation past role and resource scoping"
@@ -97,8 +97,8 @@ repository:
           Act and GDPR with a preliminary data protection impact assessment; an
           ISO 27001 Annex A statement of applicability that names its own
           unevidenced controls; and the triage register in security/findings.yaml
-          covering fifteen findings, of which five are accepted risks with their
-          condition recorded, four are open work, five are already closed and one
+          covering twenty findings, of which five are accepted risks with their
+          condition recorded, seven are open work, seven are already closed and one
           is a documented false positive. scripts/check_findings.py verifies that
           register in CI: a vanished path, a lapsed review date, an accepted risk
           without its condition or a planned item without a remedy fails the build.

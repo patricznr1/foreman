@@ -64,14 +64,21 @@ async def acknowledge_drift_alarm(
     session: SessionDep,
     current_user: AckUser,
     pseudo: PseudonymizerDep,
+    scope: ResourceScopeDep,
 ) -> Alarm:
     """Quittiert eine Drift-Warnung (HITL). Erst danach gilt sie als erledigt.
 
     Erfordert einen authentifizierten Operator; `acknowledged_by` wird als
     HMAC-Token über die user_id abgelegt (Nachweis-Bezug, §8). Keine Aktorik.
+
+    404 auch für eine Warnung außerhalb des eigenen Maschinen-Ausschnitts: Die Rolle
+    sagt, WER quittieren darf, der Ausschnitt sagt WAS. Für Manager und Techniker
+    fallen beide zusammen, für einen Schichtleiter nicht — er sieht seine Linien, und
+    eine Quittierung bedeutet „ein Mensch hat das behandelt". Diese Aussage darf nur
+    treffen, wer die Meldung auch sehen darf.
     """
     alarm = await session.get(Alarm, alarm_id)
-    if alarm is None:
+    if alarm is None or not await scope.can_see(alarm.machine_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Drift-Warnung nicht gefunden"
         )

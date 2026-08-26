@@ -28,7 +28,7 @@ from foreman.api.deps import (
     SubstrateClientDep,
     require_roles,
 )
-from foreman.db.models import ReasonerExplanationRecord, User
+from foreman.db.models import Alarm, ReasonerExplanationRecord, User
 from foreman.realtime.authz import ROLE_MANAGER, ROLE_SHIFT_LEAD
 from foreman.reasoners.event_chain.schema import (
     ReasonerExplanationDetailRead,
@@ -66,6 +66,28 @@ async def _sichtbare_erklaerung(
     return record
 
 
+async def _sichtbarer_anker(
+    session: AsyncSession, scope: ResourceScope, anchor_alarm_id: int
+) -> Alarm:
+    """Lädt den Anker-Alarm, wenn er im Ausschnitt des Anfragenden liegt — sonst 404.
+
+    Die Rolle allein entscheidet hier nicht: Ein Schichtleiter darf anstoßen, aber
+    nur für Maschinen seiner Linien. Die Kennung kommt aus dem Rumpf und benennt
+    einen Alarm, nicht die Maschine — der Ausschnitt hängt deshalb an dem, was der
+    Anker über seine Maschine aussagt, und muss geprüft werden, BEVOR der Reasoner
+    Alarme, Notizen und Wartungsereignisse dieser Maschine zusammenträgt.
+
+    Fremde und unbekannte Kennung enden gleich, wie beim Einzelabruf eines Alarms:
+    Ein 403 würde bestätigen, dass der Alarm existiert.
+    """
+    anchor = await session.get(Alarm, anchor_alarm_id)
+    if anchor is None or not await scope.can_see(anchor.machine_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Anker-Alarm nicht gefunden"
+        )
+    return anchor
+
+
 @router.post(
     "/reconstruct",
     response_model=ReasonerExplanationDetailRead,
@@ -77,10 +99,17 @@ async def reconstruct_event_chain(
     gateway: GatewayDep,
     substrate: SubstrateClientDep,
     current_user: TriggerUser,
+    scope: ResourceScopeDep,
 ) -> ReasonerExplanationDetailRead:
     """Rekonstruiert on-demand die Ereigniskette um einen Anker-Alarm und
     persistiert die gegroundete Erklärung. Liefert die eingefrorene Kette + die
-    ehrlichen Schwester-Referenzen mit. 404, wenn der Anker nicht existiert."""
+    ehrlichen Schwester-Referenzen mit. 404, wenn der Anker nicht existiert oder
+    außerhalb des Maschinen-Ausschnitts liegt."""
+    # Vor dem Lauf, nicht danach: Der Reasoner liest Alarme, Werker-Notizen und
+    # Wartungsereignisse der Anker-Maschine und persistiert die Erklärung. Eine
+    # Prüfung erst auf dem Ergebnis käme zu spät — die Daten wären dann bereits
+    # zusammengetragen und die Antwort trüge sie.
+    await _sichtbarer_anker(session, scope, payload.anchor_alarm_id)
     service = EventChainService(session=session, gateway=gateway, substrate=substrate)
     lookback = (
         timedelta(hours=payload.lookback_hours) if payload.lookback_hours is not None else None

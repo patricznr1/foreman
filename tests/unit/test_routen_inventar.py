@@ -51,13 +51,44 @@ SCOPE_IM_RUMPF = ("await can_subscribe(", "await visible_machine_scope(")
 
 # Ressourcen-Kennungen: Führt eine Route eine davon, entscheidet nicht die
 # Rolle über den Zugriff, sondern die Zugehörigkeit der konkreten Ressource.
-RESSOURCEN_KENNUNGEN = {"machine_id", "line_id", "component_id", "data_point_id"}
+#
+# Bewusst als REGEL statt als Aufzählung, und das ist der Kern dieser Prüfung:
+# Eine Liste erfasst nur die Kennungsarten, an die jemand beim Schreiben gedacht
+# hat. Genau daran ist sie einmal vorbeigelaufen — `anchor_alarm_id` stand nicht
+# darin, und die Route, die sie führte, fiel deshalb vor der Prüfung heraus statt
+# durch sie hindurch. Seitdem gilt die Umkehrung: Alles, was auf `_id` endet, ist
+# eine Ressourcenkennung, bis das Gegenteil hier ausdrücklich steht. Eine neue
+# Kennungsart ist damit automatisch geprüft und nicht automatisch übersehen.
+KEINE_RESSOURCEN_KENNUNG = {
+    # Die eigene Identität. Sie IST der Anfragende, nicht etwas, das ihm gehören
+    # müsste — ein Ausschnitt darauf ergibt keinen Sinn.
+    "user_id",
+    # Die Kennung eines Fremdsystems für dieselbe Anlage (Feld an Maschine und
+    # Linie). Sie benennt keine Ressource DIESER Anwendung, an der ein Ausschnitt
+    # ansetzen könnte, sondern denselben Gegenstand in einem anderen System.
+    "external_id",
+}
+
+
+def _ist_ressourcen_kennung(name: str) -> bool:
+    return name.endswith("_id") and name not in KEINE_RESSOURCEN_KENNUNG
+
 
 # Routen, die eine Ressourcen-Kennung führen und trotzdem bewusst KEINEN
 # Ausschnitt anwenden — jede mit ihrem Grund. Eine Ausnahme ohne Begründung ist
 # eine stille Ausnahme; eine Ausnahme, die den Grund nicht mehr trägt, ist eine
 # Lücke mit Häkchen.
 SCOPE_NICHT_NOETIG = {
+    "POST /api/v1/machines": (
+        "Steht ausschließlich `manager` offen (api/routers/machines.py, "
+        "StammdatenVerwalter) — diese Rolle hat nach Matrix 3.1 keinen beschränkten "
+        "Ausschnitt. Wichtiger noch: Der Ausschnitt leitet sich aus ZUGEWIESENEN "
+        "Maschinen ab, und eine frisch angelegte Linie enthält noch keine. Eine "
+        "Scope-Prüfung an dieser Stelle verböte, die erste Maschine einer Linie "
+        "anzulegen — sie wäre nicht streng, sondern falsch. Entsteht eine eigene "
+        "Administrations-Rolle, wandert die Berechtigung dorthin; die Begründung "
+        "gegen einen Ausschnitt bleibt davon unberührt."
+    ),
     "GET /api/v1/audit": (
         "Steht ausschließlich `manager` offen (api/routers/audit.py, _AUDIT_ROLES) — "
         "und diese Rolle hat nach Matrix 3.1 ohnehin keinen beschränkten Ausschnitt. "
@@ -109,6 +140,32 @@ def _dependency_namen(route: APIRoute) -> set[str]:
         for parameter in getattr(route.dependant, feld, []):
             namen.add(parameter.name)
     return namen
+
+
+def _kennungen_im_rumpf(route: APIRoute) -> set[str]:
+    """Ressourcen-Kennungen aus den Feldern der Pydantic-Rumpfschemata.
+
+    Notwendig, weil eine Kennung nicht in der Signatur stehen muss: Kommt sie im
+    Rumpf herein, sieht die Route nur `payload`, und `_dependency_namen` findet
+    nichts, wonach zu prüfen wäre. So verschwand `anchor_alarm_id` aus dem Blick
+    einer Prüfung, die genau dafür gebaut war.
+    """
+    treffer: set[str] = set()
+    for parameter in getattr(route.dependant, "body_params", []):
+        # Zwei Wege, weil FastAPI das Rumpfschema je nach Fassung anders ablegt:
+        # aeltere fuehren `type_` am Parameter, aktuelle haengen es unter
+        # `field_info.annotation`. Beide werden abgefragt; welcher traegt, prueft
+        # `test_die_rumpf_erkennung_findet_ueberhaupt_etwas` — ein stiller Ausfall
+        # dieser Stelle waere sonst nicht zu bemerken, und genau daran ist die
+        # Vorgaengerfassung gescheitert: `type_` gab es nicht mehr, `getattr` lieferte
+        # `None`, und die Pruefung meldete zufrieden nichts.
+        schema = getattr(parameter, "type_", None)
+        if schema is None:
+            schema = getattr(getattr(parameter, "field_info", None), "annotation", None)
+        felder = getattr(schema, "model_fields", None)
+        if felder:
+            treffer.update(name for name in felder if _ist_ressourcen_kennung(name))
+    return treffer
 
 
 def _kennung(route: APIRoute) -> str:
@@ -216,9 +273,13 @@ def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
     Rolle über den Zugriff, sondern die Zugehörigkeit der konkreten Ressource.
     Das sieht kein Dependency-Baum — geprüft wird deshalb der Rumpf.
 
-    Bewusst als Bericht und nicht als harte Zusicherung: Welche Route eine
-    Filterung BRAUCHT, ist eine fachliche Entscheidung. Der Test macht die
-    Kandidaten sichtbar; er entscheidet nicht an Patrics Stelle.
+    Diese Stufe war einmal ein Bericht â sie sammelte Kandidaten und endete mit
+    `skip`, damit die fachliche Entscheidung beim Menschen bleibt. Der Gedanke war
+    richtig, die Form nicht: Ein übersprungener Test liest sich in einem Lauf mit
+    fast tausend Punkten wie ein bestandener, und niemand liest seinen Text. Sie ist
+    deshalb jetzt eine Zusicherung. Die fachliche Entscheidung bleibt beim Menschen,
+    nur ist ihr Ort ein anderer: `SCOPE_NICHT_NOETIG`, wo sie einen Namen und einen
+    Grund trägt, statt in einer Meldung, die niemand sieht.
     """
     # Anmerkung zur Aussagekraft: Ein vorhandener Dependency belegt, dass der
     # Ausschnitt AUFGELÖST wird — nicht, dass die Route ihn auch ANWENDET. Diese
@@ -229,7 +290,8 @@ def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
         namen = _dependency_namen(route)
         if not (namen & IDENTITAETS_DEPS):
             continue  # fehlt schon die Identität — steht im Test darüber
-        if not (namen & RESSOURCEN_KENNUNGEN):
+        kennungen = {n for n in namen if _ist_ressourcen_kennung(n)} | _kennungen_im_rumpf(route)
+        if not kennungen:
             continue
         if namen & SCOPE_DEPS:
             continue  # trägt den gemeinsamen Dependency — strukturell belegt
@@ -240,10 +302,14 @@ def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
         except (OSError, TypeError):
             continue
         if not any(aufruf in rumpf for aufruf in SCOPE_IM_RUMPF):
-            kandidaten.append(_kennung(route))
+            kandidaten.append(f"{_kennung(route)}   [{', '.join(sorted(kennungen))}]")
 
-    if kandidaten:
-        pytest.skip(
-            "Prüfkandidaten für Ressourcen-Scope (keine Zusicherung, Bericht):\n  "
-            + "\n  ".join(sorted(kandidaten))
-        )
+    assert not kandidaten, (
+        "❌ Route(n) mit Ressourcen-Kennung ohne Ausschnitts-Prüfung:\n  "
+        + "\n  ".join(sorted(kandidaten))
+        + "\n\nDie Rolle sagt, WER etwas darf — der Ausschnitt sagt, WORAUF. Wo eine "
+        "Kennung hereinkommt, entscheidet die Zugehörigkeit der konkreten Ressource.\n"
+        "Entweder `ResourceScopeDep` in die Signatur und die Kennung prüfen (Vorbild: "
+        "api/routers/alarms.py, get_alarm), oder — wenn der Ausschnitt hier wirklich "
+        "nichts beitragen kann — mit Begründung nach SCOPE_NICHT_NOETIG."
+    )
