@@ -136,7 +136,11 @@ repository:
         rulesets: ["default"]
         comment: >
           Runs against the resolved dependency tree as a merge gate. Paired with
-          Dependabot, which proposes updates rather than only reporting exposure.
+          Dependabot security updates, which act on advisories. Dependabot's
+          routine version bumps are switched off on purpose: an audit answers
+          whether anything here is vulnerable, a version subscription only
+          answers whether anything newer exists, and only the first belongs in a
+          security posture.
         integration:
           adhoc: true
           ci: true

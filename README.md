@@ -191,7 +191,7 @@ Every change passes defined gates before it reaches `main`:
 - **Type safety** — `mypy --strict` / `tsc --noEmit`, zero errors
 - **Lint & complexity** — `ruff` / `eslint`, clean; cyclomatic-complexity gate
 - **Tests** — `pytest`, ≥ 85 % coverage, a mandatory test block per feature
-- **Security** — OWASP Web & LLM Top 10 (2025); `gitleaks` over the full history and `pip-audit` / `npm audit` run as gates in CI, with Dependabot as a second source
+- **Security** — OWASP Web & LLM Top 10 (2025); `gitleaks` over the full history and `pip-audit` / `npm audit` run as gates in CI, with Dependabot security alerts as a second source
 - **Privacy by design** — GDPR Art. 25: worker data pseudonymized at the adapter layer (HMAC tokens; free-text names NER-masked)
 - **EU AI Act** — risk classification documented before code is written (Phase 0)
 - **Observability** — structured per-reasoner logs + Prometheus metrics (OWASP A09)
