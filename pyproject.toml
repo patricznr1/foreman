@@ -49,7 +49,7 @@ dependencies = [
     # --- Modell-Gateway (F-LLM): LiteLLM als Inferenz-Backend hinter der eigenen
     #     LLMGateway-Abstraktion. Ausschließlich Implementierungsdetail in
     #     src/foreman/llm/backends.py — kein reasoner-fähiger Pfad sieht LiteLLM-Typen. ---
-    "litellm>=1.40",
+    "litellm>=1.98.0",
     # --- Ausfallvorhersage-Reasoner (F-PRED): klassisches ML (LightGBM) + SHAP-
     #     Faktor-Attribution. Training ist ein reproduzierbarer Offline-Schritt
     #     (train.py); die Inferenz lädt nur das Artefakt. scikit-learn ausschließlich
