@@ -219,21 +219,38 @@ findings:
     severity_after_triage: >
       medium — the guard exists and works; its trigger condition defaults the
       wrong way
-    status: planned
+    status: fixed
+    fixed_at: "2026-08-26"
     profile: [A, B]
     justification: >
       The hardcoded string itself is a placeholder, not a secret, and the guard
-      that rejects it runs before anything else in application startup. What is
-      genuinely wrong is the direction of the default: an unset ENVIRONMENT
-      variable yields "development", which disables the guard and additionally
-      exposes the API documentation routes. A security guard whose default is
+      that rejects it runs before anything else in application startup. What was
+      genuinely wrong was the direction of the default: an unset ENVIRONMENT
+      variable yielded "development", which disabled the guard and additionally
+      exposed the API documentation routes. A security guard whose default is
       "off" is a guard with a gap.
     remedy: >
-      Invert the default so that an unset environment is treated as production,
-      or require the environment to be set explicitly and refuse to start
-      otherwise. The deployment documentation already sets it; the code should
-      not depend on that.
-    review_by: "2026-11-30"
+      The environment now has no default at all, and that is the point: a default
+      would have to GUESS the deployment. Guessing "development" is what caused
+      this; guessing "production" would only be a safer guess, not a correct one.
+      A settings validator refuses to construct without a named environment, and
+      the message names the variable and its permitted values, because whoever
+      reads it has an application that is not coming up.
+
+      An empty value counts as unnamed too — `ENVIRONMENT=` in an env file is the
+      likelier mistake than a missing line, and without that check it would have
+      evaluated to silent production with a value nobody intended.
+
+      The test suite names itself as a test environment once, centrally in
+      conftest, rather than at each of the eighteen places that build a Settings.
+
+      Three tests, each mutation-checked separately: reinstating the default,
+      removing the empty check, and reinstating the algorithm setting each fail
+      exactly one test and no other.
+    evidence:
+      - "src/foreman/config.py"
+      - "tests/unit/test_config.py"
+    review_by: "2027-02-26"
 
   # ---------------------------------------------------------------------------
   - id: F-006
@@ -716,13 +733,27 @@ findings:
       the same configured value; there is no path by which an attacker chooses the
       algorithm. What remains is that a security decision sits where an operational
       one belongs, and a misconfiguration would be accepted rather than rejected
-    status: planned
+    status: fixed
+    fixed_at: "2026-08-26"
     profile: [A, B]
+    justification: >
+      None was needed — the observation was correct and the fix is smaller than any
+      argument for keeping it.
     remedy: >
-      Fix the algorithm in code, or accept only an explicit allow-list of supported
-      values, so that an unsupported setting fails at startup instead of at the
-      first token.
-    review_by: "2026-11-26"
+      The algorithm is a constant in core/security.py, not a setting. It was never
+      an operational choice: HS256 matches the symmetric secret, and moving to an
+      asymmetric scheme needs a key pair and therefore a deliberate change to that
+      line anyway. As a setting it could have been altered by a misconfiguration in
+      a place nobody looks as long as tokens keep working.
+
+      A test asserts that `jwt_algorithm` is absent from the settings model, so a
+      future reinstatement fails there rather than in production. The environment
+      variable is removed from .env.example and DEPLOY.md, with the reason in its
+      place.
+    evidence:
+      - "src/foreman/core/security.py"
+      - "tests/unit/test_config.py"
+    review_by: "2027-02-26"
 
   - id: F-020
     title: "The frontend BFF has no explicit origin check on mutating requests"
