@@ -157,16 +157,19 @@ findings:
       These are the credentials of a public demo whose entire purpose is to be
       opened without a request. They grant access to synthetic data on a shared
       instance that the README describes as shared before the login is reached.
-      They exist nowhere else in the repository — no seed, no fixture, no script
-      creates this account; user provisioning reads the password from an
-      interactive prompt or an environment variable and explicitly refuses to
-      take it from the command line.
+      The password exists nowhere else in the repository. The address appears once
+      more, in DEPLOY.md, as the example argument to the provisioning command —
+      that command reads the password from an interactive prompt or an environment
+      variable and explicitly refuses to take it from the command line, so the
+      second occurrence carries no credential. No seed, no fixture and no script
+      creates this account automatically.
     depends_on: >
       The demo instance never holds real personal or production data. Worker notes
       are name-redacted before storage, and the README asks users not to enter
       real personal data.
     evidence:
       - "src/foreman/db/provisioning.py:80"
+      - "DEPLOY.md:206"
       - "DEPLOY.md:218"
     review_by: "2027-02-26"
 
@@ -360,12 +363,24 @@ findings:
     status: disputed
     profile: [A, B]
     justification: >
-      The only interpolated value is a fixed scope fragment produced by
-      db/scope_sql.py, which itself uses bound parameters. Every user-supplied
-      value — query text, query vector, result count — is passed as a bound
-      parameter. There is no path from user input to the interpolated portion.
+      Two values are interpolated, and neither can be reached from user input.
+      The first is a fixed scope fragment produced by db/scope_sql.py, which
+      itself uses bound parameters. The second is the table name, which cannot be
+      a bound parameter in SQL — an identifier never can. It is constrained by an
+      allowlist (_FULLTEXT_TABLES) with a hard raise in front of the query, called
+      from two fixed call sites, and a test drives "users; DROP TABLE" into it and
+      requires the abort. Every user-supplied value — query text, query vector,
+      result count — is passed as a bound parameter.
+
+      This entry was rewritten on 2026-08-26. The earlier wording claimed a single
+      interpolated value and did not mention the table name at all. The protection
+      around it is in fact the stronger of the two, but a justification that omits
+      half of what it justifies is a defect in the register — which is precisely
+      what this register is meant to make findable.
     evidence:
       - "src/foreman/db/scope_sql.py:51"
+      - "src/foreman/archive/search.py:85"
+      - "tests/archive/test_archive_search.py"
     open_work: >
       A short comment at each interpolation site stating why it is safe would
       let a reviewer confirm this in seconds instead of tracing the call graph.
