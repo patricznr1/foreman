@@ -1,6 +1,6 @@
 # DSGVO-Datenschutz-Assessment: FOREMAN
 
-> Datenschutz-Selbsteinschätzung · Stand Juni 2026 · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage)
+> Datenschutz-Selbsteinschätzung · Stand August 2026 · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage)
 > Gegenstand: Datenschutzkonformität von FOREMAN nach Verordnung (EU) 2016/679 (DSGVO), Schwerpunkt **werkerbezogene Daten** im **Default-Betrieb (alles lokal, keine Datenweitergabe)**.
 > **Abgrenzung:** Hier geht es um das rechtliche **Ob, Warum und Wieweit**. Das technische **Wie** der Anonymisierung/Pseudonymisierung (HMAC-Tokenisierung, NER, Salt/Key-Rotation, Mapping-Trennung) ist Gegenstand von [`../research/anonymisierung-werkerdaten.md`](../research/anonymisierung-werkerdaten.md) — dieses Dokument verweist darauf, statt zu doppeln.
 > **Rechtlicher Vorbehalt:** Fundierte Selbsteinschätzung zur internen Orientierung und zur Außendarstellung des methodischen Vorgehens — **keine Rechtsberatung** (siehe Abschluss).
@@ -169,3 +169,42 @@ Zwei Kriterien sind plausibel erfüllt (**schutzbedürftige Betroffene** + **inn
 - Querverweis (technisches Wie): [`../research/anonymisierung-werkerdaten.md`](../research/anonymisierung-werkerdaten.md).
 
 > **Rechtlicher Vorbehalt (Wiederholung):** Diese Selbsteinschätzung dient der internen Orientierung und der Außendarstellung des methodischen Vorgehens. Sie ist keine Rechtsberatung. Vor einem echten Produktiveinsatz mit Beschäftigtendaten sind der betriebliche bzw. externe **Datenschutzbeauftragte** und — wegen des Beschäftigtenkontexts — ggf. der **Betriebsrat** einzubinden; die verbindliche Bewertung erfolgt durch fachkundige Stellen unter Berücksichtigung des konkreten Betreiber-Kontexts.
+
+---
+
+## Nachtrag August 2026 — Zugriffsbegrenzung und maschinenprüfbare Fassung
+
+**Die Zugriffsbeschränkung ist gebaut und eingefordert.** Die oben für
+`worker_notes` genannte Zugriffsbeschränkung war bis August 2026 eine Beschreibung;
+seither trägt sie jede Route. `ResourceScope` (`src/foreman/api/deps.py`) löst den
+sichtbaren Maschinen- und Linien-Ausschnitt der anfragenden Rolle je Anfrage einmal
+auf; jede Lese- und Schreibroute führt ihn. Die Suchpfade tragen ihn über
+`src/foreman/db/scope_sql.py` bis in die Roh-SQL — nicht nachträglich über die
+Trefferliste, denn beide Suchen begrenzen vorher mit LIMIT, und ein Filter danach
+schnitte aus einer bereits gekürzten Menge weiter.
+
+Belegt in `tests/integration/test_ressourcen_scope.py`: je Sperre ein Paar aus
+abgewiesener fremder und durchgelassener eigener Ressource, dazu die Gegenprobe, dass
+unbeschränkte Rollen unbeschränkt bleiben. `tests/unit/test_routen_inventar.py` hält
+den Zustand: Eine neue Route ohne Autorisierungs-Dependency lässt die Prüfung
+fehlschlagen. Prüfbefehl:
+`uv run pytest tests/integration/test_ressourcen_scope.py tests/unit/test_routen_inventar.py -q`
+
+**Was das für die Einschätzung oben bedeutet.** Die Interessenabwägung nach
+Art. 6(1)(f) trägt, WEIL der Eingriff minimiert ist — Pseudonymisierung beim
+Schreiben, Namens-Maskierung vor dem Speichern, keine Leistungskontrolle. Die
+Zugriffsbegrenzung ist der dritte Teil dieser Minimierung und damit Teil dessen, was
+die Abwägung trägt, nicht bloß eine flankierende Maßnahme.
+
+**Maschinenprüfbare Fassung.** Die Einstufungen dieses Dokuments liegen seit August
+2026 zusätzlich unter `compliance/scope.yaml` und `compliance/retention-policy.yaml`,
+prüfbar mit `python scripts/check_compliance.py`. Die YAML-Dateien übertragen, sie
+entscheiden nicht neu — eine Abweichung zwischen beiden ist ein Befund.
+
+**Was weiterhin offen ist.** Förmliches Verarbeitungsverzeichnis je Betreiber ·
+abschließende Folgenabschätzung · AVV und Transfergrundlage für die optionalen
+Cloud-Pfade · die konkreten Aufbewahrungsfristen der Nachweis-Felder, die
+betreiber- und arbeitsmittelabhängig sind und hier bewusst nicht geraten werden ·
+ein Test, der belegt, dass der Löschweg der Schichtberichte die Nachweis-Felder
+nicht mitreißt. Alle fünf sind in `compliance/scope.yaml` bzw.
+`compliance/retention-policy.yaml` als offen geführt.
