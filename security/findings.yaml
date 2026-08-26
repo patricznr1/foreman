@@ -288,8 +288,11 @@ findings:
       gitleaks as its own job over the full history (a secret committed and later
       removed stays retrievable in the history, so scanning only the tip would
       miss it), pip-audit against the resolved dependency tree, and npm audit at
-      the high threshold. Dependabot covers uv, npm, workflow actions and Docker
-      images as a second source. Exclusions in .gitleaks.toml match PATTERNS —
+      the high threshold. Dependabot security updates cover uv, npm, workflow
+      actions and Docker images as a second source; its routine version bumps are
+      switched off on purpose, because an audit answers whether something is
+      vulnerable while a version subscription only answers whether something newer
+      exists. Exclusions in .gitleaks.toml match PATTERNS —
       hex counting sequences and German placeholder wording — not paths, so a real
       secret in a test file still trips the gate. Measured on a fresh clone: three
       placeholders found without the allowlist, none with it, and three

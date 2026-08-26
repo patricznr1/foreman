@@ -1,14 +1,24 @@
 # =============================================================================
-# dependabot.yml — Abhängigkeits-Aktualisierung
+# dependabot.yml — Abhängigkeits-Überwachung, auf Sicherheit beschränkt
 # -----------------------------------------------------------------------------
-# Zweite Quelle neben dem Audit-Tor in der Prüfpipeline. Die beiden decken
-# Unterschiedliches ab: Das Tor meldet, was in der aktuellen Auflösung
-# verwundbar IST; Dependabot schlägt aktiv die Aktualisierung vor und erfasst
-# dabei auch transitive Pakete, die eine reine Prüfung nur benennt.
+# `open-pull-requests-limit: 0` schaltet die ROUTINE-Vorschläge ab: kein Pull
+# Request mehr, nur weil eine neuere Version existiert. SICHERHEITS-Updates
+# laufen weiter — die entstehen aus den Dependabot-Warnungen und nicht aus dieser
+# Datei, und genau die waren gemeint.
 #
-# Wöchentlich statt täglich: Bei einem Projekt mit einer Person ist ein täglicher
-# Strom von Vorschlägen kein Sicherheitsgewinn, sondern der sicherste Weg, dass
-# gar keiner mehr gelesen wird.
+# WARUM ABGESCHALTET, nachdem es einen Tag lief: Beim Einschalten öffneten sich
+# binnen einer Minute vierzehn Pull Requests. Jeder davon benachrichtigt alle,
+# die dem Repo folgen, und verbraucht einen vollständigen Prüflauf. Sechs
+# schlugen Hauptversionssprünge vor, darunter einen auf `mcp` 2.0 — den
+# pyproject.toml mit `<2` ausdrücklich ausschließt.
+#
+# Das ist der Unterschied, um den es geht: Ein Abhängigkeits-Audit beantwortet
+# „ist etwas davon verwundbar". Ein Versions-Abo beantwortet „gibt es etwas
+# Neueres". Nur die erste Frage gehört zur Sicherheitslage; die zweite ist
+# Pflegearbeit und wird hier bewusst von Hand entschieden.
+#
+# Die Ökosysteme bleiben eingetragen, damit die Sicherheits-Updates jedes davon
+# erreichen und die Einstellung sichtbar bleibt statt gelöscht zu sein.
 # =============================================================================
 version: 2
 updates:
@@ -17,35 +27,25 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "deps"
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "deps(frontend)"
+    open-pull-requests-limit: 0
 
-  # Die Pipeline-Schritte hängen an Commit-Hashes; ohne diesen Eintrag altern sie
-  # still, weil ein Hash sich nicht von selbst bewegt.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: "ci"
+    open-pull-requests-limit: 0
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: "docker"
+    open-pull-requests-limit: 0
