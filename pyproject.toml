@@ -22,7 +22,7 @@ dependencies = [
     # --- Datenbank: async SQLAlchemy 2.0 + asyncpg + Migrationen ---
     "sqlalchemy[asyncio]>=2.0.30",
     "asyncpg>=0.29",
-    "alembic>=1.13",
+    "alembic>=1.19.1",
     "greenlet>=3.0",
     # Vektor-Spalte worker_notes.embedding (vector(1024); Index erst später)
     "pgvector>=0.3.6",
