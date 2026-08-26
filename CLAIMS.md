@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-08-25
+Stand: 2026-08-26
 
 ## FOREMAN
 
@@ -65,6 +65,7 @@ Stand: 2026-08-25
 | C-060 | Die Freigabe-Bedingung für das Gedächtnis als vierte Archiv-Quelle ist mit der heutigen Antwortform nicht messbar. | gemessen | 0 von 77 ausgelieferten Erinnerungs-Treffern konnte einer Quellzeile zugeordnet werden | 2026-08-25 | gueltig | intern |
 | C-061 | Werden die Erinnerungs-Treffer ihrer Quellzeile zugeordnet, verbessert die vierte Quelle die Archiv-Suche deutlich. | gemessen | Trefferquote 0,256 auf 0,558; Ranggüte 0,372 auf 0,619; 70,6 % der Anfragen mit zusätzlichem zutreffendem Treffer, keine mit verlorenem | 2026-08-25 | gueltig | intern |
 | C-062 | Ein Treffer aus dem Gedächtnis lässt sich seiner Quellzeile zuordnen. | gemessen | Herkunftsangabe im Treffer, sobald die Erinnerung sie trägt; sonst kein Eintrag statt einer geratenen Zuordnung | 2026-08-25 | gueltig | intern |
+| C-063 | Derselbe Vorgang steht in einer Trefferliste nur einmal, auch wenn ihn zwei Quellen führen. | gemessen | Anteil zutreffender Treffer 0,403 auf 0,445, ohne dass ein zutreffender Treffer verloren geht | 2026-08-26 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -78,17 +79,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 60
+Einträge gesamt: 61
 
 Nach Status:
 
-- gemessen: 53
+- gemessen: 54
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 57
+- gueltig: 58
 - ueberholt: 3
 - ungeprueft: 0

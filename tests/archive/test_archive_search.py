@@ -226,3 +226,93 @@ async def test_fulltext_ids_lehnt_unbekannte_tabelle_ab(db_session: AsyncSession
 
     with pytest.raises(ValueError):
         await _fulltext_ids(db_session, "users; DROP TABLE", "x", machine_id=None, scope=None, k=5)
+
+
+class _SubstratMit:
+    """Gegenstelle, die genau eine Erinnerung liefert — mit Rückweg auf eine Zeile."""
+
+    def __init__(self, *, art: str, kennung: int, machine_id: int) -> None:
+        self._art, self._kennung, self._machine_id = art, kennung, machine_id
+
+    async def recall(self, query: str, *, max_results: int = 5) -> dict:
+        return {
+            "results": [
+                {
+                    "id": "aaaaaaaa-0000-0000-0000-000000000001",
+                    "content": "Wartung (lubrication) an Maschine X. Fett nachgefüllt.",
+                    "relevance": 0.9,
+                    "occurred_at": "2026-06-24T09:00:00+00:00",
+                    "metadata": {
+                        "machine_id": self._machine_id,
+                        "source_type": self._art,
+                        "source_id": self._kennung,
+                    },
+                }
+            ]
+        }
+
+
+@pytest.mark.integration
+async def test_derselbe_vorgang_steht_nur_einmal_in_der_liste(db_session: AsyncSession) -> None:
+    """Die VERDRAHTUNG der Doppelfund-Auflösung, nicht die Funktion.
+
+    ANLASS: Zwei Gegenproben — die Auflösung aus der Fusion herausnehmen und sie
+    hinter das Kürzen ziehen — blieben grün, weil jeder Test die Hilfsfunktion
+    direkt aufrief. Eine getestete Funktion, die niemand aufruft, ist so
+    wirkungslos wie eine fehlende; geprüft werden muss der Weg, den die Anfrage
+    tatsächlich nimmt.
+
+    Aufbau: Ein Wartungsvorgang liegt in der Datenbank, und die Gegenstelle
+    liefert eine Erinnerung, die über ihren Rückweg auf genau diesen Vorgang
+    zeigt. Ohne Auflösung stünde er zweimal in der Liste.
+    """
+    m = Machine(label="AX-02", machine_class="servo_axis")
+    db_session.add(m)
+    await db_session.flush()
+    maint = MaintenanceEvent(machine_id=m.id, type="lubrication", description="Fett nachgefüllt")
+    db_session.add(maint)
+    await db_session.flush()
+
+    hits = await search_archive(
+        _provider(),
+        db_session,
+        "Fett",
+        max_distance=_MAX_DIST,
+        k=10,
+        substrate=_SubstratMit(art="maintenance", kennung=maint.id, machine_id=m.id),
+        substrate_k=5,
+    )
+
+    schluessel = [(h.source_type, h.id) for h in hits]
+    assert ("maintenance", maint.id) in schluessel, "der eigene Treffer fehlt"
+    assert not [h for h in hits if h.source_type == "memory"], (
+        "der Vorgang steht zweimal in der Liste — die Auflösung greift nicht"
+    )
+
+
+@pytest.mark.integration
+async def test_erinnerung_auf_einen_unbekannten_vorgang_bleibt(db_session: AsyncSession) -> None:
+    """AUFBAU-KONTROLLE: Ohne sie wäre 'die Erinnerung fällt weg' auch mit
+    'Erinnerungen fallen immer weg' erklärbar — und der Gewinn der vierten
+    Quelle wäre still verschwunden."""
+    m = Machine(label="AX-03", machine_class="servo_axis")
+    db_session.add(m)
+    await db_session.flush()
+    maint = MaintenanceEvent(machine_id=m.id, type="lubrication", description="Fett nachgefüllt")
+    db_session.add(maint)
+    await db_session.flush()
+
+    hits = await search_archive(
+        _provider(),
+        db_session,
+        "Fett",
+        max_distance=_MAX_DIST,
+        k=10,
+        # Zeigt auf eine Zeile, die die Suche NICHT gefunden hat.
+        substrate=_SubstratMit(art="maintenance", kennung=maint.id + 9999, machine_id=m.id),
+        substrate_k=5,
+    )
+
+    assert [h for h in hits if h.source_type == "memory"], (
+        "die Erinnerung wurde zu Unrecht entfernt"
+    )

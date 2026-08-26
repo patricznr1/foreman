@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-08-25"
+stand: "2026-08-26"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -1517,3 +1517,35 @@ claims:
       Bestand, dessen Erinnerungen die Herkunft tragen, belegt, ob die vierte
       Quelle die Schwellen erfüllt. Der Altbestand bekommt sie beim nächsten
       Nachtrag; bis dahin bleibt der Schalter aus.
+
+  - id: "C-063"
+    aussage: "Derselbe Vorgang steht in einer Trefferliste nur einmal, auch wenn ihn zwei Quellen führen."
+    status: "gemessen"
+    wert: "Anteil zutreffender Treffer 0,403 auf 0,445, ohne dass ein zutreffender Treffer verloren geht"
+    bedingung: >-
+      Gebaut und gemessen am 26.08.2026. Eine Schichtnotiz ist über ihr Embedding
+      als eigene Quelle auffindbar und über ihre Spiegelung als Erinnerung; die
+      Verschmelzung sah zwei getrennte Ranglisten und rangierte denselben Vorgang
+      deshalb doppelt hoch — er verdrängte andere Treffer, ohne mehr zu sagen.
+      Zeigt eine Erinnerung über ihren Rückweg (C-062) auf eine Zeile, die bereits
+      als eigener Treffer dasteht, fällt sie jetzt weg. Der eigene Treffer bleibt:
+      Er trägt die echte Kennung, seine Zeitangabe stammt aus der Datenbank statt
+      aus dem Abruf, und sein Auszug ist der ungekürzte Originaltext. Die
+      Auflösung greift VOR dem Kürzen, damit ein echter Treffer nachrückt statt
+      einer Lücke. Eine Erinnerung ohne Rückweg bleibt unangetastet. Gemessen an
+      denselben 18 Anfragen wie in C-049.
+    datum: "2026-08-26"
+    fundstelle:
+      - "src/foreman/archive/search.py, _ohne_doppelfunde"
+      - "tests/archive/test_archive_search.py"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Prüfaufbau hat sich dabei selbst korrigiert: Zwei Gegenproben — die
+      Auflösung aus der Verschmelzung herausnehmen und sie hinter das Kürzen
+      ziehen — blieben zunächst grün, weil jeder Test die Hilfsfunktion direkt
+      aufrief statt den Weg, den eine Anfrage tatsächlich nimmt. Eine getestete
+      Funktion, die niemand aufruft, ist so wirkungslos wie eine fehlende. Erst
+      ein Test gegen die vollständige Suche fing beide.
