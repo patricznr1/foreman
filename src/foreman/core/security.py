@@ -39,6 +39,15 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
+# Der Signaturalgorithmus ist eine Sicherheitsentscheidung, keine Betriebseinstellung,
+# und steht deshalb hier statt in den Settings. Waere er ueber die Umgebung setzbar,
+# koennte eine Fehlkonfiguration ihn still veraendern — und zwar an einer Stelle, an
+# der niemand nachsieht, solange Tokens funktionieren. HS256 passt zum symmetrischen
+# Secret; ein Wechsel auf ein asymmetrisches Verfahren braucht ohnehin ein
+# Schluesselpaar und damit eine bewusste Aenderung an dieser Zeile.
+JWT_ALGORITHM = "HS256"
+
+
 def create_access_token(
     subject: str,
     settings: Settings,
@@ -52,7 +61,7 @@ def create_access_token(
     payload: dict[str, Any] = {"sub": subject, "iat": now, "exp": expire}
     if extra_claims:
         payload.update(extra_claims)
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    return jwt.encode(payload, settings.jwt_secret, algorithm=JWT_ALGORITHM)
 
 
 def decode_access_token(token: str, settings: Settings) -> dict[str, Any]:
@@ -66,7 +75,7 @@ def decode_access_token(token: str, settings: Settings) -> dict[str, Any]:
     decoded: dict[str, Any] = jwt.decode(
         token,
         settings.jwt_secret,
-        algorithms=[settings.jwt_algorithm],
+        algorithms=[JWT_ALGORITHM],
         options={"require": ["exp", "iat"], "verify_exp": True},
     )
     return decoded
@@ -92,7 +101,7 @@ def create_ws_ticket(
         "exp": now + timedelta(seconds=expires_seconds),
         "aud": WS_TICKET_AUDIENCE,
     }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    return jwt.encode(payload, settings.jwt_secret, algorithm=JWT_ALGORITHM)
 
 
 def decode_ws_token(token: str, settings: Settings) -> dict[str, Any]:
@@ -105,7 +114,7 @@ def decode_ws_token(token: str, settings: Settings) -> dict[str, Any]:
     decoded: dict[str, Any] = jwt.decode(
         token,
         settings.jwt_secret,
-        algorithms=[settings.jwt_algorithm],
+        algorithms=[JWT_ALGORITHM],
         options={"require": ["exp", "iat"], "verify_exp": True, "verify_aud": False},
     )
     audience = decoded.get("aud")

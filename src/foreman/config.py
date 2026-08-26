@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Unsicherer JWT-Default — nur Platzhalter; im Produktionsbetrieb hart abgelehnt.
@@ -35,7 +35,13 @@ class Settings(BaseSettings):
 
     # --- App ---
     app_name: str = "FOREMAN"
-    environment: str = "development"
+    # OHNE Vorgabewert, und das ist der Kern: Ein Vorgabewert muesste die
+    # Betriebsumgebung RATEN. Riete er "development", liefe eine Anlage, bei deren
+    # Ausrollen die Variable vergessen wurde, mit offenen Schema-Routen und ohne den
+    # Secret-Guard — und zwar lautlos, weil nichts fehlschlaegt. Riete er
+    # "production", waere das Raten nur sicherer, nicht richtiger. Wer die Umgebung
+    # nicht nennt, bekommt keinen Start. Siehe `_umgebung_muss_benannt_sein`.
+    environment: str | None = None
     debug: bool = False
     log_level: str = "INFO"
 
@@ -48,7 +54,8 @@ class Settings(BaseSettings):
 
     # --- Auth / JWT ---
     jwt_secret: str = INSECURE_JWT_SECRET
-    jwt_algorithm: str = "HS256"
+    # Kein `jwt_algorithm` hier: Der Signaturalgorithmus liegt als Konstante in
+    # core/security.py. Begruendung dort.
     jwt_expire_minutes: int = 60
 
     # --- Gedächtnis-Substrat (NEXUS-Anbindung, §9) ---
@@ -120,10 +127,33 @@ class Settings(BaseSettings):
         validation_alias="FOREMAN_ARCHIVE_SUBSTRATE_K",
     )
 
+    @model_validator(mode="after")
+    def _umgebung_muss_benannt_sein(self) -> Settings:
+        """Verweigert den Start, solange die Betriebsumgebung nicht genannt ist.
+
+        Die Meldung steht hier und nicht in der Pydantic-Vorgabe ("Field required"),
+        weil sie jemand liest, dessen Anwendung gerade nicht hochkommt — und dem
+        dann der Name der Variablen und die erlaubten Werte helfen, nicht der Name
+        des Feldes.
+        """
+        if self.environment is None or not self.environment.strip():
+            raise ValueError(
+                "❌ ENVIRONMENT ist nicht gesetzt. FOREMAN startet nicht ohne benannte "
+                "Betriebsumgebung, weil davon abhängt, ob die Schema-Routen offen sind "
+                "und ob schwache Geheimnisse abgelehnt werden. Erlaubt sind "
+                f"{sorted(_DEV_ENVIRONMENTS)} für Entwicklung und Tests; jeder andere "
+                "Wert (etwa 'production' oder 'staging') gilt als Produktionsbetrieb."
+            )
+        return self
+
     @property
     def is_production(self) -> bool:
-        """True, wenn die Umgebung NICHT als Entwicklung/Test markiert ist."""
-        return self.environment.lower() not in _DEV_ENVIRONMENTS
+        """True, wenn die Umgebung NICHT als Entwicklung/Test markiert ist.
+
+        `environment` ist nach der Validierung nie None — `_umgebung_muss_benannt_sein`
+        laesst den Start sonst nicht zu.
+        """
+        return (self.environment or "").lower() not in _DEV_ENVIRONMENTS
 
     def require_secure_secrets(self) -> None:
         """Bricht im Produktionsbetrieb ab, wenn das JWT-Secret schwach/Default ist.

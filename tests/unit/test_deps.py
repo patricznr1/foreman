@@ -13,10 +13,12 @@ from fastapi import HTTPException
 
 from foreman.api.deps import get_current_user
 from foreman.config import Settings
-from foreman.core.security import create_access_token
+from foreman.core.security import JWT_ALGORITHM, create_access_token
 from foreman.db.models import User
 
-_S = Settings(_env_file=None, jwt_secret="deps-secret-0123456789abcdef0123456789")
+_S = Settings(
+    _env_file=None, environment="test", jwt_secret="deps-secret-0123456789abcdef0123456789"
+)
 
 
 class _StubSession:
@@ -72,7 +74,7 @@ async def test_token_without_subject_raises_401() -> None:
     token = jwt.encode(
         {"iat": now, "exp": now + timedelta(minutes=5)},
         _S.jwt_secret,
-        algorithm=_S.jwt_algorithm,
+        algorithm=JWT_ALGORITHM,
     )
     with pytest.raises(HTTPException) as exc:
         await get_current_user(

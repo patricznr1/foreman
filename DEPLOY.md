@@ -84,9 +84,8 @@ Warten, bis der DB-Service **läuft**.
    **App / Auth**
    | Variable | Wert |
    | --- | --- |
-   | `ENVIRONMENT` | `production` |
+   | `ENVIRONMENT` | `production` — **Pflicht**, ohne Vorgabewert; fehlt sie, bricht der Start ab |
    | `JWT_SECRET` | `openssl rand -hex 32` — **Pflicht** (≥ 32 Byte), sonst bricht der Start ab |
-   | `JWT_ALGORITHM` | `HS256` |
 
    > Im `production`-Modus erzwingt FOREMAN ein sicheres `JWT_SECRET`
    > (`require_secure_secrets()` beim Start). Default/zu kurz ⇒ **kein Boot**.

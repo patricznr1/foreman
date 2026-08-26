@@ -12,6 +12,16 @@ import asyncio
 import os
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 
+# Die Testumgebung nennt sich einmal zentral als solche. `ENVIRONMENT` hat seit
+# 2026-08-26 bewusst KEINEN Vorgabewert (config.py, `_umgebung_muss_benannt_sein`):
+# Wer sie nicht nennt, bekommt keinen Start, weil von ihr abhaengt, ob die
+# Schema-Routen offen sind und ob schwache Geheimnisse abgelehnt werden. Fuer die
+# Suite heisst das genau eine Zeile hier statt einer Angabe an jeder der achtzehn
+# Stellen, die eine `Settings` bauen — und `setdefault` laesst einer echten
+# Umgebungsvariable den Vortritt, damit ein Lauf gegen eine andere Umgebung moeglich
+# bleibt. Dass das Verweigern wirkt, prueft tests/unit/test_config.py.
+os.environ.setdefault("ENVIRONMENT", "test")
+
 import asyncpg
 import pytest
 import pytest_asyncio
@@ -181,6 +191,7 @@ def test_settings() -> Settings:
     """Konfiguration für Tests: Test-DB, fixer JWT-Secret, v1-Pseudo-Schlüssel, kein Substrat."""
     return Settings(
         _env_file=None,  # nicht die echte .env lesen
+        environment="test",
         database_url=TEST_DATABASE_URL,
         jwt_secret="test-secret-foreman-f2-0123456789abcdef",  # ≥32 Byte (HS256)
         jwt_expire_minutes=60,

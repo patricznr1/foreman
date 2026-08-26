@@ -18,8 +18,8 @@ from foreman.core.security import (
 
 _SETTINGS = Settings(
     _env_file=None,
+    environment="test",
     jwt_secret="unit-secret-0123456789abcdef0123456789",  # >=32 Byte (HS256)
-    jwt_algorithm="HS256",
 )
 
 
@@ -73,6 +73,8 @@ def test_tampered_token_raises() -> None:
 
 def test_wrong_secret_raises() -> None:
     token = create_access_token("7", _SETTINGS)
-    other = Settings(_env_file=None, jwt_secret="anderes-secret-0123456789abcdef0123")
+    other = Settings(
+        _env_file=None, environment="test", jwt_secret="anderes-secret-0123456789abcdef0123"
+    )
     with pytest.raises(jwt.InvalidTokenError):
         decode_access_token(token, other)
