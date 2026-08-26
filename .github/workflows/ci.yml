@@ -81,6 +81,33 @@ jobs:
       - name: Tests + coverage — pytest (integration, red-team, ≥85 %)
         run: uv run pytest
 
+      - name: Abhängigkeits-Audit — pip-audit
+        # `--no-emit-project`: Der Export enthält sonst das Projekt selbst als
+        # lokalen Pfad, und pip-audit versucht es zu installieren.
+        run: |
+          uv export --no-hashes --no-emit-project --format requirements-txt > /tmp/requirements.txt
+          uv run pip-audit -r /tmp/requirements.txt --progress-spinner off
+
+  secret-scan:
+    name: secrets · gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        # Volle Historie: Ein Geheimnis, das einmal committet und danach entfernt
+        # wurde, steht weiterhin im Verlauf und ist weiterhin abrufbar. Ein Scan
+        # nur über den letzten Stand fände es nicht.
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Geheimnis-Scan — gitleaks
+        # Per Digest festgenagelt statt per Marke: Dieselbe Begründung wie bei den
+        # Pipeline-Schritten oben — eine Marke ist verschiebbar, ein Digest nicht.
+        # Die Ausnahmen stehen in .gitleaks.toml und treffen Muster, nicht Pfade.
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo             zricethezav/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f             git --no-banner --redact -c .gitleaks.toml
+
   frontend-gates:
     name: frontend · tokens · tsc · eslint · vitest · build
     runs-on: ubuntu-latest
@@ -117,6 +144,13 @@ jobs:
 
       - name: Tests — vitest
         run: npm test
+
+      - name: Abhängigkeits-Audit — npm audit
+        # Schwelle `high`: Niedrigere Meldungen betreffen hier durchweg
+        # Entwicklungswerkzeuge und würden das Tor stumpf machen, weil man sich
+        # an ein rotes Ergebnis gewöhnt. Der Stand ist heute ohne offene Punkte —
+        # ein Treffer ist damit ein echtes Signal, kein Grundrauschen.
+        run: npm audit --audit-level=high
 
       - name: Build — next build
         run: npm run build
