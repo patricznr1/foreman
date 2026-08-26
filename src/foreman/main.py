@@ -164,11 +164,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await dispose_engine()
         logger.info("%s FOREMAN heruntergefahren", INFO)
 
+    # Das Schema und die Doku darüber gibt es nur außerhalb des Produktionsbetriebs.
+    # Sie beschreiben jede Route, ihre Parameter und ihre Antwortformen — in der
+    # Entwicklung der halbe Wert des Werkzeugs, an einer öffentlich erreichbaren
+    # Adresse eine Landkarte, die niemand braucht, der die Anwendung bedient: Die
+    # Oberfläche kennt ihre Aufrufe. `openapi_url=None` schaltet /docs und /redoc
+    # ohnehin mit ab; beide stehen trotzdem ausdrücklich da, damit die Absicht im
+    # Code steht und nicht in einer Nebenwirkung.
+    schema_url = None if cfg.is_production else "/openapi.json"
     app = FastAPI(
         title="FOREMAN",
         version="0.2.0",
         summary="Production Intelligence with Memory",
         lifespan=lifespan,
+        openapi_url=schema_url,
+        docs_url=None if cfg.is_production else "/docs",
+        redoc_url=None if cfg.is_production else "/redoc",
     )
     # Auth-Middleware: alles außer /health, /auth/*, OpenAPI-Doku (§4).
     app.add_middleware(AuthMiddleware, settings=cfg)

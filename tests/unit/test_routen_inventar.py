@@ -20,11 +20,11 @@ WARUM OHNE DATENBANK. Der Test braucht `test_settings`, aber nicht
 ist, statt still übersprungen zu werden — ein Wächter, der in der CI
 weggeskippt wird, ist keiner.
 
-DIE ÜBERGANGSLISTE. `OFFEN_STAND_2026_08_25` führt den Stand des Ausrollens:
-die Routen, die den gemeinsamen Dependency noch nicht führen. Der Aufbau folgt
-dem Baseline-Prinzip: Der Übergang blockiert nicht, kann aber weder wachsen noch
-stillschweigend stehen bleiben — `test_uebergangsliste_ist_aktuell` erzwingt,
-dass jede umgestellte Route sofort von der Liste verschwindet.
+DIE ÜBERGANGSLISTE. `UEBERGANG_OFFEN` ist leer: Jede geprüfte Route führt eine
+Autorisierungs-Dependency. Die Menge bleibt als Konstrukt bestehen, damit ein
+künftiger Umbau eine befristete Ausnahme SICHTBAR eintragen kann, statt den
+Wächter abzuschalten — und `test_uebergangsliste_ist_aktuell` erzwingt, dass ein
+solcher Eintrag wieder verschwindet, sobald er erledigt ist.
 """
 
 import inspect
@@ -67,17 +67,11 @@ AUSGENOMMEN = {
     "/redoc": "Schema, keine Daten",
 }
 
-# Übergangsstand des Ausrollens vom 25.08.2026: die Routen, die den gemeinsamen
-# Dependency noch nicht führen. Aus der Messung gegen `create_app()` erzeugt, nie
-# abgetippt. Sie schrumpft mit jeder Etappe auf null.
-OFFEN_STAND_2026_08_25: set[str] = {
-    "GET /api/v1/reasoners/drift/alarms",
-    "GET /api/v1/reasoners/event_chain/explanations",
-    "GET /api/v1/reasoners/event_chain/explanations/{explanation_id}",
-    "GET /api/v1/reasoners/event_chain/explanations/{explanation_id}/siblings",
-    "GET /api/v1/substrate/smoke",
-    "POST /api/v1/readings",
-}
+# Der Übergang ist abgeschlossen: Jede geprüfte Route führt eine Autorisierungs-
+# Dependency. Die Menge bleibt als Konstrukt bestehen — ein künftiger Umbau kann
+# hier eine befristete, sichtbare Ausnahme eintragen, statt den Wächter darunter
+# abzuschalten. Was hier steht, ist eine Schuld auf Zeit, kein Bestand.
+UEBERGANG_OFFEN: set[str] = set()
 
 
 @pytest.fixture(scope="module")
@@ -145,7 +139,7 @@ def test_aufbau_der_pruefung_traegt(app_routen):
 
 def test_keine_neue_route_ohne_scope(app_routen):
     """Eine NEUE Route ohne Autorisierungs-Dependency ist ein Befund."""
-    neu_offen = [k for k in _ohne_identitaet(app_routen) if k not in OFFEN_STAND_2026_08_25]
+    neu_offen = [k for k in _ohne_identitaet(app_routen) if k not in UEBERGANG_OFFEN]
     assert not neu_offen, (
         f"❌ {len(neu_offen)} Route(n) ohne Autorisierungs-Dependency:\n  "
         + "\n  ".join(neu_offen)
@@ -165,11 +159,11 @@ def test_uebergangsliste_ist_aktuell(app_routen):
     gibt. Umgekehrt fiele nicht auf, wenn die Absicherung wieder herausfällt.
     """
     offen = set(_ohne_identitaet(app_routen))
-    erledigt = OFFEN_STAND_2026_08_25 - offen
+    erledigt = UEBERGANG_OFFEN - offen
     assert not erledigt, (
         f"✅ {len(erledigt)} Route(n) sind inzwischen abgesichert:\n  "
         + "\n  ".join(sorted(erledigt))
-        + "\n\nAus OFFEN_STAND_2026_08_25 streichen — die Liste ist eine "
+        + "\n\nAus UEBERGANG_OFFEN streichen — die Liste ist eine "
         "Schuldenliste, kein Bestandsverzeichnis."
     )
 
