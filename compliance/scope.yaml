@@ -1,0 +1,189 @@
+# =============================================================================
+# scope.yaml — Regime-Einstufung FOREMAN
+# -----------------------------------------------------------------------------
+# Maschinenprüfbare Fassung der Einstufungen, die in docs/compliance/ ausführlich
+# hergeleitet sind. Diese Datei ÜBERTRÄGT, sie entscheidet nicht neu: Wo sie von
+# den Fließtext-Dokumenten abweicht, ist das ein Befund und keine Fortschreibung.
+#
+# Jedes der vier Regime ist ausdrücklich eingestuft — auch die, die nicht greifen.
+# Ein ungeprüft angewandtes Regime ist so falsch wie ein übersehenes.
+# =============================================================================
+
+schema: scope/v1
+
+system:
+  name: "FOREMAN"
+  repo: "github.com/patricznr1/foreman"
+  kurzbeschreibung: >
+    Produktionsbegleitendes Auswerte- und Gedächtnissystem für Fertigungsanlagen:
+    liest Maschinen- und Sensordaten, erkennt Abweichungen, rekonstruiert
+    Ereignisketten und schätzt Ausfälle ein — beratend, ohne Eingriff in die Anlage.
+  zweckbestimmung: >
+    Unterstützung des Instandhaltungs- und Schichtpersonals bei der Beurteilung des
+    Anlagenzustands. Das System liefert Hinweise und Erklärungen; jede Entscheidung
+    und jede Handlung an der Anlage bleibt beim Menschen. Es schaltet nichts.
+  betriebsmodell: "self-hosted"
+  verarbeitungsregionen: ["EU/DE"]
+  eingestuft_von: "Entwicklung (Solo)"
+  eingestuft_am: "2026-08-26"
+  naechste_pruefung: "2027-02-26"
+
+  # Diese Bedingung trägt ALLE vier Einstufungen unten. Fällt sie weg, ist die
+  # gesamte Datei neu zu bewerten und nicht bloß fortzuschreiben.
+  betriebszustand: >
+    Entwicklungsstand mit ausschließlich simulierten Daten. Kein Produktiveinsatz,
+    keine realen Werkerdaten, kein scharfer Pseudonymisierungsschlüssel im Feld.
+    BELEGSTATUS: geprüft (GROUND_TRUTH §18, docs/compliance/dsgvo-assessment.md).
+
+# -----------------------------------------------------------------------------
+regime:
+
+  - id: AIACT
+    # Zitierweise: Rechtsakt ist die KI-VO. Die Änderungsverordnung trägt für sich
+    # keine Rechtsgrundlage und wird nur dort genannt, wo genau sie gemeint ist.
+    bezeichnung: "VO (EU) 2024/1689 (KI-VO) i.d.F. VO (EU) 2026/1744"
+    anwendbar: true
+    rolle: "anbieter"
+    risikoklasse: "transparenzpflicht_art50"
+    begruendung: >
+      Prüfreihenfolge von oben, hergeleitet in docs/compliance/eu-ai-act-assessment.md:
+      Art. 5 (verbotene Praktiken) verneint. Anhang I verneint — FOREMAN ist kein
+      Sicherheitsbauteil einer konformitätsbewertungspflichtigen Maschine; sein Ausfall
+      löst keinen gefährlichen Anlagenzustand aus, die SPS-/Not-Halt-Funktionen laufen
+      unabhängig weiter. Anhang III verneint — eine Fertigungsanlage ist keine kritische
+      Infrastruktur im Sinne von Nr. 2, und es findet keine Beschäftigtenbewertung im
+      Sinne von Nr. 4 statt: Beobachtet werden Maschinen, nicht Arbeitsleistung.
+      Es bleiben die Transparenzpflichten nach Art. 50 und die KI-Kompetenz nach Art. 4.
+    tragende_bedingung: >
+      Keine automatische Aktorik und ein Mensch in der Entscheidungskette. Sobald das
+      System selbst schaltet, regelt oder eine Sicherheitsfunktion übernimmt, kippt die
+      Einstufung — dann greift die Anhang-I-Route über die Maschinenverordnung
+      (EU) 2023/1230, und zwar mit Drittkonformitätsbewertung.
+    einschlaegige_artikel: ["Art.4", "Art.50"]
+    belegstatus: "abgeleitet"
+    quelle: "docs/compliance/eu-ai-act-assessment.md"
+    eingestuft_am: "2026-08-26"
+    naechste_pruefung: "2027-02-26"
+    offene_punkte:
+      - >
+        Die Fristen der KI-VO sind bewusst NICHT aus Sekundärquellen übernommen. Für
+        die Terminplanung ist die konsolidierte Fassung im Amtsblatt zu lesen;
+        verbreitete Übersichtsseiten führen die Verschiebung durch den Digital Omnibus
+        teils nicht nach. BELEGSTATUS: offen.
+
+  - id: GDPR
+    bezeichnung: "VO (EU) 2016/679 (DSGVO)"
+    anwendbar: true
+    rolle: "auftragsverarbeiter_bzw_hersteller"
+    begruendung: >
+      Das System verarbeitet im bestimmungsgemäßen Einsatz personenbezogene Daten:
+      Werker-Freitexte (`worker_notes.text`) sowie die Nachweis-Felder
+      `maintenance_events.performed_by` und `alarms.acknowledged_by`. Diese sind
+      pseudonymisiert (HMAC-Token über die Nutzerkennung) und bleiben damit
+      personenbezogen, solange die Zuordnung möglich ist — die Klartext-Identität liegt
+      in `users`. Verantwortlicher im Sinne von Art. 4 Nr. 7 ist der BETREIBER der
+      Anlage, nicht die Entwicklung; diese Datei beschreibt, was das System dem
+      Verantwortlichen ermöglicht und was es ihm auferlegt.
+    tragende_bedingung: >
+      Solange ausschließlich simulierte Daten verarbeitet werden, ist kein realer
+      Personenbezug im Feld. Mit dem ersten realen Werkerdatensatz greifen die
+      Betroffenenrechte unmittelbar — dann sind das förmliche Verarbeitungsverzeichnis,
+      die abschließende Folgenabschätzung und die Auftragsverarbeitungsverträge fällig,
+      NICHT später.
+    rechtsgrundlagen_je_zweck:
+      - zweck: "Prüf- und Wartungsnachweis"
+        norm: "Art. 6(1)(c) i.V.m. BetrSichV"
+        felder: ["maintenance_events.performed_by"]
+      - zweck: "Nachweis der menschlichen Quittierung sicherheitskritischer Ereignisse"
+        norm: "Art. 6(1)(c) i.V.m. Arbeitsschutzrecht, ergänzend Art. 6(1)(f)"
+        felder: ["alarms.acknowledged_by"]
+      - zweck: "Betriebliche Wissensorganisation (Schichtberichte)"
+        norm: "Art. 6(1)(f); im Beschäftigtenkontext ergänzend Betriebsvereinbarung nach Art. 88"
+        felder: ["worker_notes.author", "worker_notes.text"]
+    hinweis_beschaeftigtenkontext: >
+      § 26 Abs. 1 S. 1 BDSG trägt seit EuGH C-34/21 und BAG 8 AZR 209/21 nicht mehr als
+      Generalklausel. Die Verarbeitung stützt sich unmittelbar auf Art. 6(1) DSGVO; eine
+      Betriebsvereinbarung nach Art. 88 bleibt als eigenständige Grundlage möglich und
+      ist im Beschäftigtenkontext zu empfehlen. Ein Beschäftigtendatengesetz liegt nur
+      als Referentenentwurf vor und ist nicht in Kraft — es wird hier nicht als
+      geltendes Recht geführt.
+    belegstatus: "abgeleitet"
+    quelle: "docs/compliance/dsgvo-assessment.md, docs/compliance/dsfa-foreman-vorlaeufig.md"
+    eingestuft_am: "2026-08-26"
+    naechste_pruefung: "2027-02-26"
+    offene_punkte:
+      - "Förmliches Verarbeitungsverzeichnis je Betreiber — vor Produktiveinsatz. BELEGSTATUS: offen."
+      - "Abschließende Folgenabschätzung (bislang vorläufig). BELEGSTATUS: offen."
+      - >
+        Auftragsverarbeitungsverträge und Transfergrundlage für die optionalen
+        Cloud-Pfade (Modell-Gateway, Einbettungs-Demonstrator in den USA). Solange nur
+        simulierte Daten verarbeitet werden, ist kein Pflichtfall ausgelöst.
+        BELEGSTATUS: offen.
+
+  - id: ISO27001
+    bezeichnung: "ISO/IEC 27001:2022"
+    anwendbar: false
+    begruendung: >
+      Ein Managementsystem für Informationssicherheit braucht einen Adressaten: einen
+      Kunden, eine Ausschreibung, eine Konzernvorgabe oder eine eigene
+      Zertifizierungsabsicht. Keines davon liegt zum Einstufungsdatum vor. ISO/IEC 27001
+      ist für FOREMAN deshalb eine FREIWILLIGE BAUORDNUNG, an der sich einzelne
+      technische Maßnahmen orientieren — kein Regime mit Nachweispflicht.
+      Bislang war die Norm im Repository nirgends eingestuft; diese Zeile schließt die
+      Lücke ausdrücklich, statt sie durch Schweigen offenzuhalten.
+    tragende_bedingung: >
+      Sobald ein Kunde, eine Ausschreibung oder ein Konzern einen Sicherheitsnachweis
+      verlangt, kippt diese Einstufung auf `anwendbar: true`. Dann sind Geltungsbereich
+      des Managementsystems, Anwendbarkeitserklärung und Nachweisführung fällig — und
+      zwar für die ORGANISATION, von der nur ein Teil im Repository liegt.
+    orientierung_ohne_pflicht:
+      - "A.8.15 Protokollierung — die Aufbewahrungsfristen stehen in retention-policy.yaml."
+      - "A.8.25/A.8.28 Sichere Entwicklung — Prüfpipeline, Abhängigkeits- und Codeprüfung."
+      - "A.5.15/A.8.3 Zugriffssteuerung — Rollenmatrix und Ressourcen-Ausschnitt je Route."
+    hinweis_kennzahlen: >
+      WICHTIG für jede spätere Verwendung: Der Prozentwert aus dem
+      ISO-27001-Bericht des eingesetzten Sicherheitswerkzeugs ist für FOREMAN OHNE
+      AUSSAGEKRAFT und darf in keine Unterlage — in keine Richtung. Er wird nahezu
+      vollständig aus Cloud-Konfigurationsprüfungen gebildet (AWS, Azure, GCP,
+      Kubernetes); FOREMAN läuft auf einer Plattform, die das Werkzeug nicht als Cloud
+      anbindet, weshalb praktisch alle Prüfzeilen dauerhaft auf „unbekannt" stehen.
+      Die Zahl misst die Nichtanwendbarkeit der Prüfung, nicht den Sicherheitsstand.
+      Weder als „zu X % konform" noch als „Sicherheitsstand schlecht" verwendbar.
+    belegstatus: "geprüft"
+    eingestuft_am: "2026-08-26"
+    naechste_pruefung: "2027-02-26"
+
+  - id: 21CFR11
+    bezeichnung: "21 CFR Part 11 (FDA, US-Bundesrecht)"
+    anwendbar: false
+    begruendung: >
+      Part 11 setzt zwei Dinge voraus: eine Predicate Rule, die eine Aufzeichnung
+      überhaupt verlangt, und einen FDA-Bezug. FOREMAN hat weder das eine noch das
+      andere — kein US-Marktbezug, kein FDA-regulierter Auftraggeber, keine
+      GxP-pflichtige Aufzeichnung. Die Norm greift nicht.
+    tragende_bedingung: >
+      Ein FDA-regulierter Betreiber (etwa Pharma- oder Medizinproduktfertigung) als
+      Anwender würde die Frage neu stellen. Auch dann bliebe Part 11 die technische
+      Ausgestaltung einer Pflicht, nie ihr Grund: Als Aufbewahrungsgrundlage taugt
+      US-Bundesrecht ausdrücklich nicht, weil Art. 17(3)(b) DSGVO eine Verpflichtung
+      nach Unions- oder mitgliedstaatlichem Recht verlangt.
+    belegstatus: "geprüft"
+    eingestuft_am: "2026-08-26"
+    naechste_pruefung: "2027-02-26"
+
+# -----------------------------------------------------------------------------
+# Was diese Datei NICHT ist
+# -----------------------------------------------------------------------------
+grenzen:
+  - >
+    Keine Konformitätsaussage. Eine Einstufung sagt, welche Pflichten gelten — nicht,
+    dass sie erfüllt sind. Es gibt keine Zertifizierung nach der KI-Verordnung, ein
+    Repository ist nie „ISO-27001-konform", und ISO/IEC 27001 ist keine Zertifizierung
+    im Sinne von Art. 42 DSGVO.
+  - >
+    Kein Ersatz für Datenschutzbeauftragte, Fachanwältinnen oder benannte Stellen.
+    Diese Datei soll bewirken, dass solche Personen ein prüfbares Projekt vorfinden.
+  - >
+    Fristen und Zuständigkeiten sind nicht aus Sekundärquellen übernommen. Wo eine
+    Frist gebraucht wird, ist die konsolidierte Fassung im Amtsblatt bzw. das
+    Bundesgesetzblatt zu lesen.

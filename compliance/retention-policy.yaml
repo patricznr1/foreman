@@ -1,0 +1,304 @@
+# =============================================================================
+# retention-policy.yaml — Frist pro Datenklasse × Rechtsgrundlage (FOREMAN)
+# -----------------------------------------------------------------------------
+# Übertragen aus GROUND_TRUTH §18 (Speicherdauern, Löschkonzept) und
+# docs/compliance/dsgvo-assessment.md (Rechtsgrundlagen je Feld). Diese Datei
+# entscheidet nichts neu; sie macht prüfbar, was dort in Fließtext steht.
+#
+# HARTE REGEL ZUR RECHTSGRUNDLAGE: Jede Löschsperre zeigt auf einen Unions- oder
+# mitgliedstaatlichen Rechtsakt. US-Bundesrecht trägt Art. 17(3)(b) DSGVO nicht.
+# Für FOREMAN ist das unkritisch — 21 CFR Part 11 greift hier ohnehin nicht
+# (siehe scope.yaml) — die Regel steht trotzdem da, damit sie beim nächsten
+# Anwendungsfall nicht neu gefunden werden muss.
+#
+# ZWEI ARTEN VON FRIST, die nicht verwechselt werden dürfen:
+#   Aufbewahrungs-PFLICHT  — eine Norm verlangt, dass etwas bleibt (Löschsperre).
+#   Speicher-BEGRENZUNG    — Art. 5(1)(e): es geht weg, sobald der Zweck entfällt.
+# Die meisten Zeilen hier sind das Zweite. Nur die Nachweis-Felder tragen eine
+# echte Pflicht. Wer beides gleich behandelt, baut entweder eine unwirksame
+# Löschsperre oder eine unzulässige Vorratshaltung.
+# =============================================================================
+
+schema: retention/v1
+
+meta:
+  stand: "2026-08-26"
+  freigegeben_von: "Entwicklung (Solo) — datenschutzrechtliche Freigabe steht aus"
+  naechste_pruefung: "2027-02-26"
+  geltungsbereich: "FOREMAN"
+  hinweis_fristformat: "ISO-8601-Dauer (P90D, P1Y, P5Y). 'record_gebunden' = Frist des zugehörigen Records."
+  betriebszustand: >
+    Entwicklungsstand mit simulierten Daten. Die Fristen sind gebaut und wirksam,
+    aber noch an keinem realen Personenbezug erprobt.
+
+datenklassen:
+
+  # ---------------------------------------------------------------------------
+  # Sensor-Zeitreihen: gestaffelt, kein Personenbezug im Feld selbst
+  # ---------------------------------------------------------------------------
+  - klasse: sensorwerte_roh
+    beschreibung: "Rohe Messwerte je Datenpunkt in voller zeitlicher Auflösung."
+    personenbezug: nein
+    beispielfelder: ["data_point_id", "time", "value", "quality"]
+    frist: "P90D"
+    rechtsgrundlage:
+      rechtsakt: "VO (EU) 2016/679 (DSGVO)"
+      norm: "Art. 5(1)(e) — Speicherbegrenzung"
+      begruendung: >
+        Maschinenmesswerte tragen für sich keinen Personenbezug. Die Staffelung ist
+        deshalb keine Löschsperre, sondern das Gegenteil: eine ausdrückliche Grenze, ab
+        der die Auflösung sinkt. Sie steht hier, weil ein MITTELBARER Bezug entstehen
+        kann — wer über die Schichtzuordnung weiß, wer wann an einer Maschine stand,
+        liest aus einer feinen Zeitreihe ein Verhaltensbild. Die Staffelung senkt genau
+        diese Auflösung, bevor sie zum Problem wird.
+    covers:
+      - {regime: "GDPR", ref: "Art.5(1)(e)"}
+      - {regime: "GDPR", ref: "Art.5(1)(c)"}
+    loeschverfahren: aggregation
+    umsetzung_technisch: "TimescaleDB-Retention auf `readings`; die Verdichtung bleibt erhalten."
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  - klasse: sensorwerte_minutenaggregat
+    beschreibung: "Auf Minuten verdichtete Messwerte (Trendanzeige, Abweichungserkennung)."
+    personenbezug: nein
+    beispielfelder: ["data_point_id", "bucket", "avg", "min", "max"]
+    frist: "P1Y"
+    rechtsgrundlage:
+      rechtsakt: "VO (EU) 2016/679 (DSGVO)"
+      norm: "Art. 5(1)(e) — Speicherbegrenzung"
+      begruendung: >
+        Erste Verdichtungsstufe. Ein Jahr deckt den Vergleich über Saison und
+        Wartungszyklus ab; darüber hinaus trägt die Stundenstufe.
+    covers:
+      - {regime: "GDPR", ref: "Art.5(1)(e)"}
+    loeschverfahren: aggregation
+    umsetzung_technisch: "TimescaleDB-Retention auf `readings_1m`."
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  - klasse: sensorwerte_stundenaggregat
+    beschreibung: "Auf Stunden verdichtete Messwerte (Langzeitverlauf)."
+    personenbezug: nein
+    beispielfelder: ["data_point_id", "bucket", "avg", "min", "max"]
+    frist: "P5Y"
+    rechtsgrundlage:
+      rechtsakt: "VO (EU) 2016/679 (DSGVO)"
+      norm: "Art. 5(1)(e) — Speicherbegrenzung"
+      begruendung: >
+        Fünf Jahre bilden die Lebensdauer typischer Verschleißteile ab und tragen damit
+        die Ausfalleinschätzung. Auf dieser Stufe ist ein Verhaltensbild praktisch
+        ausgeschlossen — eine Stunde ist keine Schicht.
+    covers:
+      - {regime: "GDPR", ref: "Art.5(1)(e)"}
+    loeschverfahren: aggregation
+    umsetzung_technisch: "TimescaleDB-Retention auf `readings_1h`."
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  - klasse: sensorwerte_tagesaggregat
+    beschreibung: "Auf Tage verdichtete Messwerte (Anlagenhistorie über die Nutzungsdauer)."
+    personenbezug: nein
+    beispielfelder: ["data_point_id", "bucket", "avg", "min", "max"]
+    frist: "unbegrenzt"
+    rechtsgrundlage:
+      rechtsakt: "VO (EU) 2016/679 (DSGVO)"
+      norm: "Art. 5(1)(e) — Speicherbegrenzung, Zweck dauert an"
+      begruendung: >
+        Die Tagesstufe ist die Anlagenhistorie und trägt den Zweck über die gesamte
+        Nutzungsdauer der Maschine. „Unbegrenzt" ist hier kein fehlendes Ende, sondern
+        ein an die Anlage gebundenes: Mit ihrer Ausmusterung entfällt der Zweck.
+        OFFEN: Ein Löschauslöser an der Ausmusterung ist beschrieben, aber nicht
+        technisch verdrahtet. BELEGSTATUS: offen.
+    covers:
+      - {regime: "GDPR", ref: "Art.5(1)(e)"}
+    loeschverfahren: hard_delete
+    umsetzung_technisch: "Keine Retention auf `readings_1d`; Löschung an die Ausmusterung gebunden."
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  # ---------------------------------------------------------------------------
+  # Personenbezogene Bestände
+  # ---------------------------------------------------------------------------
+  - klasse: schichtberichte_freitext
+    beschreibung: >
+      Von Werkern verfasste Freitexte zum Anlagenzustand. Der Verfasser ist
+      pseudonymisiert (Token über die Nutzerkennung); der Text läuft VOR dem Schreiben
+      durch eine Namens-Maskierung. Ein Restrisiko bleibt und wird nicht wegdefiniert —
+      der Freitext wird nirgends als anonym geführt.
+    personenbezug: pseudonym
+    beispielfelder: ["worker_notes.author", "worker_notes.text", "worker_notes.machine_id"]
+    frist: "P2Y"
+    rechtsgrundlage:
+      rechtsakt: "VO (EU) 2016/679 (DSGVO)"
+      norm: >
+        Art. 6(1)(f) — berechtigtes Interesse an betrieblicher Wissensorganisation;
+        im Beschäftigtenkontext ergänzend Betriebsvereinbarung nach Art. 88.
+      begruendung: >
+        Die Interessenabwägung trägt, WEIL der Eingriff am frühestmöglichen Punkt
+        minimiert wird: Pseudonymisierung beim Schreiben, Namens-Maskierung vor dem
+        Speichern, keine Leistungs- oder Verhaltenskontrolle. Genau diese Minimierung
+        ist die Abwägung — fiele sie weg, fiele die Rechtsgrundlage mit.
+        Kein Nachweiszweck, deshalb kürzer als die Nachweis-Felder.
+        OFFEN: Die konkrete Frist ist eine Setzung der Entwicklung und datenschutz-
+        rechtlich nicht freigegeben. BELEGSTATUS: angenommen.
+    covers:
+      - {regime: "GDPR", ref: "Art.5(1)(e)"}
+      - {regime: "GDPR", ref: "Art.6(1)(f)"}
+      - {regime: "GDPR", ref: "Art.32(1)(a)"}
+    loeschverfahren: crypto_shred
+    umsetzung_technisch: >
+      Vernichtung des personenbezogenen Schlüssels trennt die Person vom Token; der
+      Maschinenbezug bleibt erhalten. Wirksam nur, wenn KEINE Schlüsselsicherung
+      überdauert — die Sicherungsstrategie ist damit Teil des Löschkonzepts.
+      Ergebnis ist robuste Pseudonymisierung, KEINE Anonymisierung.
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  - klasse: wartungsnachweis
+    beschreibung: "Wer hat wann welche Wartung an welcher Maschine erbracht."
+    personenbezug: pseudonym
+    beispielfelder: ["maintenance_events.performed_by", "maintenance_events.performed_at"]
+    frist: "record_gebunden"
+    rechtsgrundlage:
+      rechtsakt: "Betriebssicherheitsverordnung (BetrSichV), mitgliedstaatliches Recht"
+      norm: "Art. 6(1)(c) DSGVO i.V.m. den Aufzeichnungspflichten der BetrSichV"
+      begruendung: >
+        Hier ist die Zurechenbarkeit GESETZLICH GEWOLLT — eine Anonymisierung wäre
+        rechtlich falsch, nicht bloß unpraktisch. Das ist die einzige Klasse in dieser
+        Datei mit einer echten Löschsperre; alle anderen sind Speicherbegrenzungen.
+        Die Sperre stützt sich auf mitgliedstaatliches Recht und trägt damit
+        Art. 17(3)(b) DSGVO.
+        OFFEN: Die konkrete Frist ergibt sich aus der Prüfpflicht des jeweiligen
+        Arbeitsmittels und ist betreiberabhängig; sie ist im Repository nicht
+        festgelegt und darf hier nicht geraten werden. BELEGSTATUS: offen — vom
+        Betreiber je Arbeitsmittel zu bestimmen.
+    covers:
+      - {regime: "GDPR", ref: "Art.6(1)(c)"}
+      - {regime: "GDPR", ref: "Art.17(3)(b)"}
+    loeschverfahren: restriction_art18
+    umsetzung_technisch: >
+      Solange die Aufbewahrungspflicht läuft, geht Sperrung vor Löschung. Das
+      Crypto-Shredding des Schichtberichts-Pfades darf diese Klasse NICHT mitreißen —
+      sonst wäre der Nachweis vernichtet, den die Norm verlangt.
+      OFFEN: Diese Trennung ist beschrieben, aber nicht als Test eingefordert.
+      BELEGSTATUS: offen.
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  - klasse: quittierungsnachweis
+    beschreibung: "Wer hat wann einen sicherheitskritischen Alarm quittiert."
+    personenbezug: pseudonym
+    beispielfelder: ["alarms.acknowledged_by", "alarms.acknowledged_at"]
+    frist: "record_gebunden"
+    rechtsgrundlage:
+      rechtsakt: "Arbeitsschutzrecht (mitgliedstaatlich), ergänzend VO (EU) 2016/679"
+      norm: "Art. 6(1)(c) DSGVO, ergänzend Art. 6(1)(f)"
+      begruendung: >
+        Der Nachweis, dass ein MENSCH ein sicherheitskritisches Ereignis quittiert hat,
+        ist zugleich der Beleg für die tragende Bedingung der KI-VO-Einstufung: ein
+        Mensch in der Entscheidungskette. Ohne Zurechenbarkeit wäre er wertlos.
+        OFFEN: Konkrete Frist betreiberabhängig, im Repository nicht festgelegt.
+        BELEGSTATUS: offen.
+    covers:
+      - {regime: "GDPR",  ref: "Art.6(1)(c)"}
+      - {regime: "AIACT", ref: "Art.14"}
+    loeschverfahren: restriction_art18
+    umsetzung_technisch: "Sperrung vor Löschung, solange die Nachweispflicht läuft."
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  - klasse: identitaeten
+    beschreibung: >
+      Die einzige Stelle mit Klartext-Identität: Anmeldedaten und Rolle. Alles andere
+      im System kennt nur Token.
+    personenbezug: ja
+    beispielfelder: ["users.email", "users.role", "users.assigned_machine_ids"]
+    frist: "record_gebunden"
+    rechtsgrundlage:
+      rechtsakt: "VO (EU) 2016/679 (DSGVO)"
+      norm: "Art. 6(1)(b) — Vertragserfüllung; Art. 6(1)(f) für die Zugriffssteuerung"
+      begruendung: >
+        Gebunden an das Bestehen des Zugangs. Mit dem Ausscheiden entfällt der Zweck,
+        und die Löschung dieses Datensatzes ist zugleich der Vollzug des
+        Crypto-Shreddings: Ohne die Klartext-Identität ist kein Token mehr auflösbar.
+    covers:
+      - {regime: "GDPR", ref: "Art.5(1)(e)"}
+      - {regime: "GDPR", ref: "Art.17(1)(a)"}
+    loeschverfahren: hard_delete
+    umsetzung_technisch: >
+      Löschung der Zeile in `users`. Die Nachweis-Felder (Wartung, Quittierung) bleiben
+      als Token bestehen, solange ihre Aufbewahrungspflicht läuft — die
+      Zurechenbarkeit endet, der Nachweis bleibt.
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+  - klasse: pruefprotokoll
+    beschreibung: >
+      Aufzeichnung sicherheits- und nachweisrelevanter Vorgänge (Quittierungen,
+      Auslösungen, Zugriffe auf Nachweis-Felder). Nur fortschreibend.
+    personenbezug: pseudonym
+    beispielfelder: ["audit_logs.actor", "audit_logs.action_type", "audit_logs.occurred_at"]
+    frist: "P1Y"
+    rechtsgrundlage:
+      rechtsakt: "VO (EU) 2016/679 (DSGVO)"
+      norm: "Art. 32(1)(b) — Sicherheit der Verarbeitung; Nachweisfähigkeit nach Art. 33(5)"
+      begruendung: >
+        Aufklärung von Sicherheitsvorfällen und Nachweis gegenüber der Aufsicht. Der
+        Bestand ist fortschreibend gesichert (Änderung und Löschung von der Datenbank
+        abgewiesen) — die Frist wirkt deshalb als Ablauf, nicht als Einzellöschung.
+        OFFEN: Frist ist eine Setzung der Entwicklung. BELEGSTATUS: angenommen.
+    covers:
+      - {regime: "GDPR",     ref: "Art.32(1)(b)"}
+      - {regime: "ISO27001", ref: "A.8.15"}
+    loeschverfahren: hard_delete
+    umsetzung_technisch: "Ablauf der Partition nach Frist; Einzellöschung ist konstruktiv ausgeschlossen."
+    verantwortlicher: "Betreiber der Anlage"
+    speicherort: "Projekt-Datenbank, Region EU"
+    pruefintervall: "P1Y"
+
+# -----------------------------------------------------------------------------
+# Der Zielkonflikt, der in dieser Datei gelöst wird
+# -----------------------------------------------------------------------------
+konflikte:
+  - id: K1
+    bezeichnung: "Aufbewahrungspflicht gegen Löschpflicht"
+    status: "aufgelöst"
+    beschreibung: >
+      Das Löschverlangen einer Person trifft auf Nachweise, die eine Norm verlangt.
+      Aufgelöst durch getrennte Löschwege: Der Schichtberichts-Pfad wird per
+      Schlüsselvernichtung getrennt, die Nachweis-Felder werden gesperrt statt
+      gelöscht, solange ihre Pflicht läuft. Beide stützen sich auf mitgliedstaatliches
+      bzw. Unionsrecht — nirgends auf US-Bundesrecht.
+    offen: >
+      Die Trennung ist beschrieben, aber nicht als Test eingefordert: Ein Löschlauf,
+      der die Nachweis-Felder mitreißt, würde heute nicht auffallen. BELEGSTATUS: offen.
+
+  - id: K2
+    bezeichnung: "Zurechenbarkeit gegen Datenminimierung"
+    status: "aufgelöst"
+    beschreibung: >
+      Wo eine Norm die Zurechenbarkeit verlangt (Wartung, Quittierung), ist
+      Pseudonymisierung mit auditierter Auflösbarkeit der Ausgleich: zurechenbar für
+      den, der die Norm erfüllen muss, unlesbar für alle anderen. Der lesende Zugriff
+      auf die Auflösung ist keine Selbstverständlichkeit und gehört protokolliert.
+    hinweis: >
+      Im Beschäftigtenkontext ist eine lückenlose Vorgangsaufzeichnung in Deutschland
+      mitbestimmungspflichtig. Das ist keine Frage des Datenschutzrechts allein.
+
+  - id: K3
+    bezeichnung: "Protokollierungspflicht gegen Speicherbegrenzung"
+    status: "nicht einschlägig"
+    beschreibung: >
+      Die Protokollpflicht aus Art. 19 KI-VO trifft Hochrisiko-Systeme. FOREMAN ist
+      nach scope.yaml kein solches. Die Zeile steht hier, damit die Frage beim
+      nächsten Mal beantwortet ist und nicht neu gestellt werden muss — kippt die
+      Einstufung, kippt diese Zeile mit.

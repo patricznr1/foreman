@@ -1,0 +1,155 @@
+# =============================================================================
+# soa.yaml — Anwendbarkeitserklärung (FOREMAN)
+# -----------------------------------------------------------------------------
+# ACHTUNG, LESEREIHENFOLGE: ISO/IEC 27001 ist für FOREMAN nach scope.yaml NICHT
+# anwendbar — es gibt keinen Adressaten für einen Sicherheitsnachweis. Diese Datei
+# ist deshalb KEINE Anwendbarkeitserklärung im Sinne der Norm und ersetzt auch
+# keine solche einer Organisation.
+#
+# Was sie ist: die Zuordnung der technischen Maßnahmen, die im Repository
+# nachweisbar sind, zu den Controls, an denen sie sich orientieren. Sie hat den
+# Zweck, bei einer späteren Nachweispflicht nicht bei null zu beginnen — und den
+# Nebenzweck, sichtbar zu machen, wie WENIG davon im Repository liegt.
+#
+# Aufgenommen ist nur, was mit einem auflösbaren Nachweispfad belegt ist. Wo
+# nichts liegt, steht „kein Nachweis im Repository auffindbar" — nicht eine
+# Beschreibung dessen, was üblicherweise dort stünde.
+# =============================================================================
+
+schema: soa/v1
+
+meta:
+  norm: "ISO/IEC 27001:2022, Anhang A"
+  stand: "2026-08-26"
+  freigegeben_von: "Entwicklung (Solo) — keine ISMS-Verantwortung bestellt"
+  naechste_pruefung: "2027-02-26"
+  geltungsbereich: >
+    Repository github.com/patricznr1/foreman. KEIN Managementsystem-Geltungsbereich:
+    Ein solcher umfasst eine Organisation mit Rollen, Bewertungen und internen Audits.
+    Davon existiert nichts. Der hier beschriebene Ausschnitt ist der technische Rest.
+  regime_status: >
+    ISO/IEC 27001 ist nach compliance/scope.yaml `anwendbar: false` — freiwillige
+    Bauordnung ohne Nachweispflicht. Diese Datei ist Orientierung, kein Nachweis.
+  vollstaendige_controlliste: >
+    Die 93 Controls des Anhangs A sind hier NICHT vollständig geführt. Eine
+    vollständige Erklärung setzt einen Managementsystem-Geltungsbereich voraus.
+  hinweis_kennzahlen: >
+    Aus dieser Datei lässt sich KEIN Erfüllungsgrad berechnen, und es darf auch keiner
+    berechnet werden. Vier geführte Controls von 93 sind keine „4 %" — der Nenner ist
+    unbestimmt, weil der Geltungsbereich fehlt. Prozentwerte zur Informationssicherheit
+    von FOREMAN sind in jeder Richtung unbelegt.
+
+controls:
+
+  - control_id: "A.5.15"
+    titel: "Zugangssteuerung"
+    anwendbar: true
+    begruendung: >
+      Das System führt Rollen mit unterschiedlichem Ressourcen-Ausschnitt und setzt sie
+      an jeder Lese-Route durch. Das ist die technische Seite dieses Controls; die
+      organisatorische (Vergabe, Entzug, Wiederholprüfung) liegt beim Betreiber.
+    umsetzungsstand: umgesetzt
+    scope_note: >
+      Geprüft ist die Durchsetzung an der Route gegen die real gebaute Anwendung.
+      NICHT geprüft sind Vergabeprozess, Entzug bei Ausscheiden und regelmäßige
+      Rezertifizierung — sie liegen außerhalb des Repositorys.
+    evidence_ref: "tests/integration/test_ressourcen_scope.py"
+    check_command: "uv run pytest tests/integration/test_ressourcen_scope.py -q"
+    automated_check: true
+    checked_at: "2026-08-26"
+
+  - control_id: "A.8.3"
+    titel: "Beschränkung des Informationszugriffs"
+    anwendbar: true
+    begruendung: >
+      Der Ausschnitt begrenzt nicht nur den Zugang, sondern die herausgegebene Menge:
+      Listen werden gefiltert, Einzelabrufe abgewiesen, und die Suche findet in jeder
+      Quelle einzeln nur im erlaubten Ausschnitt.
+    umsetzungsstand: umgesetzt
+    scope_note: >
+      Geprüft je Route und je Suchquelle. NICHT geprüft ist die Wirksamkeit gegen eine
+      unbeschränkte Rolle — dagegen ist der Ausschnitt konstruktiv nicht gebaut.
+    evidence_ref: "tests/unit/test_routen_inventar.py"
+    check_command: "uv run pytest tests/unit/test_routen_inventar.py -q"
+    automated_check: true
+    checked_at: "2026-08-26"
+
+  - control_id: "A.8.15"
+    titel: "Protokollierung"
+    anwendbar: true
+    begruendung: >
+      Die Norm verlangt Protokollierung, nennt aber keine Frist — genau diese Lücke
+      füllt compliance/retention-policy.yaml, und zwar mit einer Rechtsgrundlage je
+      Datenklasse. Zusätzlich ist eingefordert, dass die Protokolle keinen
+      Personenbezug tragen und dass ein Migrationslauf sie nicht abschaltet.
+    umsetzungsstand: umgesetzt
+    scope_note: >
+      Geprüft sind die Protokollzeile der Nutzer-Anlage und das Fortbestehen der
+      Protokollierung über einen Migrationslauf. NICHT geprüft ist der gesamte
+      Protokollbestand auf Personenbezug.
+    evidence_ref: "tests/unit/test_protokoll_ohne_pii.py"
+    check_command: "uv run pytest tests/unit/test_protokoll_ohne_pii.py -q"
+    automated_check: true
+    checked_at: "2026-08-26"
+
+  - control_id: "A.8.25"
+    titel: "Sicherer Entwicklungslebenszyklus"
+    anwendbar: true
+    begruendung: >
+      Jede Änderung durchläuft eine Prüfpipeline mit Typprüfung, Stilprüfung,
+      vollständiger Testsuite gegen eine echte Datenbank und einer Abhängigkeits- und
+      Codeprüfung. Die Pipeline-Schritte hängen an Commit-Hashes statt an
+      verschiebbaren Marken.
+    umsetzungsstand: umgesetzt
+    scope_note: >
+      Geprüft ist die Pipeline. NICHT geprüft sind Bedrohungsmodellierung als
+      wiederkehrender Vorgang und ein externer Sicherheitstest — beide liegen außerhalb
+      des Repositorys und sind nicht erfolgt.
+    evidence_ref: ".github/workflows/ci.yml"
+    check_command: "gh run list --workflow=ci.yml --limit 1"
+    automated_check: false
+    checked_at: "2026-08-26"
+
+  - control_id: "A.5.31"
+    titel: "Rechtliche und regulatorische Anforderungen"
+    anwendbar: true
+    begruendung: >
+      Vier Regime sind ausdrücklich eingestuft — zwei als greifend, zwei als nicht
+      greifend, jedes mit Begründung, Datum und tragender Bedingung.
+    umsetzungsstand: umgesetzt
+    scope_note: "Abgedeckt durch scope.yaml, retention-policy.yaml und traceability.yaml."
+    evidence_ref: "compliance/scope.yaml"
+    check_command: "python scripts/check_compliance.py"
+    automated_check: true
+    checked_at: "2026-08-26"
+
+# -----------------------------------------------------------------------------
+# Controls ohne Nachweis im Repository
+# -----------------------------------------------------------------------------
+# Diese Liste ist der eigentliche Wert der Datei: Sie benennt, was NICHT belegt ist.
+# Sie ist nicht vollständig — sie führt die Controls, die im Umfeld der oben
+# geführten liegen und deshalb naheliegend erwartet würden.
+ohne_nachweis:
+  - control_id: "A.5.7"
+    titel: "Bedrohungsinformationen"
+    stand: "Kein Nachweis im Repository auffindbar. Organisatorisches Control."
+  - control_id: "A.8.16"
+    titel: "Überwachungstätigkeiten"
+    stand: >
+      Kein Nachweis im Repository auffindbar. Betriebskennzahlen werden ausgeliefert,
+      eine Auswertung mit Alarmierung besteht nicht.
+  - control_id: "A.8.28"
+    titel: "Sichere Programmierung"
+    stand: >
+      Teilweise durch die Prüfpipeline abgedeckt, aber ohne vereinbarte Fristen für die
+      Behebung gemeldeter Punkte — ohne solche Fristen ist die Einhaltung nicht messbar.
+  - control_id: "A.5.28"
+    titel: "Sammlung von Beweismitteln"
+    stand: >
+      Kein Nachweis im Repository auffindbar. Das Prüfprotokoll ist fortschreibend
+      gesichert, aber nicht kettengesichert und nicht revisionssicher archiviert.
+  - control_id: "A.8.8"
+    titel: "Umgang mit technischen Schwachstellen"
+    stand: >
+      Abhängigkeiten werden geprüft und aktualisiert; ein dokumentierter Prozess mit
+      Zuständigkeit und Frist besteht NICHT.

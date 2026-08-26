@@ -1,0 +1,252 @@
+# =============================================================================
+# traceability.yaml — Anforderung → Artefakt → Test → Nachweis (FOREMAN)
+# -----------------------------------------------------------------------------
+# Jede Anforderung trägt einen `covers:`-Block auf die Regime-Stellen, die sie
+# bedient. Eine Anforderung bedient in der Regel mehrere — genau darum steht sie
+# EINMAL hier und nicht je Regime erneut.
+#
+# Aufgenommen ist nur, was im Repository tatsächlich belegbar ist. Wo ein Nachweis
+# fehlt, lautet die Aussage „kein Nachweis im Repository auffindbar" — nicht eine
+# Beschreibung dessen, was üblicherweise dort stünde.
+# =============================================================================
+
+schema: trace/v1
+
+meta:
+  stand: "2026-08-26"
+  geltungsbereich: "FOREMAN"
+  verantwortlich: "Entwicklung (Solo)"
+  naechste_pruefung: "2027-02-26"
+
+requirements:
+
+  - id: REQ-SCOPE-001
+    title: "Jede Lese-Route gibt nur Ressourcen des eigenen Maschinen-Ausschnitts heraus"
+    rationale: >
+      Die Auth-Middleware beantwortet „wer bist du", nicht „darfst du genau diese
+      Ressource sehen". Ohne die zweite Frage liest jede angemeldete Person die
+      Schichtberichte der gesamten Flotte — ein Personenbezug, der über die
+      Zugriffssteuerung zu begrenzen ist. Die Antwort ist eine gemeinsame Quelle für
+      alle Routen, nicht eine Lösung je Router: getrennte Umsetzungen sind die Stelle,
+      an der die Pfade auseinanderlaufen.
+    covers:
+      - {regime: "GDPR",     ref: "Art.32(1)(b)"}
+      - {regime: "GDPR",     ref: "Art.5(1)(f)"}
+      - {regime: "ISO27001", ref: "A.5.15"}
+      - {regime: "ISO27001", ref: "A.8.3"}
+    akzeptanzkriterien:
+      - "Eine beschränkte Rolle erhält für eine fremde Maschine 403, für die eigene 200."
+      - "Ein Einzelabruf über eine Datensatz-Kennung endet außerhalb des Ausschnitts mit 404 — ein 403 würde die Existenz bestätigen."
+      - "Die Suche findet ausschließlich im Ausschnitt, in JEDER Quelle einzeln belegt."
+      - Eine leere Zuweisungsliste bedeutet „nichts erlaubt“ und nicht „kein Filter“.
+      - "Eine neue Route ohne Autorisierungs-Dependency lässt die Prüfung fehlschlagen."
+    artifacts:
+      - path: "src/foreman/api/deps.py"
+        rolle: implementierung
+      - path: "src/foreman/realtime/authz.py"
+        rolle: implementierung
+      - path: "src/foreman/db/scope_sql.py"
+        rolle: implementierung
+    tests:
+      - id: TEST-SCOPE-001
+        path: "tests/integration/test_ressourcen_scope.py"
+        type: automated
+      - id: TEST-SCOPE-002
+        path: "tests/unit/test_routen_inventar.py"
+        type: automated
+    verification: OQ
+    status: verifiziert
+    evidence_ref: "tests/integration/test_ressourcen_scope.py"
+    check_command: "uv run pytest tests/integration/test_ressourcen_scope.py tests/unit/test_routen_inventar.py -q"
+    checked_at: "2026-08-26"
+    scope_note: >
+      Geprüft ist die Durchsetzung an der Route gegen die real gebaute Anwendung.
+      NICHT geprüft ist die Wirksamkeit gegen einen Angreifer mit gültigem Token einer
+      unbeschränkten Rolle — dagegen schützt der Ausschnitt konstruktiv nicht.
+
+  - id: REQ-PII-001
+    title: "Betriebsprotokolle tragen keinen Personenbezug"
+    rationale: >
+      Betriebsprotokolle haben eine eigene Aufbewahrung außerhalb des Löschkonzepts der
+      Anwendung. Was dort steht, ist mit ihren Mitteln nicht mehr zu entfernen — ein
+      Löschverlangen liefe ins Leere. Deshalb darf dort nichts stehen, was eine Person
+      benennt.
+    covers:
+      - {regime: "GDPR",     ref: "Art.5(1)(c)"}
+      - {regime: "GDPR",     ref: "Art.17"}
+      - {regime: "ISO27001", ref: "A.8.15"}
+    akzeptanzkriterien:
+      - "Die Protokollzeile der Nutzer-Anlage nennt weder die Mailadresse noch ihren lokalen Teil."
+      - "Kennung und Rolle bleiben protokolliert — der Vorgang bleibt nachvollziehbar."
+      - "Ein Migrationslauf schaltet die Protokollierung nicht ab; sonst prüfte jede Protokoll-Prüfung eine leere Ausgabe."
+    artifacts:
+      - path: "src/foreman/db/provisioning.py"
+        rolle: implementierung
+      - path: "migrations/env.py"
+        rolle: implementierung
+    tests:
+      - id: TEST-PII-001
+        path: "tests/unit/test_protokoll_ohne_pii.py"
+        type: automated
+      - id: TEST-PII-002
+        path: "tests/migrations/test_protokollierung_ueberlebt_migration.py"
+        type: automated
+    verification: OQ
+    status: verifiziert
+    evidence_ref: "tests/unit/test_protokoll_ohne_pii.py"
+    check_command: "uv run pytest tests/unit/test_protokoll_ohne_pii.py -q"
+    checked_at: "2026-08-26"
+    scope_note: >
+      Geprüft ist die Protokollzeile der Nutzer-Anlage. NICHT geprüft ist der gesamte
+      Protokollbestand der Anwendung auf Personenbezug — ein Werkzeug dafür ist im
+      Repository nicht vorhanden.
+
+  - id: REQ-PSEUDO-001
+    title: "Der Personenbezug der Schreibpfade stammt aus dem Token, nicht aus den Nutzdaten"
+    rationale: >
+      Wäre der Verfasser ein Feld im Anfrage-Rumpf, könnte jede Person unter fremdem
+      Namen schreiben — die Zurechenbarkeit, die BetrSichV und der
+      Quittierungsnachweis verlangen, wäre wertlos. Der Verfasser kommt deshalb aus der
+      Anmeldung und wird vor dem Speichern tokenisiert.
+    covers:
+      - {regime: "GDPR",  ref: "Art.6(1)(c)"}
+      - {regime: "GDPR",  ref: "Art.32(1)(a)"}
+      - {regime: "AIACT", ref: "Art.14"}
+    akzeptanzkriterien:
+      - "Ein mitgesandtes Verfasser-Feld wird abgewiesen, nicht still verworfen."
+      - "Der Nachtrag für eine dritte Person ist den aufsichtsführenden Rollen vorbehalten."
+      - "In der Tabelle steht das Token, nie der Klartext."
+    artifacts:
+      - path: "src/foreman/api/routers/worker_notes.py"
+        rolle: implementierung
+      - path: "src/foreman/api/routers/maintenance_events.py"
+        rolle: implementierung
+      - path: "src/foreman/core/pseudonymize.py"
+        rolle: implementierung
+    tests:
+      - id: TEST-PSEUDO-001
+        path: "tests/integration/test_authorship_binding.py"
+        type: automated
+    verification: OQ
+    status: verifiziert
+    evidence_ref: "tests/integration/test_authorship_binding.py"
+    check_command: "uv run pytest tests/integration/test_authorship_binding.py -q"
+    checked_at: "2026-08-26"
+    scope_note: >
+      Geprüft ist die Bindung an die Anmeldung und die Rollenbeschränkung des Nachtrags.
+      NICHT geprüft ist die Wirksamkeit der Namens-Maskierung im Freitext gegen alle
+      Formulierungen — sie bleibt ein Restrisiko und wird nirgends als anonym geführt.
+
+  - id: REQ-AKTORIK-001
+    title: "Das System schaltet nichts"
+    rationale: >
+      Das ist die tragende Bedingung der Einstufung nach der KI-Verordnung. Fällt sie,
+      kippt die Risikoklasse — und zwar auf die Anhang-I-Route über die
+      Maschinenverordnung, mit Drittkonformitätsbewertung. Sie gehört deshalb nicht in
+      eine Absichtserklärung, sondern in eine Prüfung.
+    covers:
+      - {regime: "AIACT", ref: "Art.14"}
+      - {regime: "AIACT", ref: "Art.50"}
+    akzeptanzkriterien:
+      - "Die Drittsystem-Schnittstelle bietet ausschließlich lesende Aufrufe."
+      - "Kein Pfad im System sendet einen Schaltbefehl an eine Anlage."
+    artifacts:
+      - path: "src/foreman/mcp/server.py"
+        rolle: implementierung
+    tests:
+      - id: TEST-AKTORIK-001
+        path: "tests/mcp/security"
+        type: automated
+    verification: OQ
+    status: verifiziert
+    evidence_ref: "tests/mcp/security"
+    check_command: "uv run pytest tests/mcp/security -q"
+    checked_at: "2026-08-26"
+    scope_note: >
+      Geprüft ist die Abwesenheit schaltender Aufrufe an der Drittsystem-Schnittstelle.
+      Die Anlagensteuerung selbst liegt außerhalb des Systems und außerhalb dieser Prüfung.
+
+  - id: REQ-PIPELINE-001
+    title: "Jede Änderung durchläuft dieselbe Prüfkette, bevor sie auf den Hauptzweig gelangt"
+    rationale: >
+      Eine Prüfung, die man auslassen kann, ist keine. Typprüfung, Stilprüfung, die
+      vollständige Testsuite gegen eine echte Datenbank sowie Abhängigkeits- und
+      Codeprüfung laufen deshalb an derselben Stelle für jede Änderung. Die
+      Pipeline-Schritte hängen an Commit-Hashes statt an verschiebbaren Marken: Wer ein
+      Vorprodukt übernimmt, führte sonst beim nächsten Lauf eigenen Code hier aus.
+    covers:
+      - {regime: "ISO27001", ref: "A.8.25"}
+      - {regime: "ISO27001", ref: "A.8.28"}
+    akzeptanzkriterien:
+      - "Typprüfung, Stilprüfung, Formatprüfung und volle Testsuite laufen je Änderung."
+      - "Jeder Pipeline-Schritt hängt an einem Commit-Hash, nicht an einer Marke."
+      - "Kein Schritt gibt das Anmeldegeheimnis an nachgelagerte Schritte weiter."
+    artifacts:
+      - path: ".github/workflows/ci.yml"
+        rolle: implementierung
+    tests:
+      - id: TEST-PIPELINE-001
+        path: ".github/workflows/ci.yml"
+        type: manual
+    verification: inspection
+    status: implemented
+    evidence_ref: ".github/workflows/ci.yml"
+    check_command: "gh run list --workflow=ci.yml --limit 1"
+    checked_at: "2026-08-26"
+    scope_note: >
+      Geprüft ist die Pipeline-Konfiguration durch Sichtprüfung. NICHT geprüft sind
+      vereinbarte Fristen für die Behebung gemeldeter Punkte — ohne sie ist die
+      Einhaltung nicht messbar (siehe soa.yaml, A.8.28).
+
+  - id: REQ-REGIME-001
+    title: "Jedes einschlägige Regime ist ausdrücklich eingestuft und maschinell geprüft"
+    rationale: >
+      Ein ungeprüft angewandtes Regime ist so falsch wie ein übersehenes. Beide Fälle
+      fallen nur auf, wenn die Einstufung als Datei vorliegt und ein Prüfbefehl sie
+      liest — ein Fließtext-Dokument tut das nicht.
+    covers:
+      - {regime: "ISO27001", ref: "A.5.31"}
+      - {regime: "GDPR",     ref: "Art.5(2)"}
+    akzeptanzkriterien:
+      - "Alle vier Regime sind als greifend oder nicht greifend eingestuft, je mit Begründung und Datum."
+      - "Jede Einstufung nennt die tragende Bedingung, bei deren Wegfall sie kippt."
+      - "Jede Aufbewahrungsfrist zeigt auf einen Unions- oder mitgliedstaatlichen Rechtsakt."
+      - "Das Prüfskript läuft ohne Fehler."
+    artifacts:
+      - path: "compliance/scope.yaml"
+        rolle: einstufung
+      - path: "compliance/retention-policy.yaml"
+        rolle: einstufung
+      - path: "scripts/check_compliance.py"
+        rolle: pruefung
+    tests:
+      - id: TEST-REGIME-001
+        path: "scripts/check_compliance.py"
+        type: automated
+    verification: inspection
+    status: implemented
+    evidence_ref: "compliance/scope.yaml"
+    check_command: "python scripts/check_compliance.py"
+    checked_at: "2026-08-26"
+    scope_note: >
+      Geprüft ist die Vollständigkeit und Form der Einstufung. NICHT geprüft ist, ob
+      eine Begründung inhaltlich trägt — das sieht kein Skript und bleibt Handarbeit.
+
+# -----------------------------------------------------------------------------
+# Was hier bewusst NICHT steht
+# -----------------------------------------------------------------------------
+nicht_belegt:
+  - anforderung: "Löschweg trennt Schichtbericht und Nachweis-Feld"
+    stand: >
+      Kein Nachweis im Repository auffindbar. Die Trennung ist in
+      retention-policy.yaml beschrieben (K1), aber kein Test fordert sie ein: Ein
+      Löschlauf, der die Nachweis-Felder mitreißt, würde heute nicht auffallen.
+  - anforderung: "Fortschreibende Sicherung des Prüfprotokolls"
+    stand: >
+      Die Datenbank weist Änderung und Löschung ab, und ein Migrationstest belegt das.
+      Ein Nachweis über die gesamte Kette (Vorgänger-Prüfsumme) besteht NICHT — die
+      Aufzeichnung ist fortschreibend, aber nicht kettengesichert.
+  - anforderung: "Persistiertes Abhängigkeitsverzeichnis (SBOM) als Artefakt"
+    stand: >
+      Kein Nachweis im Repository auffindbar. Erzeugbar aus den Manifesten, aber nicht
+      als versioniertes Artefakt abgelegt.
