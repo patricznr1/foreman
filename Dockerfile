@@ -68,11 +68,16 @@ USER foreman
 
 EXPOSE 8000
 
-# Der Container meldet erst „gesund", wenn die Anwendung antwortet — nicht schon,
-# wenn der Prozess gestartet ist. Auf Railway prüft die Plattform ohnehin von außen
-# (healthcheckPath); das hier trägt den lokalen docker-compose-Betrieb, wo ein
-# „läuft" ohne Antwort sonst nicht auffällt.
+# Geprueft wird /readyz, nicht /health: Der Container soll erst "gesund" melden, wenn
+# er ARBEITEN kann, und dazu gehoert eine antwortende Datenbank. /health beantwortet
+# nur, ob der Prozess lebt — als einzige Sonde waere das die falsche Frage, weil ein
+# lebender Prozess ohne Datenbank jede Anfrage in einen Fehler laufen laesst und
+# trotzdem gruen meldet.
+#
+# Auf Railway prueft die Plattform von aussen (healthcheckPath, ebenfalls /readyz);
+# das hier traegt den lokalen docker-compose-Betrieb, wo ein "laeuft" ohne Antwort
+# sonst nicht auffaellt.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=4)"
 
 CMD ["uvicorn", "foreman.main:app", "--host", "0.0.0.0", "--port", "8000"]

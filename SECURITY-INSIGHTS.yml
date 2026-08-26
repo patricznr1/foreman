@@ -98,7 +98,7 @@ repository:
           ISO 27001 Annex A statement of applicability that names its own
           unevidenced controls; and the triage register in security/findings.yaml
           covering twenty-three findings, of which six are accepted risks with their
-          condition recorded, six are open work, ten are already closed and one
+          condition recorded, five are open work, eleven are already closed and one
           is a documented false positive. scripts/check_findings.py verifies that
           register in CI: a vanished path, a lapsed review date, an accepted risk
           without its condition or a planned item without a remedy fails the build.
