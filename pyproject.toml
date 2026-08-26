@@ -177,12 +177,38 @@ select = [
     "C4",       # comprehensions
     "ASYNC",    # async-Fallen
     "RUF",      # ruff-spezifisch
+    "C90",      # mccabe: zyklomatische Komplexitaet (Schwelle unten)
 ]
 ignore = [
     "E501",  # Zeilenlänge: durch Formatter geregelt
 ]
 
+[tool.ruff.lint.mccabe]
+# Zyklomatische Komplexitaet als Tor. Gemessen ueber den vollen Pruefumfang, den
+# CI faehrt (`ruff check` ohne Pfadangabe), nicht nur ueber src und tests: der
+# hoechste Wert im Anwendungscode ist 11, erreicht von genau drei Funktionen — der
+# Referenz-Pruefung des Szenario-Laders, dem Aufbau der Ereigniskette und dem
+# Nachtrag-Lauf. Die Schwelle steht auf 12 und laesst damit genau einen Schritt
+# Luft; jede Verschlechterung darueber hinaus faellt auf.
+#
+# Bewusst NICHT auf den verbreiteten Wert 10: Das hiesse, drei bestehende und
+# funktionierende Funktionen umzubauen. Ein solcher Umbau ist eine eigene
+# Entscheidung mit eigenem Risiko und keine Nebenwirkung davon, dass ein Tor
+# eingefuehrt wird. Wer die Schwelle spaeter senken will, senkt sie nach dem
+# Umbau, nicht davor.
+max-complexity = 12
+
 [tool.ruff.lint.per-file-ignores]
+# Die Pruefskripte sind vom Komplexitaets-Tor ausgenommen, und zwar begruendet und
+# nicht stillschweigend: sie bestehen aus flachen Ketten unabhaengiger Einzelpruefungen
+# der Form `wenn Bedingung, dann melde` — `pruefe_soa` etwa aus dreizehn davon, ohne
+# eine einzige Verschachtelung. Das Mass zaehlt dort die Anzahl der Pruefregeln, nicht
+# die Schwierigkeit, den Code zu verstehen; eine Aufteilung wuerde die Regeln ueber
+# mehrere Funktionen streuen und das Lesen erschweren statt erleichtern. Die Ausnahme
+# gilt ausschliesslich fuer C901 — alle uebrigen Regeln greifen hier unveraendert.
+# Gemessen am 26.08.2026: ohne diese Ausnahme meldet das Tor sechs Verstoesse, alle
+# sechs in scripts/check_compliance.py, keinen einzigen im Anwendungscode.
+"scripts/**" = ["C901"]
 # Tests dürfen Fixtures/Asserts freier nutzen
 "tests/**" = ["N802", "N803"]
 "migrations/**" = ["N806", "E402"]

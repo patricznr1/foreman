@@ -189,15 +189,18 @@ assumption is, what the status is (`accepted` · `planned` · `fixed` · `disput
 where the evidence sits. `scripts/check_findings.py` verifies in CI that every referenced
 path still exists and that no review date has lapsed.
 
-The register is not an argument that nothing is wrong. Of its twelve entries, five are
+The register is not an argument that nothing is wrong. Of its fifteen entries, five are
 accepted risks with the condition of that acceptance written down, **four are open work**,
-two are already closed, and one is a documented false positive. Two of the open four —
+five are already closed, and one is a documented false positive. Two of the open four —
 a liveness probe that is the only probe, and a security guard whose default is "off" —
 are unqualified defects with no justification offered.
 
-The two closed entries were documentation claiming controls the code did not have: an
-API-wide rate limiter, and CI gates for secret scanning and dependency auditing. The
-second was closed by building the gate rather than by editing the claim.
+All five closed entries were the same class: documentation claiming a control the code
+did not have. An API-wide rate limiter; CI gates for secret scanning and dependency
+auditing; a cyclomatic-complexity gate; a posture file that did not match its own declared
+schema; and two guarantees stated more strongly than they hold. Three of the five were
+closed by building the thing rather than by editing the claim. Three were raised by an
+outside reader rather than found here, which is the register working as intended.
 
 It exists so that the *triage step* — the step between a finding and a verdict — is
 written down instead of improvised.

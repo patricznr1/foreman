@@ -415,3 +415,128 @@ findings:
       Drop preload until the platform runs on an owned domain, or make it
       conditional on the deployment.
     review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  # F-013 to F-015 were raised in an external review on 2026-08-26, by a reader
+  # comparing the documented controls against the configuration files. All three
+  # are the same class as F-007 and F-008: a claim that outran what was built.
+  # They are recorded here rather than quietly corrected, because a register that
+  # only lists findings the maintainer found himself is not a register.
+  # ---------------------------------------------------------------------------
+
+  - id: F-013
+    title: "A cyclomatic-complexity gate is claimed but was not configured"
+    where:
+      - "pyproject.toml"
+      - "README.md"
+      - "AGENTS.md"
+      - "SECURITY-INSIGHTS.yml"
+    observation: >
+      Three documents name a cyclomatic-complexity gate among the quality gates.
+      The ruff configuration selected no C90 rules and set no mccabe threshold,
+      so nothing measured complexity in CI or locally.
+    observation_is_correct: true
+    severity_as_scanned: "n/a — documentation drift"
+    severity_after_triage: >
+      low in effect, high in credibility: a reader relying on the claim would
+      believe a control existed that did not run
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [A, B]
+    justification: >
+      None was offered — the claim was not true when it was written.
+    remedy: >
+      Closed by building the gate rather than removing the claim. `C90` is now
+      selected and `[tool.ruff.lint.mccabe] max-complexity = 12` is set. The
+      threshold was chosen against a measurement over the scope CI actually runs
+      (`ruff check` with no path argument, which is wider than src and tests): at
+      10 the application code has exactly three violations, all at complexity 11 —
+      `_referential_integrity`, `reconstruct_chain` and `nachtragen`. Setting 10
+      would have meant rewriting three working functions to make a linter pass,
+      which is a separate decision with its own risk. Twelve sits one step above
+      the highest existing value, so the gate blocks growth without demanding a
+      refactor as its entry price, and the reasoning sits in pyproject.toml where
+      the next person raising it will read it.
+
+      One exception is recorded rather than hidden: `scripts/**` is exempt from
+      C901. The check scripts are flat chains of independent conditions of the form
+      "if this, report that" — `pruefe_soa` is thirteen of them with no nesting.
+      The metric counts rules there, not difficulty; splitting them would scatter
+      the rules across functions and make them harder to read, not easier. Without
+      the exemption the gate reports six violations, all six in
+      scripts/check_compliance.py and none in application code. Every other rule
+      still applies to those files.
+
+      Verified by a control point in application code, not by assumption: a
+      deliberately branch-heavy function added to src/foreman/db/scope_sql.py was
+      rejected at complexity 14, and the check passed again once it was removed.
+    evidence:
+      - "pyproject.toml"
+    review_by: "2027-02-26"
+
+  - id: F-014
+    title: "SECURITY-INSIGHTS.yml did not conform to the schema version it declares"
+    where:
+      - "SECURITY-INSIGHTS.yml"
+    observation: >
+      The file declares OpenSSF Security Insights schema 2.2.0. Two fields did
+      not match it: `rulesets` was written as a list where the schema defines a
+      string, and `results` carried booleans where the schema defines a set of
+      in-toto attestations.
+    observation_is_correct: true
+    severity_as_scanned: "n/a — schema conformance"
+    severity_after_triage: >
+      low in effect, but a machine-readable posture file that does not parse
+      against its own declared schema is worth less than no file at all
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [A, B]
+    justification: >
+      None — the file was written by hand against the prose of the specification
+      rather than validated against the schema.
+    remedy: >
+      `rulesets` is now a string for all six tools. `results` is an empty object
+      for all six, which is the accurate answer: the schema expects in-toto
+      attestations there — a location, a name, a predicate URI — and this project
+      produces none. A `true` in that position would not have been evidence but a
+      type error wearing the appearance of one. The reasoning sits in the file as
+      a comment, so the next person to fill the field knows what belongs there.
+      Checked against the schema documentation in the ossf/security-insights
+      repository, not against memory.
+    evidence:
+      - "SECURITY-INSIGHTS.yml"
+    review_by: "2027-02-26"
+
+  - id: F-015
+    title: "Documentation stated two of its own guarantees more strongly than they hold"
+    where:
+      - "README.md"
+      - "AGENTS.md"
+    observation: >
+      The README stated that documentation updated in the same commit as the code
+      "cannot drift from reality". AGENTS.md described the backend command chain
+      as "the full gate, identical to CI", although CI additionally runs the two
+      register checks, a dependency audit, a secret scan in its own job, and the
+      frontend gates.
+    observation_is_correct: true
+    severity_as_scanned: "n/a — documentation accuracy"
+    severity_after_triage: >
+      low, but pointed: the first claim is refuted by this very register, which
+      records two same-commit drifts as F-007 and F-008
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [A, B]
+    justification: >
+      None. An absolute claim about a process that this repository has already
+      seen fail twice is not a strong statement, it is a wrong one.
+    remedy: >
+      The README now says the same-commit rule reduces drift without abolishing
+      it, and that a disagreement between code and documentation is a defect to
+      be reported — with F-007 and F-008 named as the two that were. AGENTS.md now
+      states which gates the backend command covers and which parts of CI it does
+      not, and the README's testing section describes all three CI jobs instead of
+      the first one.
+    evidence:
+      - "README.md"
+      - "AGENTS.md"
+    review_by: "2027-02-26"

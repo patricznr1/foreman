@@ -44,7 +44,7 @@ project:
       Report privately through GitHub Security Advisories. Single maintainer:
       expect acknowledgement within a week. If a report comes from an automated
       scan, please state which findings apply here and why — security/findings.yaml
-      records twelve that are already triaged.
+      records fifteen that are already triaged.
     in-scope:
       - "Authentication bypass or cross-machine / cross-tenant data access"
       - "Privilege escalation past role and resource scoping"
@@ -97,8 +97,8 @@ repository:
           Act and GDPR with a preliminary data protection impact assessment; an
           ISO 27001 Annex A statement of applicability that names its own
           unevidenced controls; and the triage register in security/findings.yaml
-          covering twelve findings, of which five are accepted risks with their
-          condition recorded, four are open work, two are already closed and one
+          covering fifteen findings, of which five are accepted risks with their
+          condition recorded, four are open work, five are already closed and one
           is a documented false positive. scripts/check_findings.py verifies that
           register in CI: a vanished path, a lapsed review date, an accepted risk
           without its condition or a planned item without a remedy fails the build.
@@ -106,34 +106,43 @@ repository:
       - name: "Patric Zeller"
         primary: true
         social: "https://github.com/patricznr1"
+    # Zu `results` bei jedem Werkzeug: Das Schema erwartet dort in-toto-
+    # Attestierungen (Fundort, Name, Prädikat-URI), keine Ja/Nein-Angabe. Dieses
+    # Projekt erzeugt keine Attestierungen, deshalb steht überall ein leeres
+    # Objekt. Ein `true` an dieser Stelle wäre kein Nachweis, sondern ein
+    # Typfehler mit dem Anschein eines Belegs — und genau die Sorte Aussage, die
+    # SECURITY.md §6 als Befund gegen die eigene Dokumentation einlädt.
+    # `integration` darüber IST ein Ja/Nein-Feld und bleibt es.
     tools:
       - name: "mypy"
         type: "SAST"
-        rulesets: ["default"]
+        rulesets: "default"
         comment: "strict mode, zero errors enforced as a merge gate"
         integration:
           adhoc: true
           ci: true
           release: false
-        results:
-          adhoc: true
-          ci: true
-          release: false
+        results: {}
       - name: "ruff"
         type: "SAST"
-        rulesets: ["default"]
-        comment: "lint and format check, including a cyclomatic-complexity gate"
+        rulesets: "default"
+        comment: >
+          Lint and format check as a merge gate, including a cyclomatic complexity
+          cap of 12 (C90) over application code. The threshold sits one step above
+          the highest value there rather than at the common value of 10, because
+          lowering it would mean rewriting three working functions — a separate
+          decision with its own risk. The check scripts under scripts/ are exempt
+          from C901 and from that rule only; they are flat chains of independent
+          conditions where the metric counts rules rather than difficulty. Both the
+          threshold and the exemption carry their reasoning in pyproject.toml.
         integration:
           adhoc: true
           ci: true
           release: false
-        results:
-          adhoc: true
-          ci: true
-          release: false
+        results: {}
       - name: "pip-audit"
         type: "SCA"
-        rulesets: ["default"]
+        rulesets: "default"
         comment: >
           Runs against the resolved dependency tree as a merge gate. Paired with
           Dependabot security updates, which act on advisories. Dependabot's
@@ -145,13 +154,10 @@ repository:
           adhoc: true
           ci: true
           release: false
-        results:
-          adhoc: true
-          ci: true
-          release: false
+        results: {}
       - name: "npm audit"
         type: "SCA"
-        rulesets: ["default"]
+        rulesets: "default"
         comment: >
           Frontend dependency gate at the high threshold. Lower findings here are
           development tooling; a gate that is permanently red stops being read.
@@ -159,13 +165,10 @@ repository:
           adhoc: true
           ci: true
           release: false
-        results:
-          adhoc: true
-          ci: true
-          release: false
+        results: {}
       - name: "gitleaks"
         type: "secret-scanning"
-        rulesets: ["default"]
+        rulesets: "default"
         comment: >
           Its own CI job, scanning the full history rather than the tip: a secret
           committed and later removed stays retrievable. Exclusions in
@@ -176,13 +179,10 @@ repository:
           adhoc: true
           ci: true
           release: false
-        results:
-          adhoc: true
-          ci: true
-          release: false
+        results: {}
       - name: "prompt-injection red-team suite"
         type: "SAST"
-        rulesets: ["default"]
+        rulesets: "default"
         comment: >
           Project-specific: injection payloads driven through the live
           language-model reasoner pipeline, asserting that spotlighting holds and
@@ -191,7 +191,4 @@ repository:
           adhoc: true
           ci: true
           release: false
-        results:
-          adhoc: true
-          ci: true
-          release: false
+        results: {}
