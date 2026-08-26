@@ -52,7 +52,7 @@ jobs:
         # Lauf eigenen Code in dieser Pipeline aus. `persist-credentials: false`
         # hält den GITHUB_TOKEN aus der Git-Konfiguration des Runners, wo jeder
         # Folgeschritt ihn läse; dieser Job braucht ihn nach dem Auschecken nicht.
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -96,7 +96,7 @@ jobs:
         # Volle Historie: Ein Geheimnis, das einmal committet und danach entfernt
         # wurde, steht weiterhin im Verlauf und ist weiterhin abrufbar. Ein Scan
         # nur über den letzten Stand fände es nicht.
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -119,7 +119,7 @@ jobs:
       - name: Checkout
         # Auf Commit-Hash gepinnt (Supply-Chain-Härtung, zizmor); persist-credentials
         # aus, da nach dem Checkout keine Git-Operationen folgen.
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
