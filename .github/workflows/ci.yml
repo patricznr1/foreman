@@ -47,12 +47,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.3
+        # Auf Commit-Hash gepinnt wie im Frontend-Job: Ein Tag ist verschiebbar, ein
+        # Hash nicht — wer das Upstream-Repo übernimmt, führte sonst beim nächsten
+        # Lauf eigenen Code in dieser Pipeline aus. `persist-credentials: false`
+        # hält den GITHUB_TOKEN aus der Git-Konfiguration des Runners, wo jeder
+        # Folgeschritt ihn läse; dieser Job braucht ihn nach dem Auschecken nicht.
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: Install uv
         # Exakter Pin: setup-uv publiziert ab v8 keine Major-/Minor-Tags mehr
-        # (Supply-Chain-Härtung) — daher immutable Version statt @v8.
-        uses: astral-sh/setup-uv@v8.2.0
+        # (Supply-Chain-Härtung) — der Commit-Hash macht ihn unverschiebbar.
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
 
