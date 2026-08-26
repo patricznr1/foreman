@@ -55,6 +55,7 @@ from foreman.reasoners.event_chain.recall import (
     RecallItem,
     build_recall_query,
     build_sibling_references,
+    nur_sichtbare_treffer,
     recall_similar_incidents,
     sibling_similarity_basis,
 )
@@ -177,6 +178,13 @@ class EventChainService:
 
     session: AsyncSession
     gateway: LLMGateway
+    # Der Maschinen-Ausschnitt des Anfragenden. `None` heisst unbeschraenkt und ist
+    # nur fuer Manager und Techniker richtig; `[]` heisst: nichts. BEWUSST OHNE
+    # Vorgabewert — der Recall unten ist maschinen-UNSPEZIFISCH und trifft gerade
+    # die gleichartigen Maschinen anderer Linien. Ein Vorgabewert `None` hiesse
+    # deshalb: wer den Ausschnitt vergisst, bekommt die ganze Flotte. Diese
+    # Entscheidung soll jeder Aufrufer sichtbar treffen.
+    sichtbare_maschinen: Sequence[int] | None
     substrate: SubstrateClient | None = None
     # F-SEM (§15): optionaler Embedding-Provider für die semantische Notiz-Auswahl.
     # None → reines F6-Verhalten (nur Zeitfenster-Notizen).
@@ -226,8 +234,19 @@ class EventChainService:
         )
 
         # NEXUS-Recall ähnlicher Vorfälle (best-effort, blockiert nie).
-        recall_items = await recall_similar_incidents(
-            self.substrate, build_recall_query(anchor, machine), max_results=self.recall_max_results
+        #
+        # Der Ausschnitt greift SOFORT, nicht erst auf dem Ergebnis: Die Treffer
+        # gehen von hier aus zwei Wege — in die Schwester-Referenzen und als
+        # Grounding-Quellen ins Sprachmodell. Ein Filter weiter unten käme für den
+        # zweiten Weg zu spät, weil die Erzählung dann bereits geschrieben wäre und
+        # fremde Inhalte paraphrasiert haben könnte.
+        recall_items = nur_sichtbare_treffer(
+            await recall_similar_incidents(
+                self.substrate,
+                build_recall_query(anchor, machine),
+                max_results=self.recall_max_results,
+            ),
+            self.sichtbare_maschinen,
         )
         record_event_chain_recall("hit" if recall_items else "miss")
 

@@ -94,6 +94,35 @@ class RecallItem:
     source_id: int | None = None
 
 
+def nur_sichtbare_treffer(
+    items: Sequence[RecallItem], scope: Sequence[int] | None
+) -> list[RecallItem]:
+    """Beschränkt Recall-Treffer auf den Maschinen-Ausschnitt des Anfragenden.
+
+    WARUM DIESE FUNKTION EXISTIERT. Die Recall-Anfragen sind bewusst NICHT
+    maschinenbezogen — sie suchen über Maschinenklasse, Signatur und Kategorie und
+    treffen damit gerade die gleichartigen Maschinen ANDERER Linien. Das ist der
+    fachliche Sinn der Sache: aus vergleichbaren Fällen lernen. Es heißt aber, dass
+    die Antwort systematisch Fremdes enthält, und die Inhalte tragen die
+    Maschinennummer im Klartext plus den gespiegelten Freitext.
+
+    Der Ausschnitt wirkt hier NACHTRÄGLICH und mit derselben Strenge wie in der
+    Archiv-Suche: Ein Treffer OHNE bekannte Maschine fällt für eine beschränkte
+    Rolle heraus. Er könnte zu einer erlaubten gehören — belegt ist es nicht, und
+    eine unbelegte Zugehörigkeit ist auf diesem Pfad kein Grund, ihn zu zeigen.
+
+    `scope is None` heißt unbeschränkt (Manager, Techniker); `[]` heißt: nichts.
+
+    EINE Quelle für alle drei Aufrufstellen — Archiv-Suche, Ereignisketten-Reasoner,
+    Werker-Empfehlung. Getrennte Filter wären die Stelle, an der einer der Pfade
+    zurückbliebe; genau das war der Fall, als nur die Archiv-Suche filterte.
+    """
+    if scope is None:
+        return list(items)
+    erlaubt = set(scope)
+    return [item for item in items if item.machine_id in erlaubt]
+
+
 def build_recall_query(anchor: Alarm, machine: Machine | None) -> str:
     """Baut die Recall-Query aus dem Anker-Muster (PII-frei).
 

@@ -163,6 +163,7 @@ async def test_reconstruct_zieht_semantische_notiz_ausserhalb_fensters(
     anchor, recent, old = await _seed(db_session)
     reply = f"Rund um [alarm:{anchor.id}], [note:{recent.id}] und früher [note:{old.id}]."
     service = EventChainService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
         embedding_provider=_FixedProvider(_unit(0)),  # Query trifft die alte Notiz
@@ -183,6 +184,7 @@ async def test_reconstruct_fallback_bei_provider_ausfall(
     anchor, _, old = await _seed(db_session)
     reply = f"Rund um [alarm:{anchor.id}] und früher [note:{old.id}]."
     service = EventChainService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
         embedding_provider=_FailProvider(),  # Suche fällt aus → Zeitfenster-Fallback
@@ -204,6 +206,7 @@ async def test_reconstruct_ohne_provider_nur_zeitfenster(
     anchor, recent, old = await _seed(db_session)
     reply = f"Siehe [alarm:{anchor.id}] und [note:{recent.id}]."
     service = EventChainService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )  # embedding_provider=None → reines F6-Verhalten
@@ -245,6 +248,7 @@ async def test_semantisch_gezogene_injektion_bleibt_untrusted(
     await db_session.flush()
 
     service = EventChainService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", echo=True)]),
         embedding_provider=_FixedProvider(_unit(0)),

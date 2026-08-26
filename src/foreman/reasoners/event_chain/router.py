@@ -35,6 +35,7 @@ from foreman.reasoners.event_chain.schema import (
     ReasonerExplanationRead,
     ReconstructRequest,
     SiblingReference,
+    nur_sichtbare_geschwister,
 )
 from foreman.reasoners.event_chain.service import AnchorNotFoundError, EventChainService
 
@@ -110,7 +111,16 @@ async def reconstruct_event_chain(
     # Prüfung erst auf dem Ergebnis käme zu spät — die Daten wären dann bereits
     # zusammengetragen und die Antwort trüge sie.
     await _sichtbarer_anker(session, scope, payload.anchor_alarm_id)
-    service = EventChainService(session=session, gateway=gateway, substrate=substrate)
+    # Der Ausschnitt geht MIT in den Reasoner: Sein Gedächtnis-Abruf sucht nach
+    # Maschinenklasse und Signatur, nicht nach Maschine, und trägt deshalb Fälle
+    # anderer Linien herein — in die Schwester-Referenzen wie in das, was das
+    # Sprachmodell zu sehen bekommt.
+    service = EventChainService(
+        session=session,
+        gateway=gateway,
+        substrate=substrate,
+        sichtbare_maschinen=await scope.machine_ids(),
+    )
     lookback = (
         timedelta(hours=payload.lookback_hours) if payload.lookback_hours is not None else None
     )
@@ -120,7 +130,9 @@ async def reconstruct_event_chain(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Anker-Alarm nicht gefunden"
         ) from exc
-    return ReasonerExplanationDetailRead.from_record(record)
+    return ReasonerExplanationDetailRead.from_record(
+        record, sichtbare_maschinen=await scope.machine_ids()
+    )
 
 
 @router.get("/explanations", response_model=list[ReasonerExplanationRead])
@@ -149,7 +161,9 @@ async def get_explanation(
     Schwester-Referenzen (aus dem Snapshot, nie neu abgeleitet). 404, wenn fehlt
     oder außerhalb des Maschinen-Ausschnitts liegt."""
     record = await _sichtbare_erklaerung(session, scope, explanation_id)
-    return ReasonerExplanationDetailRead.from_record(record)
+    return ReasonerExplanationDetailRead.from_record(
+        record, sichtbare_maschinen=await scope.machine_ids()
+    )
 
 
 @router.get(
@@ -163,7 +177,14 @@ async def get_explanation_siblings(
     (ehrlich aus realen Recall-Treffern, §21-D). Keine → leere Liste (kein Fake).
     404, wenn die Erklärung fehlt oder außerhalb des Maschinen-Ausschnitts liegt.
 
-    Die Referenzen tragen keine eigene Maschinen-Kennung — sie erben den Ausschnitt
-    ihrer Erklärung, sonst wären sie der Nebeneingang zu ihr."""
+    Die Referenzen zeigen auf ANDERE Maschinen — das ist ihr Zweck, denn der
+    Gedächtnis-Abruf sucht nach Maschinenklasse und Signatur, nicht nach Maschine.
+    Sie tragen deshalb eine eigene Maschinen-Kennung und erben den Ausschnitt ihrer
+    Erklärung NICHT. Gefiltert wird zweimal: beim Erzeugen gegen den Ausschnitt des
+    Auslösers, hier gegen den des Lesers — ein Schnappschuss, den ein Manager erzeugt
+    hat, darf einem Werker nicht mehr zeigen, als ihm zusteht."""
     record = await _sichtbare_erklaerung(session, scope, explanation_id)
-    return [SiblingReference.model_validate(item) for item in (record.siblings_snapshot or [])]
+    return nur_sichtbare_geschwister(
+        [SiblingReference.model_validate(item) for item in (record.siblings_snapshot or [])],
+        await scope.machine_ids(),
+    )

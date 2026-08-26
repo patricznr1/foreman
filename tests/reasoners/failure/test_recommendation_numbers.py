@@ -67,6 +67,7 @@ async def test_erfundene_zahl_wird_rejected_und_nicht_persistiert(
     # Quelle: weder die Wahrscheinlichkeit 0.87 noch der Horizont 336).
     reply = f"Laut [pred:{pred.id}] fällt die Maschine in genau 999 Stunden aus. Lager prüfen."
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
@@ -90,6 +91,7 @@ async def test_belegte_zahlen_gehen_durch(
         f"Empfehlung: Lager prüfen. Simulationsbasiert, nicht validiert."
     )
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
@@ -110,6 +112,7 @@ async def test_grounding_disabled_rejectet_trotzdem(
     pred = await _seed_prediction(db_session)
     reply = f"Laut [pred:{pred.id}] fällt die Maschine in genau 999 Stunden aus. Lager prüfen."
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(
             backends=[make_backend("local", reply=reply)], grounding_enabled=False
@@ -132,6 +135,7 @@ async def test_grounding_strict_rejectet_als_numeric(
     pred = await _seed_prediction(db_session)
     reply = f"Laut [pred:{pred.id}] fällt die Maschine in genau 999 Stunden aus. Lager prüfen."
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)], grounding_strict=True),
     )

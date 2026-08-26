@@ -15,6 +15,7 @@
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
@@ -187,6 +188,27 @@ class ReasonerExplanationRead(BaseModel):
     created_at: datetime
 
 
+def nur_sichtbare_geschwister(
+    siblings: Sequence[SiblingReference], sichtbare_maschinen: Sequence[int] | None
+) -> list[SiblingReference]:
+    """Beschränkt Schwester-Referenzen auf den Maschinen-Ausschnitt des LESERS.
+
+    Warum zusätzlich zum Filter beim Erzeugen: Der Snapshot wird eingefroren und
+    später an ANDERE Leser ausgeliefert. Löst ein Manager die Rekonstruktion aus,
+    enthält der Snapshot zulässigerweise Fälle der ganzen Flotte — ein Werker, der
+    dieselbe Erklärung danach abruft, darf sie trotzdem nicht sehen. Der Ausschnitt
+    entscheidet, was ein Leser bekommt; er entscheidet nicht, was gespeichert wird.
+
+    Dieselbe Strenge wie überall auf diesem Pfad: Eine Referenz ohne aufgelöste
+    Maschine fällt für eine beschränkte Rolle heraus, weil ihre Zugehörigkeit
+    unbelegt ist. `None` heißt unbeschränkt, `[]` heißt: nichts.
+    """
+    if sichtbare_maschinen is None:
+        return list(siblings)
+    erlaubt = set(sichtbare_maschinen)
+    return [s for s in siblings if s.machine_id in erlaubt]
+
+
 class ReasonerExplanationDetailRead(ReasonerExplanationRead):
     """API-Out-Schema der DETAIL-Sicht (POST /reconstruct, GET /explanations/{id}).
 
@@ -202,16 +224,27 @@ class ReasonerExplanationDetailRead(ReasonerExplanationRead):
     siblings: list[SiblingReference] = Field(default_factory=list)
 
     @classmethod
-    def from_record(cls, record: ReasonerExplanationRecord) -> ReasonerExplanationDetailRead:
+    def from_record(
+        cls,
+        record: ReasonerExplanationRecord,
+        *,
+        sichtbare_maschinen: Sequence[int] | None,
+    ) -> ReasonerExplanationDetailRead:
         """Baut die Detail-Sicht aus dem ORM-Datensatz inkl. eingefrorener Snapshots.
 
         Die JSONB-Snapshots werden gegen die typisierten Schemata validiert (defensiv:
         ein leerer/fehlender Snapshot → `chain=None` bzw. `siblings=[]`).
+
+        `sichtbare_maschinen` ist der Ausschnitt des LESERS und steht ohne
+        Vorgabewert: Die Schwester-Referenzen zeigen auf ANDERE Maschinen — das ist
+        ihr Zweck — und wer sie ausliefert, muss entscheiden, wem. Begründung in
+        `nur_sichtbare_geschwister`.
         """
         chain = EventChain.model_validate(record.chain_snapshot) if record.chain_snapshot else None
-        siblings = [
-            SiblingReference.model_validate(item) for item in (record.siblings_snapshot or [])
-        ]
+        siblings = nur_sichtbare_geschwister(
+            [SiblingReference.model_validate(item) for item in (record.siblings_snapshot or [])],
+            sichtbare_maschinen,
+        )
         return cls(
             id=record.id,
             anchor_alarm_id=record.anchor_alarm_id,
