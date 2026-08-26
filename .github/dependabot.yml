@@ -1,0 +1,51 @@
+# =============================================================================
+# dependabot.yml — Abhängigkeits-Aktualisierung
+# -----------------------------------------------------------------------------
+# Zweite Quelle neben dem Audit-Tor in der Prüfpipeline. Die beiden decken
+# Unterschiedliches ab: Das Tor meldet, was in der aktuellen Auflösung
+# verwundbar IST; Dependabot schlägt aktiv die Aktualisierung vor und erfasst
+# dabei auch transitive Pakete, die eine reine Prüfung nur benennt.
+#
+# Wöchentlich statt täglich: Bei einem Projekt mit einer Person ist ein täglicher
+# Strom von Vorschlägen kein Sicherheitsgewinn, sondern der sicherste Weg, dass
+# gar keiner mehr gelesen wird.
+# =============================================================================
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(frontend)"
+
+  # Die Pipeline-Schritte hängen an Commit-Hashes; ohne diesen Eintrag altern sie
+  # still, weil ein Hash sich nicht von selbst bewegt.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "docker"

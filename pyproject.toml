@@ -72,6 +72,10 @@ dev = [
     "asgi-lifespan>=2.1",
     # Type-Stubs für PyYAML (mypy --strict)
     "types-pyyaml>=6.0",
+    # Abhängigkeits-Audit als Tor in der Prüfpipeline (§10.4). Als
+    # Entwicklungs-Abhängigkeit geführt, damit derselbe Lauf lokal möglich ist —
+    # ein Tor, das nur in der Pipeline existiert, überrascht immer erst dort.
+    "pip-audit>=2.7",
 ]
 
 [build-system]

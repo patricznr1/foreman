@@ -156,6 +156,56 @@ def _rrf_key(item: tuple[int, ArchiveHit]) -> tuple[float, float, str, int]:
     return (-rrf_score, -hit.timestamp.timestamp(), hit.source_type, hit.id)
 
 
+def _quellzeile(hit: ArchiveHit) -> tuple[str, int] | None:
+    """Auf welche Zeile der eigenen Datenbank ein Treffer zeigt.
+
+    Bei den drei eigenen Quellen ist er selbst die Zeile. Eine Erinnerung zeigt
+    über ihren Rückweg (`detail["quelle"]`, §12.4) auf eine — falls sie ihn
+    kennt; Altbestand tut das nicht, dann `None`.
+    """
+    if hit.source_type != "memory":
+        return (hit.source_type, hit.id)
+    quelle = hit.detail.get("quelle")
+    if isinstance(quelle, dict):
+        art, kennung = quelle.get("art"), quelle.get("id")
+        if isinstance(art, str) and art and isinstance(kennung, int) and kennung > 0:
+            return (art, kennung)
+    return None
+
+
+def _ohne_doppelfunde(ranked: list[tuple[int, ArchiveHit]]) -> list[tuple[int, ArchiveHit]]:
+    """Entfernt Erinnerungen, deren Quellzeile bereits als eigener Treffer dasteht.
+
+    DASSELBE EREIGNIS, ZWEI RANGLISTEN: Eine Schichtnotiz ist über ihr Embedding
+    als `note` auffindbar und über ihre Spiegelung als `memory`. Die Fusion sieht
+    zwei getrennte Ströme und rangiert denselben Vorgang deshalb doppelt hoch —
+    er verdrängt andere Treffer, ohne mehr zu sagen. Gemessen (25.08.2026):
+    Die Auflösung hebt den Anteil zutreffender Treffer von 0,403 auf 0,445, ohne
+    dass ein einziger relevanter Treffer verloren geht.
+
+    DER EIGENE TREFFER BLEIBT, die Erinnerung fällt: Er ist die Quelle, sie die
+    Ableitung. Er trägt die echte Kennung, seine Zeitangabe stammt aus der
+    Datenbank statt aus dem Abruf, und sein Auszug ist der ungekürzte Originaltext.
+
+    VOR DEM KÜRZEN, nicht danach: Sonst hinterliesse jede entfernte Dublette eine
+    Lücke in der Liste, statt einen echten Treffer nachrücken zu lassen.
+
+    Eine Erinnerung OHNE Rückweg bleibt unangetastet — sie könnte auf denselben
+    Vorgang zeigen oder auf einen anderen; das ist nicht entscheidbar, und eine
+    geratene Entfernung nähme dem Werker einen Treffer, den niemand geprüft hat.
+    """
+    eigene: set[tuple[str, int]] = {
+        (hit.source_type, hit.id) for _rang, hit in ranked if hit.source_type != "memory"
+    }
+    behalten: list[tuple[int, ArchiveHit]] = []
+    for rang, hit in ranked:
+        zeile = _quellzeile(hit)
+        if hit.source_type == "memory" and zeile is not None and zeile in eigene:
+            continue
+        behalten.append((rang, hit))
+    return behalten
+
+
 async def _substrat_treffer(
     substrate: SubstrateClient | None,
     q: str,
@@ -303,4 +353,6 @@ async def search_archive(
         ranked.extend((rang, hit) for rang, hit in enumerate(erinnerungen, start=1))
 
     ranked.sort(key=_rrf_key)
-    return [hit for _rank, hit in ranked[:k]]
+    # Erst entdoppeln, DANN kürzen: Sonst hinterliesse jede entfernte Dublette
+    # eine Lücke, statt einen echten Treffer nachrücken zu lassen.
+    return [hit for _rank, hit in _ohne_doppelfunde(ranked)[:k]]

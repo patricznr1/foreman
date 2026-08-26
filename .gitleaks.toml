@@ -1,0 +1,65 @@
+# =============================================================================
+# .gitleaks.toml — Konfiguration des Geheimnis-Scans
+# -----------------------------------------------------------------------------
+# Zweck: Der Scan läuft als Tor in der Prüfpipeline. Damit er dort etwas wert
+#        ist, muss er auf einem sauberen Stand grün sein — sonst gewöhnt sich
+#        jeder daran, ihn zu übergehen, und beim echten Fund schaut niemand hin.
+#
+# LEITSATZ FÜR AUSNAHMEN: Ausgenommen wird das MUSTER, nicht der Pfad.
+# Eine Ausnahme für „alles unter tests/" wäre bequem und wertlos — ein echtes
+# Geheimnis, das versehentlich in einer Testdatei landet, fiele dann nicht mehr
+# auf. Die Ausnahmen unten treffen deshalb Zeichenketten, die als Attrappe
+# erkennbar SIND: deutscher Klartext und aufsteigende Zählmuster. Ein echter
+# Schlüssel sieht so nicht aus.
+#
+# Gemessen am frischen Klon (Stand 26.08.2026): drei Treffer, alle Attrappen,
+# alle von den Mustern unten erfasst. Ohne diese Datei wäre das Tor rot.
+# =============================================================================
+
+title = "FOREMAN — Geheimnis-Scan"
+
+# Der mitgelieferte Regelsatz bleibt vollständig aktiv; hier wird nur ergänzt.
+[extend]
+useDefault = true
+
+# -----------------------------------------------------------------------------
+# Ausnahme 1 — Test-Attrappen, erkannt am Muster
+# -----------------------------------------------------------------------------
+[[allowlists]]
+description = """
+Attrappen in Testdaten. Erfasst werden zwei Formen, die kein erzeugter Schlüssel
+annimmt: ein aufsteigendes Hex-Zählmuster (0123456789abcdef) und deutscher
+Klartext, der die Attrappe benennt. Beides ist absichtlich unbrauchbar.
+Betrifft am Stand 26.08.2026: tests/llm/test_config.py, tests/unit/test_deps.py,
+tests/unit/test_security.py. Die Dateien stehen hier NICHT als Pfad — fiele die
+Attrappe weg und ein echter Wert träte an ihre Stelle, soll der Scan anschlagen.
+"""
+regexTarget = "match"
+regexes = [
+  '''0123456789abcdef''',
+  '''streng-geheim''',
+  '''test-secret-foreman''',
+]
+
+# -----------------------------------------------------------------------------
+# Ausnahme 2 — mitgelieferter Fremdcode und Bauartefakte
+# -----------------------------------------------------------------------------
+[[allowlists]]
+description = """
+Nicht selbst geschriebener Code und erzeugte Verzeichnisse. Der Draco-Dekoder
+unter frontend/public ist ein minifiziertes Fremdpaket; seine Zeichenketten sind
+keine Geheimnisse dieses Projekts, und ein Fund dort wäre gegen den Upstream zu
+melden, nicht hier. Die übrigen Pfade entstehen beim Bauen und liegen nicht im
+Versionsstand — sie stehen nur da, damit ein lokaler Lauf dasselbe Ergebnis
+liefert wie die Pipeline.
+"""
+paths = [
+  '''frontend/public/synoptik/decoders/.*''',
+  '''(^|/)node_modules/.*''',
+  '''(^|/)\.venv/.*''',
+  '''(^|/)\.next/.*''',
+  '''(^|/)__pycache__/.*''',
+  '''(^|/)\.mypy_cache/.*''',
+  '''(^|/)\.ruff_cache/.*''',
+  '''(^|/)\.pytest_cache/.*''',
+]
