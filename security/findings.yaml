@@ -1,0 +1,399 @@
+# =============================================================================
+# findings.yaml — pre-triaged review findings for FOREMAN
+# -----------------------------------------------------------------------------
+# This register records observations that a code review — human, static analysis
+# or language model — is likely to surface in this repository, together with the
+# triage that turns an observation into a verdict.
+#
+# It is NOT a list of things reviewers should skip. Every entry states the
+# observation as a scanner would state it, and says plainly whether the
+# observation is correct. Where we accept a risk, the acceptance is written down
+# with its condition. Where the finding is real work not yet done, it says so.
+#
+# Field semantics follow established vocabulary rather than inventing one:
+#   status            — SARIF 2.1.0 suppression status, extended:
+#                       accepted | planned | fixed | disputed
+#   justification     — the reason, in the sense of a VEX justification
+#   depends_on        — the deployment assumption the acceptance rests on.
+#                       If the assumption fails, the acceptance fails with it.
+#   profile           — which deployment profile the entry applies to (SECURITY.md §2)
+#   review_by         — the date this entry must be re-examined. A lapsed date is
+#                       a CI failure, not a formality.
+#
+# Checked by scripts/check_findings.py: every `where` path must exist, every
+# `review_by` must be in the future, every id must be unique.
+# =============================================================================
+
+schema: findings/v1
+generated: false            # maintained by hand, verified by script
+last_reviewed: "2026-08-26"
+next_review: "2027-02-26"
+reviewed_by: "maintainer (solo)"
+
+profiles:
+  A: "Public demo instance — internet-reachable, synthetic data, shared login"
+  B: "On-premises target deployment — plant network, real data, per-user accounts"
+
+findings:
+
+  # ---------------------------------------------------------------------------
+  - id: F-001
+    title: "Unauthenticated /metrics endpoint"
+    where:
+      - "src/foreman/api/middleware.py:25"
+      - "src/foreman/api/metrics.py:17"
+      - "src/foreman/observability/metrics.py:10"
+    observation: >
+      The Prometheus /metrics endpoint is mounted at root level and is on the
+      auth middleware's open-path allowlist. No token is required, and there is
+      no configuration switch to disable or protect it.
+    observation_is_correct: true
+    severity_as_scanned: "high"
+    severity_after_triage: "low (profile B) / medium (profile A)"
+    status: accepted
+    profile: [A, B]
+    justification: >
+      Metric contents are deliberately low-cardinality and carry no machine,
+      data-point or person identifiers — the exporter is a purpose-built registry,
+      not a default one. In FOREMAN's model, as in the Prometheus project's own
+      security model, access control for this endpoint sits at the network
+      boundary and metric contents are not treated as secrets. A scraper carries
+      no JWT, which is why the exception exists at all.
+    depends_on: >
+      Profile B: the endpoint is reachable only from the monitoring segment.
+      Profile A: NOT SATISFIED — the demo instance is internet-reachable and this
+      endpoint is genuinely open. Accepted for the demo because the data behind
+      it is synthetic and the metrics carry no identifiers.
+    compensating_controls:
+      - "Dedicated registry without PII or resource identifiers"
+      - "No write path; the endpoint is read-only counters"
+    open_work: >
+      The deployment assumption is currently written only in a test docstring
+      (tests/unit/test_routen_inventar.py:76), not in operational documentation.
+      SECURITY.md now carries it. A configuration switch to disable the endpoint
+      would make the assumption enforceable rather than merely stated.
+    evidence:
+      - "tests/integration/test_metrics_endpoint.py"
+      - "https://prometheus.io/docs/operating/security/"
+    review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  - id: F-002
+    title: "/health does not verify dependencies"
+    where:
+      - "src/foreman/api/health.py:14"
+      - "Dockerfile:57"
+      - "railway.toml:31"
+    observation: >
+      The health endpoint returns a static 200 without checking the database or
+      any other dependency, and it is the only probe configured in both the
+      container HEALTHCHECK and the platform deployment. A database outage leaves
+      both probes green.
+    observation_is_correct: true
+    severity_as_scanned: "medium"
+    severity_after_triage: "medium — operational defect, not a security issue"
+    status: planned
+    profile: [A, B]
+    justification: >
+      None offered. The endpoint is honestly declared as liveness-only in its own
+      header, but liveness-only is the wrong contract when it is the only probe.
+      This is a real quality finding and it is accepted as such.
+    remedy: >
+      Add a /readyz endpoint that checks the database round-trip and the presence
+      of required configuration, and point the platform healthcheck at it while
+      leaving /health as the process liveness probe.
+    review_by: "2026-11-30"
+
+  # ---------------------------------------------------------------------------
+  - id: F-003
+    title: "CSP allows 'unsafe-inline' in script-src and style-src"
+    where:
+      - "frontend/next.config.ts:67"
+      - "frontend/next.config.ts:68"
+    observation: >
+      The Content-Security-Policy permits inline scripts and inline styles,
+      which weakens the policy's protection against injected inline code.
+      'unsafe-eval' is present in development only.
+    observation_is_correct: true
+    severity_as_scanned: "high (frequently reported as 'XSS vulnerability')"
+    severity_after_triage: >
+      low — a weakened defence-in-depth layer, not a demonstrated injection path
+    status: accepted
+    profile: [A, B]
+    justification: >
+      A weakened CSP is not itself an XSS vulnerability; it is a layer that would
+      have contained one. The nonce-based alternative requires every page to be
+      rendered dynamically, because the nonce comes from the request headers, and
+      this application ships statically pre-rendered pages. That is an
+      architectural change with delivery cost, not a configuration tweak. The
+      decision and its cost are documented at the point where the header is set.
+      Output escaping in the application is the primary control and is unaffected.
+    depends_on: >
+      Output escaping remains correct. A concrete injection path that the CSP
+      would have blocked converts this entry into a vulnerability report.
+    open_work: >
+      style-src 'unsafe-inline' carries no separate rationale in the code. Either
+      document why it is needed or remove it — an undocumented exception inside a
+      documented policy is the weakest part of this entry.
+    evidence:
+      - "frontend/next.config.ts:46"
+    review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  - id: F-004
+    title: "Demo credentials published in README"
+    where:
+      - "README.md:49"
+      - "README.md:50"
+    observation: >
+      A working e-mail address and password for the live instance are committed
+      to the repository in plain text.
+    observation_is_correct: true
+    severity_as_scanned: "critical (secret scanners flag this pattern)"
+    severity_after_triage: "none — intended behaviour"
+    status: accepted
+    profile: [A]
+    justification: >
+      These are the credentials of a public demo whose entire purpose is to be
+      opened without a request. They grant access to synthetic data on a shared
+      instance that the README describes as shared before the login is reached.
+      They exist nowhere else in the repository — no seed, no fixture, no script
+      creates this account; user provisioning reads the password from an
+      interactive prompt or an environment variable and explicitly refuses to
+      take it from the command line.
+    depends_on: >
+      The demo instance never holds real personal or production data. Worker notes
+      are name-redacted before storage, and the README asks users not to enter
+      real personal data.
+    evidence:
+      - "src/foreman/db/provisioning.py:80"
+      - "DEPLOY.md:218"
+    review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  - id: F-005
+    title: "Insecure default JWT secret with a fail-open environment default"
+    where:
+      - "src/foreman/config.py:18"
+      - "src/foreman/config.py:38"
+      - "src/foreman/config.py:128"
+    observation: >
+      A placeholder JWT secret is present in the source. A startup guard refuses
+      the default and any secret shorter than 32 bytes — but only when the
+      environment is classified as production, and the environment setting
+      defaults to "development".
+    observation_is_correct: true
+    severity_as_scanned: "critical"
+    severity_after_triage: >
+      medium — the guard exists and works; its trigger condition defaults the
+      wrong way
+    status: planned
+    profile: [A, B]
+    justification: >
+      The hardcoded string itself is a placeholder, not a secret, and the guard
+      that rejects it runs before anything else in application startup. What is
+      genuinely wrong is the direction of the default: an unset ENVIRONMENT
+      variable yields "development", which disables the guard and additionally
+      exposes the API documentation routes. A security guard whose default is
+      "off" is a guard with a gap.
+    remedy: >
+      Invert the default so that an unset environment is treated as production,
+      or require the environment to be set explicitly and refuse to start
+      otherwise. The deployment documentation already sets it; the code should
+      not depend on that.
+    review_by: "2026-11-30"
+
+  # ---------------------------------------------------------------------------
+  - id: F-006
+    title: "No rate limiting on authentication or across the API"
+    where:
+      - "src/foreman/api/auth.py:25"
+    observation: >
+      The login route has no brute-force protection, and there is no API-wide
+      rate-limiting middleware. Rate limiting exists only for language-model
+      consumption and on the MCP interface.
+    observation_is_correct: true
+    severity_as_scanned: "medium"
+    severity_after_triage: "medium in profile B, low in profile A"
+    status: planned
+    profile: [A, B]
+    justification: >
+      Partially mitigated by design: the login returns a uniform 401 that does not
+      distinguish unknown user from wrong password, passwords are bcrypt-verified,
+      and the demo instance has exactly one account whose password is public — so
+      brute force against profile A has nothing to gain. In profile B, with
+      per-user accounts, this is a genuine gap.
+    remedy: >
+      Add per-IP and per-account throttling on the login route, and a general
+      request limiter, before any deployment with real accounts.
+    review_by: "2026-11-30"
+
+  # ---------------------------------------------------------------------------
+  - id: F-007
+    title: "Documentation claims an API-wide rate-limit middleware that does not exist"
+    where:
+      - "GROUND_TRUTH.md"
+    observation: >
+      The specification listed a rate-limiting middleware on the API among the
+      merge gates. No such middleware was present in the source.
+    observation_is_correct: true
+    severity_as_scanned: "n/a — documentation drift"
+    severity_after_triage: >
+      high for credibility: an overstated control is worse than an absent one
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [A, B]
+    justification: >
+      None was offered. This was a defect in the documentation. The project's own
+      rule is that GROUND_TRUTH and code move in the same commit; this entry is
+      where that rule was not kept, and it is recorded rather than quietly edited.
+    remedy: >
+      Done. §10.4 now describes what exists — a token bucket in the model gateway
+      and one on the MCP interface — and states plainly that no API-wide limiter
+      exists, with the login route named. The missing limiter is tracked as open
+      work under F-006 rather than implied to be present.
+    evidence:
+      - "src/foreman/llm/rate_limit.py"
+      - "src/foreman/mcp/auth.py"
+    review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  - id: F-008
+    title: "README and specification claim CI gates that CI does not run"
+    where:
+      - "README.md"
+      - "GROUND_TRUTH.md"
+      - ".github/workflows/ci.yml"
+    observation: >
+      Both documents list a secrets scan and a dependency audit among the quality
+      gates. The CI workflow runs type checking, linting and tests only; there is
+      no pip-audit, npm audit, gitleaks or bandit step, and none of these are
+      declared as development dependencies. There is also no Dependabot
+      configuration.
+    observation_is_correct: true
+    severity_as_scanned: "n/a — documentation drift"
+    severity_after_triage: >
+      high for credibility, and the easiest of all entries to close by building
+      the thing rather than editing the claim
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [A, B]
+    justification: >
+      None was offered — the claim was not true when it was written.
+    remedy: >
+      Closed by building the gate rather than editing the claim. CI now runs
+      gitleaks as its own job over the full history (a secret committed and later
+      removed stays retrievable in the history, so scanning only the tip would
+      miss it), pip-audit against the resolved dependency tree, and npm audit at
+      the high threshold. Dependabot covers uv, npm, workflow actions and Docker
+      images as a second source. Exclusions in .gitleaks.toml match PATTERNS —
+      hex counting sequences and German placeholder wording — not paths, so a real
+      secret in a test file still trips the gate. Measured on a fresh clone: three
+      placeholders found without the allowlist, none with it, and three
+      realistic-looking keys still detected.
+    evidence:
+      - ".github/workflows/ci.yml"
+      - ".gitleaks.toml"
+      - ".github/dependabot.yml"
+    review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  - id: F-009
+    title: "Container base images are not pinned by digest"
+    where:
+      - "Dockerfile:8"
+      - "Dockerfile:11"
+      - "frontend/Dockerfile:11"
+    observation: >
+      Base images are referenced by mutable tag, one of them by :latest, while
+      the CI workflow pins its actions to commit hashes. Builds are therefore not
+      reproducible and a compromised upstream tag would be pulled silently.
+    observation_is_correct: true
+    severity_as_scanned: "medium"
+    severity_after_triage: "medium — supply-chain hygiene, not an active exposure"
+    status: planned
+    profile: [A, B]
+    justification: >
+      The inconsistency is the strongest part of this finding: the same repository
+      pins GitHub Actions to commit hashes, so the standard is understood and
+      simply was not applied to the image layer.
+    remedy: "Pin base images by digest and keep them updated deliberately."
+    review_by: "2026-11-30"
+
+  # ---------------------------------------------------------------------------
+  - id: F-010
+    title: "Local compose stack publishes the database port"
+    where:
+      - "docker-compose.yml:27"
+      - "postgres.conf:34"
+    observation: >
+      The database container publishes 5432 to the host and listens on all
+      addresses.
+    observation_is_correct: true
+    severity_as_scanned: "high"
+    severity_after_triage: "none — local development stack"
+    status: accepted
+    profile: []
+    justification: >
+      This compose file is the local development environment, not a deployment
+      artefact. The published port is what lets a developer point a client at the
+      database. The password is a mandatory interpolation with no default, so the
+      file contains no credential.
+    depends_on: >
+      docker-compose.yml is never used to run an internet-reachable instance.
+      Deployment goes through the platform configuration, not through compose.
+    review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  - id: F-011
+    title: "SQL built with f-strings in the search paths"
+    where:
+      - "src/foreman/notes/search.py:142"
+      - "src/foreman/notes/search.py:173"
+      - "src/foreman/archive/search.py:88"
+    observation: >
+      Raw SQL is assembled with f-string interpolation, a pattern that
+      pattern-matching scanners report as SQL injection.
+    observation_is_correct: false
+    severity_as_scanned: "critical"
+    severity_after_triage: "none — false positive"
+    status: disputed
+    profile: [A, B]
+    justification: >
+      The only interpolated value is a fixed scope fragment produced by
+      db/scope_sql.py, which itself uses bound parameters. Every user-supplied
+      value — query text, query vector, result count — is passed as a bound
+      parameter. There is no path from user input to the interpolated portion.
+    evidence:
+      - "src/foreman/db/scope_sql.py:51"
+    open_work: >
+      A short comment at each interpolation site stating why it is safe would
+      let a reviewer confirm this in seconds instead of tracing the call graph.
+    review_by: "2027-02-26"
+
+  # ---------------------------------------------------------------------------
+  - id: F-012
+    title: "HSTS preload directive on a platform subdomain"
+    where:
+      - "frontend/next.config.ts:98"
+    observation: >
+      Strict-Transport-Security is sent with includeSubDomains and preload on a
+      subdomain of a shared platform domain, where neither the subdomains nor the
+      preload submission are under this project's control.
+    observation_is_correct: true
+    severity_as_scanned: "low"
+    severity_after_triage: "low — inert here, wrong if copied to an owned domain"
+    status: accepted
+    profile: [A]
+    justification: >
+      The directive has no effect without a preload-list submission, and none has
+      been made. It becomes meaningful only on an owned domain, where it should be
+      a deliberate decision rather than an inherited default.
+    depends_on: >
+      The platform keeps running on a shared provider subdomain and no submission to
+      the HSTS preload list is made. On an owned domain this directive stops being
+      inert and becomes a commitment that must be made deliberately.
+    remedy: >
+      Drop preload until the platform runs on an owned domain, or make it
+      conditional on the deployment.
+    review_by: "2027-02-26"

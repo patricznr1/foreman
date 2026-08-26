@@ -1,0 +1,193 @@
+# =============================================================================
+# SECURITY-INSIGHTS.yml — OpenSSF Security Insights, machine-readable posture
+# https://security-insights.openssf.org/
+#
+# The human-readable counterpart is SECURITY.md. Where the two disagree, that is
+# a defect in this file: SECURITY.md is written first and this file transcribes it.
+# =============================================================================
+
+header:
+  schema-version: "2.2.0"
+  last-updated: "2026-08-26"
+  last-reviewed: "2026-08-26"
+  url: "https://raw.githubusercontent.com/patricznr1/foreman/main/SECURITY-INSIGHTS.yml"
+  comment: >
+    FOREMAN is a single-maintainer, work-in-progress showcase published for public
+    inspection. It has no releases and no production deployment. The public demo
+    instance and the on-premises target deployment differ deliberately; SECURITY.md
+    section 2 describes both, and severity of any finding depends on which one is meant.
+
+project:
+  name: "FOREMAN"
+  homepage: "https://patricznr1.github.io/foreman/"
+  administrators:
+    - name: "Patric Zeller"
+      primary: true
+      affiliation: "independent"
+      social: "https://github.com/patricznr1"
+  repositories:
+    - name: "foreman"
+      url: "https://github.com/patricznr1/foreman"
+      comment: >
+        The platform itself: backend, frontend, migrations, specification and
+        compliance artefacts. The external memory service it consumes over HTTP is
+        a separate, non-public dependency and is not part of this repository.
+  vulnerability-reporting:
+    reports-accepted: true
+    bug-bounty-available: false
+    policy: "https://github.com/patricznr1/foreman/blob/main/SECURITY.md"
+    contact:
+      name: "Patric Zeller"
+      primary: true
+      social: "https://github.com/patricznr1"
+    comment: >
+      Report privately through GitHub Security Advisories. Single maintainer:
+      expect acknowledgement within a week. If a report comes from an automated
+      scan, please state which findings apply here and why — security/findings.yaml
+      records twelve that are already triaged.
+    in-scope:
+      - "Authentication bypass or cross-machine / cross-tenant data access"
+      - "Privilege escalation past role and resource scoping"
+      - "SQL injection, prompt injection defeating the grounding and output guard, output injection"
+      - "Leakage of worker-related personal data through responses, metrics or logs"
+      - "Any path by which the platform could change the state of a machine"
+      - "Remote code execution, unsafe deserialization, build supply-chain compromise"
+      - "Secrets committed to the repository or exposed at runtime"
+      - "Documentation that claims a control the code does not implement"
+    out-of-scope:
+      - "Access to the public demo instance using the credentials published in its README"
+      - "Contents of the demo instance, which are synthetic and shared by design"
+      - "Denial of service through resource exhaustion (see SECURITY.md section 6)"
+      - "Weakened defence-in-depth documented as such, without a demonstrated exploit path"
+      - "Local development defaults in docker-compose.yml, fixtures and test configuration"
+      - "Features declared unimplemented in GROUND_TRUTH.md and CLAIMS.md"
+      - "Compromise of elements the platform must trust: host, database server, valid operator credentials"
+
+repository:
+  url: "https://github.com/patricznr1/foreman"
+  status: "wip"
+  accepts-change-request: false
+  accepts-automated-change-request: false
+  bug-fixes-only: false
+  no-third-party-packages: false
+  license:
+    expression: "LicenseRef-Foreman-All-Rights-Reserved"
+    url: "https://github.com/patricznr1/foreman/blob/main/LICENSE"
+  core-team:
+    - name: "Patric Zeller"
+      primary: true
+      social: "https://github.com/patricznr1"
+  documentation:
+    security-policy: "https://github.com/patricznr1/foreman/blob/main/SECURITY.md"
+    review-policy: "https://github.com/patricznr1/foreman/blob/main/REVIEW.md"
+    governance: "https://github.com/patricznr1/foreman/blob/main/GROUND_TRUTH.md"
+  security:
+    assessments:
+      self:
+        name: "Maintainer self-assessment: threat model, triaged findings, regulatory scope"
+        date: "2026-08-26"
+        evidence: "https://github.com/patricznr1/foreman/blob/main/security/findings.yaml"
+        comment: >
+          Self-assessment only. No external penetration test and no independent
+          security audit has taken place, and the applicability statement in
+          compliance/soa.yaml records that gap explicitly rather than implying
+          coverage. What has been done: a documented threat model and adversary
+          model for the language-model path with red-team tests running in CI
+          against the live pipeline; regulatory classification under the EU AI
+          Act and GDPR with a preliminary data protection impact assessment; an
+          ISO 27001 Annex A statement of applicability that names its own
+          unevidenced controls; and the triage register in security/findings.yaml
+          covering twelve findings, of which five are accepted risks with their
+          condition recorded, four are open work, two are already closed and one
+          is a documented false positive. scripts/check_findings.py verifies that
+          register in CI: a vanished path, a lapsed review date, an accepted risk
+          without its condition or a planned item without a remedy fails the build.
+    champions:
+      - name: "Patric Zeller"
+        primary: true
+        social: "https://github.com/patricznr1"
+    tools:
+      - name: "mypy"
+        type: "SAST"
+        rulesets: ["default"]
+        comment: "strict mode, zero errors enforced as a merge gate"
+        integration:
+          adhoc: true
+          ci: true
+          release: false
+        results:
+          adhoc: true
+          ci: true
+          release: false
+      - name: "ruff"
+        type: "SAST"
+        rulesets: ["default"]
+        comment: "lint and format check, including a cyclomatic-complexity gate"
+        integration:
+          adhoc: true
+          ci: true
+          release: false
+        results:
+          adhoc: true
+          ci: true
+          release: false
+      - name: "pip-audit"
+        type: "SCA"
+        rulesets: ["default"]
+        comment: >
+          Runs against the resolved dependency tree as a merge gate. Paired with
+          Dependabot, which proposes updates rather than only reporting exposure.
+        integration:
+          adhoc: true
+          ci: true
+          release: false
+        results:
+          adhoc: true
+          ci: true
+          release: false
+      - name: "npm audit"
+        type: "SCA"
+        rulesets: ["default"]
+        comment: >
+          Frontend dependency gate at the high threshold. Lower findings here are
+          development tooling; a gate that is permanently red stops being read.
+        integration:
+          adhoc: true
+          ci: true
+          release: false
+        results:
+          adhoc: true
+          ci: true
+          release: false
+      - name: "gitleaks"
+        type: "secret-scanning"
+        rulesets: ["default"]
+        comment: >
+          Its own CI job, scanning the full history rather than the tip: a secret
+          committed and later removed stays retrievable. Exclusions in
+          .gitleaks.toml match patterns — hex counting sequences, German
+          placeholder wording — not paths, so a real secret inside a test file
+          still trips the gate.
+        integration:
+          adhoc: true
+          ci: true
+          release: false
+        results:
+          adhoc: true
+          ci: true
+          release: false
+      - name: "prompt-injection red-team suite"
+        type: "SAST"
+        rulesets: ["default"]
+        comment: >
+          Project-specific: injection payloads driven through the live
+          language-model reasoner pipeline, asserting that spotlighting holds and
+          that the output guard rejects invented sources and numbers.
+        integration:
+          adhoc: true
+          ci: true
+          release: false
+        results:
+          adhoc: true
+          ci: true
+          release: false

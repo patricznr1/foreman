@@ -1,0 +1,65 @@
+# =============================================================================
+# .coderabbit.yaml — review configuration
+#
+# Purpose of this file: make sure an automated review has the same context a
+# human reviewer would be handed — the specification, the threat model, the
+# deployment profiles and the already-triaged findings.
+#
+# It deliberately contains no rule that suppresses, downgrades or filters a
+# finding. If a review reports something recorded in security/findings.yaml, that
+# is a useful signal about the justification there, not noise.
+# =============================================================================
+
+language: en-GB
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+
+  path_filters:
+    - "!uv.lock"
+    - "!frontend/package-lock.json"
+    - "!docs/assets/**"
+
+  path_instructions:
+    - path: "src/foreman/api/**"
+      instructions: |
+        API layer. Authentication is enforced by AuthMiddleware against an explicit
+        open-path allowlist in middleware.py; roles and resource scope are enforced
+        server-side in deps.py with default-deny. There is no CORS middleware by
+        design — the frontend reaches the API through a server-side proxy that
+        injects the token from an httpOnly cookie. Deployment assumptions behind
+        the open paths are documented in SECURITY.md sections 2 and 3.
+    - path: "src/foreman/llm/**"
+      instructions: |
+        Language-model path. Two invariants hold here and are worth checking any
+        change against: numbers in an operator-facing recommendation come from the
+        computed model and never from the language model, and an unsupported number
+        rejects the recommendation rather than flagging it. The adversary model is
+        docs/research/prompt-injection-schutz.md; the red-team tests live in
+        tests/reasoners/event_chain/security/.
+    - path: "frontend/next.config.ts"
+      instructions: |
+        Security headers including the Content-Security-Policy are set here. The
+        rationale for each directive, including the known limits of the policy, is
+        written in the file itself.
+    - path: "GROUND_TRUTH.md"
+      instructions: |
+        The binding specification. It is updated in the same commit as the code it
+        describes. A change that makes code and specification disagree is a defect
+        in the change.
+    - path: "claims/claims.yaml"
+      instructions: |
+        Source of the claims register. Every number that appears in any project
+        document must have an entry here with its measurement conditions and date.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "SECURITY.md"
+      - "REVIEW.md"
+      - "security/findings.yaml"
+      - "compliance/*.yaml"
