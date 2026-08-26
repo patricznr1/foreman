@@ -179,7 +179,10 @@ This project deliberately maintains **two** documents in parallel:
 - **`GROUND_TRUTH.md`** — *the truth.* What holds: schema, routes, stack, conventions. Machine-near and concise.
 - **`docs/WALKTHROUGH.md`** — *the explanation.* Why and how, in plain language. Per building block: what it does and where it sits in the architecture. *(Written in German.)*
 
-Both are updated **in the same commit as the code** — so they cannot drift from reality.
+Both are updated **in the same commit as the code**. That reduces drift; it does not
+abolish it. Where documentation and code disagree, the documentation is the defect — and
+it is worth reporting. Two such drifts were found and closed on 2026-08-26, recorded as
+F-007 and F-008 in [`security/findings.yaml`](security/findings.yaml).
 
 ---
 
@@ -189,7 +192,8 @@ This platform is built to rigorous, reviewable standards — not vibe-coded.
 Every change passes defined gates before it reaches `main`:
 
 - **Type safety** — `mypy --strict` / `tsc --noEmit`, zero errors
-- **Lint & complexity** — `ruff` / `eslint`, clean; cyclomatic-complexity gate
+- **Lint & complexity** — `ruff` / `eslint`, clean; cyclomatic complexity capped at 12 in
+  application code (`ruff` C90; the check scripts are exempt, with the reason in `pyproject.toml`)
 - **Tests** — `pytest`, ≥ 85 % coverage, a mandatory test block per feature
 - **Security** — OWASP Web & LLM Top 10 (2025); `gitleaks` over the full history and `pip-audit` / `npm audit` run as gates in CI, with Dependabot security alerts as a second source
 - **Privacy by design** — GDPR Art. 25: worker data pseudonymized at the adapter layer (HMAC tokens; free-text names NER-masked)
@@ -197,8 +201,8 @@ Every change passes defined gates before it reaches `main`:
 - **Observability** — structured per-reasoner logs + Prometheus metrics (OWASP A09)
 - **Human-in-the-loop** — safety-critical recommendations require operator acknowledgment (BSI)
 - **Bounded consumption** — rate-limiting + pinned model versions (LLM10 / LLM03)
-- **Living docs** — GROUND_TRUTH + WALKTHROUGH updated in the same commit, so
-  documentation cannot drift from the code
+- **Living docs** — GROUND_TRUTH + WALKTHROUGH updated in the same commit; where they
+  disagree with the code, the documentation is the defect and gets reported as one
 
 See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
@@ -206,7 +210,12 @@ See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
 ## Testing
 
-Every push and pull request runs the full quality gate in CI (see the **CI badge** at the top) — `mypy --strict`, `ruff check`, `ruff format --check`, and `pytest` **against a real TimescaleDB/pgvector service**, not mocks. The suite is layered:
+Every push and pull request runs three CI jobs (see the **CI badge** at the top). The
+backend job is `mypy --strict`, `ruff check`, `ruff format --check` and `pytest`
+**against a real TimescaleDB/pgvector service**, not mocks, followed by the two register
+checks and `pip-audit`. Alongside it, `gitleaks` scans the full history in its own job,
+and the frontend job runs token sync, `tsc --noEmit`, `eslint`, `vitest`, `npm audit` and
+a production build. The backend suite is layered:
 
 | Layer | What it exercises | How |
 |---|---|---|
@@ -281,11 +290,11 @@ segmentation, secrets storage and the external memory service are not in it —
 
 - [`SECURITY.md`](SECURITY.md) — threat model, trust boundaries, the two deployment
   profiles, and what does and does not count as a vulnerability here
-- [`security/findings.yaml`](security/findings.yaml) — twelve findings a review is likely
+- [`security/findings.yaml`](security/findings.yaml) — fifteen findings a review is likely
   to surface, each with the observation, whether it is correct, the deployment assumption
   behind any acceptance, and its status. Five are accepted risks with that condition
-  recorded, four are open work, two are already closed, one is a documented false
-  positive. Verified in CI by `scripts/check_findings.py`.
+  recorded, four are open work, five are already closed, one is a documented false
+  positive. Verified in CI by `scripts/check_findings.py`, including these counts.
 - [`REVIEW.md`](REVIEW.md) · [`AGENTS.md`](AGENTS.md) — the same context for automated
   reviewers and coding agents
 - [`SECURITY-INSIGHTS.yml`](SECURITY-INSIGHTS.yml) — machine-readable posture

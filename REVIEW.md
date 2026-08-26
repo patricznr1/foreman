@@ -25,9 +25,9 @@ or omit a finding. Report what you find.
    `SECURITY.md` §3 draws those boundaries.
 
 4. **Findings likely to come up are already triaged.** `security/findings.yaml` records
-   twelve of them: the observation as a scanner would state it, whether it is correct,
+   fifteen of them: the observation as a scanner would state it, whether it is correct,
    the deployment assumption behind any acceptance, and the status. Four are open work
-   and two of those are unqualified defects; two entries are already closed; one is a
+   and two of those are unqualified defects; five entries are already closed; one is a
    documented false positive. If a justification there is wrong, that register is the
    best place to attack — and it is checked in CI by `scripts/check_findings.py`, which
    fails the build on a vanished path, a lapsed review date, an accepted risk without its

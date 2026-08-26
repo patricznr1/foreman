@@ -51,7 +51,9 @@ cp .env.example .env                              # configuration contract, no s
 docker compose up -d timescaledb
 uv run alembic upgrade head
 
-# the full gate, identical to CI
+# the backend gate. NOT the whole of CI: the pipeline additionally runs the two
+# register checks, the dependency audit, a secret scan over the full history in
+# its own job, and the frontend gates. All of those are below.
 uv run mypy && uv run ruff check && uv run ruff format --check && uv run pytest
 
 # the two register checks CI also runs
@@ -75,7 +77,12 @@ trips it — see the reasoning in `.gitleaks.toml`.
 
 ## Conventions
 
-- Python 3.12, `mypy --strict` with zero errors, `ruff` clean including the complexity gate
+- Python 3.12, `mypy --strict` with zero errors, `ruff` clean including the cyclomatic
+  complexity cap of 12. `C901` is exempt for `scripts/**` only — those are flat chains of
+  independent checks where the metric counts rules, not difficulty. Both the threshold and
+  the exemption are argued in `pyproject.toml`; read it before changing either.
+- Run `ruff check` without a path argument, the way CI does. Narrowing it to `src tests`
+  skips `scripts/` and reports green on a tree CI will reject.
 - Coverage gate fails the build under 85 %, enforced in `pyproject.toml`
 - Every feature ships a mandatory test block: happy path, error, auth, edge
 - Documentation is German; identifiers, paths and code are English
