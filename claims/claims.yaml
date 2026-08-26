@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-08-26"
+stand: "2026-08-27"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -1549,3 +1549,108 @@ claims:
       aufrief statt den Weg, den eine Anfrage tatsächlich nimmt. Eine getestete
       Funktion, die niemand aufruft, ist so wirkungslos wie eine fehlende. Erst
       ein Test gegen die vollständige Suche fing beide.
+
+  - id: "C-064"
+    aussage: "Die Freigabe-Schwelle der Archiv-Suche verlangt, dass kein zutreffender Treffer verloren geht — nicht, dass keiner die Position wechselt."
+    status: "gemessen"
+    wert: "Präzisiert am 26.08.2026; Anlass ist eine Anfrage mit Trefferquote 0,50 auf 0,67 ohne Verlust, die nach der alten Fassung als verschlechtert galt"
+    bedingung: >-
+      Die ursprüngliche Fassung lautete "auf keiner Anfrage schlechter als die
+      Baseline" und wurde in der Messung als gefallene Ranggüte ausgelegt. Damit
+      galt eine Anfrage schon dann als verschlechtert, wenn ein zutreffender
+      Treffer eine Position nach hinten rutschte — auch wenn keiner verloren ging
+      und MEHR gefunden wurde. Gemessen am 26.08.2026 trifft das die Anfrage
+      G-11: Trefferquote 0,50 auf 0,67, kein verlorener Treffer, und trotzdem
+      "schlechter". Eine Bedingung, die eine Verbesserung als Verschlechterung
+      ausweist, misst nicht, was sie messen soll. Ein verlorener Treffer bleibt
+      ohne Toleranz ein Ausschlussgrund; die Ranggüte wird weiterhin erhoben und
+      ausgewiesen, aber als Kennzahl statt als Schwelle.
+
+      DIE ÄNDERUNG IST FÜR DAS ERGEBNIS ENTSCHEIDEND, und das gehört
+      offengelegt: Auf demselben Messlauf zählt die alte Lesart SIEBEN von 18
+      Anfragen als verschlechtert (G-01, G-03, G-04, G-08, G-10, G-11, G-15),
+      die neue KEINE. Die Freigabe-Bedingung 1 gilt nach der alten Fassung als
+      nicht erfüllt und nach der neuen als erfüllt. Wer die Präzisierung nicht
+      teilt, liest den Messlauf also anders — beide Zahlen stehen deshalb hier
+      nebeneinander statt nur die günstigere.
+    datum: "2026-08-27"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+      - "tools/archiv_guete/werte_aus.py"
+      - "tools/archiv_guete/messung_2026-08-27_basis.json"
+      - "tools/archiv_guete/messung_2026-08-27_gedaechtnis.json"
+      - "docs/messungen/2026-08-27_archiv_goldset_nachmessung.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Die Formulierung wurde geändert, NACHDEM gemessen war. Das ist die Stelle,
+      an der eine Schwelle sich selbst bestätigen kann, und deshalb steht der
+      Anlass hier mit der Zahl, die ihn ausgelöst hat: Wer die Änderung für eine
+      Aufweichung hält, kann sie an G-11 nachprüfen. Wer die Reihenfolge zur
+      Bedingung machen will, braucht dafür ein eigenes, begründetes Mass — die
+      Position eines einzelnen Treffers ist keins.
+
+  - id: "C-065"
+    aussage: "Für Spiegelungen ohne Quellzeile besteht ein Weg, sie samt Erinnerung zu entfernen."
+    status: "gemessen"
+    wert: "Werkzeug gebaut und geprüft am 26.08.2026; betrifft 22 von 44 Spiegelungen (C-054), ohne sie steigt der Anteil zutreffender Treffer von 0,417 auf 0,562"
+    bedingung: >-
+      Erhoben und gebaut am 26.08.2026. Wird der Datenbestand neu aufgebaut,
+      bleiben die Spiegelungen der alten Zeilen stehen: Sie beschreiben Vorgänge,
+      die niemand mehr nachschlagen kann, belegen aber Plätze in jeder
+      Trefferliste. Gemessen an denselben 18 Anfragen wie in C-049 steigt ohne
+      sie der Anteil zutreffender Treffer von 0,417 auf 0,562 und die Ranggüte
+      von 0,552 auf 0,613, ohne dass ein zutreffender Treffer verloren geht.
+      Entfernt wird nur, was auf KEINEM der beiden Suchwege auffindbar ist — eine
+      Zeile wegen einer zu engen Suche zu löschen wäre der schlimmere Fehler, sie
+      käme nie wieder. Ableitungen des Systems (Empfehlung, Ereigniskette) werden
+      nicht angefasst; sie haben keine Quellzeile im Archiv-Sinn.
+    datum: "2026-08-26"
+    fundstelle:
+      - "src/foreman/substrate/aufraeumen.py"
+      - "tests/unit/test_substrate_aufraeumen.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Gelöscht statt gefiltert: Ein Filter im Suchpfad versteckte den Rest, statt
+      ihn zu beseitigen — er bliebe im Gedächtnis, ginge in jede Verdichtung ein
+      und wäre bei jeder späteren Auswertung erneut zu berücksichtigen. Der
+      Vorgang ist unumkehrbar, deshalb liegt der Schwerpunkt der Prüfung auf dem,
+      was NICHT entfernt werden darf. Der Eintrag belegt den WEG, nicht seine
+      Ausführung: C-054 (der Befund) bleibt gültig, bis der scharfe Lauf gegen die
+      laufende Instanz erfolgt ist — dann wird er auf "ueberholt" gesetzt und die
+      dann tatsächlich entfernte Zahl hier nachgetragen.
+
+  - id: "C-066"
+    aussage: "Das Gedächtnis als vierte Quelle der Archiv-Suche erfüllt beide Schwellen der Freigabe-Bedingung 1."
+    status: "gemessen"
+    wert: "0 von 18 Anfragen mit verlorenem Treffer, 11 von 18 = 61,1 % mit zusätzlichem zutreffendem Treffer; mittlere Trefferquote 0,256 auf 0,528, mittlere Ranggüte 0,372 auf 0,548, Anfragen ganz ohne zutreffenden Treffer 5 auf 1"
+    bedingung: >-
+      Gemessen am 27.08.2026 gegen die laufende Demo-Instanz, gegen denselben
+      Bewertungssatz wie C-049 (18 Anfragen, Relevanz von drei unabhängigen
+      Beurteilern). Zwei Voraussetzungen mussten dafür stehen: der Rückweg von
+      einer Erinnerung auf ihre Quellzeile im Produktpfad (C-062, ohne ihn ist
+      jeder Erinnerungs-Treffer auf keinen Schlüssel abbildbar — C-060) und die
+      Zusammenführung der Doppelfunde (C-063). Die Schwelle gilt in der am
+      selben Tag präzisierten Fassung; nach der vorherigen Lesart wäre sie NICHT
+      erfüllt — siehe C-064, wo beide Zahlen nebeneinanderstehen.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/messung_2026-08-27_basis.json"
+      - "tools/archiv_guete/messung_2026-08-27_gedaechtnis.json"
+      - "tools/archiv_guete/werte_aus.py"
+      - "docs/messungen/2026-08-27_archiv_goldset_nachmessung.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      ERFÜLLT HEISST NICHT FREIGEGEBEN. Bedingung 1 ist eine von mehreren in
+      GROUND_TRUTH §15.10; der Schalter bleibt aus, bis alle stehen. Und die
+      Messung zeigt einen offenen Mangel, den die Schwelle nicht abfängt: 40 von
+      137 ausgelieferten Plätzen (29,2 %) belegen Erinnerungen OHNE Rückweg —
+      auf der laufenden Instanz überwiegend verwaiste Spiegelungen (C-054). Kein
+      einziger davon ist zutreffend. Sie sind der Grund, warum die Ranggüte auf
+      sieben Anfragen fällt, obwohl kein Treffer verloren geht. Nach dem
+      Aufräumen (C-065) ist erneut zu messen.

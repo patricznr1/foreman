@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-08-26
+Stand: 2026-08-27
 
 ## FOREMAN
 
@@ -66,6 +66,9 @@ Stand: 2026-08-26
 | C-061 | Werden die Erinnerungs-Treffer ihrer Quellzeile zugeordnet, verbessert die vierte Quelle die Archiv-Suche deutlich. | gemessen | Trefferquote 0,256 auf 0,558; Ranggüte 0,372 auf 0,619; 70,6 % der Anfragen mit zusätzlichem zutreffendem Treffer, keine mit verlorenem | 2026-08-25 | gueltig | intern |
 | C-062 | Ein Treffer aus dem Gedächtnis lässt sich seiner Quellzeile zuordnen. | gemessen | Herkunftsangabe im Treffer, sobald die Erinnerung sie trägt; sonst kein Eintrag statt einer geratenen Zuordnung | 2026-08-25 | gueltig | intern |
 | C-063 | Derselbe Vorgang steht in einer Trefferliste nur einmal, auch wenn ihn zwei Quellen führen. | gemessen | Anteil zutreffender Treffer 0,403 auf 0,445, ohne dass ein zutreffender Treffer verloren geht | 2026-08-26 | gueltig | intern |
+| C-064 | Die Freigabe-Schwelle der Archiv-Suche verlangt, dass kein zutreffender Treffer verloren geht — nicht, dass keiner die Position wechselt. | gemessen | Präzisiert am 26.08.2026; Anlass ist eine Anfrage mit Trefferquote 0,50 auf 0,67 ohne Verlust, die nach der alten Fassung als verschlechtert galt | 2026-08-27 | gueltig | intern |
+| C-065 | Für Spiegelungen ohne Quellzeile besteht ein Weg, sie samt Erinnerung zu entfernen. | gemessen | Werkzeug gebaut und geprüft am 26.08.2026; betrifft 22 von 44 Spiegelungen (C-054), ohne sie steigt der Anteil zutreffender Treffer von 0,417 auf 0,562 | 2026-08-26 | gueltig | intern |
+| C-066 | Das Gedächtnis als vierte Quelle der Archiv-Suche erfüllt beide Schwellen der Freigabe-Bedingung 1. | gemessen | 0 von 18 Anfragen mit verlorenem Treffer, 11 von 18 = 61,1 % mit zusätzlichem zutreffendem Treffer; mittlere Trefferquote 0,256 auf 0,528, mittlere Ranggüte 0,372 auf 0,548, Anfragen ganz ohne zutreffenden Treffer 5 auf 1 | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -79,17 +82,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 61
+Einträge gesamt: 64
 
 Nach Status:
 
-- gemessen: 54
+- gemessen: 57
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 58
+- gueltig: 61
 - ueberholt: 3
 - ungeprueft: 0

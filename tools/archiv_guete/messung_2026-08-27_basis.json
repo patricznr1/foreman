@@ -1,0 +1,903 @@
+{
+ "lauf": "neu_basis",
+ "basis": "https://frontend-production-169a.up.railway.app",
+ "quellen": [
+  "note",
+  "maintenance",
+  "alarm"
+ ],
+ "k": 10,
+ "laeufe": [
+  {
+   "anfrage_id": "G-01",
+   "anfrage": "Achse wird lauter beim Verfahren",
+   "machine_id": null,
+   "dauer_s": 2.88,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:2",
+     "source_type": "note",
+     "id": 2,
+     "machine_id": 2,
+     "excerpt": "AX-02 wird lauter, singt beim Verfahren. AX-01 daneben ruhig, beide gleich alt und gleich gewartet. Komisch.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:1",
+     "source_type": "note",
+     "id": 1,
+     "machine_id": 1,
+     "excerpt": "AX-01 laeuft ruhig, kein Geraeusch, Achse sauber. Nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "note:4",
+     "source_type": "note",
+     "id": 4,
+     "machine_id": 4,
+     "excerpt": "AX-04 laeuft top, wie immer. Wird halt jede Woche nachgeschmiert — ob das noetig ist? Sieht aus wie AX-01, die kriegt's nur monatlich.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:11",
+     "source_type": "note",
+     "id": 11,
+     "machine_id": 9,
+     "excerpt": "PR-03 laeuft sauber, Kraftverlauf wie immer. Keine Auffaelligkeiten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:12",
+     "source_type": "note",
+     "id": 12,
+     "machine_id": 10,
+     "excerpt": "RB-01 laeuft sauber, Taktzeit stabil, keine Auffaelligkeiten an den Gelenken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-02",
+   "anfrage": "falsches Schmierfett eingesetzt",
+   "machine_id": null,
+   "dauer_s": 1.48,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-03",
+   "anfrage": "mahlendes Geraeusch beim Hochfahren",
+   "machine_id": null,
+   "dauer_s": 0.78,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:1",
+     "source_type": "note",
+     "id": 1,
+     "machine_id": 1,
+     "excerpt": "AX-01 laeuft ruhig, kein Geraeusch, Achse sauber. Nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:11",
+     "source_type": "note",
+     "id": 11,
+     "machine_id": 9,
+     "excerpt": "PR-03 laeuft sauber, Kraftverlauf wie immer. Keine Auffaelligkeiten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:12",
+     "source_type": "note",
+     "id": 12,
+     "machine_id": 10,
+     "excerpt": "RB-01 laeuft sauber, Taktzeit stabil, keine Auffaelligkeiten an den Gelenken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:2",
+     "source_type": "note",
+     "id": 2,
+     "machine_id": 2,
+     "excerpt": "AX-02 wird lauter, singt beim Verfahren. AX-01 daneben ruhig, beide gleich alt und gleich gewartet. Komisch.",
+     "detail": {
+      "shift": "nacht"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-04",
+   "anfrage": "Lagerschwingung ueber Warnschwelle",
+   "machine_id": null,
+   "dauer_s": 0.59,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "alarm:1",
+     "source_type": "alarm",
+     "id": 1,
+     "machine_id": 2,
+     "excerpt": "Lagerschwingung AX-02 ueber Warnschwelle (Zone C/D)",
+     "detail": {
+      "severity": "warning",
+      "category": "hardware",
+      "code": "AXIS_VIB_WARN"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "alarm:2",
+     "source_type": "alarm",
+     "id": 2,
+     "machine_id": 3,
+     "excerpt": "Lagerschwingung AX-03 ueber Warnschwelle (Zone C/D)",
+     "detail": {
+      "severity": "warning",
+      "category": "hardware",
+      "code": "AXIS_VIB_WARN"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-05",
+   "anfrage": "Hydraulikdruck laesst nach",
+   "machine_id": null,
+   "dauer_s": 0.47,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:11",
+     "source_type": "note",
+     "id": 11,
+     "machine_id": 9,
+     "excerpt": "PR-03 laeuft sauber, Kraftverlauf wie immer. Keine Auffaelligkeiten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-06",
+   "anfrage": "Fuegekraft steigt Werkzeug alt",
+   "machine_id": null,
+   "dauer_s": 0.77,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-07",
+   "anfrage": "Werkzeugwechsel ueberfaellig",
+   "machine_id": null,
+   "dauer_s": 0.44,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-08",
+   "anfrage": "Dosierung schwankt Fuellmenge",
+   "machine_id": null,
+   "dauer_s": 0.33,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:5",
+     "source_type": "note",
+     "id": 5,
+     "machine_id": 5,
+     "excerpt": "FD-01 laeuft sauber, Dosierung stabil. [PERSON] in der Frueh.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-09",
+   "anfrage": "Teile sitzen nicht sauber woher kommt das",
+   "machine_id": null,
+   "dauer_s": 0.33,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-10",
+   "anfrage": "Ausschuss gestiegen seit heute",
+   "machine_id": null,
+   "dauer_s": 0.34,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:14",
+     "source_type": "note",
+     "id": 14,
+     "machine_id": 12,
+     "excerpt": "VS-01 weist seit heute Mittag deutlich mehr Teile ab, fast alle wegen Fuellung/Sitz. Kamera und Licht sind ok — kommt von vorne aus der Linie.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-11",
+   "anfrage": "Problem kommt von der Zufuehrung",
+   "machine_id": null,
+   "dauer_s": 0.36,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-12",
+   "anfrage": "bringt haeufigeres Schmieren etwas",
+   "machine_id": null,
+   "dauer_s": 0.33,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-13",
+   "anfrage": "Schmierintervall verkuerzt Erfahrung",
+   "machine_id": null,
+   "dauer_s": 0.34,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:8",
+     "source_type": "note",
+     "id": 8,
+     "machine_id": 7,
+     "excerpt": "PR-01 Presse zieht den Druck nicht mehr ganz so schnell auf, Ram steht einen Tick laenger. Teile noch io, aber wird langsam auffaellig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-14",
+   "anfrage": "Klemmzylinder schaltet traege",
+   "machine_id": null,
+   "dauer_s": 0.33,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-15",
+   "anfrage": "Lager",
+   "machine_id": 3,
+   "dauer_s": 0.36,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:3",
+     "source_type": "note",
+     "id": 3,
+     "machine_id": 3,
+     "excerpt": "AX-03 (die senkrechte) faengt an zu mahlen beim Hochfahren. [PERSON] eh immer am Anschlag wegen dem Gewicht. Lager beobachten, Schmierung war frisch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "maintenance:4",
+     "source_type": "maintenance",
+     "id": 4,
+     "machine_id": 3,
+     "excerpt": "Inspektion Vertikalachse AX-03: Fuehrung und Lager geprueft, Schmierung bestaetigt. Hohe Grundlast durch Einbaulage dokumentiert (bekannt/normal).",
+     "detail": {
+      "type": "inspection"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-16",
+   "anfrage": "Schmierung",
+   "machine_id": 2,
+   "dauer_s": 0.36,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "G-17",
+   "anfrage": "Verschleiss",
+   "machine_id": 8,
+   "dauer_s": 0.34,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "G-18",
+   "anfrage": "Kuehlschmierstoff Konzentration zu niedrig",
+   "machine_id": null,
+   "dauer_s": 0.36,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:9",
+     "source_type": "note",
+     "id": 9,
+     "machine_id": 8,
+     "excerpt": "PR-02 Teile sitzen nicht immer sauber, Presskraft schwankt bei einzelnen Hueben. [PERSON] das von der Zufuehrung kommen? Seit heute Mittag haeufiger.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:10",
+     "source_type": "note",
+     "id": 10,
+     "machine_id": 8,
+     "excerpt": "PR-02 braucht spuerbar mehr Kraft als am Anfang, Werkzeug laeuft schon ewig. Oberflaeche am Fuegepunkt wird grenzwertig. Wechsel [PERSON].",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:5",
+     "source_type": "note",
+     "id": 5,
+     "machine_id": 5,
+     "excerpt": "FD-01 laeuft sauber, Dosierung stabil. [PERSON] in der Frueh.",
+     "detail": {
+      "shift": "frueh"
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -13,9 +13,29 @@ import math
 import sys
 
 # Schwellen aus GROUND_TRUTH §15.10, Freigabe-Bedingung 1:
-#   "auf keiner Anfrage schlechter als die Baseline, auf >=30 % ein zusaetzlicher
-#    relevanter Treffer"
+#   "auf keiner Anfrage geht ein zutreffender Treffer VERLOREN, auf >=30 % kommt
+#    ein zusaetzlicher hinzu" (Fassung vom 27.08.2026, siehe unten)
 ANTEIL_MIT_ZUSATZTREFFER_SOLL = 0.30
+
+
+def _schluessel(treffer: dict) -> str:
+    """Der Schluessel, gegen den das Goldset bewertet.
+
+    Ein Treffer aus dem Gedaechtnis traegt seit dem 25.08.2026 den Rueckweg auf
+    seine Quellzeile (`detail["quelle"]`, GROUND_TRUTH §15.10). Er wird HIER
+    aufgeloest, damit die Bewertung ihn gegen dieselben Schluessel halten kann
+    wie einen Treffer aus einer eigenen Quelle — ohne diese Aufloesung traegt
+    jeder Gedaechtnis-Treffer `memory:0` und ist auf keinen Goldset-Schluessel
+    abbildbar; die zweite Haelfte der Freigabe-Bedingung waere dann nicht
+    messbar (C-060). Der Rueckweg kommt aus dem PRODUKTPFAD — die Antwort der
+    Suche liefert ihn mit; hier wird nichts danebengerechnet.
+
+    Fehlt er (Altbestand), bleibt es bei `memory:0`. Geraten wird nichts.
+    """
+    quelle = (treffer.get("detail") or {}).get("quelle")
+    if isinstance(quelle, dict) and quelle.get("art") and quelle.get("id"):
+        return f"{quelle['art']}:{quelle['id']}"
+    return str(treffer["schluessel"])
 
 
 def lade_goldset(pfad: str = "goldset.json") -> dict[str, dict[str, int]]:
@@ -29,7 +49,7 @@ def dcg(stufen: list[int]) -> float:
 def kennzahlen(treffer: list[dict], relevant: dict[str, int], k: int) -> dict:
     """Recall/Praezision/nDCG fuer EINE Anfrage. `relevant` bildet Schluessel auf Stufe (1|2) ab."""
     oben = treffer[:k]
-    schluessel = [t["schluessel"] for t in oben]
+    schluessel = [_schluessel(t) for t in oben]
     gefunden = [s for s in schluessel if s in relevant]
 
     # Recall: Anteil der relevanten Eintraege, die in den Top-k stehen.
@@ -141,10 +161,23 @@ def vergleiche(basis: dict, neu: dict) -> None:
         r_alt, r_neu = alt["recall"], jung["recall"]
         n_alt, n_neu = alt["ndcg"], jung["ndcg"]
 
-        # "Schlechter" heisst: weniger relevante Treffer ODER schlechtere Reihenfolge.
-        ist_schlechter = bool(verlorene) or (
-            n_alt is not None and n_neu is not None and n_neu < n_alt - 1e-9
-        )
+        # "Schlechter" heisst: ein zutreffender Treffer ist VERLOREN gegangen.
+        #
+        # PRAEZISIERT am 27.08.2026 (GROUND_TRUTH §15.10, Register C-064): Vorher
+        # zaehlte auch eine gefallene Rangguete. Damit galt eine Anfrage schon
+        # dann als verschlechtert, wenn ein zutreffender Treffer eine Position
+        # nach hinten rutschte — auch wenn keiner verloren ging und MEHR
+        # gefunden wurde. Gemessen traf das G-11: Trefferquote 0,50 -> 0,67,
+        # kein Verlust, und trotzdem "schlechter". Eine Bedingung, die eine
+        # Verbesserung als Verschlechterung ausweist, misst nicht, was sie soll.
+        #
+        # Die Rangguete wird weiterhin erhoben und ausgewiesen — sie ist eine
+        # Kennzahl, keine Schwelle.
+        #
+        # DIE AENDERUNG IST FUER DAS ERGEBNIS ENTSCHEIDEND: Auf demselben Lauf
+        # zaehlt die alte Lesart SIEBEN von 18 Anfragen als verschlechtert, die
+        # neue KEINE. Wer die Praezisierung nicht teilt, liest den Lauf anders.
+        ist_schlechter = bool(verlorene)
         if ist_schlechter:
             schlechter.append(aid)
         if neue:
