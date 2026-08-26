@@ -23,7 +23,12 @@ from collections.abc import Sequence
 
 from fastapi import APIRouter, Query
 
-from foreman.api.deps import CurrentUser, EmbeddingProviderDep, SessionDep, SettingsDep
+from foreman.api.deps import (
+    EmbeddingProviderDep,
+    ResourceScopeDep,
+    SessionDep,
+    SettingsDep,
+)
 from foreman.db.models import WorkerNote
 from foreman.notes.search import DEFAULT_SEARCH_K, embed_and_search_hybrid
 from foreman.schemas.resources import WorkerNoteRead
@@ -36,7 +41,7 @@ async def search_worker_notes(
     session: SessionDep,
     provider: EmbeddingProviderDep,
     settings: SettingsDep,
-    current_user: CurrentUser,
+    scope: ResourceScopeDep,
     q: str = Query(min_length=1, description="Such-Anfrage (Freitext)."),
     machine_id: int | None = Query(default=None, description="Optionaler Maschinen-Filter."),
     k: int = Query(default=DEFAULT_SEARCH_K, ge=1, le=50, description="Maximale Trefferzahl."),
@@ -47,12 +52,17 @@ async def search_worker_notes(
     Unzusammenhängendes heraus; die Reihenfolge ist die Relevanz. Ist die
     Bedeutungs-Suche vorübergehend nicht verfügbar, liefert die Wortlaut-Suche
     allein weiter (kein Fehler); findet auch sie nichts, ist die Liste leer.
+
+    Gesucht wird ausschließlich im Maschinen-Ausschnitt des Anfragenden (§20.4) —
+    eine Suche, die daran vorbeigeht, wäre der bequemste Weg an der Sperre der
+    Notiz-Routen vorbei.
     """
     return await embed_and_search_hybrid(
         provider,
         session,
         q,
         machine_id=machine_id,
+        scope=await scope.for_query(machine_id),
         k=k,
         max_distance=settings.archive_vector_max_distance,
     )
