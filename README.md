@@ -293,7 +293,7 @@ segmentation, secrets storage and the external memory service are not in it —
 - [`security/findings.yaml`](security/findings.yaml) — twenty-three findings a review is likely
   to surface, each with the observation, whether it is correct, the deployment assumption
   behind any acceptance, and its status. Six are accepted risks with that condition
-  recorded, seven are open work, nine are already closed, one is a documented false
+  recorded, six are open work, ten are already closed, one is a documented false
   positive. Verified in CI by `scripts/check_findings.py`, including these counts.
 - [`REVIEW.md`](REVIEW.md) · [`AGENTS.md`](AGENTS.md) — the same context for automated
   reviewers and coding agents

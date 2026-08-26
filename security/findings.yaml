@@ -317,14 +317,39 @@ findings:
     observation_is_correct: true
     severity_as_scanned: "medium"
     severity_after_triage: "medium — supply-chain hygiene, not an active exposure"
-    status: planned
+    status: fixed
+    fixed_at: "2026-08-26"
     profile: [A, B]
     justification: >
-      The inconsistency is the strongest part of this finding: the same repository
-      pins GitHub Actions to commit hashes, so the standard is understood and
-      simply was not applied to the image layer.
-    remedy: "Pin base images by digest and keep them updated deliberately."
-    review_by: "2026-11-30"
+      The inconsistency was the strongest part of this finding: the same repository
+      pins GitHub Actions to commit hashes, so the standard was understood and
+      simply had not been applied to the image layer.
+    remedy: >
+      All three images are pinned by digest, in the form `tag@sha256:...`. The tag
+      is not decoration: it says WHAT is meant, and it is the handle an update can
+      grip. A bare digest would be reproducible but unreadable — nobody could tell
+      which version of what it is.
+
+      `ghcr.io/astral-sh/uv:latest` became `uv:0.12.6@sha256:...` — verified by
+      running the pinned image, not by assuming which version the tag held. The
+      runtime base is `python:3.12-slim@sha256:...`, and the local compose database
+      is pinned too, so "works on my machine" cannot come down to two different
+      database builds.
+
+      What this costs is recorded rather than glossed over: a pinned image ages.
+      While Dependabot's routine suggestions are switched off (see
+      .github/dependabot.yml for why), a newer build does not arrive by itself and
+      updating stays a deliberate act. That is the trade this entry accepts, and
+      the review date below is when it gets looked at again.
+
+      Verified against a real build: both pins resolve and produce uv 0.12.6 on
+      Python 3.12.14. Counter-check: a digest altered by one character fails the
+      build with "not found" — so the digest is genuinely enforced and not
+      decoration either.
+    evidence:
+      - "Dockerfile"
+      - "docker-compose.yml"
+    review_by: "2026-11-26"
 
   # ---------------------------------------------------------------------------
   - id: F-010

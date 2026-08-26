@@ -5,10 +5,28 @@
 #  Architektur-Einordnung: Betrieb (Schicht 2). Build via uv.
 # ============================================================
 
-FROM python:3.12-slim AS base
+# Beide Images sind auf ihren Digest festgelegt, in der Form `tag@sha256:...`.
+# Der Tag steht dabei nicht zur Zierde: Er sagt, WAS gemeint ist, und er ist die
+# Angabe, an der eine Aktualisierung ansetzen kann — ein nackter Digest waere
+# reproduzierbar, aber niemand koennte ihm ansehen, wovon er die Fassung ist.
+#
+# Der Digest ist der Unterschied zwischen „irgendein Image, das damals unter
+# diesem Tag lag" und „dieses Image". Ohne ihn baut derselbe Commit an zwei Tagen
+# zwei verschiedene Ergebnisse, und ein Fehler, der beim einen auftritt, ist beim
+# anderen nicht nachvollziehbar. Dieselbe Linie, die in der Prueferkette schon
+# gilt: dort haengen die Actions an einem Commit, nicht an einer Marke.
+#
+# WAS DAS KOSTET, und das gehoert dazu: Ein festgelegtes Image altert. Solange
+# die Routine-Vorschlaege von Dependabot abgeschaltet sind (.github/dependabot.yml
+# nennt den Grund), wandert eine neuere Fassung nicht von selbst herein — die
+# Aktualisierung bleibt eine bewusste Handlung. Die Wiedervorlage dafuer fuehrt
+# security/findings.yaml unter F-009.
+FROM python:3.12-slim@sha256:7a8b475003c4fe15a2cd4e55e5cfc2f3560bdc9333d624f24cdd6d4340fd7a17 AS base
 
-# uv aus dem offiziellen Image kopieren (schneller, reproduzierbarer Resolver)
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# uv aus dem offiziellen Image kopieren (schneller, reproduzierbarer Resolver).
+# Vorher stand hier `:latest` — das ist die eine Marke, die per Definition nie
+# dieselbe bleibt.
+COPY --from=ghcr.io/astral-sh/uv:0.12.6@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d /uv /uvx /bin/
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

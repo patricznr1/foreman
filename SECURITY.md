@@ -202,16 +202,17 @@ where the evidence sits. `scripts/check_findings.py` verifies in CI that every r
 path still exists and that no review date has lapsed.
 
 The register is not an argument that nothing is wrong. Of its twenty-three entries, six are
-accepted risks with the condition of that acceptance written down, **seven are open work**,
-nine are already closed, and one is a documented false positive. Two of the open seven —
+accepted risks with the condition of that acceptance written down, **six are open work**,
+ten are already closed, and one is a documented false positive. Two of the open six —
 a liveness probe that is the only probe, and a security guard whose default is "off" —
 are unqualified defects with no justification offered.
 
-Five of the nine closed entries were documentation claiming a control the code did not
+Five of the ten closed entries were documentation claiming a control the code did not
 have: an API-wide rate limiter; CI gates for secret scanning and dependency auditing; a
 cyclomatic-complexity gate; a posture file that did not match its own declared schema; and
-two guarantees stated more strongly than they hold. The other four were authorization
-defects, and those are the ones worth reading in full.
+two guarantees stated more strongly than they hold. Four more were authorization defects,
+and those are the ones worth reading in full. The tenth is supply-chain hygiene: the
+container images are pinned by digest, the way the pipeline already pinned its actions.
 
 Two reasoner triggers checked the caller's role but not which machines the caller may see
 (F-016, F-017) — the check existed in the neighbouring reasoner and in the read routes
