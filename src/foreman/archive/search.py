@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from foreman.archive.schemas import ArchiveHit, SourceType
 from foreman.core.sanitize import clean_excerpt
 from foreman.db.models import Alarm, MaintenanceEvent, WorkerNote
+from foreman.db.scope_sql import machine_scope_sql
 from foreman.embeddings.provider import EmbeddingProvider
 from foreman.notes.search import DEFAULT_SEARCH_K, RRF_K, embed_and_search_hybrid
 from foreman.reasoners.event_chain.recall import RecallItem, recall_similar_incidents
@@ -67,7 +68,13 @@ def _make_excerpt(value: str | None, *, max_len: int = EXCERPT_MAX) -> str:
 
 
 async def _fulltext_ids(
-    session: AsyncSession, table: str, q: str, *, machine_id: int | None, k: int
+    session: AsyncSession,
+    table: str,
+    q: str,
+    *,
+    machine_id: int | None,
+    scope: Sequence[int] | None,
+    k: int,
 ) -> list[int]:
     """Reiner Volltext-Rang (deutsche FTS) über `<table>.text_tsv` → ids in Rang-
     Reihenfolge. `table` MUSS in `_FULLTEXT_TABLES` liegen (per f-String interpoliert,
@@ -77,7 +84,7 @@ async def _fulltext_ids(
     """
     if table not in _FULLTEXT_TABLES:  # Defense-in-Depth: nie fremde Identifier interpolieren.
         raise ValueError(f"❌ Unbekannte Volltext-Tabelle: {table!r}")
-    machine_filter = " AND machine_id = :machine_id" if machine_id is not None else ""
+    machine_filter, filter_params = machine_scope_sql(machine_id=machine_id, scope=scope)
     sql = f"""
         SELECT id
         FROM {table}
@@ -85,9 +92,7 @@ async def _fulltext_ids(
         ORDER BY ts_rank(text_tsv, websearch_to_tsquery('german', :q_text)) DESC, id ASC
         LIMIT :k
     """
-    params: dict[str, object] = {"q_text": q, "k": k}
-    if machine_id is not None:
-        params["machine_id"] = machine_id
+    params: dict[str, object] = {"q_text": q, "k": k, **filter_params}
     result = await session.execute(text(sql), params)
     return [int(row_id) for row_id in result.scalars()]
 
@@ -156,6 +161,7 @@ async def _substrat_treffer(
     q: str,
     *,
     machine_id: int | None,
+    scope: Sequence[int] | None,
     k: int,
 ) -> list[ArchiveHit]:
     """Ruft Erinnerungen ab und formt sie zu ArchiveHits — STRIKT best-effort.
@@ -175,9 +181,17 @@ async def _substrat_treffer(
         return []
     items = await recall_similar_incidents(substrate, q, max_results=k)
 
+    erlaubt = None if scope is None else set(scope)
     treffer: list[ArchiveHit] = []
     for item in items:
         if machine_id is not None and item.machine_id != machine_id:
+            continue
+        # Der Rollen-Ausschnitt wirkt hier genauso nachtraeglich wie der Wunsch-
+        # Filter darueber, und mit derselben Strenge: Eine Erinnerung OHNE bekannte
+        # Maschine faellt fuer eine beschraenkte Rolle heraus. Sie koennte zu einer
+        # erlaubten gehoeren — belegt ist es nicht, und eine unbelegte Zugehoerigkeit
+        # ist auf diesem Pfad kein Grund, sie zu zeigen.
+        if erlaubt is not None and item.machine_id not in erlaubt:
             continue
         treffer.append(_memory_hit(item))
     return treffer
@@ -235,6 +249,7 @@ async def search_archive(
     q: str,
     *,
     machine_id: int | None = None,
+    scope: Sequence[int] | None = None,
     sources: Sequence[SourceType] | None = None,
     k: int = DEFAULT_SEARCH_K,
     max_distance: float,
@@ -245,6 +260,9 @@ async def search_archive(
 
     `sources` wählt die Quellen (Teilmenge von note/maintenance/alarm; None = alle drei).
     `machine_id` (falls gesetzt) ist ein harter WHERE-Filter über ALLE gewählten Quellen.
+    `scope` ist die Grenze der Rolle (§20.4) und wirkt über ALLE Quellen zugleich —
+    jede einzelne muss ihn halten, sonst läge der Durchgriff in der Quelle, die
+    niemand für sich geprüft hat.
     Notiz-Zweig = 1a-Hybrid (mit `max_distance`-Cutoff + graceful degradation),
     Wartung/Alarm = reiner Volltext. Jede Quelle liefert je bis zu `k` Kandidaten; die
     globale RRF-Fusion (k=60) interleavt sie fair nach quelleninternem Rang und schneidet
@@ -256,22 +274,32 @@ async def search_archive(
 
     if "note" in selected:
         notes = await embed_and_search_hybrid(
-            provider, session, q, machine_id=machine_id, k=k, max_distance=max_distance
+            provider,
+            session,
+            q,
+            machine_id=machine_id,
+            scope=scope,
+            k=k,
+            max_distance=max_distance,
         )
         ranked.extend((rank, _note_hit(note)) for rank, note in enumerate(notes, start=1))
 
     if "maintenance" in selected:
-        ids = await _fulltext_ids(session, "maintenance_events", q, machine_id=machine_id, k=k)
+        ids = await _fulltext_ids(
+            session, "maintenance_events", q, machine_id=machine_id, scope=scope, k=k
+        )
         events = await _fetch_maintenance(session, ids)
         ranked.extend((rank, _maintenance_hit(event)) for rank, event in enumerate(events, start=1))
 
     if "alarm" in selected:
-        ids = await _fulltext_ids(session, "alarms", q, machine_id=machine_id, k=k)
+        ids = await _fulltext_ids(session, "alarms", q, machine_id=machine_id, scope=scope, k=k)
         alarms = await _fetch_alarms(session, ids)
         ranked.extend((rank, _alarm_hit(alarm)) for rank, alarm in enumerate(alarms, start=1))
 
     if "memory" in selected:
-        erinnerungen = await _substrat_treffer(substrate, q, machine_id=machine_id, k=substrate_k)
+        erinnerungen = await _substrat_treffer(
+            substrate, q, machine_id=machine_id, scope=scope, k=substrate_k
+        )
         ranked.extend((rang, hit) for rang, hit in enumerate(erinnerungen, start=1))
 
     ranked.sort(key=_rrf_key)

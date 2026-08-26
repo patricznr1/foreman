@@ -809,3 +809,171 @@ async def test_messwerte_fuer_eigene_maschine_werden_aufgenommen(
 
     assert antwort.status_code == 201, antwort.text
     assert antwort.json()["written"] == 1
+
+
+# --- Die Suche findet nur im eigenen Ausschnitt ---
+
+SUCHPFADE = [
+    pytest.param("/api/v1/worker_notes/search", id="notiz_suche"),
+    pytest.param("/api/v1/archive/search", id="archiv_suche"),
+]
+
+
+@pytest.mark.parametrize("pfad", SUCHPFADE)
+async def test_suche_findet_nur_die_eigenen_maschinen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders, pfad: str
+) -> None:
+    """Der Ausschnitt gilt auch für die Suche — sonst wäre sie der Weg daran vorbei.
+
+    Beide Hälften zählen: Fände der Werker seine eigene Notiz nicht, griffe die
+    Sperre zu weit, und der Test könnte das nicht von einer wirkenden Sperre
+    unterscheiden.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    eigene_notiz = await _notiz(raw_conn, eigene)
+    fremde_notiz = await _notiz(raw_conn, fremde)
+    headers = await _werker_mit(raw_conn, auth_headers_for, f"scope-s-{pfad[-6:]}@x.de", eigene)
+
+    antwort = await client.get(pfad, params={"q": "Lager"}, headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    kennungen = {eintrag["id"] for eintrag in antwort.json()}
+    assert eigene_notiz in kennungen, "Die eigene Notiz fehlt — die Sperre greift zu weit."
+    assert fremde_notiz not in kennungen, "Eine Notiz einer fremden Maschine ist auffindbar."
+
+
+@pytest.mark.parametrize("pfad", SUCHPFADE)
+async def test_suche_auf_fremder_maschine_wird_abgewiesen(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders, pfad: str
+) -> None:
+    """Ausdrücklich nach einer fremden Maschine gesucht → 403, keine leere Liste.
+
+    Eine leere Trefferliste wäre hier die schlechtere Antwort: Sie sähe aus wie
+    „dazu gibt es nichts" und verschleierte, dass die Anfrage abgewiesen wurde.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    await _notiz(raw_conn, fremde)
+    headers = await _werker_mit(raw_conn, auth_headers_for, f"scope-sf-{pfad[-6:]}@x.de", eigene)
+
+    antwort = await client.get(pfad, params={"q": "Lager", "machine_id": fremde}, headers=headers)
+
+    assert antwort.status_code == 403, antwort.text
+
+
+@pytest.mark.parametrize("pfad", SUCHPFADE)
+async def test_suche_auf_eigener_maschine_antwortet(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders, pfad: str
+) -> None:
+    """Zwilling zum Test darüber."""
+    eigene, _ = await _maschinen_paar(raw_conn)
+    eigene_notiz = await _notiz(raw_conn, eigene)
+    headers = await _werker_mit(raw_conn, auth_headers_for, f"scope-so-{pfad[-6:]}@x.de", eigene)
+
+    antwort = await client.get(pfad, params={"q": "Lager", "machine_id": eigene}, headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    assert eigene_notiz in {eintrag["id"] for eintrag in antwort.json()}
+
+
+@pytest.mark.parametrize("pfad", SUCHPFADE)
+async def test_suche_ohne_zuweisung_findet_nichts(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders, pfad: str
+) -> None:
+    """Ein leerer Ausschnitt ist „nichts erlaubt", nicht „kein Filter".
+
+    Der gefährlichste Fehler an dieser Stelle wäre, eine leere Zuweisungsliste als
+    „keine Einschränkung" zu lesen — dann sähe ausgerechnet die Rolle ohne jede
+    Zuweisung die ganze Flotte. Der Test hält die Richtung fest.
+    """
+    _, fremde = await _maschinen_paar(raw_conn)
+    await _notiz(raw_conn, fremde)
+    headers = await auth_headers_for(f"scope-leer-{pfad[-6:]}@x.de", "worker")
+
+    antwort = await client.get(pfad, params={"q": "Lager"}, headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    assert antwort.json() == []
+
+
+@pytest.mark.parametrize("pfad", SUCHPFADE)
+async def test_manager_findet_die_ganze_flotte(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders, pfad: str
+) -> None:
+    """Gegenprobe: Ohne sie wären die Tests darüber auch dann grün, wenn die Suche
+    grundsätzlich nichts mehr fände."""
+    eine, andere = await _maschinen_paar(raw_conn)
+    erste = await _notiz(raw_conn, eine)
+    zweite = await _notiz(raw_conn, andere)
+    headers = await auth_headers_for(f"scope-smgr-{pfad[-6:]}@x.de", "manager")
+
+    antwort = await client.get(pfad, params={"q": "Lager"}, headers=headers)
+
+    assert antwort.status_code == 200, antwort.text
+    assert {erste, zweite} <= {eintrag["id"] for eintrag in antwort.json()}
+
+
+async def test_archivsuche_findet_auch_wartung_nur_im_ausschnitt(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Die Archiv-Suche bedient mehrere Quellen — jede einzeln muss den Strich halten.
+
+    Ohne diesen Test bliebe die Wartungs-Quelle offen, während die Notiz-Quelle
+    gefiltert wird: Die Gesamtantwort sähe plausibel aus, und der Durchgriff läge
+    in der Quelle, die niemand einzeln geprüft hat.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    fremde_wartung = await raw_conn.fetchval(
+        """
+        INSERT INTO maintenance_events (machine_id, type, description)
+        VALUES ($1, 'lubrication', 'Lager nachgefettet') RETURNING id
+        """,
+        fremde,
+    )
+    eigene_wartung = await raw_conn.fetchval(
+        """
+        INSERT INTO maintenance_events (machine_id, type, description)
+        VALUES ($1, 'lubrication', 'Lager nachgefettet') RETURNING id
+        """,
+        eigene,
+    )
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-arch-wartung@x.de", eigene)
+
+    antwort = await client.get(
+        "/api/v1/archive/search", params={"q": "Lager", "sources": "maintenance"}, headers=headers
+    )
+
+    assert antwort.status_code == 200, antwort.text
+    kennungen = {eintrag["id"] for eintrag in antwort.json()}
+    assert int(eigene_wartung) in kennungen
+    assert int(fremde_wartung) not in kennungen
+
+
+async def test_archivsuche_findet_auch_alarme_nur_im_ausschnitt(
+    client: AsyncClient, raw_conn: asyncpg.Connection, auth_headers_for: AuthHeaders
+) -> None:
+    """Dieselbe Prüfung für die Alarm-Quelle — jede Quelle einzeln belegt."""
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    fremder_alarm = await raw_conn.fetchval(
+        """
+        INSERT INTO alarms (machine_id, severity, category, message)
+        VALUES ($1, 'warning', 'process', 'Lager heiß gelaufen') RETURNING id
+        """,
+        fremde,
+    )
+    eigener_alarm = await raw_conn.fetchval(
+        """
+        INSERT INTO alarms (machine_id, severity, category, message)
+        VALUES ($1, 'warning', 'process', 'Lager heiß gelaufen') RETURNING id
+        """,
+        eigene,
+    )
+    headers = await _werker_mit(raw_conn, auth_headers_for, "scope-arch-alarm@x.de", eigene)
+
+    antwort = await client.get(
+        "/api/v1/archive/search", params={"q": "Lager", "sources": "alarm"}, headers=headers
+    )
+
+    assert antwort.status_code == 200, antwort.text
+    kennungen = {eintrag["id"] for eintrag in antwort.json()}
+    assert int(eigener_alarm) in kennungen
+    assert int(fremder_alarm) not in kennungen

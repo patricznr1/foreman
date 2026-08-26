@@ -203,6 +203,22 @@ class ResourceScope:
         ids = await self.machine_ids()
         return stmt if ids is None else stmt.where(column.in_(ids))
 
+    async def for_query(self, machine_id: int | None) -> list[int] | None:
+        """Der Ausschnitt für einen Pfad, der seine Bedingung selbst baut.
+
+        Wie `limit_to`, nur für die Suchpfade: Sie ranken über Postgres-Volltext und
+        Vektor-Distanz und sind als Roh-SQL geschrieben, nehmen also kein
+        SELECT-Objekt entgegen. Die Reihenfolge bleibt dieselbe und liegt deshalb
+        auch hier an EINER Stelle — erst die ausdrücklich angefragte Maschine prüfen
+        (403 außerhalb), dann den Ausschnitt herausgeben.
+
+        Rückgabe `None` heißt unbeschränkt, `[]` heißt nichts erlaubt. Der Aufrufer
+        reicht den Wert an `machine_scope_sql` weiter, das die Unterscheidung hält.
+        """
+        if machine_id is not None:
+            await self.require(machine_id)
+        return await self.machine_ids()
+
     # --- Linien-Ebene: dieselben drei Formen, ein Stockwerk höher ---
 
     async def line_ids(self) -> list[int] | None:

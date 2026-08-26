@@ -53,6 +53,19 @@ SCOPE_IM_RUMPF = ("await can_subscribe(", "await visible_machine_scope(")
 # Rolle über den Zugriff, sondern die Zugehörigkeit der konkreten Ressource.
 RESSOURCEN_KENNUNGEN = {"machine_id", "line_id", "component_id", "data_point_id"}
 
+# Routen, die eine Ressourcen-Kennung führen und trotzdem bewusst KEINEN
+# Ausschnitt anwenden — jede mit ihrem Grund. Eine Ausnahme ohne Begründung ist
+# eine stille Ausnahme; eine Ausnahme, die den Grund nicht mehr trägt, ist eine
+# Lücke mit Häkchen.
+SCOPE_NICHT_NOETIG = {
+    "GET /api/v1/audit": (
+        "Steht ausschließlich `manager` offen (api/routers/audit.py, _AUDIT_ROLES) — "
+        "und diese Rolle hat nach Matrix 3.1 ohnehin keinen beschränkten Ausschnitt. "
+        "Ein Scope-Aufruf wäre hier wirkungslos und täuschte Wirksamkeit vor. Fällt "
+        "die Rollenbeschränkung, gehört der Ausschnitt hierher."
+    ),
+}
+
 GEPRUEFTE_METHODEN = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 
 # Bewusst offen — jeder Eintrag trägt seinen Grund. Eine Ausnahme ohne
@@ -174,6 +187,27 @@ def test_jede_ausnahme_traegt_eine_begruendung(pfad, grund):
     assert grund and len(grund) > 10, f"{pfad} steht ohne tragende Begründung frei."
 
 
+@pytest.mark.parametrize("kennung,grund", sorted(SCOPE_NICHT_NOETIG.items()))
+def test_jede_scope_ausnahme_traegt_eine_begruendung(kennung, grund):
+    """Auch die zweite Ausnahmeliste bleibt begründungspflichtig."""
+    assert grund and len(grund) > 30, f"{kennung} steht ohne tragende Begründung ohne Ausschnitt."
+
+
+def test_die_scope_ausnahmen_gibt_es_noch(app_routen):
+    """Eine Ausnahme für eine Route, die es nicht mehr gibt, ist toter Ballast.
+
+    Sie täuscht außerdem Sorgfalt vor: Wer die Liste liest, hält einen bedachten
+    Sonderfall für geprüft, während der Fall längst verschwunden ist.
+    """
+    vorhanden = {_kennung(r) for r in _zu_pruefen(app_routen)}
+    verwaist = sorted(set(SCOPE_NICHT_NOETIG) - vorhanden)
+    assert not verwaist, (
+        "❌ Ausnahme(n) ohne zugehörige Route:\n  "
+        + "\n  ".join(verwaist)
+        + "\n\nAus SCOPE_NICHT_NOETIG streichen."
+    )
+
+
 def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
     """Zweite Stufe: Identität allein genügt nicht, wo eine Kennung im Spiel ist.
 
@@ -199,6 +233,8 @@ def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
             continue
         if namen & SCOPE_DEPS:
             continue  # trägt den gemeinsamen Dependency — strukturell belegt
+        if _kennung(route) in SCOPE_NICHT_NOETIG:
+            continue  # begründete Ausnahme, siehe SCOPE_NICHT_NOETIG
         try:
             rumpf = inspect.getsource(route.endpoint)
         except (OSError, TypeError):

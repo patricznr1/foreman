@@ -18,8 +18,8 @@ from typing import cast
 from fastapi import APIRouter, HTTPException, Query, status
 
 from foreman.api.deps import (
-    CurrentUser,
     EmbeddingProviderDep,
+    ResourceScopeDep,
     SessionDep,
     SettingsDep,
     SubstrateClientDep,
@@ -78,7 +78,7 @@ async def search_archive_endpoint(
     provider: EmbeddingProviderDep,
     settings: SettingsDep,
     substrate: SubstrateClientDep,
-    current_user: CurrentUser,
+    scope: ResourceScopeDep,
     q: str = Query(min_length=1, description="Such-Anfrage (Freitext)."),
     machine_id: int | None = Query(default=None, description="Optionaler Maschinen-Filter."),
     sources: list[str] | None = _SOURCES_QUERY,
@@ -89,7 +89,12 @@ async def search_archive_endpoint(
     Durchsucht die gewählten Quellen nach Wortlaut (Wartung/Alarm) bzw. zugleich nach
     Wortlaut und Bedeutung (Notizen) und ordnet die Treffer nach Relevanz. Über den
     Quellen-Filter lassen sich einzelne Quellen aus- oder einblenden (Default: alle).
+
+    Gesucht wird ausschließlich im Maschinen-Ausschnitt des Anfragenden (§20.4), und
+    zwar in JEDER Quelle einzeln — sonst läge der Durchgriff in der Quelle, die
+    niemand für sich geprüft hat.
     """
+    erlaubte_maschinen = await scope.for_query(machine_id)
     selected = _parse_sources(sources)
     # Das Gedaechtnis nur, wenn es EINGESCHALTET ist — sonst bleibt der Schalter
     # wirkungslos, egal was der Aufrufer als Quelle waehlt. Der Client wird nur
@@ -100,6 +105,7 @@ async def search_archive_endpoint(
         session,
         q,
         machine_id=machine_id,
+        scope=erlaubte_maschinen,
         sources=selected,
         k=k,
         max_distance=settings.archive_vector_max_distance,

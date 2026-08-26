@@ -225,4 +225,4 @@ async def test_fulltext_ids_lehnt_unbekannte_tabelle_ab(db_session: AsyncSession
     from foreman.archive.search import _fulltext_ids
 
     with pytest.raises(ValueError):
-        await _fulltext_ids(db_session, "users; DROP TABLE", "x", machine_id=None, k=5)
+        await _fulltext_ids(db_session, "users; DROP TABLE", "x", machine_id=None, scope=None, k=5)

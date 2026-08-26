@@ -22,10 +22,13 @@
 # ============================================================
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.db.models import WorkerNote
+from foreman.db.scope_sql import machine_scope_sql
 from foreman.embeddings.errors import EmbeddingError
 from foreman.embeddings.provider import EmbeddingProvider, Vector
 from foreman.logging_setup import RETRY, get_logger
@@ -98,14 +101,16 @@ async def hybrid_search_notes(
     *,
     query_embedding: Vector | None,
     machine_id: int | None = None,
+    scope: Sequence[int] | None = None,
     k: int = DEFAULT_SEARCH_K,
     max_distance: float,
 ) -> list[WorkerNote]:
     """Hybride Archiv-Suche: deutscher Volltext + Vektor, per RRF fusioniert, mit Cutoff.
 
     REINE DB-Funktion (kein Provider/Netz — wie `search_similar_notes` ohne Embedding-
-    Backend testbar). Zwei Zweige gegen denselben Kandidatenraum, `machine_id` als harter
-    Filter in BEIDEN Zweigen (falls gesetzt):
+    Backend testbar). Zwei Zweige gegen denselben Kandidatenraum.
+    `machine_id` (der Wunsch des Aufrufers) und `scope` (die Grenze der Rolle, §20.4)
+    wirken als harte Filter in BEIDEN Zweigen:
       • Volltext: `websearch_to_tsquery('german', …)` gegen `text_tsv`, Rang via `ts_rank`.
       • Vektor (nur wenn `query_embedding` gesetzt): Cosine-Distanz (`<=>`) gegen `embedding`.
     Fusion per Reciprocal Rank Fusion (k=60); Ergebnis-Reihenfolge = fusionierter Rang.
@@ -123,8 +128,11 @@ async def hybrid_search_notes(
     danach geladen und in genau diese Reihenfolge gebracht (Vertrag: `list[WorkerNote]`,
     KEIN Score nach außen).
     """
-    machine_filter = " AND machine_id = :machine_id" if machine_id is not None else ""
-    params: dict[str, object] = {"q_text": query_text, "k": k}
+    # Der Ausschnitt gehört IN beide Zweige, nicht hinter sie: Jeder begrenzt mit
+    # LIMIT auf einen Kandidatenpool, und ein Filter danach schnitte aus einer schon
+    # gekürzten Liste weiter — ein Werker bekäme leere Antworten, obwohl es Treffer gibt.
+    machine_filter, filter_params = machine_scope_sql(machine_id=machine_id, scope=scope)
+    params: dict[str, object] = {"q_text": query_text, "k": k, **filter_params}
 
     if query_embedding is not None:
         params["q_vec"] = _vector_literal(query_embedding)
@@ -170,9 +178,6 @@ async def hybrid_search_notes(
             LIMIT :k
         """
 
-    if machine_id is not None:
-        params["machine_id"] = machine_id
-
     result = await session.execute(text(sql), params)
     ordered_ids: list[int] = [int(note_id) for note_id in result.scalars()]
     if not ordered_ids:
@@ -190,6 +195,7 @@ async def embed_and_search_hybrid(
     query_text: str,
     *,
     machine_id: int | None = None,
+    scope: Sequence[int] | None = None,
     k: int = DEFAULT_SEARCH_K,
     max_distance: float,
 ) -> list[WorkerNote]:
@@ -217,6 +223,7 @@ async def embed_and_search_hybrid(
         query_text,
         query_embedding=query_embedding,
         machine_id=machine_id,
+        scope=scope,
         k=k,
         max_distance=max_distance,
     )
