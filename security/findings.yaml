@@ -92,17 +92,46 @@ findings:
     observation_is_correct: true
     severity_as_scanned: "medium"
     severity_after_triage: "medium — operational defect, not a security issue"
-    status: planned
+    status: fixed
+    fixed_at: "2026-08-26"
     profile: [A, B]
     justification: >
-      None offered. The endpoint is honestly declared as liveness-only in its own
-      header, but liveness-only is the wrong contract when it is the only probe.
-      This is a real quality finding and it is accepted as such.
+      None was offered. The endpoint was honestly declared as liveness-only in its
+      own header, but liveness-only is the wrong contract when it is the only probe.
+      It was a real quality finding and was accepted as such.
     remedy: >
-      Add a /readyz endpoint that checks the database round-trip and the presence
-      of required configuration, and point the platform healthcheck at it while
-      leaving /health as the process liveness probe.
-    review_by: "2026-11-30"
+      There are two probes now, because they answer two different questions and
+      merging them means choosing which failure to be blind to.
+
+      GET /health stays liveness and deliberately does NOT touch the database. A
+      liveness probe that depends on the database makes the orchestrator kill a
+      healthy process because a different component failed — and the restart fixes
+      nothing, because the process was never the problem.
+
+      GET /readyz is readiness: it runs a real round-trip and answers 503 when the
+      database does not. A real round-trip rather than the pool's state, because a
+      pool can hold connections that died long ago, and that is precisely the case
+      this should catch. The response names no reason; that goes to the log, since
+      the state of the infrastructure is not something to publish (SECURITY.md
+      section 8, same line as the gateway errors).
+
+      Configuration is not re-checked there: a process with a weak secret or an
+      unnamed environment does not start at all (F-005), and what prevents startup
+      cannot go missing at runtime.
+
+      Both the platform healthcheck and the container HEALTHCHECK now point at
+      /readyz. The cost is stated where it applies: a rollout fails when the
+      database is unreachable. That is the intended behaviour of a readiness probe.
+
+      Five tests. Three counter-checks run separately: suppressing the failure,
+      leaking the reason into the response, and moving /readyz behind the auth
+      middleware each fail their own test. The route-inventory guard flagged the new
+      route immediately, which is what it is for; it carries a reasoned exception now.
+    evidence:
+      - "src/foreman/api/health.py"
+      - "tests/integration/test_bereitschaft.py"
+      - "railway.toml"
+    review_by: "2027-02-26"
 
   # ---------------------------------------------------------------------------
   - id: F-003

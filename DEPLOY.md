@@ -148,7 +148,9 @@ Warten, bis der DB-Service **läuft**.
    `startCommand` der `railway.toml`, vor `uvicorn`). Kein separater Schritt nötig.
 5. **Öffentliche Domain** generieren (Service → Settings → Networking → *Generate
    Domain*). Diese URL brauchst du gleich fürs Frontend.
-6. **Verifizieren:** `https://<backend-domain>/health` → `{"status":"ok",...}`.
+6. **Verifizieren:** `https://<backend-domain>/readyz` → `{"status":"ready",...}`.
+   Diese Sonde antwortet nur, wenn die Datenbank erreichbar ist — sie ist deshalb der
+   aussagekräftige Test. `/health` sagt lediglich, dass der Prozess lebt.
 
 ---
 
@@ -243,7 +245,8 @@ Wer FOREMAN so betreibt, sollte zwei Dinge bedenken:
 
 ## 6. Verifikations-Checkliste
 
-- [ ] `GET https://<backend-domain>/health` → `200 {"status":"ok"}`
+- [ ] `GET https://<backend-domain>/readyz` → `200 {"status":"ready"}` (Datenbank erreichbar)
+- [ ] `GET https://<backend-domain>/health` → `200 {"status":"ok"}` (Prozess lebt)
 - [ ] DB-Migrationen durchgelaufen (Backend-Logs: `alembic upgrade head` ohne Fehler)
 - [ ] Park-Seed gelaufen (Maschinen/Readings/Alarme vorhanden)
 - [ ] Login → `GET /api/v1/me` → `200` (Rolle = manager)
@@ -340,7 +343,7 @@ Der Worker ist ein **eigener Railway-Service** auf demselben Repo/Image wie das
 Backend — nur mit anderem Start-Command. **Kein** `alembic`, **kein** Healthcheck.
 
 > ⚠️ **Das Root-`railway.toml` ist Backend-only** (`startCommand` = `alembic` +
-> `uvicorn`, Healthcheck `/health`) und **config-as-code überschreibt** Dashboard-/
+> `uvicorn`, Healthcheck `/readyz`) und **config-as-code überschreibt** Dashboard-/
 > API-Settings. Ein Worker mit Root-Directory = Repo-Root würde damit als **zweiter
 > uvicorn** starten. Lösung: Der Worker-Service zeigt via **„Config-as-code file"**
 > (Service-Settings; GraphQL-Feld `railwayConfigFile`) auf **`/railway.worker.toml`**

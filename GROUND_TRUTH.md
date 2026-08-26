@@ -116,13 +116,17 @@ Drei Schichten:
 
 - Basis-Pfad: `/api/v1/`
 - Ressourcen-Stil: `/api/v1/<resource>` (Plural, snake_case in der DB)
-- Health-Check: `GET /health`
-- Auth-Middleware auf allem **außer** `/auth/login`, `/health`, `/metrics` sowie der OpenAPI-Doku (`/`, `/docs`, `/redoc`, `/openapi.json`) und CORS-Preflight (`OPTIONS`).
+- Sonden: `GET /health` (Lebendigkeit — lebt der Prozess) und `GET /readyz`
+  (Bereitschaft — antwortet die Datenbank; 503, wenn nicht). Getrennt, weil eine
+  Lebendigkeitssonde an der Datenbank einen gesunden Prozess neu starten liesse und
+  eine Bereitschaftssonde ohne sie „bereit“ meldet, waehrend jede Anfrage scheitert.
+  Die Plattform- und Container-Pruefung zeigt auf `/readyz`.
+- Auth-Middleware auf allem **außer** `/auth/login`, `/health`, `/readyz`, `/metrics` sowie der OpenAPI-Doku (`/`, `/docs`, `/redoc`, `/openapi.json`) und CORS-Preflight (`OPTIONS`).
 - **Keine Selbstregistrierung — bewusste Festlegung des Betriebsmodells:** FOREMAN ist eine **Werksanwendung, kein Consumer-Portal**. Konten legt der **Betreiber** an; eine Registrierungsseite gibt es im Frontend nicht und soll es nicht geben. Entsprechend existiert kein offener Schreibpfad für Konten oder Rollen: Rollenvergabe ist eine administrative Handlung, keine Selbstbedienung. Die Anlage läuft ausschließlich über die CLI (siehe unten).
 
 ### Routen (F2-Skeleton)
 
-- `GET /health`
+- `GET /health` · `GET /readyz`
 - `POST /auth/login` (JWT-Ausgabe) — **die einzige offene Schreib-Route.**
 - **Nutzer-Anlage: kein HTTP-Pfad.** Konten (und damit Rollen) entstehen ausschließlich über die Betreiber-CLI `python -m foreman.db.provisioning --email <mail> --role <rolle>` (`src/foreman/db/provisioning.py`). Die Rolle ist dort als `Role`-Enum typisiert (§5), ein beliebiger String kommt nicht durch. Das Passwort wird **nie** als Argument übergeben (Shell-Historie/Prozessliste), sondern interaktiv per `getpass` oder über `FOREMAN_SEED_PASSWORD` gelesen; eine bereits vergebene E-Mail wird abgelehnt statt überschrieben (kein stiller Rechte-Wechsel). Die Testsuite nutzt denselben Pfad (`ensure_user`-Fixtures), nicht einen eigenen.
 - **Offene Position [VISION]:** `POST /api/v1/users` mit `require_roles(manager)` für Nutzerverwaltung im laufenden Betrieb — **bewusst nicht gebaut**, weil die CLI für den aktuellen Stand reicht. Wird sie gebaut, ist sie die *zweite* Rollenquelle und braucht dieselbe Enum-Typisierung.
@@ -168,7 +172,7 @@ Drei Schichten:
 Eigenständiger Model-Context-Protocol-Server (Anthropic SDK / FastMCP, **Streamable HTTP**, Default-Port `8081`) — **getrennt** von der Plattform-FastAPI-App (eigener Token, eigener Port). Remote erreichbar für Drittsysteme; **kein** Tool schaltet etwas, **keines** löst eine Reasoner-Berechnung aus. Vollständiger Vertrag: **§17**.
 
 - **Transport:** `POST/GET /mcp` (Streamable HTTP). Auth-pflichtig über den `FOREMAN_MCP_`-Token (Bearer); fehlendes/ungültiges Credential → 401, Abruf-Last-Bremse → 429.
-- **Offene Pfade (kein Token):** `GET /health`, `GET /metrics` (Prometheus, enthält `foreman_mcp_*`).
+- **Offene Pfade (kein Token):** `GET /health`, `GET /readyz`, `GET /metrics` (Prometheus, enthält `foreman_mcp_*`).
 - **Read-only Tools (11):** `list_machines`, `get_machine`, `get_drift_status`, `get_alarms(machine_id?, since?, severity?)`, `list_failure_predictions(machine_id?)`, `get_failure_prediction(prediction_id)`, `get_worker_recommendation(prediction_id)`, `list_event_chains(machine_id?)`, `get_event_chain(explanation_id)`, `search_notes(query, machine_id?, k?)`, `get_readings(machine_id, datapoint, hours?)`. Alle mit `readOnlyHint=True`.
 - **Transparenz:** KI-stämmige Ausgaben (Vorhersage, Empfehlung, Ereignisketten-Erklärung) tragen die Art.-50(2)-Flags + (Vorhersage/Empfehlung) den Sim-Vorbehalt; Stammdaten/Readings/Alarme **nicht** als KI gekennzeichnet.
 

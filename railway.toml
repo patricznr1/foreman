@@ -28,7 +28,13 @@ dockerfilePath = "Dockerfile"
 # die Environment ist dual-stack (nach 16.10.2025 erstellt) → railway.internal löst auch
 # auf IPv4 auf, der Backend-Service ist intern damit auch über 0.0.0.0 erreichbar.
 startCommand = "sh -c 'alembic upgrade head && uvicorn foreman.main:app --host 0.0.0.0 --port ${PORT:-8000}'"
-healthcheckPath = "/health"
+# /readyz statt /health: Die Plattform soll einen Container erst in den Verkehr
+# nehmen, wenn er arbeiten kann. /health meldet nur, dass der Prozess lebt — ein
+# Container ohne Datenbankverbindung waere damit gruen und wuerde Anfragen
+# annehmen, die alle fehlschlagen. Der Preis: Ein Ausrollen bricht ab, wenn die
+# Datenbank nicht erreichbar ist. Das ist gewollt; das Zeitfenster unten ist
+# grosszuegig genug fuer einen langsamen Datenbank-Start.
+healthcheckPath = "/readyz"
 # spaCy-Modell + LightGBM-Import machen den Kaltstart spürbar — großzügiges Fenster.
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

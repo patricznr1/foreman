@@ -103,6 +103,11 @@ GEPRUEFTE_METHODEN = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 # Begründung ist eine stille Ausnahme und damit wertlos.
 AUSGENOMMEN = {
     "/health": "Betriebsprüfung, gibt keine Ressourcendaten heraus",
+    "/readyz": (
+        "Bereitschaftssonde, gibt keine Ressourcendaten heraus — nur ob die Datenbank "
+        "antwortet. Muss offen bleiben: Der Prober der Plattform hat kein Token, und "
+        "ein 401 laese sie als Ausfall."
+    ),
     "/auth/login": "erzeugt die Identität erst — laut middleware.py die einzige offene Schreib-Route",
     "/metrics": "Prometheus-Scraper ohne JWT, §11.2 — netzseitig abgeschottet, gibt keine Ressourcendaten heraus",
     "/openapi.json": "Schema, keine Daten",

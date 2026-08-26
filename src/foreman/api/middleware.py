@@ -22,6 +22,10 @@ from foreman.core.security import decode_access_token
 OPEN_PATHS: frozenset[str] = frozenset(
     {
         "/health",
+        # Bereitschaftssonde: offen aus demselben Grund wie /health — der
+        # Orchestrierer, der sie abfragt, hat kein Token und soll keines haben.
+        # Sie gibt keine Ressourcendaten heraus, nur „bereit" oder „nicht".
+        "/readyz",
         "/metrics",  # Prometheus-Scraper (kein JWT) — §11.2, ab F4
         "/auth/login",
         "/",
