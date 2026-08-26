@@ -88,6 +88,7 @@ async def test_empfehlung_traegt_immer_deterministischen_vorbehalt(
 ) -> None:
     pred = await _seed_prediction(db_session)
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=_good_reply(pred.id))]),
     )
@@ -108,6 +109,7 @@ async def test_empfehlung_erbt_autoritative_zahlen_und_persistiert(
 ) -> None:
     pred = await _seed_prediction(db_session)
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=_good_reply(pred.id))]),
     )
@@ -143,6 +145,7 @@ async def test_erfundene_quelle_wird_nicht_referenziert(
         f"Empfehlung: Lager prüfen. Simulationsbasiert, nicht validiert."
     )
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
@@ -157,6 +160,7 @@ async def test_unbekannte_vorhersage_wirft(
     make_backend: Callable[..., object],
 ) -> None:
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply="x")]),
     )

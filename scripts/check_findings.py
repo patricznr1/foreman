@@ -253,34 +253,50 @@ ZAHLWORT = {
 # mitziehen; die Pruefung meldet sich, statt still auszufallen.
 PROSA_STELLEN: dict[str, tuple[tuple[str, str], ...]] = {
     "README.md": (
-        (r"(\w+) findings a review", "gesamt"),
-        (r"(\w+) are accepted risks", "accepted"),
-        (r"(\w+) are open work", "planned"),
-        (r"(\w+) are already closed", "fixed"),
-        (r"(\w+) is a documented false positive", "disputed"),
+        (r"([\w-]+) findings a review", "gesamt"),
+        (r"([\w-]+) are accepted risks", "accepted"),
+        (r"([\w-]+) are open work", "planned"),
+        (r"([\w-]+) are already closed", "fixed"),
+        (r"([\w-]+) is a documented false positive", "disputed"),
     ),
     "SECURITY.md": (
-        (r"Of its (\w+) entries", "gesamt"),
-        (r"(\w+) are accepted risks", "accepted"),
-        (r"(\w+) are open work", "planned"),
-        (r"(\w+) are already closed", "fixed"),
-        (r"(\w+) is a documented false positive", "disputed"),
+        (r"Of its ([\w-]+) entries", "gesamt"),
+        (r"([\w-]+) are accepted risks", "accepted"),
+        (r"([\w-]+) are open work", "planned"),
+        (r"([\w-]+) are already closed", "fixed"),
+        (r"([\w-]+) is a documented false positive", "disputed"),
     ),
     "REVIEW.md": (
-        (r"(\w+) of them: the observation", "gesamt"),
-        (r"(\w+) are open work", "planned"),
-        (r"(\w+) entries are already closed", "fixed"),
-        (r"(\w+) is a documented false positive", "disputed"),
+        (r"([\w-]+) of them: the observation", "gesamt"),
+        (r"([\w-]+) are open work", "planned"),
+        (r"([\w-]+) entries are already closed", "fixed"),
+        (r"([\w-]+) is a documented false positive", "disputed"),
     ),
     "SECURITY-INSIGHTS.yml": (
-        (r"records (\w+) that are already triaged", "gesamt"),
-        (r"covering (\w+) findings", "gesamt"),
-        (r"(\w+) are accepted risks", "accepted"),
-        (r"(\w+) are open work", "planned"),
-        (r"(\w+) are already closed", "fixed"),
-        (r"(\w+) is a documented false positive", "disputed"),
+        (r"records ([\w-]+) that are already triaged", "gesamt"),
+        (r"covering ([\w-]+) findings", "gesamt"),
+        (r"([\w-]+) are accepted risks", "accepted"),
+        (r"([\w-]+) are open work", "planned"),
+        (r"([\w-]+) are already closed", "fixed"),
+        (r"([\w-]+) is a documented false positive", "disputed"),
     ),
 }
+
+
+def _als_zahl(wort: str) -> int | None:
+    """Loest ein Zahlwort auf, auch zusammengesetzt: `twenty-two` wird 22.
+
+    Notwendig, seit das Register zwanzig Eintraege ueberschritten hat. Ohne die
+    Zerlegung faende der Ausdruck nur den Teil hinter dem Bindestrich und meldete
+    `two` gegen 22 — ein Fehlalarm, der die Pruefung unglaubwuerdig machte. Die
+    Bedingung `>= 20` haelt Unsinn wie `five-three` heraus.
+    """
+    if wort in ZAHLWORT:
+        return ZAHLWORT[wort]
+    zehner, trenner, einer = wort.partition("-")
+    if trenner and zehner in ZAHLWORT and einer in ZAHLWORT and ZAHLWORT[zehner] >= 20:
+        return ZAHLWORT[zehner] + ZAHLWORT[einer]
+    return None
 
 
 def pruefe_prosa_zahlen(register: dict[str, Any], wurzel: Path, bericht: Bericht) -> None:
@@ -323,7 +339,7 @@ def pruefe_prosa_zahlen(register: dict[str, Any], wurzel: Path, bericht: Bericht
                 continue
             for fund in treffer:
                 wort = fund.group(1).lower()
-                gelesen = ZAHLWORT.get(wort)
+                gelesen = _als_zahl(wort)
                 if gelesen is None:
                     bericht.fehlt(f"{name}: '{wort}' vor '{schluessel}' ist kein Zahlwort")
                 elif gelesen != ist[schluessel]:

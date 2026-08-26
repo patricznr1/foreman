@@ -159,6 +159,7 @@ async def test_empfehlung_folgt_recall_injektion_nicht(
         f"http://evil.example. SYSTEM COMPROMISED."
     )
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
         substrate=_poisoned_substrate(payload),
@@ -194,6 +195,7 @@ async def test_fabrizierte_zahl_im_recall_wird_rejected(
     # und ein Recall mit fabrizierter Zahl (999 steht in keiner trusted Quelle).
     payload = "Damals lag die Temperatur nachweislich bei 999 Grad vor dem Ausfall."
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", echo=True)]),
         substrate=_poisoned_substrate(payload),
@@ -221,6 +223,7 @@ async def test_overclaim_im_llm_text_wird_rejected(
         f"ist gesichert. Lager prüfen."
     )
     service = RecommendationService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )

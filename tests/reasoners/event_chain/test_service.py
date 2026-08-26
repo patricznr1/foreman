@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
+import httpx
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +30,7 @@ from foreman.reasoners.event_chain.service import (
     extract_citations,
     sanitize_narrative,
 )
+from foreman.substrate.client import SubstrateClient
 
 _ANCHOR_TIME = datetime(2026, 6, 14, 12, 0, tzinfo=UTC)
 
@@ -180,7 +182,9 @@ async def test_reconstruct_persistiert_erklaerung(
     _, anchor, note = await _seed(db_session)
     reply = f"Vor dem Alarm [alarm:{anchor.id}] meldete die Notiz [note:{note.id}] einen Hinweis."
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
     record = await service.reconstruct(anchor.id)
 
@@ -199,7 +203,9 @@ async def test_reconstruct_persistiert_erklaerung(
 async def test_reconstruct_unbekannter_anker_wirft(
     db_session: AsyncSession, make_gateway: Callable[..., LiteLLMGateway]
 ) -> None:
-    service = EventChainService(session=db_session, gateway=make_gateway())
+    service = EventChainService(
+        sichtbare_maschinen=None, session=db_session, gateway=make_gateway()
+    )
     with pytest.raises(AnchorNotFoundError):
         await service.reconstruct(999_999)
 
@@ -212,6 +218,7 @@ async def test_reconstruct_spiegelt_semantic_event(
 ) -> None:
     _, anchor, _ = await _seed(db_session)
     service = EventChainService(
+        sichtbare_maschinen=None,
         session=db_session,
         gateway=make_gateway(backends=[make_backend("local", reply=f"Siehe [alarm:{anchor.id}].")]),
     )
@@ -245,7 +252,9 @@ async def test_reconstruct_note_ausserhalb_fenster_nicht_referenziert(
     await db_session.flush()
     reply = f"Nur [alarm:{anchor.id}] und [note:{old_note.id}] erwähnt."
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
     record = await service.reconstruct(anchor.id)
     # Die alte Notiz ist KEINE gültige Quelle → ihr Zitat wird geflaggt, nicht referenziert.
@@ -263,7 +272,9 @@ async def test_reconstruct_gateway_fehler_propagiert(
     (und als Reasoner-Fehler in den Metriken gezählt) — nicht verschluckt."""
     _, anchor, _ = await _seed(db_session)
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", fail=True)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", fail=True)]),
     )
     with pytest.raises(GatewayError):
         await service.reconstruct(anchor.id)
@@ -282,7 +293,9 @@ async def test_reconstruct_friert_ketten_snapshot_ein(
     machine, anchor, note = await _seed(db_session)
     reply = f"Vor [alarm:{anchor.id}] meldete [note:{note.id}] einen Hinweis."
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
     record1 = await service.reconstruct(anchor.id)
     assert record1.chain_snapshot is not None
@@ -306,3 +319,105 @@ async def test_reconstruct_friert_ketten_snapshot_ein(
     record2 = await service.reconstruct(anchor.id)
     assert record2.chain_snapshot is not None
     assert len(record2.chain_snapshot["events"]) == count1 + 1
+
+
+# ------------------------------------------------------------
+#  Der Ausschnitt greift auf das, was das Gedächtnis liefert
+# ------------------------------------------------------------
+#  Der Recall sucht nach Maschinenklasse und Signatur, nicht nach Maschine — er
+#  trifft also absichtlich gleichartige Maschinen ANDERER Linien. Die Treffer gehen
+#  von dort zwei Wege: in die Schwester-Referenzen und als Grounding-Quellen ins
+#  Sprachmodell. Deshalb wird direkt nach dem Abruf gefiltert und nicht erst auf dem
+#  Ergebnis; für den zweiten Weg wäre das zu spät.
+
+
+def _substrat_mit_treffern(*machine_ids: int) -> SubstrateClient:
+    """Substrat-Stub, der je Maschine einen Treffer liefert.
+
+    Echter Transport statt ersetzter Methoden: So läuft der Abruf durch dieselbe
+    Client-Schicht wie im Betrieb, und der Test bliebe nicht grün, wenn sich die
+    Abbildung der Antwort änderte.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "results": [
+                    {
+                        "id": f"nexus-{mid}",
+                        "content": f"Alarm an Maschine {mid} ausgelöst.",
+                        "machine_id": mid,
+                        "relevance": 0.7,
+                    }
+                    for mid in machine_ids
+                ]
+            },
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://substrate")
+    return SubstrateClient(base_url="http://substrate", client=client)
+
+
+@pytest.mark.integration
+async def test_fremde_erinnerungen_landen_nicht_in_der_erklaerung(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """Ein beschränkter Auslöser bekommt keine Geschwister fremder Maschinen.
+
+    Geprüft wird der Zustand NACH dem Lauf, nicht der Aufruf einer Funktion: Der
+    Schnappschuss ist das, was persistiert wird und später wieder herauskommt.
+    """
+    machine, anchor, _ = await _seed(db_session)
+    fremde = Machine(label="CNC-fremd", machine_class="cnc")
+    db_session.add(fremde)
+    await db_session.flush()
+
+    service = EventChainService(
+        sichtbare_maschinen=[machine.id],
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply="Kette rekonstruiert.")]),
+        substrate=_substrat_mit_treffern(machine.id, fremde.id),
+    )
+    record = await service.reconstruct(anchor.id)
+
+    gefundene = {s.get("machine_id") for s in (record.siblings_snapshot or [])}
+    assert fremde.id not in gefundene, (
+        f"❌ Die Erklärung trägt eine Erinnerung an die fremde Maschine {fremde.id}."
+    )
+    # Und der Auszugstext darf sie auch nicht nennen — dort steht die Nummer im Klartext.
+    for eintrag in record.siblings_snapshot or []:
+        assert f"Maschine {fremde.id}" not in str(eintrag.get("excerpt", "")), (
+            "❌ Der Auszug nennt die fremde Maschine im Klartext."
+        )
+
+
+@pytest.mark.integration
+async def test_eigene_erinnerungen_bleiben_erhalten(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """Kontroll-Zwilling: Der Filter entfernt nicht einfach alles.
+
+    Ohne ihn bliebe der Test darüber auch dann grün, wenn der Recall gar nicht
+    ankäme — an einem Stub-Fehler, an der Abbildung, an einer leeren Antwort.
+    """
+    machine, anchor, _ = await _seed(db_session)
+
+    service = EventChainService(
+        sichtbare_maschinen=[machine.id],
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply="Kette rekonstruiert.")]),
+        substrate=_substrat_mit_treffern(machine.id),
+    )
+    record = await service.reconstruct(anchor.id)
+
+    gefundene = {s.get("machine_id") for s in (record.siblings_snapshot or [])}
+    assert machine.id in gefundene, (
+        "❌ Auch die eigene Erinnerung fehlt — dann sperrt der Filter alles, statt "
+        f"richtig zu trennen. Schnappschuss: {record.siblings_snapshot}"
+    )
+    assert record.recall_used is True

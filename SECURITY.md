@@ -110,6 +110,18 @@ of flagging it (`CLAIMS.md` C-017).
 server, a malicious operator with valid credentials, and anyone who can already run code
 in the container. FOREMAN cannot defend against elements it must trust to function.
 
+**Where the role model does not apply.** The MCP interface is a *system* entrance, not a
+user entrance. It authenticates one shared bearer token and never resolves a person: no
+JWT, no user record, no role, and therefore no resource scope. A holder of that token
+reads the whole fleet. This is a deliberate design decision — a third-party system
+integrating over MCP has no user to scope to — and it is stated here because §5 lists
+"privilege escalation past role and resource scoping" as a vulnerability, and without
+this paragraph the MCP path looks like exactly that. It is not: there is no role on that
+path to escalate past. What follows from it is that the MCP token belongs in the same
+category as a database password, and that the interface is read-only by construction
+(`GROUND_TRUTH.md` §17). Personal data is pseudonymized or masked on this path as on
+every other. Recorded as F-023 with the condition its acceptance rests on.
+
 **What the damage ceiling is.** No actuation, human in the decision loop, and
 safety-critical recommendations require operator acknowledgement. The worst outcome of a
 fully successful in-application attack is a misleading analysis, a disclosure of the data
@@ -189,20 +201,25 @@ assumption is, what the status is (`accepted` · `planned` · `fixed` · `disput
 where the evidence sits. `scripts/check_findings.py` verifies in CI that every referenced
 path still exists and that no review date has lapsed.
 
-The register is not an argument that nothing is wrong. Of its twenty entries, five are
+The register is not an argument that nothing is wrong. Of its twenty-three entries, six are
 accepted risks with the condition of that acceptance written down, **seven are open work**,
-seven are already closed, and one is a documented false positive. Two of the open seven —
+nine are already closed, and one is a documented false positive. Two of the open seven —
 a liveness probe that is the only probe, and a security guard whose default is "off" —
 are unqualified defects with no justification offered.
 
-Five of the seven closed entries were documentation claiming a control the code did not
+Five of the nine closed entries were documentation claiming a control the code did not
 have: an API-wide rate limiter; CI gates for secret scanning and dependency auditing; a
 cyclomatic-complexity gate; a posture file that did not match its own declared schema; and
-two guarantees stated more strongly than they hold. The other two were authorization
-defects — two reasoner triggers that checked the caller's role but not which machines the
-caller may see. Those two are the more serious kind, and they are worth reading in full
-(F-016, F-017): the check existed in the neighbouring reasoner and in the read routes
-beside them, which is precisely why it was easy to miss where it was absent.
+two guarantees stated more strongly than they hold. The other four were authorization
+defects, and those are the ones worth reading in full.
+
+Two reasoner triggers checked the caller's role but not which machines the caller may see
+(F-016, F-017) — the check existed in the neighbouring reasoner and in the read routes
+beside them, which is precisely why it was easy to miss where it was absent. The other two
+(F-021, F-022) are subtler and say something about this architecture: the memory recall that
+finds *comparable* incidents is deliberately not machine-specific, because its whole purpose
+is to learn from similar machines elsewhere. It therefore returns cases from other lines by
+design — and of the three places that use it, only the archive search applied the scope.
 
 Most of these entries were raised by outside readers rather than found here. That is the
 register working as intended, and it is also the honest answer to the question of how much

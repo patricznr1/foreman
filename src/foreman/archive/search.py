@@ -31,7 +31,11 @@ from foreman.db.models import Alarm, MaintenanceEvent, WorkerNote
 from foreman.db.scope_sql import machine_scope_sql
 from foreman.embeddings.provider import EmbeddingProvider
 from foreman.notes.search import DEFAULT_SEARCH_K, RRF_K, embed_and_search_hybrid
-from foreman.reasoners.event_chain.recall import RecallItem, recall_similar_incidents
+from foreman.reasoners.event_chain.recall import (
+    RecallItem,
+    nur_sichtbare_treffer,
+    recall_similar_incidents,
+)
 from foreman.substrate.client import SubstrateClient
 
 # Alle Archiv-Quellen — Default-Suchraum, wenn `sources` nicht gesetzt ist.
@@ -231,17 +235,14 @@ async def _substrat_treffer(
         return []
     items = await recall_similar_incidents(substrate, q, max_results=k)
 
-    erlaubt = None if scope is None else set(scope)
+    # Der Rollen-Ausschnitt liegt in `nur_sichtbare_treffer` — EINE Quelle fuer alle
+    # drei Stellen, die das Gedaechtnis befragen. Die Begruendung fuer die strenge
+    # Auslegung (Treffer ohne bekannte Maschine fallen heraus) steht dort.
+    sichtbar = nur_sichtbare_treffer(items, scope)
     treffer: list[ArchiveHit] = []
-    for item in items:
+    for item in sichtbar:
+        # Der Wunsch-Filter des Aufrufers wirkt zusaetzlich zum Ausschnitt.
         if machine_id is not None and item.machine_id != machine_id:
-            continue
-        # Der Rollen-Ausschnitt wirkt hier genauso nachtraeglich wie der Wunsch-
-        # Filter darueber, und mit derselben Strenge: Eine Erinnerung OHNE bekannte
-        # Maschine faellt fuer eine beschraenkte Rolle heraus. Sie koennte zu einer
-        # erlaubten gehoeren — belegt ist es nicht, und eine unbelegte Zugehoerigkeit
-        # ist auf diesem Pfad kein Grund, sie zu zeigen.
-        if erlaubt is not None and item.machine_id not in erlaubt:
             continue
         treffer.append(_memory_hit(item))
     return treffer

@@ -12,6 +12,7 @@
 # ============================================================
 from __future__ import annotations
 
+import json
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 
@@ -1152,3 +1153,123 @@ async def test_eigene_drift_warnung_laesst_sich_quittieren(
         "SELECT acknowledged_at FROM alarms WHERE id = $1", eigene_warnung
     )
     assert quittiert_am is not None, "❌ Die Quittierung kam durch, wirkte aber nicht."
+
+
+# --- Schwester-Referenzen: der Ausschnitt gilt auch für das, was das Gedächtnis liefert ---
+#
+# Diese Referenzen sind der Sonderfall auf dem Ausschnitts-Pfad, und zwar aus einem
+# Grund, der ihnen nicht anzusehen ist: Der Gedächtnis-Abruf des Reasoners sucht nach
+# MASCHINENKLASSE und Signatur, nicht nach Maschine. Er trifft damit absichtlich die
+# gleichartigen Maschinen anderer Linien — das ist sein fachlicher Sinn. Die Treffer
+# tragen die fremde Maschinennummer und einen Auszug des gespiegelten Freitextes.
+#
+# Zweimal gefiltert wird deshalb: beim Erzeugen gegen den Ausschnitt des Auslösers
+# (sonst ginge Fremdes ins Sprachmodell und stünde danach in der Erzählung), und beim
+# Ausliefern gegen den des Lesers (ein Schnappschuss, den ein Manager erzeugt hat, wird
+# später auch von beschränkten Rollen abgerufen). Der zweite Fall ist der hier geprüfte.
+
+
+async def _erklaerung_mit_geschwistern(
+    raw_conn: asyncpg.Connection, *, machine_id: int, anchor_alarm_id: int, fremde_machine_id: int
+) -> int:
+    """Eine gespeicherte Erklärung zu `machine_id`, deren eingefrorene Geschwister auf
+    eine FREMDE Maschine zeigen — der Zustand, den ein Manager-Lauf erzeugt."""
+    snapshot = json.dumps(
+        [
+            {
+                "recall_ref": "nexus:1",
+                "machine_id": fremde_machine_id,
+                "machine_class": "cnc",
+                "explanation_id": None,
+                "similarity_basis": "geteilte Anker-Signatur",
+                "excerpt": f"Alarm an Maschine {fremde_machine_id} ausgelöst.",
+            }
+        ]
+    )
+    zeile = await raw_conn.fetchval(
+        """
+        INSERT INTO reasoner_explanations (
+            anchor_alarm_id, machine_id, reasoner, narrative, referenced_source_ids,
+            flagged_unsupported, is_hypothesis, confidence, recall_used, siblings_snapshot
+        ) VALUES ($1, $2, 'event_chain', 'Kette rekonstruiert.', '[]'::jsonb,
+                  '[]'::jsonb, false, 'medium', true, $3::jsonb)
+        RETURNING id
+        """,
+        anchor_alarm_id,
+        machine_id,
+        snapshot,
+    )
+    return int(zeile)
+
+
+async def test_fremde_geschwister_erreichen_den_beschraenkten_leser_nicht(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+    grant_machine_scope: Callable[[str, int], Awaitable[None]],
+) -> None:
+    """Der Ausschnitt des LESERS entscheidet, nicht der des Erzeugers.
+
+    Die Erklärung selbst gehört zur eigenen Maschine — der Zugriff auf sie ist also
+    zulässig. Ihre eingefrorenen Geschwister zeigen aber auf eine fremde Linie, samt
+    Maschinennummer und Auszug des dortigen Freitextes. Genau daran hängt der Fall:
+    Ein Nebeneingang, der über eine erlaubte Ressource führt.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    anker = await _alarm(raw_conn, eigene)
+    erklaerung = await _erklaerung_mit_geschwistern(
+        raw_conn, machine_id=eigene, anchor_alarm_id=anker, fremde_machine_id=fremde
+    )
+    headers = await auth_headers_for("scope-geschwister@x.de", "worker")
+    await grant_machine_scope("scope-geschwister@x.de", eigene)
+
+    direkt = await client.get(
+        f"/api/v1/reasoners/event_chain/explanations/{erklaerung}/siblings", headers=headers
+    )
+    detail = await client.get(
+        f"/api/v1/reasoners/event_chain/explanations/{erklaerung}", headers=headers
+    )
+
+    assert direkt.status_code == 200, direkt.text
+    assert detail.status_code == 200, detail.text
+    assert direkt.json() == [], "❌ Der Geschwister-Abruf gibt eine fremde Maschine heraus."
+    assert detail.json()["siblings"] == [], (
+        "❌ Die Detail-Sicht gibt eine fremde Maschine heraus — beide Wege liefern "
+        "denselben Schnappschuss, also müssen beide filtern."
+    )
+    # Und die eigentliche Sorge: die fremde Nummer darf in keiner der beiden Antworten
+    # auftauchen, auch nicht im Auszugstext.
+    for antwort in (direkt, detail):
+        assert f"Maschine {fremde}" not in antwort.text, (
+            f"❌ Der Auszug nennt die fremde Maschine {fremde} im Klartext."
+        )
+
+
+async def test_der_unbeschraenkte_leser_sieht_die_geschwister_weiterhin(
+    client: AsyncClient,
+    raw_conn: asyncpg.Connection,
+    auth_headers_for: AuthHeaders,
+) -> None:
+    """Kontroll-Zwilling: Für einen Manager bleibt der Schnappschuss vollständig.
+
+    Ohne ihn bliebe der Test darüber auch dann grün, wenn der Filter ALLES entfernte —
+    oder wenn die Geschwister aus einem ganz anderen Grund nie ankämen.
+    """
+    eigene, fremde = await _maschinen_paar(raw_conn)
+    anker = await _alarm(raw_conn, eigene)
+    erklaerung = await _erklaerung_mit_geschwistern(
+        raw_conn, machine_id=eigene, anchor_alarm_id=anker, fremde_machine_id=fremde
+    )
+    headers = await auth_headers_for("scope-geschwister-mgr@x.de", "manager")
+
+    antwort = await client.get(
+        f"/api/v1/reasoners/event_chain/explanations/{erklaerung}/siblings", headers=headers
+    )
+
+    assert antwort.status_code == 200, antwort.text
+    geschwister = antwort.json()
+    assert len(geschwister) == 1, (
+        "❌ Der Manager ist unbeschränkt — für ihn muss der Schnappschuss vollständig "
+        f"bleiben. Bekommen: {geschwister}"
+    )
+    assert geschwister[0]["machine_id"] == fremde

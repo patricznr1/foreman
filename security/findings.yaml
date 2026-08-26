@@ -692,3 +692,153 @@ findings:
       does not match the deployment's own origin, keeping SameSite and httpOnly as
       they are.
     review_by: "2026-11-26"
+
+  # ---------------------------------------------------------------------------
+  # F-021 and F-022 share one root: the memory recall was filtered in exactly one
+  # of the three places that use it. Found on 2026-08-26 by a review that asked
+  # the follow-up question to F-016/F-017 — "where else?" — across every path to
+  # machine data. Four of six paths came back clean.
+  # ---------------------------------------------------------------------------
+
+  - id: F-021
+    title: "Recalled memories from other lines reached the event-chain explanation"
+    where:
+      - "src/foreman/reasoners/event_chain/service.py"
+      - "src/foreman/reasoners/event_chain/schema.py"
+      - "src/foreman/reasoners/event_chain/router.py"
+      - "src/foreman/reasoners/event_chain/recall.py"
+    observation: >
+      The event-chain reasoner queries the memory substrate for similar incidents.
+      That query is deliberately not machine-specific — it matches on machine class,
+      alarm signature and category, and therefore finds comparable machines on other
+      lines. The hits were used unfiltered: they became sibling references carrying
+      the foreign machine id and an excerpt of the mirrored free text, they were
+      persisted in the frozen snapshot, and they went into the language model as
+      grounding sources. The archive search calls the same recall function and does
+      filter it.
+    observation_is_correct: true
+    severity_as_scanned: "high — cross-line data reachable through an allowed resource"
+    severity_after_triage: >
+      higher than F-016/F-017 for three reasons: it reaches a reader through a
+      resource they are entitled to, the excerpt names the foreign machine in plain
+      text and carries mirrored free text, and the frozen snapshot keeps working
+      after the fact. Not exploitable in the public demo, whose only account is a
+      manager and therefore unrestricted
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [B]
+    justification: >
+      None. Worse than absent: the docstring of the siblings route stated that the
+      references carry no machine id of their own and inherit the scope of their
+      explanation. Both halves were untrue, and that sentence is why the gap stayed
+      invisible — it answered the question before anyone asked it.
+    remedy: >
+      Filtered twice, because the two filters protect different things.
+
+      At creation, immediately after the recall and before anything else uses it:
+      the hits go two ways from there — into the sibling references and into the
+      language model. A filter further down would have been too late for the second,
+      because the narrative would already have been written and might have
+      paraphrased what it saw.
+
+      At delivery, against the scope of the READER: the snapshot is frozen and is
+      read later by other people. An explanation a manager created legitimately
+      contains the whole fleet; a worker retrieving the same explanation must still
+      not see it. The scope decides what a reader gets, not what is stored.
+
+      Both filters live in one function each, shared with the archive search, which
+      previously carried its own inline copy. Separate filters are the place where
+      one path falls behind — which is exactly what happened here.
+
+      The strictness matches the archive search: a hit without a resolved machine
+      drops out for a restricted role, because its membership is unproven.
+
+      Four tests, two pairs. Counter-checks run separately per filter: disabling the
+      creation filter fails only its own test, disabling the delivery filter fails
+      only its own — so neither test is standing in for the other. The twins prove
+      the filters do not simply remove everything: an own memory survives, and an
+      unrestricted manager still sees the complete snapshot.
+    evidence:
+      - "src/foreman/reasoners/event_chain/recall.py"
+      - "src/foreman/reasoners/event_chain/schema.py"
+      - "tests/integration/test_ressourcen_scope.py"
+      - "tests/reasoners/event_chain/test_service.py"
+    review_by: "2027-02-26"
+
+  - id: F-022
+    title: "The same unfiltered recall fed the worker recommendation prompt"
+    where:
+      - "src/foreman/reasoners/failure/recommendation.py"
+    observation: >
+      The failure reasoner's recommendation runs the same kind of recall — machine
+      class rather than machine — and passed the hits into the language model as
+      grounding sources without applying the resource scope.
+    observation_is_correct: true
+    severity_as_scanned: "low"
+    severity_after_triage: >
+      lower than F-021 and stated as such: the raw texts do not appear in the
+      response, which carries only the generated recommendation and its source ids,
+      and a foreign machine number would in most cases fail the numeric grounding
+      guard because no trusted source supports it. What can pass through is the
+      substance of another machine's incident, paraphrased and unattributed. That is
+      a possible path, not a demonstrated leak, and it is recorded as the former
+    status: fixed
+    fixed_at: "2026-08-26"
+    profile: [B]
+    justification: >
+      None. Same root as F-021, same fix, and it would have been the next place to
+      go wrong on its own.
+    remedy: >
+      The recommendation service takes the caller's scope and filters the recall
+      immediately, using the shared function. Both services take that scope as a
+      constructor argument WITHOUT a default value: a default of "unrestricted"
+      would mean that whoever forgets it gets the whole fleet, and that is the
+      decision this register exists to make visible.
+    evidence:
+      - "src/foreman/reasoners/failure/recommendation.py"
+      - "src/foreman/reasoners/event_chain/recall.py"
+    review_by: "2027-02-26"
+
+  - id: F-023
+    title: "The MCP interface has no role model and no resource scope"
+    where:
+      - "src/foreman/mcp/auth.py"
+      - "src/foreman/mcp/server.py"
+      - "SECURITY.md"
+    observation: >
+      The MCP server authenticates a single shared bearer token. It decodes no JWT,
+      loads no user record and reads no role, so neither the role matrix nor the
+      ResourceScope class applies on that path. Whoever holds the token reads the
+      whole fleet.
+    observation_is_correct: true
+    severity_as_scanned: "high — reads as unrestricted access to all machine data"
+    severity_after_triage: >
+      not a scope defect, and the distinction matters: a scope violation requires a
+      user whose scope is exceeded, and on this path there is no user. It is a
+      system-to-system entrance, the same category as a database connection. Raised
+      during the review of all access paths on 2026-08-26 and recorded rather than
+      dismissed, because SECURITY.md section 5 lists privilege escalation past role
+      and resource scoping as in-scope — a reader was entitled to expect this
+      interface to be covered by it, and nothing said otherwise
+    status: accepted
+    profile: [B]
+    depends_on: >
+      That the MCP token is handled as a system secret — issued only to trusted
+      integrating systems, held in a secret store, never given to a person as a
+      substitute for a login. If it ever becomes something a user holds, this
+      acceptance fails, and the interface needs an identity and a scope before that
+      happens. The token is rejected at startup in production when it is missing or
+      shorter than 32 bytes (mcp/auth.py, require_secure_token).
+    justification: >
+      Three properties bound the consequence. The interface is read-only by
+      construction — there is no tool that writes, and a test asserts it. Personal
+      data is pseudonymized or masked on this path as on every other. And the
+      interface runs as its own application on its own port, so the token opens
+      nothing beyond it. What remains is unrestricted READING of machine data by a
+      trusted system, which is what an integration is for.
+    remedy: >
+      Documented rather than changed: SECURITY.md section 4 now states plainly that
+      the role model does not apply on this path and why. Should per-client
+      attribution arrive (GROUND_TRUTH.md marks per-client MCP attribution as vision), a scope becomes
+      possible and this entry is to be re-decided rather than extended.
+    review_by: "2027-02-26"

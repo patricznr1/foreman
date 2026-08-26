@@ -159,7 +159,15 @@ async def create_recommendation(
     Umdeutung des Sim-Vorbehalts — Invariante II); in dem Fall wird NICHTS persistiert.
     KEIN Auto-LLM (on-demand, Kostenkontrolle). KEINE Aktorik."""
     await _sichtbare_vorhersage(session, scope, prediction_id)
-    service = RecommendationService(session=session, gateway=gateway, substrate=substrate)
+    # Der Ausschnitt geht MIT: Der Gedächtnis-Abruf des Reasoners fragt nach
+    # Maschinenklasse, nicht nach Maschine — seine Treffer stammen also auch von
+    # fremden Linien und gehen als Quellen ins Sprachmodell.
+    service = RecommendationService(
+        session=session,
+        gateway=gateway,
+        substrate=substrate,
+        sichtbare_maschinen=await scope.machine_ids(),
+    )
     try:
         return await service.recommend(prediction_id)
     except PredictionNotFoundError as exc:

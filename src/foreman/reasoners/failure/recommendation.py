@@ -39,6 +39,7 @@ from foreman.observability.metrics import (
     observe_reasoner_run,
     record_failure_recommendation_recall,
 )
+from foreman.reasoners.event_chain.recall import nur_sichtbare_treffer
 from foreman.reasoners.failure.grounding import allowed_source_ids, build_recommendation_sources
 from foreman.reasoners.failure.prompts import (
     RECOMMENDATION_SYSTEM_PROMPT,
@@ -192,6 +193,11 @@ class RecommendationService:
 
     session: AsyncSession
     gateway: LLMGateway
+    # Der Maschinen-Ausschnitt des Anfragenden. `None` heisst unbeschraenkt, `[]`
+    # heisst: nichts. Ohne Vorgabewert, aus demselben Grund wie beim
+    # Ereignisketten-Reasoner: Der Recall unten fragt nach Maschinenklasse, nicht
+    # nach Maschine, und traegt damit systematisch Fremdes herein.
+    sichtbare_maschinen: Sequence[int] | None
     substrate: SubstrateClient | None = None
     recall_max_results: int = 5
 
@@ -248,10 +254,16 @@ class RecommendationService:
 
         machine = await self.session.get(Machine, prediction.machine_id)
         # NEXUS-Recall ähnlicher Vorläufe (best-effort, blockiert nie).
-        recall_items = await recall_similar_runups(
-            self.substrate,
-            build_runup_query(machine, prediction),
-            max_results=self.recall_max_results,
+        # Der Ausschnitt greift sofort: Die Treffer gehen als Grounding-Quellen ins
+        # Sprachmodell (build_recommendation_sources unten). Ein Filter danach kaeme
+        # zu spaet — der Empfehlungstext waere dann schon geschrieben.
+        recall_items = nur_sichtbare_treffer(
+            await recall_similar_runups(
+                self.substrate,
+                build_runup_query(machine, prediction),
+                max_results=self.recall_max_results,
+            ),
+            self.sichtbare_maschinen,
         )
         record_failure_recommendation_recall("hit" if recall_items else "miss")
 

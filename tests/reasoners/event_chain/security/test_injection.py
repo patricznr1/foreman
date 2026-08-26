@@ -119,7 +119,9 @@ async def test_pipeline_neutralisiert_injektion(
     anchor, note = await _seed(db_session, build_worker_note(payload))
     raw_note = build_worker_note(payload)
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", echo=True)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", echo=True)]),
     )
     # Kein Crash → das ReasonerExplanation-Schema validiert trotz Injektion.
     record = await service.reconstruct(anchor.id)
@@ -153,7 +155,9 @@ async def test_erfundene_bracket_quelle_wird_geflaggt(
     anchor, _ = await _seed(db_session, "Lager läuft heiß")
     reply = f"Siehe [alarm:{anchor.id}] und die erfundene Quelle [evt:9999]."
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
     record = await service.reconstruct(anchor.id)
     assert "evt:9999" in record.flagged_unsupported
@@ -171,7 +175,9 @@ async def test_fabrizierte_zahl_wird_geflaggt(
     anchor, _ = await _seed(db_session, "Lager läuft heiß")
     reply = f"Laut [alarm:{anchor.id}] lag die Temperatur bei 999 Grad."
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
     record = await service.reconstruct(anchor.id)
     assert "999" in record.flagged_unsupported
@@ -190,7 +196,9 @@ async def test_benigne_notiz_wird_nicht_faelschlich_geflaggt(
     )
     reply = f"Rund um [alarm:{anchor.id}] meldete [note:{note.id}] einen Hinweis auf das Lager."
     service = EventChainService(
-        session=db_session, gateway=make_gateway(backends=[make_backend("local", reply=reply)])
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=reply)]),
     )
     record = await service.reconstruct(anchor.id)
     assert record.flagged_unsupported == []
