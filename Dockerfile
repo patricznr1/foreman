@@ -38,6 +38,23 @@ COPY alembic.ini ./
 
 ENV PYTHONPATH=/app/src
 
+# 4) Unprivilegiert laufen (wie das Frontend-Image, das den mitgelieferten Nutzer
+#    'node' verwendet). Ohne diesen Schritt liefe uvicorn als root, und jede
+#    Codeausführungs-Lücke wäre unmittelbar root im Container.
+#    Feste UID, damit ein gemountetes Volume berechenbare Eigentumsverhältnisse hat.
+#    Es wird nichts umgeschrieben: Der Code unter /app, die Pakete unter
+#    site-packages und das spaCy-Modell sind welt-lesbar, und geschrieben wird zur
+#    Laufzeit nichts — Protokolle gehen nach stdout, der Zustand in die Datenbank.
+RUN useradd --create-home --uid 10001 foreman
+USER foreman
+
 EXPOSE 8000
+
+# Der Container meldet erst „gesund", wenn die Anwendung antwortet — nicht schon,
+# wenn der Prozess gestartet ist. Auf Railway prüft die Plattform ohnehin von außen
+# (healthcheckPath); das hier trägt den lokalen docker-compose-Betrieb, wo ein
+# „läuft" ohne Antwort sonst nicht auffällt.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"
 
 CMD ["uvicorn", "foreman.main:app", "--host", "0.0.0.0", "--port", "8000"]
