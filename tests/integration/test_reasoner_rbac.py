@@ -21,7 +21,7 @@ AuthFor = Callable[[str, str], Awaitable[dict[str, str]]]
 
 async def _sichtbare_maschine(
     client: AsyncClient,
-    headers: dict[str, str],
+    auth_for: AuthFor,
     email: str,
     grant: Callable[[str, int], Awaitable[None]],
 ) -> int:
@@ -31,7 +31,12 @@ async def _sichtbare_maschine(
     Maschinen-Ausschnitt liegt eine Ebene davor; ohne die Zuweisung käme der
     Aufbau nicht einmal bis zu der Sperre, um die es hier geht.
     """
-    machine_id = await _machine(client, headers)
+    # Die Anlagenstruktur pflegt der Betreiber (test_stammdaten_pflege.py) — der
+    # Aufbau läuft deshalb mit der Verwaltungsrolle. Diese Datei prüft die
+    # ROLLEN-Sperre der Trigger-Routen; käme sie schon beim Aufbau nicht durch,
+    # erreichte sie die Sperre nie, um die es hier geht.
+    verwalter = await auth_for("rbac-verwalter@x.de", "manager")
+    machine_id = await _machine(client, verwalter)
     await grant(email, machine_id)
     return machine_id
 
@@ -75,7 +80,9 @@ async def test_acknowledge_worker_ist_403(
 ) -> None:
     lead_email = "rbac-ack-lead@x.de"
     lead = await auth_headers_for(lead_email, "shift_lead")
-    machine_id = await _sichtbare_maschine(client, lead, lead_email, grant_machine_scope)
+    machine_id = await _sichtbare_maschine(
+        client, auth_headers_for, lead_email, grant_machine_scope
+    )
     alarm_id = await _drift_alarm(client, lead, machine_id)
 
     worker_email = "rbac-ack-wrk@x.de"
@@ -98,7 +105,9 @@ async def test_acknowledge_manager_darf(
 ) -> None:
     lead_email = "rbac-ack-lead2@x.de"
     lead = await auth_headers_for(lead_email, "shift_lead")
-    machine_id = await _sichtbare_maschine(client, lead, lead_email, grant_machine_scope)
+    machine_id = await _sichtbare_maschine(
+        client, auth_headers_for, lead_email, grant_machine_scope
+    )
     alarm_id = await _drift_alarm(client, lead, machine_id)
 
     manager = await auth_headers_for("rbac-ack-mgr@x.de", "manager")

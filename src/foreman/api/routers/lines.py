@@ -10,25 +10,31 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, ResourceScopeDep, SessionDep
-from foreman.db.models import Line
+from foreman.api.deps import ResourceScopeDep, SessionDep, require_roles
+from foreman.db.models import Line, User
+from foreman.realtime.authz import ROLE_MANAGER
 from foreman.schemas.resources import LineCreate, LineRead
 
 router = APIRouter(prefix="/lines", tags=["lines"])
 
+# Anlagenstruktur pflegt der Betreiber: Manager (es gibt keine separate
+# „admin"-Rolle → Manager, wie beim Audit-Trail in api/routers/audit.py).
+# ANSCHLUSSPUNKT: Sobald eine eigene Administrations-Rolle entsteht, wandert die
+# Berechtigung dorthin — hier ist es dann eine Zeile.
+# Warum die Rolle und NICHT der Maschinen-Ausschnitt: Der Ausschnitt leitet sich
+# aus zugewiesenen Maschinen ab, und eine frisch angelegte Linie enthält noch
+# keine. Eine Scope-Prüfung verböte, die erste Maschine einer Linie anzulegen.
+StammdatenVerwalter = Annotated[User, Depends(require_roles(ROLE_MANAGER))]
+
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=LineRead)
-async def create_line(body: LineCreate, session: SessionDep, user: CurrentUser) -> Line:
-    """Legt eine Fertigungsstraße an.
-
-    Eine neue Linie hat noch keine Zugehörigkeit, an der ein Ausschnitt hinge —
-    hier greift die Identitätsprüfung. Welche Rollen Stammdaten anlegen dürfen,
-    ist eine fachliche Festlegung der Rollenmatrix.
-    """
+async def create_line(body: LineCreate, session: SessionDep, user: StammdatenVerwalter) -> Line:
+    """Legt eine Fertigungsstraße an — Betreiber-Handlung, siehe StammdatenVerwalter."""
     obj = Line(**body.model_dump())
     session.add(obj)
     await session.flush()

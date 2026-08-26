@@ -128,19 +128,30 @@ async def test_note_text_at_limit_is_accepted(
 # --------------------------------------------------------------------------- #
 #  maintenance_events — Nachweisfeld mit Rollen-Regel
 # --------------------------------------------------------------------------- #
-async def _machine_id(client: AsyncClient, headers: dict[str, str]) -> int:
-    line = (await client.post("/api/v1/lines", json={"label": "L"}, headers=headers)).json()
+async def _machine_id(client: AsyncClient, verwalter: dict[str, str]) -> int:
+    """Legt Linie und Maschine an — mit der VERWALTUNGSROLLE.
+
+    Die Anlagenstruktur pflegt der Betreiber (test_stammdaten_pflege.py); eine
+    beschränkte Rolle bekäme hier 403 und der Test käme nicht bis zu der Regel, um
+    die es ihm geht. Der Aufbau ist nicht der Prüfling.
+    """
+    line = (await client.post("/api/v1/lines", json={"label": "L"}, headers=verwalter)).json()
     machine = (
         await client.post(
-            "/api/v1/machines", json={"label": "M", "line_id": line["id"]}, headers=headers
+            "/api/v1/machines", json={"label": "M", "line_id": line["id"]}, headers=verwalter
         )
     ).json()
     return int(machine["id"])
 
 
+async def verwalter_header(client: AsyncClient, auth_for: AuthHeaders) -> dict[str, str]:
+    """Ein Nutzer mit Verwaltungsrolle für den Testaufbau (nicht der Prüfling)."""
+    return await auth_for("bind-verwalter@foreman.de", "manager")
+
+
 async def _sichtbare_maschine(
     client: AsyncClient,
-    headers: dict[str, str],
+    auth_for: AuthHeaders,
     email: str,
     grant: Callable[[str, int], Awaitable[None]],
 ) -> int:
@@ -151,7 +162,8 @@ async def _sichtbare_maschine(
     Tests prüften eine andere Sperre als die, für die sie gebaut sind — ein 403
     wäre dann kein Beleg mehr für die Rollenregel darunter.
     """
-    machine_id = await _machine_id(client, headers)
+    verwalter = await verwalter_header(client, auth_for)
+    machine_id = await _machine_id(client, verwalter)
     await grant(email, machine_id)
     return machine_id
 
@@ -165,7 +177,7 @@ async def test_maintenance_defaults_to_token_identity(
     """Ohne `performed_by` wird der eingeloggte Nutzer eingetragen (nicht NULL)."""
     email = "bind-mt-wrk@foreman.de"
     headers = await auth_headers_for(email, "worker")
-    machine_id = await _sichtbare_maschine(client, headers, email, grant_machine_scope)
+    machine_id = await _sichtbare_maschine(client, auth_headers_for, email, grant_machine_scope)
     own = await _own_id(client, headers)
 
     response = await client.post(
@@ -194,7 +206,7 @@ async def test_maintenance_worker_cannot_write_for_others(
     """
     email = "bind-mt-wrk2@foreman.de"
     headers = await auth_headers_for(email, "worker")
-    machine_id = await _sichtbare_maschine(client, headers, email, grant_machine_scope)
+    machine_id = await _sichtbare_maschine(client, auth_headers_for, email, grant_machine_scope)
 
     response = await client.post(
         "/api/v1/maintenance_events",
@@ -220,7 +232,7 @@ async def test_supervising_roles_may_record_for_others(
     aufsichtsführenden Rollen — und wird tokenisiert abgelegt."""
     email = f"bind-mt-{role}@foreman.de"
     headers = await auth_headers_for(email, role)
-    machine_id = await _sichtbare_maschine(client, headers, email, grant_machine_scope)
+    machine_id = await _sichtbare_maschine(client, auth_headers_for, email, grant_machine_scope)
 
     response = await client.post(
         "/api/v1/maintenance_events",

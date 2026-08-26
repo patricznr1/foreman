@@ -8,21 +8,39 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import ResourceScopeDep, SessionDep
-from foreman.db.models import Component
+from foreman.api.deps import ResourceScopeDep, SessionDep, require_roles
+from foreman.db.models import Component, User
+from foreman.realtime.authz import ROLE_MANAGER
 from foreman.schemas.resources import ComponentCreate, ComponentRead
 
 router = APIRouter(prefix="/components", tags=["components"])
 
+# Anlagenstruktur pflegt der Betreiber: Manager (es gibt keine separate
+# „admin"-Rolle → Manager, wie beim Audit-Trail in api/routers/audit.py).
+# ANSCHLUSSPUNKT: Sobald eine eigene Administrations-Rolle entsteht, wandert die
+# Berechtigung dorthin — hier ist es dann eine Zeile.
+StammdatenVerwalter = Annotated[User, Depends(require_roles(ROLE_MANAGER))]
+
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=ComponentRead)
 async def create_component(
-    body: ComponentCreate, session: SessionDep, scope: ResourceScopeDep
+    body: ComponentCreate,
+    session: SessionDep,
+    scope: ResourceScopeDep,
+    user: StammdatenVerwalter,
 ) -> Component:
+    """Legt eine Komponente an — Betreiber-Handlung, siehe StammdatenVerwalter.
+
+    Die Ausschnitts-Prüfung bleibt stehen, obwohl sie für `manager` heute nichts
+    bewirkt (unbeschränkte Rolle). Sie trägt in dem Moment wieder, in dem die
+    Verwaltungsrolle um eine beschränkte erweitert wird — sie jetzt zu entfernen
+    hieße, sie später neu zu finden.
+    """
     await scope.require(body.machine_id)
     obj = Component(**body.model_dump())
     session.add(obj)
