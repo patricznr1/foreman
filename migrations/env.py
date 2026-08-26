@@ -19,7 +19,13 @@ from foreman.db.base import Base
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # `disable_existing_loggers=False` ist hier wesentlich und nicht kosmetisch:
+    # Der Standardwert von `fileConfig` ist True und schaltet JEDEN bereits
+    # erzeugten Logger stumm — also alle FOREMAN-Logger, die beim Import ihres
+    # Moduls entstanden sind. Wer Migrationen im selben Prozess fahren lässt
+    # (Testaufbau, Startvorgang), verlöre danach lautlos die gesamte
+    # Protokollierung der Anwendung: kein Fehler, keine Meldung, nur Stille.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 

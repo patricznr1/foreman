@@ -99,8 +99,12 @@ async def _run(*, email: str, role: Role, password: str, db_url: str | None) -> 
             user_id: int = user.id
     finally:
         await engine.dispose()
-    # Kein Passwort, kein Hash im Log — nur Identität und Rolle.
-    logger.info("%s Nutzer angelegt: %s (id=%d, Rolle=%s)", OK, email, user_id, role.value)
+    # Kein Passwort, kein Hash — und keine Mailadresse. Die Adresse IST der
+    # Personenbezug (Art. 4 Nr. 1 DSGVO), und Betriebsprotokolle haben eine eigene
+    # Aufbewahrung außerhalb des Löschkonzepts der Anwendung: Was dort steht, ist
+    # mit ihren Mitteln nicht mehr zu entfernen. Kennung und Rolle halten den
+    # Vorgang nachvollziehbar, ohne eine Person zu nennen (§8, §11.1).
+    logger.info("%s Nutzer angelegt (id=%d, Rolle=%s)", OK, user_id, role.value)
     return user_id
 
 

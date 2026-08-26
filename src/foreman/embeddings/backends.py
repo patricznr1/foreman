@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from collections.abc import Sequence
 from typing import Any, Protocol, runtime_checkable
 
@@ -289,6 +290,12 @@ class SentenceTransformersBackend:
         self._device = device
         self._encode_fn = encode_fn
         self._model: Any | None = None
+        # `_encode_sync` läuft über `asyncio.to_thread`, also in einem Arbeits-Thread.
+        # Zwei gleichzeitige Anfragen laufen damit durch dieselbe Stelle; ohne diese
+        # Sperre sähen beide einen leeren Platz und lüden je ein eigenes Modell.
+        # Die Folge wäre kein falsches Ergebnis, sondern doppelter Speicher und
+        # doppelte Ladezeit — bei einem Embedding-Modell einige hundert Megabyte.
+        self._model_lock = threading.Lock()
 
     async def embed_batch(self, texts: Sequence[str], *, timeout_s: float) -> list[RawVector]:
         try:
@@ -310,7 +317,13 @@ class SentenceTransformersBackend:
         """Blockierender Encode-Pfad (in einen Thread ausgelagert). Lädt Library/Modell lazy."""
         from sentence_transformers import SentenceTransformer  # lazy: nur bei echter Nutzung
 
+        # Doppelte Prüfung: Die erste Abfrage läuft ohne Sperre und kostet im
+        # Regelfall (Modell längst geladen) nichts. Nur wer sie leer vorfindet,
+        # nimmt die Sperre — und prüft danach ERNEUT, weil in der Wartezeit ein
+        # anderer Thread bereits geladen haben kann.
         if self._model is None:
-            self._model = SentenceTransformer(self._model_name, device=self._device)
+            with self._model_lock:
+                if self._model is None:
+                    self._model = SentenceTransformer(self._model_name, device=self._device)
         result = self._model.encode(texts, normalize_embeddings=False)
         return [[float(value) for value in row] for row in result]
