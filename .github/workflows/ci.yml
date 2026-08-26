@@ -59,7 +59,7 @@ jobs:
       - name: Install uv
         # Exakter Pin: setup-uv publiziert ab v8 keine Major-/Minor-Tags mehr
         # (Supply-Chain-Härtung) — der Commit-Hash macht ihn unverschiebbar.
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
 
