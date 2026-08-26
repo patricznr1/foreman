@@ -268,11 +268,12 @@ SCHREIBPFADE = [
         {"severity": "warning", "category": "process", "message": "Vibration"},
         id="alarms",
     ),
-    pytest.param("/api/v1/components", "components", {"label": "Spindel"}, id="components"),
-    pytest.param(
-        "/api/v1/data_points", "data_points", {"name": "vib", "kind": "analog"}, id="data_points"
-    ),
 ]
+# NICHT hier: `components` und `data_points`. Sie gehören zur Anlagenstruktur und
+# sind der Verwaltungsrolle vorbehalten (tests/integration/test_stammdaten_pflege.py).
+# Für eine beschränkte Rolle käme dort ein 403 aus der ROLLENREGEL, nicht aus dem
+# Ausschnitt — der Fall sähe bestanden aus und prüfte die falsche Sperre.
+# Was hier steht, sind Bestände, die im Betrieb entstehen: Berichte, Nachweise, Alarme.
 
 
 @pytest.mark.parametrize("pfad,tabelle,rumpf", SCHREIBPFADE)

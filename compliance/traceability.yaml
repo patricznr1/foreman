@@ -232,6 +232,47 @@ requirements:
       Geprüft ist die Vollständigkeit und Form der Einstufung. NICHT geprüft ist, ob
       eine Begründung inhaltlich trägt — das sieht kein Skript und bleibt Handarbeit.
 
+  - id: REQ-STAMM-001
+    title: "Die Anlagenstruktur pflegt der Betreiber, nicht jede angemeldete Person"
+    rationale: >
+      Wer Linien, Maschinen, Komponenten und Datenpunkte anlegt, bestimmt, worüber
+      das System überhaupt spricht — und legt damit fest, worauf sich jeder
+      Ressourcen-Ausschnitt später bezieht. Das ist eine Betreiber-Handlung.
+      Bewusst über die Rolle und NICHT über den Ausschnitt: Der leitet sich aus
+      zugewiesenen Maschinen ab, und eine frisch angelegte Linie enthält noch keine
+      — eine Ausschnitts-Prüfung verböte, die erste Maschine einer Linie anzulegen.
+    covers:
+      - {regime: "ISO27001", ref: "A.5.15"}
+      - {regime: "GDPR",     ref: "Art.32(1)(b)"}
+    akzeptanzkriterien:
+      - "Werker, Schichtleiter und Techniker erhalten auf allen vier Ebenen 403 beim Anlegen."
+      - "Die Begründung des 403 nennt die Rolle — der Ausschnitt antwortet mit derselben Zahl und soll unterscheidbar bleiben."
+      - "Die Verwaltungsrolle legt auf allen vier Ebenen an."
+      - "Das LESEN bleibt allen Rollen offen, begrenzt durch den Ausschnitt."
+    artifacts:
+      - path: "src/foreman/api/routers/lines.py"
+        rolle: implementierung
+      - path: "src/foreman/api/routers/machines.py"
+        rolle: implementierung
+      - path: "src/foreman/api/routers/components.py"
+        rolle: implementierung
+      - path: "src/foreman/api/routers/data_points.py"
+        rolle: implementierung
+    tests:
+      - id: TEST-STAMM-001
+        path: "tests/integration/test_stammdaten_pflege.py"
+        type: automated
+    verification: OQ
+    status: verifiziert
+    evidence_ref: "tests/integration/test_stammdaten_pflege.py"
+    check_command: "uv run pytest tests/integration/test_stammdaten_pflege.py -q"
+    checked_at: "2026-08-26"
+    scope_note: >
+      Geprüft ist die Rollenbindung der vier Anlage-Routen. NICHT geprüft — und
+      ausdrücklich offen — ist die Trennung zwischen Anlagenverwaltung und
+      fachlicher Leitung: Es gibt keine eigene Administrations-Rolle, `manager`
+      trägt beides. Entsteht sie, wandert die Berechtigung dorthin.
+
 # -----------------------------------------------------------------------------
 # Was hier bewusst NICHT steht
 # -----------------------------------------------------------------------------

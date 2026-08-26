@@ -12,28 +12,33 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, ResourceScopeDep, SessionDep
-from foreman.db.models import Machine
+from foreman.api.deps import ResourceScopeDep, SessionDep, require_roles
+from foreman.db.models import Machine, User
+from foreman.realtime.authz import ROLE_MANAGER
 from foreman.schemas.resources import MachineCreate, MachineRead
 
 router = APIRouter(prefix="/machines", tags=["machines"])
 
+# Anlagenstruktur pflegt der Betreiber: Manager (es gibt keine separate
+# „admin"-Rolle → Manager, wie beim Audit-Trail in api/routers/audit.py).
+# ANSCHLUSSPUNKT: Sobald eine eigene Administrations-Rolle entsteht, wandert die
+# Berechtigung dorthin — hier ist es dann eine Zeile.
+# Warum die Rolle und NICHT der Maschinen-Ausschnitt: Der Ausschnitt leitet sich
+# aus zugewiesenen Maschinen ab, und eine frisch angelegte Linie enthält noch
+# keine. Eine Scope-Prüfung verböte, die erste Maschine einer Linie anzulegen.
+StammdatenVerwalter = Annotated[User, Depends(require_roles(ROLE_MANAGER))]
+
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=MachineRead)
-async def create_machine(body: MachineCreate, session: SessionDep, user: CurrentUser) -> Machine:
-    """Legt eine Maschine an — Identitätsprüfung, kein Ressourcen-Ausschnitt.
-
-    Der Ausschnitt ist hier bewusst NICHT das Mittel, und der Grund ist strukturell:
-    Er leitet sich aus den zugewiesenen Maschinen ab. Eine frisch angelegte Linie
-    enthält noch keine, liegt also außerhalb des Ausschnitts ihres eigenen Erzeugers
-    — eine Scope-Prüfung an dieser Stelle verböte, die erste Maschine einer Linie
-    anzulegen. Welche Rollen Stammdaten anlegen dürfen, gehört deshalb in die
-    Rollenmatrix (`require_roles`), nicht an den Ausschnitt.
-    """
+async def create_machine(
+    body: MachineCreate, session: SessionDep, user: StammdatenVerwalter
+) -> Machine:
+    """Legt eine Maschine an — Betreiber-Handlung, siehe StammdatenVerwalter."""
     obj = Machine(**body.model_dump())
     session.add(obj)
     await session.flush()

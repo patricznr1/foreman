@@ -9,21 +9,36 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import ResourceScopeDep, SessionDep
-from foreman.db.models import DataPoint
+from foreman.api.deps import ResourceScopeDep, SessionDep, require_roles
+from foreman.db.models import DataPoint, User
+from foreman.realtime.authz import ROLE_MANAGER
 from foreman.schemas.resources import DataPointCreate, DataPointRead
 
 router = APIRouter(prefix="/data_points", tags=["data_points"])
 
+# Anlagenstruktur pflegt der Betreiber: Manager (es gibt keine separate
+# „admin"-Rolle → Manager, wie beim Audit-Trail in api/routers/audit.py).
+# ANSCHLUSSPUNKT: Sobald eine eigene Administrations-Rolle entsteht, wandert die
+# Berechtigung dorthin — hier ist es dann eine Zeile.
+StammdatenVerwalter = Annotated[User, Depends(require_roles(ROLE_MANAGER))]
+
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=DataPointRead)
 async def create_data_point(
-    body: DataPointCreate, session: SessionDep, scope: ResourceScopeDep
+    body: DataPointCreate,
+    session: SessionDep,
+    scope: ResourceScopeDep,
+    user: StammdatenVerwalter,
 ) -> DataPoint:
+    """Legt einen Datenpunkt an — Betreiber-Handlung, siehe StammdatenVerwalter.
+
+    Zur bleibenden Ausschnitts-Prüfung siehe die Begründung in `components.py`.
+    """
     await scope.require(body.machine_id)
     obj = DataPoint(**body.model_dump())
     session.add(obj)
