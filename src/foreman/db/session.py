@@ -44,7 +44,12 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
     """Liefert die Session-Factory (initialisiert die Engine bei Bedarf)."""
     if _sessionmaker is None:
         init_engine()
-    assert _sessionmaker is not None
+    if _sessionmaker is None:  # pragma: no cover - init_engine setzt ihn immer
+        # Bewusst kein `assert`: Unter `python -O` fiele die Prüfung ersatzlos weg,
+        # und der Aufrufer bekäme statt einer klaren Meldung ein `None` in die Hand,
+        # das erst tief im Datenzugriff auffiele. Diese Stelle liegt im heißen Pfad
+        # jeder Anfrage.
+        raise RuntimeError("❌ Session-Factory nicht initialisiert (init_engine lief nicht)")
     return _sessionmaker
 
 

@@ -132,10 +132,14 @@ async def _gateway_unavailable_handler(_request: Request, exc: Exception) -> JSO
 
 async def _gateway_rate_limited_handler(_request: Request, exc: Exception) -> JSONResponse:
     """`RateLimited` → 429 mit `Retry-After` (OWASP LLM10)."""
-    # Starlette ruft diesen Handler ausschließlich für den registrierten Typ auf —
-    # die Zusicherung engt den `Exception`-Parameter der Handler-Signatur ein,
-    # statt einen unerreichbaren Fallback vorzutäuschen.
-    assert isinstance(exc, RateLimited)
+    # Starlette ruft diesen Handler ausschließlich für den registrierten Typ auf.
+    # Die Prüfung engt den `Exception`-Parameter der Handler-Signatur ein, statt
+    # einen unerreichbaren Fallback vorzutäuschen — als `raise` und nicht als
+    # `assert`, weil sie unter `python -O` sonst ersatzlos entfiele und der Zugriff
+    # auf `exc.retry_after_s` dann mit einem Attributfehler statt einer klaren
+    # Meldung aufschlüge. Diese Stelle liegt im Fehlerpfad jeder gedrosselten Anfrage.
+    if not isinstance(exc, RateLimited):  # pragma: no cover - Starlette garantiert den Typ
+        raise TypeError(f"❌ Handler für RateLimited mit {type(exc).__name__} aufgerufen")
     retry_after = max(1, ceil(exc.retry_after_s))
     logger.warning("%s Modell-Gateway gedrosselt (retry_after=%ds)", ALERT, retry_after)
     return JSONResponse(

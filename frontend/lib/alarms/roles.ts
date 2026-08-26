@@ -3,10 +3,12 @@
 //  Zweck: Rollen-Varianten der Alarm-Sicht (Matrix 3.1, Studie §4C). Werker: eigener
 //         Bereich, lesen+filtern, KEIN Quittieren. Schichtleiter: voll, Quittieren/
 //         Eskalieren ist Default. Techniker: zugewiesene, offline lesbar, Quittieren.
-//         Manager: nur Zähler/Trends, KEIN Einzel-Quittieren. Sichtbarkeit ≤ Server-
-//         Autorisierung — das ist ein UX-Spiegel, KEINE Auth-Grenze (die hält der
-//         Server; generische GET /alarms-Route ist noch nicht scope-gefiltert →
-//         markierter Anschlusspunkt).
+//         Manager: volle Liste über die ganze Flotte, Quittieren erlaubt, aber nicht
+//         als Default-Geste (bewusste Abweichung von Matrix 3.1, begründet in §21.9
+//         — die Begründung steht bei ROLE_VIEW.manager weiter unten).
+//         Sichtbarkeit ≤ Server-Autorisierung — das ist ein UX-Spiegel, KEINE
+//         Auth-Grenze: Die hält der Server, und er hält sie auf JEDER Lese-Route,
+//         einschließlich GET /alarms (Maschinen-Ausschnitt, §20.4).
 //  Architektur-Einordnung: Reine Ableitung (Schicht 2). Ohne UI testbar.
 // ============================================================
 import type { CurrentUser, Role } from "@/lib/api/contracts";
