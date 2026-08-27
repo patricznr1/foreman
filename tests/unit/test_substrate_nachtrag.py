@@ -615,3 +615,56 @@ async def test_zeile_mit_freitext_aber_ohne_rueckweg_wird_nachgeholt(
     assert danach.payload["source_id"] > 0
     # Der vorhandene Freitext bleibt, wie er ist — er wird nicht neu maskiert.
     assert danach.payload["description"].count("[MASKIERT]") == 1
+
+
+async def test_toter_rueckweg_faellt_auf_die_merkmalssuche_durch(
+    db_session: AsyncSession,
+) -> None:
+    """Der Rückweg ist keine Sackgasse (Befund einer Prüfung vom 27.08.2026).
+
+    Bis dahin kehrte `_quellzeile` bei gesetztem `source_id` sofort zurück. Löste
+    die Kennung nicht mehr auf, meldete sie „keine Quellzeile" — obwohl Maschine,
+    Zeitpunkt und Art sie eindeutig gefunden hätten. Für den Nachtrag hiess das
+    ein unnötiges Überspringen; für das Aufräumen hiesse es eine Löschung.
+
+    Die Lage entsteht, wenn die Quelltabellen neu aufgebaut werden und dabei neue
+    Kennungen vergeben: Die Zeile existiert, ihre alte Nummer nicht mehr.
+
+    Der Aufbau setzt die beiden Schlüssel deshalb GETRENNT — tote Kennung, aber
+    passende Merkmale. Ein Aufbau, der beides zugleich zerstört, könnte nicht
+    sagen, welcher Weg die Entscheidung getragen hat.
+    """
+    import datetime as _dt
+
+    machine_id = await _maschine(db_session)
+    zeitpunkt = _dt.datetime(2026, 6, 6, tzinfo=_dt.UTC)
+    wartung = MaintenanceEvent(
+        machine_id=machine_id,
+        type="lubrication",
+        description="Über die Merkmale auffindbar.",
+        performed_at=zeitpunkt,
+    )
+    db_session.add(wartung)
+    await db_session.flush()
+
+    zeile = SemanticEvent(
+        machine_id=machine_id,
+        event_type="maintenance_performed",
+        payload={
+            "source_type": "maintenance",
+            "source_id": 999_999,  # tot — die Zeile trägt eine andere Kennung
+            "type": "lubrication",
+            "machine_id": machine_id,
+            "performed_at": zeitpunkt.isoformat(),
+        },
+        substrate_ref="tote-kennung",
+    )
+    db_session.add(zeile)
+    await db_session.flush()
+
+    stats = await nachtragen(db_session, _Substrat(), _Redactor())
+
+    assert stats.quelle_fehlt == 0, "der tote Rückweg hat die Merkmalssuche verhindert"
+    assert stats.angereichert == 1
+    danach = await _lade(db_session, zeile.id)
+    assert "Über die Merkmale auffindbar." in danach.payload["description"]

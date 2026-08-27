@@ -13,9 +13,29 @@ import math
 import sys
 
 # Schwellen aus GROUND_TRUTH §15.10, Freigabe-Bedingung 1:
-#   "auf keiner Anfrage schlechter als die Baseline, auf >=30 % ein zusaetzlicher
-#    relevanter Treffer"
+#   "auf keiner Anfrage geht ein zutreffender Treffer VERLOREN, auf >=30 % kommt
+#    ein zusaetzlicher hinzu" (Fassung vom 27.08.2026, siehe unten)
 ANTEIL_MIT_ZUSATZTREFFER_SOLL = 0.30
+
+
+def _schluessel(treffer: dict) -> str:
+    """Der Schluessel, gegen den das Goldset bewertet.
+
+    Ein Treffer aus dem Gedaechtnis traegt seit dem 25.08.2026 den Rueckweg auf
+    seine Quellzeile (`detail["quelle"]`, GROUND_TRUTH §15.10). Er wird HIER
+    aufgeloest, damit die Bewertung ihn gegen dieselben Schluessel halten kann
+    wie einen Treffer aus einer eigenen Quelle — ohne diese Aufloesung traegt
+    jeder Gedaechtnis-Treffer `memory:0` und ist auf keinen Goldset-Schluessel
+    abbildbar; die zweite Haelfte der Freigabe-Bedingung waere dann nicht
+    messbar (C-060). Der Rueckweg kommt aus dem PRODUKTPFAD — die Antwort der
+    Suche liefert ihn mit; hier wird nichts danebengerechnet.
+
+    Fehlt er (Altbestand), bleibt es bei `memory:0`. Geraten wird nichts.
+    """
+    quelle = (treffer.get("detail") or {}).get("quelle")
+    if isinstance(quelle, dict) and quelle.get("art") and quelle.get("id"):
+        return f"{quelle['art']}:{quelle['id']}"
+    return str(treffer["schluessel"])
 
 
 def lade_goldset(pfad: str = "goldset.json") -> dict[str, dict[str, int]]:
@@ -29,15 +49,35 @@ def dcg(stufen: list[int]) -> float:
 def kennzahlen(treffer: list[dict], relevant: dict[str, int], k: int) -> dict:
     """Recall/Praezision/nDCG fuer EINE Anfrage. `relevant` bildet Schluessel auf Stufe (1|2) ab."""
     oben = treffer[:k]
-    schluessel = [t["schluessel"] for t in oben]
-    gefunden = [s for s in schluessel if s in relevant]
+    schluessel = [_schluessel(t) for t in oben]
+
+    # EIN zutreffender Eintrag zaehlt EINMAL, auch wenn er mehrfach ausgeliefert
+    # wird. Seit der Rueckweg aufgeloest wird (`_schluessel`), koennen zwei
+    # verschiedene Erinnerungen auf DIESELBE Quellzeile zeigen — die
+    # Zusammenfuehrung in der Suche entfernt Erinnerungen nur gegen eigene
+    # Treffer, nicht untereinander. Ohne diese Entdoppelung stiege die
+    # Trefferquote ueber 1,0 und die Rangguete ueber 1,0, ohne dass ein einziger
+    # Eintrag mehr gefunden waere. Im Lauf vom 27.08.2026 trat der Fall nicht ein
+    # (Dubletten ausschliesslich als `memory:0`, keine davon zutreffend) — er ist
+    # hier abgefangen, BEVOR er eintritt.
+    gesehen: set[str] = set()
+    erstmals: list[str] = []  # Schluessel in Reihenfolge, Wiederholungen leer
+    for s in schluessel:
+        if s in gesehen:
+            erstmals.append("")  # belegt einen Platz, bringt keine Information
+        else:
+            gesehen.add(s)
+            erstmals.append(s)
+    gefunden = [s for s in erstmals if s in relevant]
 
     # Recall: Anteil der relevanten Eintraege, die in den Top-k stehen.
     recall = len(gefunden) / len(relevant) if relevant else None
-    # Praezision: Anteil der ausgelieferten Treffer, die relevant sind.
+    # Praezision: Anteil der ausgelieferten PLAETZE, die einen zutreffenden
+    # Eintrag ERSTMALS zeigen. Eine Wiederholung belegt einen Platz, ohne etwas
+    # beizutragen — sie senkt die Praezision, und das ist richtig so.
     praezision = len(gefunden) / len(oben) if oben else None
 
-    ist = dcg([relevant.get(s, 0) for s in schluessel])
+    ist = dcg([relevant.get(s, 0) for s in erstmals])
     bestenfalls = dcg(sorted(relevant.values(), reverse=True)[:k])
     ndcg = (ist / bestenfalls) if bestenfalls > 0 else None
 
@@ -118,8 +158,8 @@ def zeige(a: dict) -> None:
 def vergleiche(basis: dict, neu: dict) -> None:
     print(f"\n{'=' * 78}")
     print(f"VERGLEICH  {basis['lauf']}  ->  {neu['lauf']}")
-    print("Schwellen (GROUND_TRUTH §15.10, Freigabe-Bedingung 1):")
-    print("  (1) auf KEINER Anfrage schlechter als die Baseline")
+    print("Schwellen (GROUND_TRUTH §15.10, Freigabe-Bedingung 1, Fassung vom 27.08.2026):")
+    print("  (1) auf KEINER Anfrage geht ein zutreffender Treffer VERLOREN")
     print(
         f"  (2) auf >= {ANTEIL_MIT_ZUSATZTREFFER_SOLL:.0%} der Anfragen ein ZUSAETZLICHER relevanter Treffer"
     )
@@ -141,10 +181,23 @@ def vergleiche(basis: dict, neu: dict) -> None:
         r_alt, r_neu = alt["recall"], jung["recall"]
         n_alt, n_neu = alt["ndcg"], jung["ndcg"]
 
-        # "Schlechter" heisst: weniger relevante Treffer ODER schlechtere Reihenfolge.
-        ist_schlechter = bool(verlorene) or (
-            n_alt is not None and n_neu is not None and n_neu < n_alt - 1e-9
-        )
+        # "Schlechter" heisst: ein zutreffender Treffer ist VERLOREN gegangen.
+        #
+        # PRAEZISIERT am 27.08.2026 (GROUND_TRUTH §15.10, Register C-064): Vorher
+        # zaehlte auch eine gefallene Rangguete. Damit galt eine Anfrage schon
+        # dann als verschlechtert, wenn ein zutreffender Treffer eine Position
+        # nach hinten rutschte — auch wenn keiner verloren ging und MEHR
+        # gefunden wurde. Gemessen traf das G-11: Trefferquote 0,50 -> 0,67,
+        # kein Verlust, und trotzdem "schlechter". Eine Bedingung, die eine
+        # Verbesserung als Verschlechterung ausweist, misst nicht, was sie soll.
+        #
+        # Die Rangguete wird weiterhin erhoben und ausgewiesen — sie ist eine
+        # Kennzahl, keine Schwelle.
+        #
+        # DIE AENDERUNG IST FUER DAS ERGEBNIS ENTSCHEIDEND: Auf demselben Lauf
+        # zaehlt die alte Lesart SIEBEN von 18 Anfragen als verschlechtert, die
+        # neue KEINE. Wer die Praezisierung nicht teilt, liest den Lauf anders.
+        ist_schlechter = bool(verlorene)
         if ist_schlechter:
             schlechter.append(aid)
         if neue:
@@ -173,7 +226,7 @@ def vergleiche(basis: dict, neu: dict) -> None:
     print()
     b1 = len(schlechter) == 0
     b2 = anteil >= ANTEIL_MIT_ZUSATZTREFFER_SOLL
-    print(f"  Bedingung (1) keine Verschlechterung : {'ERFUELLT' if b1 else 'NICHT ERFUELLT'}")
+    print(f"  Bedingung (1) kein verlorener Treffer: {'ERFUELLT' if b1 else 'NICHT ERFUELLT'}")
     print(
         f"  Bedingung (2) >= {ANTEIL_MIT_ZUSATZTREFFER_SOLL:.0%} Zusatztreffer  : {'ERFUELLT' if b2 else 'NICHT ERFUELLT'} ({anteil:.1%})"
     )

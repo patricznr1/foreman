@@ -133,6 +133,7 @@ def main() -> None:
                         "id": t["id"],
                         "machine_id": t.get("machine_id"),
                         "excerpt": t.get("excerpt", ""),
+                        "detail": t.get("detail") or {},
                     }
                     for i, t in enumerate(treffer)
                 ],
