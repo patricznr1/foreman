@@ -70,6 +70,8 @@ Stand: 2026-08-27
 | C-066 | Das Gedächtnis als vierte Quelle der Archiv-Suche erfüllt beide Schwellen der Freigabe-Bedingung 1. | gemessen | 0 von 18 Anfragen mit verlorenem Treffer, 11 von 18 = 61,1 % mit zusätzlichem zutreffendem Treffer; mittlere Trefferquote 0,256 auf 0,528, mittlere Ranggüte 0,372 auf 0,548, Anfragen ganz ohne zutreffenden Treffer 5 auf 1 | 2026-08-27 | gueltig | intern |
 | C-067 | Die adversariale Prüfung des Löschwerkzeugs fand vor dem Push zwei Wege, auf denen nicht verwaiste Zeilen gelöscht worden wären. | gemessen | 12 Prüfagenten, 8 Befunde verifiziert, 6 bestätigt, 2 widerlegt; 2 der bestätigten hätten lebende Quellzeilen unwiederbringlich entfernt | 2026-08-27 | gueltig | intern |
 | C-068 | Nach dem Entfernen der verwaisten Spiegelungen findet die Archiv-Suche mehr Zutreffendes und ordnet es besser. | gemessen | Trefferquote 0,528 auf 0,558, Präzision 0,394 auf 0,425, Ranggüte 0,548 auf 0,597; Anfragen mit zusätzlichem zutreffendem Treffer 61,1 % auf 66,7 %, verlorene Treffer weiterhin 0 | 2026-08-27 | gueltig | intern |
+| C-069 | Die Metadaten, die FOREMAN beim Speichern mitgibt, kommen beim Abruf aus dem Gedächtnis unverändert zurück. | gemessen | Alle 6 gesendeten Felder zurückerhalten (source_type, source_id, machine_id, code, severity, marker); die Gegenstelle ergänzt temporal_label | 2026-08-27 | gueltig | intern |
+| C-070 | Das Gedächtnis ist als vierte Quelle der Archiv-Suche freigegeben und eingeschaltet. | gemessen | Alle sieben Freigabe-Bedingungen belegt; beide Schalter am 27.08.2026 umgelegt | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -84,17 +86,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 66
+Einträge gesamt: 68
 
 Nach Status:
 
-- gemessen: 59
+- gemessen: 61
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 62
+- gueltig: 64
 - ueberholt: 4
 - ungeprueft: 0

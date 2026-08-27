@@ -1756,3 +1756,61 @@ claims:
       Offen bleibt: 11,0 % der Plätze gehen weiterhin an Erinnerungen ohne
       Rückweg (Notiz-Spiegelungen und Ableitungen des Systems, die das Werkzeug
       bewusst nicht anfasst), und fünf Anfragen verlieren weiterhin Ranggüte.
+
+  - id: "C-069"
+    aussage: "Die Metadaten, die FOREMAN beim Speichern mitgibt, kommen beim Abruf aus dem Gedächtnis unverändert zurück."
+    status: "gemessen"
+    wert: "Alle 6 gesendeten Felder zurückerhalten (source_type, source_id, machine_id, code, severity, marker); die Gegenstelle ergänzt temporal_label"
+    bedingung: >-
+      Gefahren am 27.08.2026 gegen die laufende Gegenstelle, in einem eigenen
+      Freigabe-Namensraum (nicht dem Betriebsbestand — der Nachweis schreibt).
+      Geprüft werden BEIDE Hälften: dass die Fassade die Felder durchreicht UND
+      dass das Mapping sie liest; die Gegenstelle könnte sie zurückgeben und
+      map_recall_response sie trotzdem verwerfen. Der Test läuft NICHT im
+      Pflichtlauf, sondern nur auf ausdrückliche Anwahl, und er SKIPPT NICHT,
+      wenn die Gegenstelle fehlt — er schlägt fehl. Ein übersprungener
+      Freigabe-Test sieht im Lauf aus wie ein bestandener. Gegenprobe gefahren:
+      ohne Zugangsdaten wird er rot.
+    datum: "2026-08-27"
+    fundstelle:
+      - "docs/freigaben/laufprotokoll-substrat-antwortform.json"
+      - "tests/release/test_substrat_antwortform.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Nachweis gilt für den Zeitpunkt im Laufprotokoll und für die dort
+      genannte Instanz, nicht auf Dauer. Ändert die Gegenstelle ihre Antwortform,
+      merkt das kein Pflichtlauf — deshalb gehört der Lauf vor jede Freigabe
+      erneut gefahren.
+
+  - id: "C-070"
+    aussage: "Das Gedächtnis ist als vierte Quelle der Archiv-Suche freigegeben und eingeschaltet."
+    status: "gemessen"
+    wert: "Alle sieben Freigabe-Bedingungen belegt; beide Schalter am 27.08.2026 umgelegt"
+    bedingung: >-
+      Freigegeben am 27.08.2026. Die sieben Bedingungen stehen einzeln in
+      GROUND_TRUTH §15.10 mit ihrem jeweiligen Nachweis; tragend sind das
+      Goldset (C-066, C-068) und die reale Antwortform der Gegenstelle (C-069).
+      Der Schalter hat ZWEI Hälften, die gemeinsam umgelegt werden: die
+      Quellenliste der Anzeige und FOREMAN_ARCHIVE_SUBSTRATE_ENABLED im Backend.
+      Beim Einschalten zuerst das Backend — die Zwischenlage "Backend liefert,
+      Anzeige fragt nicht" ist harmlos, die umgekehrte behauptete eine Quelle,
+      die nie befragt wurde.
+    datum: "2026-08-27"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+      - "frontend/lib/memory/source.ts"
+      - "frontend/components/memory/memory-search-bar.test.tsx"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DIE FREIGABE NICHT SAGT: dass die Ranggüte auf allen Anfragen steigt —
+      auf fünf von 18 fällt sie, und die Ursache ist nicht erhoben. Und dass die
+      Quelle in echten Werkstätten trägt: Gemessen wurde eine Demo-Instanz mit 36
+      Freitext-Einträgen, deren Bestand keinen einzigen wiederkehrenden Vorgang
+      führt (C-050). Die Frage "hatten wir das schon mal" hat dort auch bei
+      perfekter Suche keine Antwort. Die Freigabe belegt, dass die vierte Quelle
+      mehr Zutreffendes findet als die drei eigenen allein — nicht, dass sie das
+      Produktversprechen einlöst.
