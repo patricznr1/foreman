@@ -1265,7 +1265,15 @@ claims:
     fundstelle:
       - "src/foreman/substrate/client.py, forget"
       - "GROUND_TRUTH.md, Abschnitt 9"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Am 27.08.2026 eingelöst, nicht widerlegt: Die Gegenstelle führt seit dem
+      einen löschenden Weg, und 22 Löschverlangen sind gegen die laufende
+      Instanz durchgelaufen, jedes mit 200 OK und ohne einen Fehlschlag
+      (C-072). Damit ist genau das Kriterium erfüllt, das dieser Eintrag selbst
+      genannt hat — "erst erfüllt, wenn ein Löschverlangen tatsächlich
+      durchläuft". Der Eintrag bleibt stehen, weil er die Lage beschreibt, in
+      der die Plattform ihren Löschweg gebaut hat, bevor es ein Gegenstück gab.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -1846,3 +1854,31 @@ claims:
       bekommt — dem Schritt, den man am ehesten weglässt, wenn alles grün ist.
       Deshalb gehört er in §15.10 als Schritt vor jedes Umlegen eines
       Anzeige-Schalters, nicht danach.
+
+  - id: "C-072"
+    aussage: "Ein Löschverlangen für eine ins Gedächtnis gespiegelte Erinnerung läuft durch — von der Plattform bis zur Gegenstelle."
+    status: "gemessen"
+    wert: "22 von 22 Löschverlangen mit 200 OK, kein Fehlschlag; ein zweiter Lauf findet nichts mehr"
+    bedingung: >-
+      Gemessen am 27.08.2026 gegen die laufende Instanz beim Aufräumen des
+      verwaisten Bestands (C-065, C-068). Der Weg ist DELETE auf den
+      Löschpfad der Gegenstelle mit Bereich und Kennung; jeder der 22 Aufrufe
+      antwortete mit 200 OK. Ein anschliessender Trockenlauf meldet 0 verwaiste
+      Einträge — die Erinnerungen sind fort, nicht nur als fort gemeldet.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/substrate/client.py, forget"
+      - "src/foreman/substrate/aufraeumen.py"
+      - "GROUND_TRUTH.md, Abschnitt 9"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DAS NICHT SAGT, und das gehört an jede Aussage über die Reichweite
+      eines Löschvorgangs: Die Gegenstelle entwertet die aus dem Eintragstext
+      gewonnenen Aussagen im Wissensgraphen mit, nimmt ABGELEITETE Sachverhalte
+      aber nicht zurück — ein dort bekannter offener Punkt. Gemessen ist der
+      technische Durchlauf des Verlangens, nicht die Vollständigkeit seiner
+      Wirkung. Und es ist keine Aussage über die Erfüllung einer Rechtspflicht:
+      Ob ein konkretes Löschverlangen vollständig erfüllt ist, hängt an mehr als
+      diesem einen Weg.

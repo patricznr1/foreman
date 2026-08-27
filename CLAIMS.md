@@ -56,7 +56,6 @@ Stand: 2026-08-27
 | C-049 | Die Güte der quellenübergreifenden Archiv-Suche ist erstmals beziffert. | gemessen | Trefferquote 0,256 · Genauigkeit 0,415 · Ranggüte 0,372 (k=10, drei Quellen, Schwelle 0,60) | 2026-08-24 | gueltig | intern, fach |
 | C-050 | Das Gedächtnis als vierte Archiv-Quelle erfüllt seine Freigabe-Bedingung im gegenwärtigen Zustand nicht. | gemessen | 0 % der Anfragen mit zusätzlichem zutreffendem Treffer (gefordert: mindestens 30 %); auf 11 von 18 Anfragen verschlechterte Reihenfolge | 2026-08-24 | gueltig | intern, fach |
 | C-051 | Der Rückweg für ein Löschverlangen war über die Betriebskonfiguration nicht erreichbar; er ist es seit dem 25.08.2026. | gemessen | Aufruf schlug im Betrieb fehl, während alle Tests bestanden — 22 von 22 Versuchen | 2026-08-25 | gueltig | intern |
-| C-052 | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | gemessen | Die Schnittstelle der Gegenstelle bietet keinen Löschweg — 6 Wege vorhanden, keiner davon löschend | 2026-08-25 | gueltig | intern |
 | C-053 | Die Verdichtung des Gedächtnisses wird von der Plattform nicht angestossen. | gemessen | 62 von 63 Erinnerungen auf der mittleren Ebene, 1 auf der gefestigten; 1 von 63 im Wissensnetz verarbeitet | 2026-08-25 | gueltig | intern |
 | C-055 | Die Plattform kann das Entfernen einer einzelnen gespiegelten Erinnerung bei der Gegenstelle anfordern. | gemessen | Anforderung nach dem vereinbarten Muster, mit unterscheidbarer Antwort auf einen nicht vorhandenen Eintrag | 2026-08-25 | gueltig | intern |
 | C-056 | Für die Plattform liegt keine Einstufung nach den einschlägigen Regelwerken vor. | gemessen | Kein Verzeichnis für die Einstufung, keine Sektion in der Wahrheitsdatei — 4 Regelwerke offen | 2026-08-25 | gueltig | intern |
@@ -73,6 +72,7 @@ Stand: 2026-08-27
 | C-069 | Die Metadaten, die FOREMAN beim Speichern mitgibt, kommen beim Abruf aus dem Gedächtnis unverändert zurück. | gemessen | Alle 6 gesendeten Felder zurückerhalten (source_type, source_id, machine_id, code, severity, marker); die Gegenstelle ergänzt temporal_label | 2026-08-27 | gueltig | intern |
 | C-070 | Das Gedächtnis ist als vierte Quelle der Archiv-Suche freigegeben und eingeschaltet. | gemessen | Alle sieben Freigabe-Bedingungen belegt; beide Schalter am 27.08.2026 umgelegt | 2026-08-27 | gueltig | intern |
 | C-071 | Ein Erinnerungs-Treffer zeigte das Datum seiner Speicherung statt das des Vorgangs. | gemessen | 19 von 19 geprüften Treffern trugen ein Datum, dem ihr eigener Auszug widersprach; behoben am 27.08.2026 | 2026-08-27 | gueltig | intern |
+| C-072 | Ein Löschverlangen für eine ins Gedächtnis gespiegelte Erinnerung läuft durch — von der Plattform bis zur Gegenstelle. | gemessen | 22 von 22 Löschverlangen mit 200 OK, kein Fehlschlag; ein zweiter Lauf findet nichts mehr | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -83,15 +83,16 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 | C-030 | FOREMAN | Die lesenden Listen sind nicht nach Zuständigkeit gefiltert; die Rollensicht ist dort nur eine Anzeigehilfe. | ueberholt | Am 25.08.2026 durch C-057 im Umfang widerlegt: Die Zahl 3 war aus der Beschreibung im Repository abgelesen, nicht an der Anwendung erhoben. Gegen die real gebaute Anwendung sind es 31 von 47 Routen. |
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
+| C-052 | FOREMAN | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | ueberholt | Am 27.08.2026 eingelöst, nicht widerlegt: Die Gegenstelle führt seit dem einen löschenden Weg, und 22 Löschverlangen sind gegen die laufende Instanz durchgelaufen, jedes mit 200 OK und ohne einen Fehlschlag (C-072). Damit ist genau das Kriterium erfüllt, das dieser Eintrag selbst genannt hat — "erst erfüllt, wenn ein Löschverlangen tatsächlich durchläuft". Der Eintrag bleibt stehen, weil er die Lage beschreibt, in der die Plattform ihren Löschweg gebaut hat, bevor es ein Gegenstück gab. |
 | C-054 | FOREMAN | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | ueberholt | Am 27.08.2026 behoben, nicht widerlegt: Alle 22 verwaisten Spiegelungen wurden samt Erinnerung entfernt (C-068), ein zweiter Trockenlauf findet keine mehr. Die Zahl 22 hat sich dabei aus drei unabhängigen Richtungen bestätigt — Spiegelungen gegen Quellzeilen (32 zu 16 und 12 zu 6), die Prüfung des Werkzeugs selbst, und zwei getrennte Anlage-Stapel (0 gegen 22 gespeicherte Rückwege). Der Eintrag bleibt stehen, weil er die Lage beschreibt, gegen die das Werkzeug gebaut wurde. |
 
 ## Zählung
 
-Einträge gesamt: 69
+Einträge gesamt: 70
 
 Nach Status:
 
-- gemessen: 62
+- gemessen: 63
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
@@ -99,5 +100,5 @@ Nach Status:
 Nach Geltung:
 
 - gueltig: 65
-- ueberholt: 4
+- ueberholt: 5
 - ungeprueft: 0
