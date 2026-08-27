@@ -97,6 +97,11 @@ Einträge gesamt: 74
 Nach Status:
 
 - gemessen: 67
+Einträge gesamt: 72
+
+Nach Status:
+
+- gemessen: 65
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
@@ -104,5 +109,6 @@ Nach Status:
 Nach Geltung:
 
 - gueltig: 69
+- gueltig: 67
 - ueberholt: 5
 - ungeprueft: 0
