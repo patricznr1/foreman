@@ -1,5 +1,5 @@
 {
-  "geprueft_am": "2026-08-20T09:12:12.002942+00:00",
+  "geprueft_am": "2026-08-27T05:09:39.065228+00:00",
   "instanz": "https://nexus-api-production-77df.up.railway.app",
   "namespace": "foreman-release",
   "gesendete_payload_felder": [
@@ -30,7 +30,7 @@
   ],
   "gelesen": {
     "machine_id": 3,
-    "relevance": 0.5273468907856205,
-    "occurred_at": "2026-08-20T09:12:11.299110+00:00"
+    "relevance": 0.5223843826256662,
+    "occurred_at": "2026-08-27T05:09:36.969533+00:00"
   }
 }

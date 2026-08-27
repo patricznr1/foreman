@@ -1265,7 +1265,15 @@ claims:
     fundstelle:
       - "src/foreman/substrate/client.py, forget"
       - "GROUND_TRUTH.md, Abschnitt 9"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Am 27.08.2026 eingelöst, nicht widerlegt: Die Gegenstelle führt seit dem
+      einen löschenden Weg, und 22 Löschverlangen sind gegen die laufende
+      Instanz durchgelaufen, jedes mit 200 OK und ohne einen Fehlschlag
+      (C-072). Damit ist genau das Kriterium erfüllt, das dieser Eintrag selbst
+      genannt hat — "erst erfüllt, wenn ein Löschverlangen tatsächlich
+      durchläuft". Der Eintrag bleibt stehen, weil er die Lage beschreibt, in
+      der die Plattform ihren Löschweg gebaut hat, bevor es ein Gegenstück gab.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -1756,3 +1764,121 @@ claims:
       Offen bleibt: 11,0 % der Plätze gehen weiterhin an Erinnerungen ohne
       Rückweg (Notiz-Spiegelungen und Ableitungen des Systems, die das Werkzeug
       bewusst nicht anfasst), und fünf Anfragen verlieren weiterhin Ranggüte.
+
+  - id: "C-069"
+    aussage: "Die Metadaten, die FOREMAN beim Speichern mitgibt, kommen beim Abruf aus dem Gedächtnis unverändert zurück."
+    status: "gemessen"
+    wert: "Alle 6 gesendeten Felder zurückerhalten (source_type, source_id, machine_id, code, severity, marker); die Gegenstelle ergänzt temporal_label"
+    bedingung: >-
+      Gefahren am 27.08.2026 gegen die laufende Gegenstelle, in einem eigenen
+      Freigabe-Namensraum (nicht dem Betriebsbestand — der Nachweis schreibt).
+      Geprüft werden BEIDE Hälften: dass die Fassade die Felder durchreicht UND
+      dass das Mapping sie liest; die Gegenstelle könnte sie zurückgeben und
+      map_recall_response sie trotzdem verwerfen. Der Test läuft NICHT im
+      Pflichtlauf, sondern nur auf ausdrückliche Anwahl, und er SKIPPT NICHT,
+      wenn die Gegenstelle fehlt — er schlägt fehl. Ein übersprungener
+      Freigabe-Test sieht im Lauf aus wie ein bestandener. Gegenprobe gefahren:
+      ohne Zugangsdaten wird er rot.
+    datum: "2026-08-27"
+    fundstelle:
+      - "docs/freigaben/laufprotokoll-substrat-antwortform.json"
+      - "tests/release/test_substrat_antwortform.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Nachweis gilt für den Zeitpunkt im Laufprotokoll und für die dort
+      genannte Instanz, nicht auf Dauer. Ändert die Gegenstelle ihre Antwortform,
+      merkt das kein Pflichtlauf — deshalb gehört der Lauf vor jede Freigabe
+      erneut gefahren.
+
+  - id: "C-070"
+    aussage: "Das Gedächtnis ist als vierte Quelle der Archiv-Suche freigegeben und eingeschaltet."
+    status: "gemessen"
+    wert: "Alle sieben Freigabe-Bedingungen belegt; beide Schalter am 27.08.2026 umgelegt"
+    bedingung: >-
+      Freigegeben am 27.08.2026. Die sieben Bedingungen stehen einzeln in
+      GROUND_TRUTH §15.10 mit ihrem jeweiligen Nachweis; tragend sind das
+      Goldset (C-066, C-068) und die reale Antwortform der Gegenstelle (C-069).
+      Der Schalter hat ZWEI Hälften, die gemeinsam umgelegt werden: die
+      Quellenliste der Anzeige und FOREMAN_ARCHIVE_SUBSTRATE_ENABLED im Backend.
+      Beim Einschalten zuerst das Backend — die Zwischenlage "Backend liefert,
+      Anzeige fragt nicht" ist harmlos, die umgekehrte behauptete eine Quelle,
+      die nie befragt wurde.
+    datum: "2026-08-27"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+      - "frontend/lib/memory/source.ts"
+      - "frontend/components/memory/memory-search-bar.test.tsx"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DIE FREIGABE NICHT SAGT: dass die Ranggüte auf allen Anfragen steigt —
+      auf fünf von 18 fällt sie, und die Ursache ist nicht erhoben. Und dass die
+      Quelle in echten Werkstätten trägt: Gemessen wurde eine Demo-Instanz mit 36
+      Freitext-Einträgen, deren Bestand keinen einzigen wiederkehrenden Vorgang
+      führt (C-050). Die Frage "hatten wir das schon mal" hat dort auch bei
+      perfekter Suche keine Antwort. Die Freigabe belegt, dass die vierte Quelle
+      mehr Zutreffendes findet als die drei eigenen allein — nicht, dass sie das
+      Produktversprechen einlöst.
+
+  - id: "C-071"
+    aussage: "Ein Erinnerungs-Treffer zeigte das Datum seiner Speicherung statt das des Vorgangs."
+    status: "gemessen"
+    wert: "19 von 19 geprüften Treffern trugen ein Datum, dem ihr eigener Auszug widersprach; behoben am 27.08.2026"
+    bedingung: >-
+      Erhoben am 27.08.2026 gegen die laufende Instanz, bei der Sichtprüfung
+      dessen, was die Anzeige nach dem Umlegen des Schalters bekommen hätte. Die
+      Fassade führt unter occurred_at den Zeitpunkt, zu dem die Erinnerung
+      ANGELEGT wurde; die Zeit des Vorgangs steht in der Nutzlast (performed_at,
+      raised_at, started_at, created_at) und geht jetzt vor. Vorher zeigte die
+      Trefferkarte den 25.08. für Vorgänge aus dem Juni, während der Auszug
+      darunter das richtige Datum nannte. Kein Absturz, keine Meldung.
+      Ableitungen des Systems behalten die Fassadenzeit — sie haben keinen
+      eigenen Vorgangszeitpunkt, und wann sie abgeleitet wurden, IST ihre Zeit;
+      eine Aufbau-Kontrolle hält das fest.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/reasoners/event_chain/recall.py"
+      - "tests/reasoners/event_chain/test_recall.py"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Eintrag steht hier, weil er zeigt, was ein grüner Prüflauf NICHT
+      leistet: Alle sieben Freigabe-Bedingungen standen, 1333 Tests waren grün,
+      und trotzdem hätte jede Erinnerung in der Halle ein falsches Datum
+      getragen. Gefunden wurde es beim Nachsehen, was die Anzeige tatsächlich
+      bekommt — dem Schritt, den man am ehesten weglässt, wenn alles grün ist.
+      Deshalb gehört er in §15.10 als Schritt vor jedes Umlegen eines
+      Anzeige-Schalters, nicht danach.
+
+  - id: "C-072"
+    aussage: "Ein Löschverlangen für eine ins Gedächtnis gespiegelte Erinnerung läuft durch — von der Plattform bis zur Gegenstelle."
+    status: "gemessen"
+    wert: "22 von 22 Löschverlangen mit 200 OK, kein Fehlschlag; ein zweiter Lauf findet nichts mehr"
+    bedingung: >-
+      Gemessen am 27.08.2026 gegen die laufende Instanz beim Aufräumen des
+      verwaisten Bestands (C-065, C-068). Der Weg ist DELETE auf den
+      Löschpfad der Gegenstelle mit Bereich und Kennung; jeder der 22 Aufrufe
+      antwortete mit 200 OK. Ein anschliessender Trockenlauf meldet 0 verwaiste
+      Einträge — die Erinnerungen sind fort, nicht nur als fort gemeldet.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/substrate/client.py, forget"
+      - "src/foreman/substrate/aufraeumen.py"
+      - "GROUND_TRUTH.md, Abschnitt 9"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DAS NICHT SAGT, und das gehört an jede Aussage über die Reichweite
+      eines Löschvorgangs: Die Gegenstelle entwertet die aus dem Eintragstext
+      gewonnenen Aussagen im Wissensgraphen mit, nimmt ABGELEITETE Sachverhalte
+      aber nicht zurück — ein dort bekannter offener Punkt. Gemessen ist der
+      technische Durchlauf des Verlangens, nicht die Vollständigkeit seiner
+      Wirkung. Und es ist keine Aussage über die Erfüllung einer Rechtspflicht:
+      Ob ein konkretes Löschverlangen vollständig erfüllt ist, hängt an mehr als
+      diesem einen Weg.

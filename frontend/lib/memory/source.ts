@@ -19,24 +19,35 @@ export const SOURCE_LABEL: Record<SourceType, string> = {
 };
 
 /**
- * Die Quellen, die die Anzeige heute ANBIETET und ANFRAGT — EINE Quelle der
- * Wahrheit fuer Umschalter und Suchaufruf.
+ * Die Quellen, die die Anzeige ANBIETET und ANFRAGT — EINE Quelle der Wahrheit
+ * fuer Umschalter und Suchaufruf.
  *
- * WARUM "memory" HIER FEHLT: Die vierte Quelle ist gebaut (§15.10), das
- * Backend nimmt sie an, und Label, Kuerzel und Detail-Anzeige tragen sie
- * bereits. Sie steht aber hinter einem Backend-Schalter, der per Default AUS
- * ist. Wuerde die Anzeige sie trotzdem anfragen, behauptete der
- * Herkunfts-Stempel eine Quelle, die nie befragt wurde — eine falsche Aussage
- * ueber die eigene Datenlage, genau das, was §15.10 mit "keine Tarnung"
- * ausschliesst.
+ * "memory" ist seit dem 27.08.2026 dabei. Vorbedingung waren die sieben
+ * Freigabe-Bedingungen aus GROUND_TRUTH §15.10, allen voran das Goldset:
+ * gemessen an 18 Anfragen mit Relevanzurteilen von drei unabhaengigen
+ * Beurteilern geht kein zutreffender Treffer verloren, und auf 66,7 % der
+ * Anfragen kommt einer hinzu (Register C-066, C-068).
  *
- * BEIDE SCHALTER GEHOEREN GEMEINSAM UMGELEGT: hier "memory" ergaenzen UND
- * FOREMAN_ARCHIVE_SUBSTRATE_ENABLED setzen. Vorbedingung ist das Goldset
- * (Freigabe-Bedingung 1). Diese Konstante ist die EINZIGE Stelle, die es
- * braucht — vorher lagen vier Listen verstreut, und eine vergessene waere ein
- * stiller Fehler gewesen.
+ * DIESER SCHALTER HAT EINE ZWEITE HAELFTE: FOREMAN_ARCHIVE_SUBSTRATE_ENABLED im
+ * Backend. Steht sie AUS, reicht `archive/router.py` den Substrat-Klienten
+ * nicht durch — die Anzeige fragte dann eine Quelle an, die nie befragt wurde,
+ * und ihr Herkunfts-Stempel behauptete etwas Falsches ueber die eigene
+ * Datenlage. Genau das schliesst §15.10 mit "keine Tarnung" aus.
+ *
+ * WER SIE WIEDER AUSSCHALTET, schaltet BEIDE aus, und in dieser Reihenfolge:
+ * erst hier, dann im Backend. Beim Einschalten umgekehrt. Die kurze
+ * Zwischenlage "Backend liefert, Anzeige fragt nicht" ist harmlos; die
+ * umgekehrte ist es nicht.
+ *
+ * Diese Konstante ist die EINZIGE Stelle, die es braucht — vorher lagen vier
+ * Listen verstreut, und eine vergessene waere ein stiller Fehler gewesen.
  */
-export const VERFUEGBARE_QUELLEN: readonly SourceType[] = ["note", "maintenance", "alarm"];
+export const VERFUEGBARE_QUELLEN: readonly SourceType[] = [
+  "note",
+  "maintenance",
+  "alarm",
+  "memory",
+];
 
 /** Farbunabhaengiges Form-Kuerzel je Quelltyp (zweiter Kanal). */
 export const SOURCE_GLYPH: Record<SourceType, string> = {

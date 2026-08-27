@@ -51,9 +51,22 @@ _SOURCE_ID_KEYS = ("source_id", "sourceId")
 # Rang-Grundlage. Die Fassade liefert `relevance`; die generischen Namen decken
 # andere Substrat-Fassungen ab, ohne dass hier etwas erfunden wird.
 _RELEVANCE_KEYS = ("relevance", "score", "similarity", "relevance_score")
-# Ereigniszeit des Treffers. `occurred_at` ist die Gültigkeitszeit der Fassade;
-# die übrigen Namen sind Rückfallpositionen derselben Achse.
-_OCCURRED_AT_KEYS = ("occurred_at", "occurredAt", "timestamp", "created_at", "createdAt")
+# Ereigniszeit des Treffers — WANN DER VORGANG WAR.
+#
+# Die Spiegelung schreibt sie in die Nutzlast: `performed_at` (Wartung),
+# `raised_at` (Alarm), `started_at` (Produktionslauf), `created_at` (Notiz). Sie
+# geht VOR, und zwar aus einem gemessenen Grund (27.08.2026): Die Fassade führt
+# unter `occurred_at` den Zeitpunkt, zu dem die Erinnerung ANGELEGT wurde. Gegen
+# die laufende Instanz erhoben trugen **19 von 19** Erinnerungs-Treffern damit
+# ein Datum, dem ihr eigener Auszug direkt widersprach — angezeigt der 25.08.,
+# im Text der Juni. Eine Trefferkarte, die das anzeigt, macht eine falsche
+# Aussage über die eigene Datenlage; genau davor schützt der Schalter der
+# vierten Quelle nicht, weil es kein Absturz ist, sondern eine stille Unwahrheit.
+_EREIGNISZEIT_KEYS = ("performed_at", "raised_at", "started_at", "created_at")
+# Rückfallposition: die Gültigkeitszeit der Fassade. Sie trägt für ABLEITUNGEN
+# (Drift, Ereigniskette) — die haben keinen eigenen Vorgangszeitpunkt in der
+# Nutzlast, und wann sie abgeleitet wurden, IST ihre Zeit.
+_OCCURRED_AT_KEYS = ("occurred_at", "occurredAt", "timestamp", "createdAt")
 
 
 @dataclass(frozen=True)
@@ -281,7 +294,10 @@ def _coerce_item(entry: Any) -> RecallItem | None:
             machine_id=_first_int(scopes, _MACHINE_ID_KEYS),
             machine_class=_first_str(scopes, _MACHINE_CLASS_KEYS),
             explanation_id=_first_int(scopes, _EXPLANATION_ID_KEYS),
-            occurred_at=_first_datetime(scopes, _OCCURRED_AT_KEYS),
+            occurred_at=(
+                _first_datetime(scopes, _EREIGNISZEIT_KEYS)
+                or _first_datetime(scopes, _OCCURRED_AT_KEYS)
+            ),
             relevance=_first_float(scopes, _RELEVANCE_KEYS),
             source_type=_first_str(scopes, _SOURCE_TYPE_KEYS),
             source_id=_first_int(scopes, _SOURCE_ID_KEYS),
