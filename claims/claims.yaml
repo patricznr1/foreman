@@ -2011,3 +2011,40 @@ claims:
       Brückenwort sind zusätzlich schwächere Belege für die vierte Quelle — dort
       fände die Volltextsuche die Wiederholung womöglich allein. Beides gehört in
       jeden Messbericht auf diesem Bestand.
+
+  - id: "C-077"
+    aussage: "Die Namensmaskierung hielt deutsche Fachkomposita für Personennamen und ersetzte den Befund im Text."
+    status: "gemessen"
+    wert: "90 von 327 Instandhaltungs-Texten verändert, bei den Wartungsberichten 77 von 124; nach der Behebung 22 von 327"
+    bedingung: >-
+      Erhoben am 27.08.2026 an 327 echten Instandhaltungs-Texten gegen den
+      Erkenner, den der Schreibweg benutzt (Presidio mit spaCy de_core_news_lg).
+      Der Erkenner vergibt für "Klemmer", "Nachtschicht" und "Energiekette"
+      denselben Vertrauenswert 0,85 wie für "Thomas Weber" — die Schwelle (0,35)
+      kann das nicht trennen, sie trifft beides oder keines. Ersetzt wurde dabei
+      der BEFUND: aus "Niederhalterfeder gebrochen" wurde "[PERSON] gebrochen",
+      der Satz verlor genau das Wort, wegen dessen ihn jemand später sucht.
+      Behoben durch zwei strukturelle Filter — ein Treffer mit Ziffer ist kein
+      Personenname (fängt hineingezogene Maschinenkennungen), und ein Treffer aus
+      ausschliesslich belegten Fachbegriffen ebenfalls nicht. Danach: Notizen 13
+      auf 5 von 189, Wartungen 77 auf 17 von 124.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/core/redact.py"
+      - "tests/unit/test_redact.py"
+      - "tests/integration/test_redact_real.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DIE FILTER LOCKERN DEN SCHUTZ NICHT, und das ist der Kern: Ein Treffer, in
+      dem auch nur EIN unbekanntes Wort steht, gilt weiter als Name — sonst
+      liesse sich ein echter Name hinter einem Fachbegriff verstecken
+      ("Nachschmierung Weber"). Am echten Modell geprüft, samt Gegenprobe: `all`
+      zu `any` geändert macht genau diesen Test rot. WAS BEWUSST BESTEHEN
+      BLEIBT: "Scheibe", "Feder", "Span", "Kühler", "Trichter" und "Ventil"
+      stehen NICHT in der Liste — es sind deutsche Familiennamen, und ein Werker,
+      der so heisst, würde sonst nie maskiert. Die Falschtreffer auf diesen
+      Wörtern sind der bewusst gezahlte Preis; ein Test nagelt die Entscheidung
+      fest, damit niemand die Liste stillschweigend erweitert. Das Restrisiko aus
+      §8 bleibt unberührt: Der Freitext wird weiterhin NIE als anonym deklariert.
