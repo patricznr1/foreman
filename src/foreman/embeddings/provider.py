@@ -32,10 +32,12 @@ from foreman.embeddings.config import (
     OLLAMA_BACKEND,
     OPENAI_BACKEND,
     ST_BACKEND,
+    EmbeddingMode,
     EmbeddingSettings,
     Priority,
 )
 from foreman.embeddings.errors import DimensionMismatch, EmbeddingError, ProviderUnavailable
+from foreman.embeddings.kalibrierung import aktives_modell, praefix_fuer
 from foreman.logging_setup import REASON, get_logger
 from foreman.observability.metrics import observe_embedding
 
@@ -58,7 +60,9 @@ class EmbeddingProvider(Protocol):
     Keine Backend-/Library-Typen in der Signatur.
     """
 
-    async def embed(self, texts: Sequence[str]) -> list[Vector]: ...
+    async def embed(
+        self, texts: Sequence[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[Vector]: ...
 
 
 def _l2_normalize(vector: RawVector) -> Vector:
@@ -90,6 +94,7 @@ class LocalEmbeddingProvider:
         dimension: int,
         normalize: bool,
         timeout_s: float,
+        query_praefix: str = "",
     ) -> None:
         self._backends: dict[str, EmbeddingBackend] = {
             backend.name: backend for backend in backends
@@ -98,6 +103,8 @@ class LocalEmbeddingProvider:
         self._dimension = dimension
         self._normalize = normalize
         self._timeout_s = timeout_s
+        # Leer, wenn das Modell keinen Anfrage-Praefix verlangt (OpenAI, bge-m3).
+        self._query_praefix = query_praefix
 
     @classmethod
     def from_settings(
@@ -157,12 +164,26 @@ class LocalEmbeddingProvider:
             dimension=settings.dimension,
             normalize=settings.normalize,
             timeout_s=settings.request_timeout_s,
+            # AM MODELL, nicht an einem Schalter: Wer das Modell wechselt,
+            # bekommt den passenden Praefix automatisch mit.
+            query_praefix=praefix_fuer(aktives_modell(settings)),
         )
 
-    async def embed(self, texts: Sequence[str]) -> list[Vector]:
+    async def embed(self, texts: Sequence[str], *, mode: EmbeddingMode = "passage") -> list[Vector]:
         items = list(texts)
         if not items:
             return []
+
+        # ANFRAGEN BEKOMMEN EINEN PRAEFIX, DOKUMENTE NICHT — so verlangt es
+        # Snowflake Arctic v2.0 (Modellkarte: `prompt_name="query"` bzw.
+        # `query_prefix = 'query: '`). Bei OpenAI und bge-m3 ist er leer und
+        # diese Zeile wirkungslos.
+        #
+        # DIE VORGABE IST `passage`, und das ist die sichere Richtung: Ein
+        # vergessener Modus beim SCHREIBEN waere folgenlos, beim SUCHEN nicht.
+        # Der Suchpfad nennt ihn deshalb ausdruecklich.
+        if mode == "query" and self._query_praefix:
+            items = [f"{self._query_praefix}{text}" for text in items]
 
         chain_names = resolve_chain(self._priority)
         chain = [self._backends[name] for name in chain_names if name in self._backends]

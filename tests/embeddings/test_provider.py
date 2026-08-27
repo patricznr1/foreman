@@ -178,3 +178,113 @@ async def test_embed_falsche_anzahl_vektoren_wirft(
     provider = make_provider(backends=[backend], priority="ollama_only", dimension=1024)
     with pytest.raises(ProviderUnavailable):
         await provider.embed(["nur ein text"])
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Der Anfrage-Präfix — kommt er am Backend an?
+# ──────────────────────────────────────────────────────────────────────
+
+
+class _MitschreibendesBackend:
+    """Merkt sich, welche Texte es bekommen hat — darum geht es hier."""
+
+    name = "ollama"
+
+    def __init__(self) -> None:
+        self.gesehen: list[str] = []
+
+    async def embed_batch(self, texts: Sequence[str], *, timeout_s: float) -> list[list[float]]:
+        self.gesehen.extend(texts)
+        return [[1.0] + [0.0] * 1023 for _ in texts]
+
+
+def _mit_praefix(praefix: str) -> tuple[LocalEmbeddingProvider, _MitschreibendesBackend]:
+    backend = _MitschreibendesBackend()
+    provider = LocalEmbeddingProvider(
+        backends=[backend],  # type: ignore[list-item]
+        priority="ollama_only",
+        dimension=1024,
+        normalize=True,
+        timeout_s=30.0,
+        query_praefix=praefix,
+    )
+    return provider, backend
+
+
+async def test_eine_anfrage_bekommt_den_praefix() -> None:
+    """Snowflake Arctic v2.0 verlangt ihn auf der Anfrageseite.
+
+    Geprüft wird, was das BACKEND sieht — nicht, was der Provider vorhat. Ein
+    Präfix, der unterwegs verlorengeht, wäre von einem fehlenden nicht zu
+    unterscheiden.
+    """
+    provider, backend = _mit_praefix("query: ")
+
+    await provider.embed(["Lager laeuft heiss"], mode="query")
+
+    assert backend.gesehen == ["query: Lager laeuft heiss"]
+
+
+async def test_ein_dokument_bekommt_ihn_nicht() -> None:
+    """AUFBAU-KONTROLLE: Der Präfix gehört NUR an die Anfrage.
+
+    Auf beiden Seiten gesetzt wäre er wirkungslos bis schädlich — das Modell ist
+    darauf trainiert, dass Anfrage und Dokument sich unterscheiden. Ohne diesen
+    Fall liesse sich der Präfix pauschal voranstellen, und die Suche sähe
+    weiterhin plausibel aus.
+    """
+    provider, backend = _mit_praefix("query: ")
+
+    await provider.embed(["Lager laeuft heiss"], mode="passage")
+
+    assert backend.gesehen == ["Lager laeuft heiss"]
+
+
+async def test_ohne_modus_gilt_dokument() -> None:
+    """Die sichere Richtung ist die Vorgabe.
+
+    Ein vergessener Modus beim SCHREIBEN ist folgenlos; beim SUCHEN nicht. Die
+    Vorgabe steht deshalb auf `passage`, und der Suchpfad nennt `query`
+    ausdrücklich.
+    """
+    provider, backend = _mit_praefix("query: ")
+
+    await provider.embed(["Lager laeuft heiss"])
+
+    assert backend.gesehen == ["Lager laeuft heiss"]
+
+
+async def test_ohne_praefix_bleibt_der_text_unberuehrt() -> None:
+    """Das ist der heutige Produktivfall: `text-embedding-3-small` kennt keinen.
+
+    Ohne diesen Fall könnte die Umstellung einen leeren Präfix als Leerzeichen
+    voranstellen — eine Änderung an jedem einzelnen Vektor, ohne dass jemand
+    danach gefragt hätte.
+    """
+    provider, backend = _mit_praefix("")
+
+    await provider.embed(["Lager laeuft heiss"], mode="query")
+
+    assert backend.gesehen == ["Lager laeuft heiss"]
+
+
+def test_der_suchpfad_nennt_den_anfrage_modus() -> None:
+    """Eine Möglichkeit, die niemand nutzt, wirkt nicht.
+
+    Geprüft wird auf dem ANWEISUNGSBLOCK (Kommentarzeilen entfernt) und auf die
+    ausführbare Form: Der Name `mode="query"` steht sonst auch in dem Kommentar,
+    der ihn erklärt, und eine Suche über die ganze Datei bliebe grün, während der
+    Aufruf ihn nicht mehr übergibt.
+    """
+    import inspect
+
+    from foreman.notes import search as notiz_suche
+
+    quelle = inspect.getsource(notiz_suche)
+    anweisungen = "\n".join(z for z in quelle.splitlines() if not z.lstrip().startswith("#"))
+
+    assert anweisungen.count('mode="query"') == 2, "beide Suchpfade müssen den Modus nennen"
+    # Der Schreibpfad darf ihn NICHT nennen — sonst bekäme jedes Dokument den Präfix.
+    assert "mode=" not in inspect.getsource(
+        __import__("foreman.embeddings.backfill", fromlist=["x"])
+    )

@@ -2477,3 +2477,60 @@ claims:
       Zerbrechlichkeit, die bei der Schwelle behoben wurde (C-082): Ein Redeploy
       von einem anderen Rechner haette es stillschweigend geaendert, und keine
       Messung haette gesagt, gegen was sie eigentlich lief.
+
+  - id: "C-090"
+    aussage: "Snowflake Arctic v2.0 verlangt auf der Anfrageseite einen Praefix; FOREMAN bindet ihn ans Modell statt an einen Schalter."
+    status: "gemessen"
+    wert: "query: — belegt an drei Stellen der Modellkarte; hinterlegt in QUERY_PRAEFIX, mit Startmeldung fuer unbekannte Modelle"
+    bedingung: >-
+      Abgelesen am 27.08.2026 aus der Modellkarte von
+      Snowflake/snowflake-arctic-embed-l-v2.0. Drei uebereinstimmende Stellen:
+      das Sentence-Transformers-Beispiel ruft `model.encode(queries,
+      prompt_name="query")`, das Transformers-Beispiel setzt `query_prefix =
+      'query: '` mit dem Satz "use the query prefix below (just on the query)",
+      und `config_sentence_transformers.json` fuehrt `"prompts": {"query":
+      "query: "}`. Dokumente bekommen KEINEN Praefix.
+      Ebenfalls abgelesen: `hidden_size` 1024 — das Modell passt ohne Migration
+      in `worker_notes.embedding vector(1024)`. Lizenz Apache-2.0. Gewichte
+      2,27 GB.
+      Umgesetzt als Tabelle Modell → Praefix (`embeddings/kalibrierung.py`) mit
+      einem `mode`-Parameter am Provider (`query` | `passage`, Vorgabe
+      `passage`). Ein Modell ohne Eintrag bekommt keinen Praefix und wird beim
+      Start gemeldet; ein Test fordert, dass jedes ueber `priority` waehlbare
+      Modell einen Eintrag hat.
+    datum: "2026-08-27"
+    fundstelle:
+      - "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0"
+      - "src/foreman/embeddings/kalibrierung.py, QUERY_PRAEFIX"
+      - "src/foreman/embeddings/provider.py, embed(mode=...)"
+      - "tests/embeddings/test_provider.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DAMIT NOCH IMMER OFFEN IST: Gegen welches Modell der Grenzwert 0,60 am
+      24.08.2026 erhoben wurde, ist nach wie vor nicht belegt (C-082). Bekannt ist
+      jetzt das Modell, das HEUTE laeuft — nicht das, das damals lief. Der
+      Startlauf meldet die Luecke deshalb weiter, und `kalibrierung.py` fuehrt
+      `modell=None`. Sie schliesst sich erst, wenn die Distanzverteilung gegen das
+      laufende Modell neu erhoben wird.
+      DIESER EINTRAG STAND BIS HEUTE NIRGENDS. Welches Modell die Instanz
+      benutzt, war allein aus einer Umgebungsvariable zu erfahren — dieselbe
+      Zerbrechlichkeit, die bei der Schwelle behoben wurde (C-082): Ein Redeploy
+      von einem anderen Rechner haette es stillschweigend geaendert, und keine
+      Messung haette gesagt, gegen was sie eigentlich lief.
+      WARUM AM MODELL UND NICHT AN EINEM SCHALTER: Ein Schalter laesst sich beim
+      Modellwechsel vergessen, und dann laeuft das neue Modell falsch — ohne
+      Ausnahme, ohne Warnung, nur mit schlechteren Treffern. Dieselbe Klasse
+      stiller Ausfall wie beim Vektor-Grenzwert (C-082).
+      HEUTE OHNE WIRKUNG: Produktiv laeuft text-embedding-3-small (C-089), und
+      das kennt keinen Praefix — die Tabelle fuehrt dafuer den leeren String. Der
+      Aufwand entsteht also VOR einem Modellwechsel, nicht danach, und genau das
+      ist der Zweck.
+      WAS EIN WECHSEL ZUSAETZLICH KOSTET: alle vorhandenen Vektoren neu bilden
+      (anderer Vektorraum), den Grenzwert neu erheben, die Guetemessung
+      wiederholen. Das Backfill-Werkzeug ueberspringt Zeilen, die bereits einen
+      Vektor tragen — es braeuchte einen Zwangsmodus.
+      NEBENBEI, BELEGT AUS DER MODELLKARTE: Auf CLEF (europaeische Sprachen)
+      liegt arctic-l-v2.0 bei 52,9 bzw. 54,3 gegen 40,8 bzw. 41,3 fuer bge-m3.
+      Fuer deutschsprachige Bestaende ist das kein Detail.

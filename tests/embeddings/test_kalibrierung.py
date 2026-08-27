@@ -20,10 +20,13 @@ from foreman.embeddings.config import EmbeddingSettings, Priority
 from foreman.embeddings.kalibrierung import (
     ALLE,
     ARCHIV_VEKTOR_GRENZWERT,
+    QUERY_PRAEFIX,
     Kalibrierung,
     aktives_modell,
     offene_meldungen,
+    praefix_fuer,
     pruefe,
+    pruefe_praefix,
 )
 
 
@@ -182,3 +185,95 @@ def test_der_start_ruft_die_pruefung_auf() -> None:
     anweisungen = "\n".join(z for z in quelle.splitlines() if not z.lstrip().startswith("#"))
 
     assert "offene_meldungen(get_embedding_settings())" in anweisungen
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Der Anfrage-Präfix — er hängt am Modell, nicht an einem Schalter
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_arctic_verlangt_den_anfrage_praefix() -> None:
+    """Belegt aus der Modellkarte, nicht aus dem Gedächtnis.
+
+    Snowflake Arctic v2.0 nennt ihn an drei Stellen: im
+    Sentence-Transformers-Beispiel als `prompt_name="query"`, im
+    Transformers-Beispiel als `query_prefix = 'query: '`, und
+    `config_sentence_transformers.json` führt den Prompt.
+    """
+    assert praefix_fuer("Snowflake/snowflake-arctic-embed-l-v2.0") == "query: "
+    assert praefix_fuer("Snowflake/snowflake-arctic-embed-m-v2.0") == "query: "
+
+
+def test_openai_und_bge_bekommen_keinen_praefix() -> None:
+    """AUFBAU-KONTROLLE: Ein Präfix, den das Modell nicht kennt, schadet ebenso.
+
+    Ohne diesen Fall liesse sich der Präfix pauschal setzen — und dann liefe das
+    heute produktive `text-embedding-3-small` schlechter, ohne dass ein Fehler
+    auffiele.
+    """
+    assert praefix_fuer("text-embedding-3-small") == ""
+    assert praefix_fuer("bge-m3") == ""
+    assert praefix_fuer("BAAI/bge-m3") == ""
+
+
+def test_jedes_waehlbare_modell_hat_eine_praefix_entscheidung() -> None:
+    """DER TRAGENDE FALL: Was die Konfiguration auswählen kann, muss entschieden sein.
+
+    Ein Modell ohne Eintrag bekommt stillschweigend keinen Präfix. Verlangt es
+    einen, liefert es schlechtere Treffer — ohne Fehler, ohne Warnung. Dieser
+    Test zwingt dazu, bei jedem neuen Vorgabemodell die Entscheidung zu treffen,
+    statt sie zu vergessen.
+    """
+    from typing import get_args
+
+    for prioritaet in get_args(Priority):
+        modell = aktives_modell(_einstellungen(prioritaet))
+        assert modell in QUERY_PRAEFIX, (
+            f"Für '{modell}' (Modus {prioritaet}) ist nicht entschieden, ob Anfragen "
+            "einen Präfix brauchen."
+        )
+
+
+def test_ein_unbekanntes_modell_wird_beim_start_gemeldet() -> None:
+    """Geraten wird nicht, aber geschwiegen auch nicht.
+
+    Wer ein eigenes Modell einhängt, soll das können — er soll nur nicht
+    unbemerkt ohne Präfix fahren. Hart abzubrechen wäre Bevormundung, stumm
+    weiterzulaufen wäre die stille Verschlechterung.
+    """
+    eigenes = EmbeddingSettings(  # type: ignore[call-arg]
+        _env_file=None, priority="openai_only", openai_model="mein-eigenes-modell"
+    )
+
+    meldung = pruefe_praefix(eigenes)
+
+    assert meldung is not None
+    assert "mein-eigenes-modell" in meldung
+    assert praefix_fuer("mein-eigenes-modell") == ""
+
+
+def test_ein_bekanntes_modell_wird_nicht_gemeldet() -> None:
+    """AUFBAU-KONTROLLE: Die Meldung darf nicht bei jedem Start erscheinen."""
+    assert pruefe_praefix(_einstellungen("openai_only")) is None
+
+
+def test_die_praefix_meldung_haengt_in_der_startpruefung() -> None:
+    """Eine Prüfung, die niemand aufruft, prüft nichts.
+
+    `offene_meldungen` ist die Liste, die der Start ausgibt. Stünde die
+    Präfix-Prüfung daneben statt darin, bliebe sie folgenlos.
+
+    GEPRÜFT WIRD AUF DEN WORTLAUT DER PRÄFIX-MELDUNG, nicht auf den Modellnamen:
+    Der steht auch in der Kalibrierungs-Meldung („Es läuft '…'"). Die erste
+    Fassung dieses Tests fragte danach — und blieb grün, als die Präfix-Prüfung
+    versuchsweise ausgebaut wurde. Ein Test, der aus dem falschen Grund grün ist,
+    ist schlimmer als keiner.
+    """
+    eigenes = EmbeddingSettings(  # type: ignore[call-arg]
+        _env_file=None, priority="openai_only", openai_model="mein-eigenes-modell"
+    )
+
+    meldungen = offene_meldungen(eigenes)
+
+    assert any("Präfix" in m for m in meldungen), meldungen
+    assert any("mein-eigenes-modell" in m and "Präfix" in m for m in meldungen)

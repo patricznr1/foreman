@@ -64,6 +64,42 @@ ARCHIV_VEKTOR_GRENZWERT: Final = Kalibrierung(
 ALLE: Final[tuple[Kalibrierung, ...]] = (ARCHIV_VEKTOR_GRENZWERT,)
 
 
+# Der Präfix, den ein Modell für ANFRAGEN verlangt (Dokumente bekommen keinen).
+#
+# AM MODELL, NICHT AN EINEM SCHALTER: Ein Schalter lässt sich beim Modellwechsel
+# vergessen, und dann läuft das neue Modell falsch — ohne Fehler, nur mit
+# schlechteren Treffern. Die Zuordnung hier kann man nicht vergessen; wer ein
+# Modell einträgt, muss den Präfix mit entscheiden.
+#
+# BELEGT AUS DER MODELLKARTE, nicht aus dem Gedächtnis: Arctic v2.0 verlangt
+# `query: ` ausdrücklich — im Sentence-Transformers-Beispiel als
+# `prompt_name="query"`, im Transformers-Beispiel als `query_prefix = 'query: '`,
+# und `config_sentence_transformers.json` führt den Prompt. OpenAI und bge-m3
+# kennen keinen Präfix.
+QUERY_PRAEFIX: Final[dict[str, str]] = {
+    # OpenAI-Cloud — kein Präfix.
+    "text-embedding-3-small": "",
+    "text-embedding-3-large": "",
+    # bge-m3, lokal über Ollama bzw. sentence-transformers — kein Präfix.
+    "bge-m3": "",
+    "BAAI/bge-m3": "",
+    # Snowflake Arctic v2.0 — VERLANGT den Präfix auf der Anfrageseite.
+    "Snowflake/snowflake-arctic-embed-l-v2.0": "query: ",
+    "Snowflake/snowflake-arctic-embed-m-v2.0": "query: ",
+    "snowflake-arctic-embed2": "query: ",
+}
+
+
+def praefix_fuer(modell: str) -> str:
+    """Der Anfrage-Präfix eines Modells — leer, wenn keiner nötig oder unbekannt.
+
+    Ein unbekanntes Modell bekommt KEINEN Präfix und wird beim Start gemeldet
+    (`offene_meldungen`). Hart abzubrechen wäre falsch: Wer ein eigenes Modell
+    einhängt, soll das können — er soll es nur nicht unbemerkt tun.
+    """
+    return QUERY_PRAEFIX.get(modell, "")
+
+
 def aktives_modell(settings: EmbeddingSettings) -> str:
     """Nennt das Modell, das die erste Stufe der eingestellten Kette benutzt.
 
@@ -102,7 +138,25 @@ def pruefe(kalibrierung: Kalibrierung, settings: EmbeddingSettings) -> str | Non
     return None
 
 
+def pruefe_praefix(settings: EmbeddingSettings) -> str | None:
+    """Meldet ein Modell, für das keine Präfix-Entscheidung getroffen wurde.
+
+    Ein Modell, das einen Anfrage-Präfix verlangt und keinen bekommt, liefert
+    schlechtere Treffer — ohne Fehler, ohne Warnung. Umgekehrt schadet ein
+    Präfix, den das Modell nicht kennt. Beides ist von aussen nicht zu sehen,
+    deshalb wird die fehlende Entscheidung hier sichtbar gemacht.
+    """
+    laeuft = aktives_modell(settings)
+    if laeuft in QUERY_PRAEFIX:
+        return None
+    return (
+        f"Für '{laeuft}' ist nicht entschieden, ob Anfragen einen Präfix brauchen. "
+        f"Anfragen gehen ohne. Bekannte Modelle: {', '.join(sorted(QUERY_PRAEFIX))}."
+    )
+
+
 def offene_meldungen(settings: EmbeddingSettings) -> list[str]:
     """Alle Beanstandungen über sämtliche erhobenen Werte, in Reihenfolge von ALLE."""
     meldungen = [pruefe(k, settings) for k in ALLE]
+    meldungen.append(pruefe_praefix(settings))
     return [m for m in meldungen if m is not None]

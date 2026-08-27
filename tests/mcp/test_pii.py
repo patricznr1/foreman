@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.core.pseudonymize import Pseudonymizer
 from foreman.db.models import Alarm, Machine, User, WorkerNote
+from foreman.embeddings.config import EmbeddingMode
 from foreman.mcp import tools
 from foreman.mcp.schemas import (
     AlarmOut,
@@ -51,7 +52,9 @@ _ALL_LEAF_OUTPUTS: tuple[type[BaseModel], ...] = (
 
 
 class _StubProvider:
-    async def embed(self, texts: list[str]) -> list[list[float]]:
+    async def embed(
+        self, texts: list[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[list[float]]:
         return [[0.1] * 1024 for _ in texts]
 
 

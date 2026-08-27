@@ -89,6 +89,7 @@ Stand: 2026-08-27
 | C-087 | Die Archiv-Suche gibt 15 Treffer aus, und diese Zahl steht an genau einer Stelle. | gemessen | ARCHIV_AUSGABELAENGE = 15; vorher Backend 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
 | C-088 | Mit der zusammenfuehrenden Fusion und 15 Plaetzen ist Freigabe-Bedingung 1 erfuellt, und der Gewinn an Rangguete ist statistisch gezeigt. | gemessen | Trefferquote 0,565 auf 0,641 (p=0,062) · Rangguete 0,493 auf 0,585 (p=0,016) · verdichtet 0,542 auf 0,644 (p=0,020) · 0 von 10 Anfragen mit gesunkener Trefferquote, 5 von 10 mit Zusatztreffer | 2026-08-27 | gueltig | intern |
 | C-089 | Produktiv laeuft das Cloud-Einbettungsmodell text-embedding-3-small ohne lokalen Ausweichpfad. | gemessen | FOREMAN_EMBED_PRIORITY = openai_only, FOREMAN_EMBED_OPENAI_MODEL = text-embedding-3-small | 2026-08-27 | gueltig | intern |
+| C-090 | Snowflake Arctic v2.0 verlangt auf der Anfrageseite einen Praefix; FOREMAN bindet ihn ans Modell statt an einen Schalter. | gemessen | query: — belegt an drei Stellen der Modellkarte; hinterlegt in QUERY_PRAEFIX, mit Startmeldung fuer unbekannte Modelle | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -105,17 +106,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 87
+Einträge gesamt: 88
 
 Nach Status:
 
-- gemessen: 80
+- gemessen: 81
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 81
+- gueltig: 82
 - ueberholt: 6
 - ungeprueft: 0

@@ -20,6 +20,7 @@ from foreman.adapters.simulation.scenario import load_scenario_by_name
 from foreman.api.deps import get_embedding_provider
 from foreman.core.pseudonymize import Pseudonymizer
 from foreman.core.redact import Redactor
+from foreman.embeddings.config import EmbeddingMode
 from foreman.embeddings.errors import ProviderUnavailable
 from foreman.ingestion.service import IngestionService
 
@@ -32,7 +33,9 @@ class _CountingProvider:
     def __init__(self) -> None:
         self.calls = 0
 
-    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    async def embed(
+        self, texts: Sequence[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[list[float]]:
         self.calls += 1
         return [[float(i % 7) for i in range(1024)] for _ in texts]
 
@@ -40,7 +43,9 @@ class _CountingProvider:
 class _FailProvider:
     """Simuliert ein nicht erreichbares Embedding-Backend."""
 
-    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    async def embed(
+        self, texts: Sequence[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[list[float]]:
         raise ProviderUnavailable("❌ kein Backend (Test)", attempted=("ollama",))
 
 
