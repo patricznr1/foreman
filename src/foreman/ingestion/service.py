@@ -39,7 +39,13 @@ from foreman.ingestion.normalized import (
     ProductionRunRecord,
     WorkerNoteRecord,
 )
-from foreman.ingestion.semantic import notiz_payload, record_semantic_event
+from foreman.ingestion.semantic import (
+    alarm_payload,
+    maskiere,
+    notiz_payload,
+    record_semantic_event,
+    wartung_payload,
+)
 from foreman.reads.queries import machines_for_data_points
 from foreman.realtime.channels import ChangeSet
 from foreman.realtime.notify import notify_changes
@@ -261,20 +267,11 @@ class IngestionService:
         await self._mirror(
             machine_id=event.machine_id,
             event_type="alarm_raised",
-            payload={
-                "source_type": "alarm",
-                "source_id": alarm.id,
-                "code": event.code,
-                "severity": event.severity,
-                "category": event.category,
-                "machine_id": event.machine_id,
-                "raised_at": event.occurred_at.isoformat(),
-                # Maskiert, obwohl die Quellzeile es NICHT ist (§15.9, offener
-                # Befund): Was das System verlässt, wird behandelt wie der
-                # Notiz-Freitext — der Spiegel darf nicht die schwächere Grenze
-                # sein. Der Befund an der Quellzeile bleibt davon unberührt.
-                "message": self._maskiert(event.message),
-            },
+            # Maskiert, obwohl die Quellzeile es NICHT ist (§15.9, offener Befund):
+            # Was das System verlässt, wird behandelt wie der Notiz-Freitext — der
+            # Spiegel darf nicht die schwächere Grenze sein. Die Nutzlast baut
+            # `semantic.alarm_payload`, dieselbe Quelle wie für den HTTP-Weg.
+            payload=alarm_payload(alarm, self._maskiert(event.message)),
         )
 
     async def _write_production_run(self, event: ProductionRunRecord) -> None:
@@ -327,19 +324,10 @@ class IngestionService:
         await self._mirror(
             machine_id=event.machine_id,
             event_type="maintenance_performed",
-            payload={
-                "source_type": "maintenance",
-                "source_id": wartung.id,
-                "type": event.type,
-                "machine_id": event.machine_id,
-                "component_id": event.component_id,
-                "performed_at": event.occurred_at.isoformat(),
-                "performed_by": performed_by,  # bereits tokenisiert
-                # Siehe Begründung bei `alarm_raised`. Hier wiegt sie schwerer:
-                # Der Grund eines Degradationsverlaufs steht ausschliesslich in
-                # dieser Beschreibung (§12.5, Beobachtungsgrenze).
-                "description": self._maskiert(event.description),
-            },
+            # Siehe Begründung bei `alarm_raised`. Hier wiegt sie schwerer: Der
+            # Grund eines Degradationsverlaufs steht ausschliesslich in dieser
+            # Beschreibung (§12.5, Beobachtungsgrenze).
+            payload=wartung_payload(wartung, self._maskiert(event.description)),
         )
 
     async def _write_worker_note(self, event: WorkerNoteRecord) -> None:
@@ -379,22 +367,12 @@ class IngestionService:
     def _maskiert(self, text: str | None) -> str | None:
         """NER-Maskierung für Freitext, der in die Spiegelung geht.
 
-        Warum überhaupt: `alarms.message` und `maintenance_events.description`
-        laufen im Schreibpfad NICHT durch die Maskierung (§15.9, gemeldeter und
-        weiterhin offener Befund) — anders als `worker_notes.text`. Solange diese
-        Felder nur in der eigenen Datenbank lagen, war das eine Inkonsistenz.
-        Sobald sie gespiegelt werden, verlassen sie das System, und dann muss die
-        Grenze dieselbe sein wie beim Notiz-Freitext.
-
-        Bewusst NUR auf dem Spiegelweg: Die Quellzeile unverändert zu lassen ist
-        keine Nachlässigkeit, sondern die kleinere Änderung — sie hier
-        mitzumaskieren wäre ein Eingriff in den Bestand und in den Rückweg zur
-        Quelle, den dieser Change nicht braucht. Der Befund aus §15.9 bleibt
-        offen und ist damit nicht als erledigt zu betrachten.
+        Der Rumpf liegt seit dem 27.08.2026 in `ingestion/semantic.py`, weil es
+        seither ZWEI Schreibwege gibt: diesen Adapter und die HTTP-Schicht. Zwei
+        Fassungen derselben Grenze sind die Stelle, an der sie auseinanderlaufen.
+        Begründung der Grenze selbst steht dort.
         """
-        if text is None:
-            return None
-        return self.redactor.redact_person_names(text)
+        return maskiere(self.redactor, text)
 
     async def _mirror(
         self, *, machine_id: int | None, event_type: str, payload: dict[str, object]

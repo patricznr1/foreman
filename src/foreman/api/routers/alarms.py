@@ -16,8 +16,15 @@ from collections.abc import Sequence
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import PseudonymizerDep, ResourceScopeDep, SessionDep
+from foreman.api.deps import (
+    PseudonymizerDep,
+    RedactorDep,
+    ResourceScopeDep,
+    SessionDep,
+    SubstrateClientDep,
+)
 from foreman.db.models import Alarm
+from foreman.ingestion.semantic import alarm_payload, maskiere, record_semantic_event
 from foreman.schemas.resources import AlarmCreate, AlarmRead
 
 router = APIRouter(prefix="/alarms", tags=["alarms"])
@@ -25,7 +32,12 @@ router = APIRouter(prefix="/alarms", tags=["alarms"])
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=AlarmRead)
 async def create_alarm(
-    body: AlarmCreate, session: SessionDep, pseudo: PseudonymizerDep, scope: ResourceScopeDep
+    body: AlarmCreate,
+    session: SessionDep,
+    pseudo: PseudonymizerDep,
+    scope: ResourceScopeDep,
+    redactor: RedactorDep,
+    substrate: SubstrateClientDep,
 ) -> Alarm:
     await scope.require(body.machine_id)
     data = body.model_dump()
@@ -37,7 +49,20 @@ async def create_alarm(
         acknowledged_by=(pseudo.tokenize_worker(acknowledged_by) if acknowledged_by else None),
     )
     session.add(obj)
-    await session.flush()
+    await session.flush()  # Schlüssel vor der Spiegelung (§12.4)
+    # SPIEGELUNG INS GEDÄCHTNIS — siehe die ausführliche Begründung im
+    # Wartungs-Schreibweg (`maintenance_events.py`). Für den Alarm gilt
+    # zusätzlich: Der Auslösezeitpunkt gehört zwingend in die Nutzlast, sonst ist
+    # ein Alarm desselben Typs an derselben Maschine vom vorherigen nicht
+    # unterscheidbar — und für "hatten wir das schon mal" ist die WIEDERHOLUNG
+    # die eigentliche Information. `alarm_payload` führt ihn.
+    await record_semantic_event(
+        session,
+        machine_id=obj.machine_id,
+        event_type="alarm_raised",
+        payload=alarm_payload(obj, maskiere(redactor, obj.message)),
+        substrate=substrate,
+    )
     await session.refresh(obj)
     return obj
 

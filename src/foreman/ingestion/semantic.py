@@ -18,7 +18,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from foreman.db.models import SemanticEvent, WorkerNote
+from foreman.core.redact import Redactor
+from foreman.db.models import Alarm, MaintenanceEvent, SemanticEvent, WorkerNote
 from foreman.substrate.client import SubstrateClient
 from foreman.substrate.content import baue_inhalt
 
@@ -60,6 +61,73 @@ def notiz_payload(note: WorkerNote, masked_text: str) -> dict[str, object]:
         "created_at": note.created_at.isoformat(),
         "source_type": "note",
         "source_id": note.id,
+    }
+
+
+def maskiere(redactor: Redactor, text: str | None) -> str | None:
+    """NER-Maskierung für Freitext, der in die Spiegelung geht.
+
+    Warum überhaupt: `alarms.message` und `maintenance_events.description` laufen
+    im Schreibpfad NICHT durch die Maskierung (§15.9, gemeldeter und weiterhin
+    offener Befund) — anders als `worker_notes.text`. Solange diese Felder nur in
+    der eigenen Datenbank lagen, war das eine Inkonsistenz. Sobald sie gespiegelt
+    werden, verlassen sie das System, und dann muss die Grenze dieselbe sein wie
+    beim Notiz-Freitext.
+
+    Bewusst NUR auf dem Spiegelweg: Die Quellzeile unverändert zu lassen ist die
+    kleinere Änderung — sie mitzumaskieren wäre ein Eingriff in den Bestand und in
+    den Rückweg zur Quelle. Der Befund aus §15.9 bleibt offen.
+
+    Steht seit dem 27.08.2026 HIER statt im Ingestion-Dienst, weil es seither
+    ZWEI Schreibwege gibt: den Adapter und die HTTP-Schicht. Zwei Fassungen
+    derselben Grenze sind die Stelle, an der sie auseinanderlaufen.
+    """
+    if text is None:
+        return None
+    return redactor.redact_person_names(text)
+
+
+def wartung_payload(wartung: MaintenanceEvent, masked_description: str | None) -> dict[str, object]:
+    """Baut die Spiegel-Nutzlast eines Wartungsnachweises — für BEIDE Schreibwege.
+
+    `performed_by` bleibt DRIN, anders als der Verfasser einer Schichtnotiz: Bei
+    der Wartung ist die ausführende Rolle Teil des Nachweises (§8, auditiert
+    re-identifizierbar). Der Wert ist bereits tokenisiert, nie Klartext.
+
+    `description` ist der maskierte Text und wird übergeben statt aus dem Objekt
+    gelesen, damit die Herkunft an der Aufrufstelle sichtbar bleibt — dieselbe
+    Bauform wie bei `notiz_payload`.
+    """
+    return {
+        "source_type": "maintenance",
+        "source_id": wartung.id,
+        "type": wartung.type,
+        "machine_id": wartung.machine_id,
+        "component_id": wartung.component_id,
+        "performed_at": wartung.performed_at.isoformat(),
+        "performed_by": wartung.performed_by,
+        "description": masked_description,
+    }
+
+
+def alarm_payload(alarm: Alarm, masked_message: str | None) -> dict[str, object]:
+    """Baut die Spiegel-Nutzlast eines Alarms — für BEIDE Schreibwege.
+
+    Der Auslösezeitpunkt gehört zwingend hinein: Ohne ihn ist ein Alarm desselben
+    Typs an derselben Maschine vom vorherigen nicht unterscheidbar, und für
+    "hatten wir das schon mal" ist die WIEDERHOLUNG die eigentliche Information
+    (Befund 20.08.2026 — beim Nachtrag fielen sechs Alarm-Paare über den
+    Inhalts-Hash zusammen).
+    """
+    return {
+        "source_type": "alarm",
+        "source_id": alarm.id,
+        "code": alarm.code,
+        "severity": alarm.severity,
+        "category": alarm.category,
+        "machine_id": alarm.machine_id,
+        "raised_at": alarm.raised_at.isoformat(),
+        "message": masked_message,
     }
 
 

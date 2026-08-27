@@ -18,9 +18,17 @@ from collections.abc import Sequence
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from foreman.api.deps import CurrentUser, PseudonymizerDep, ResourceScopeDep, SessionDep
+from foreman.api.deps import (
+    CurrentUser,
+    PseudonymizerDep,
+    RedactorDep,
+    ResourceScopeDep,
+    SessionDep,
+    SubstrateClientDep,
+)
 from foreman.core.roles import Role
 from foreman.db.models import MaintenanceEvent
+from foreman.ingestion.semantic import maskiere, record_semantic_event, wartung_payload
 from foreman.schemas.resources import MaintenanceEventCreate, MaintenanceEventRead
 
 router = APIRouter(prefix="/maintenance_events", tags=["maintenance_events"])
@@ -37,6 +45,8 @@ async def create_maintenance_event(
     session: SessionDep,
     pseudo: PseudonymizerDep,
     scope: ResourceScopeDep,
+    redactor: RedactorDep,
+    substrate: SubstrateClientDep,
 ) -> MaintenanceEvent:
     # Der Nachweis wird an der Maschine geführt, an der er erbracht wurde — sie muss
     # im Ausschnitt des Eintragenden liegen. Die Rollenfrage darunter (Nachtrag für
@@ -59,7 +69,24 @@ async def create_maintenance_event(
         performed_by=pseudo.tokenize_worker(performed_by),
     )
     session.add(obj)
-    await session.flush()
+    await session.flush()  # Schlüssel vor der Spiegelung (§12.4)
+    # SPIEGELUNG INS GEDÄCHTNIS (seit 27.08.2026). Vorher entstand hier eine
+    # Wartung OHNE Erinnerung: Die Spiegelung kam am 24.08. mit der Schichtnotiz
+    # und wurde für diesen Schreibweg nie nachgezogen. Wirkung, an der laufenden
+    # Instanz erhoben: Alles, was ein Mensch von Hand einträgt, blieb für die
+    # vierte Archiv-Quelle unsichtbar — nur der Adapter-Weg spiegelte.
+    #
+    # Gespiegelt wird der MASKIERTE Text, nie das Rohfeld (§15.9): Die Quellzeile
+    # bleibt unverändert, der Spiegel darf nicht die schwächere Grenze sein.
+    # Nutzlast und Maskierung kommen aus `ingestion/semantic.py` — dieselbe
+    # Quelle wie der Adapter-Weg.
+    await record_semantic_event(
+        session,
+        machine_id=obj.machine_id,
+        event_type="maintenance_performed",
+        payload=wartung_payload(obj, maskiere(redactor, obj.description)),
+        substrate=substrate,
+    )
     await session.refresh(obj)
     return obj
 
