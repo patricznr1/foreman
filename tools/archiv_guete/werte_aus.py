@@ -50,14 +50,34 @@ def kennzahlen(treffer: list[dict], relevant: dict[str, int], k: int) -> dict:
     """Recall/Praezision/nDCG fuer EINE Anfrage. `relevant` bildet Schluessel auf Stufe (1|2) ab."""
     oben = treffer[:k]
     schluessel = [_schluessel(t) for t in oben]
-    gefunden = [s for s in schluessel if s in relevant]
+
+    # EIN zutreffender Eintrag zaehlt EINMAL, auch wenn er mehrfach ausgeliefert
+    # wird. Seit der Rueckweg aufgeloest wird (`_schluessel`), koennen zwei
+    # verschiedene Erinnerungen auf DIESELBE Quellzeile zeigen — die
+    # Zusammenfuehrung in der Suche entfernt Erinnerungen nur gegen eigene
+    # Treffer, nicht untereinander. Ohne diese Entdoppelung stiege die
+    # Trefferquote ueber 1,0 und die Rangguete ueber 1,0, ohne dass ein einziger
+    # Eintrag mehr gefunden waere. Im Lauf vom 27.08.2026 trat der Fall nicht ein
+    # (Dubletten ausschliesslich als `memory:0`, keine davon zutreffend) — er ist
+    # hier abgefangen, BEVOR er eintritt.
+    gesehen: set[str] = set()
+    erstmals: list[str] = []  # Schluessel in Reihenfolge, Wiederholungen leer
+    for s in schluessel:
+        if s in gesehen:
+            erstmals.append("")  # belegt einen Platz, bringt keine Information
+        else:
+            gesehen.add(s)
+            erstmals.append(s)
+    gefunden = [s for s in erstmals if s in relevant]
 
     # Recall: Anteil der relevanten Eintraege, die in den Top-k stehen.
     recall = len(gefunden) / len(relevant) if relevant else None
-    # Praezision: Anteil der ausgelieferten Treffer, die relevant sind.
+    # Praezision: Anteil der ausgelieferten PLAETZE, die einen zutreffenden
+    # Eintrag ERSTMALS zeigen. Eine Wiederholung belegt einen Platz, ohne etwas
+    # beizutragen — sie senkt die Praezision, und das ist richtig so.
     praezision = len(gefunden) / len(oben) if oben else None
 
-    ist = dcg([relevant.get(s, 0) for s in schluessel])
+    ist = dcg([relevant.get(s, 0) for s in erstmals])
     bestenfalls = dcg(sorted(relevant.values(), reverse=True)[:k])
     ndcg = (ist / bestenfalls) if bestenfalls > 0 else None
 
@@ -138,8 +158,8 @@ def zeige(a: dict) -> None:
 def vergleiche(basis: dict, neu: dict) -> None:
     print(f"\n{'=' * 78}")
     print(f"VERGLEICH  {basis['lauf']}  ->  {neu['lauf']}")
-    print("Schwellen (GROUND_TRUTH §15.10, Freigabe-Bedingung 1):")
-    print("  (1) auf KEINER Anfrage schlechter als die Baseline")
+    print("Schwellen (GROUND_TRUTH §15.10, Freigabe-Bedingung 1, Fassung vom 27.08.2026):")
+    print("  (1) auf KEINER Anfrage geht ein zutreffender Treffer VERLOREN")
     print(
         f"  (2) auf >= {ANTEIL_MIT_ZUSATZTREFFER_SOLL:.0%} der Anfragen ein ZUSAETZLICHER relevanter Treffer"
     )
@@ -206,7 +226,7 @@ def vergleiche(basis: dict, neu: dict) -> None:
     print()
     b1 = len(schlechter) == 0
     b2 = anteil >= ANTEIL_MIT_ZUSATZTREFFER_SOLL
-    print(f"  Bedingung (1) keine Verschlechterung : {'ERFUELLT' if b1 else 'NICHT ERFUELLT'}")
+    print(f"  Bedingung (1) kein verlorener Treffer: {'ERFUELLT' if b1 else 'NICHT ERFUELLT'}")
     print(
         f"  Bedingung (2) >= {ANTEIL_MIT_ZUSATZTREFFER_SOLL:.0%} Zusatztreffer  : {'ERFUELLT' if b2 else 'NICHT ERFUELLT'} ({anteil:.1%})"
     )

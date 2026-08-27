@@ -126,25 +126,33 @@ def _als_zeitpunkt(wert: Any) -> datetime | None:
         return None
 
 
-async def _quellzeile(session: AsyncSession, quelle: Quelle, payload: Mapping[str, Any]) -> Any:
-    """Findet die Quellzeile — über den Rückweg, sonst über natürliche Merkmale.
-
-    Der Ersatzweg schlägt NUR zu, wenn genau EINE Zeile passt. Bei mehreren
-    bleibt es beim Nichts: Eine falsch zugeordnete Beschreibung wäre schlimmer
-    als eine fehlende — sie schriebe einem Vorgang den Grund eines anderen zu,
-    und niemand könnte das später auseinanderhalten.
-    """
+async def _ueber_rueckweg(
+    session: AsyncSession, quelle: Quelle, payload: Mapping[str, Any]
+) -> Any | None:
+    """Die Quellzeile über die gespeicherte Kennung — oder None."""
     quell_id = payload.get("source_id")
-    if quell_id is not None:
-        return await session.get(quelle.modell, quell_id)
+    if quell_id is None:
+        return None
+    return await session.get(quelle.modell, quell_id)
 
+
+async def _ueber_merkmale(
+    session: AsyncSession, quelle: Quelle, payload: Mapping[str, Any]
+) -> Sequence[Any]:
+    """ALLE Quellzeilen, auf die Maschine, Zeitpunkt und Art passen.
+
+    Gibt die Liste zurück, nicht das Ergebnis — wie viele es sind, ist eine
+    Information, die der Aufrufer braucht: „keine" und „mehrere" sind
+    verschiedene Lagen, und wer sie zusammenwirft, verwechselt „ich ordne nichts
+    zu" mit „es gibt nichts" (siehe `aufraeumen._quellzustand`).
+    """
     zeitpunkt = _als_zeitpunkt(payload.get(quelle.zeitschluessel))
     maschine = payload.get("machine_id")
     kennung = payload.get(quelle.kennschluessel)
     if zeitpunkt is None or maschine is None:
-        return None
+        return []
 
-    treffer = (
+    return (
         (
             await session.execute(
                 select(quelle.modell).where(
@@ -157,9 +165,31 @@ async def _quellzeile(session: AsyncSession, quelle: Quelle, payload: Mapping[st
         .scalars()
         .all()
     )
-    if len(treffer) != 1:
-        return None
-    return treffer[0]
+
+
+async def _quellzeile(session: AsyncSession, quelle: Quelle, payload: Mapping[str, Any]) -> Any:
+    """Findet die Quellzeile — über den Rückweg, sonst über natürliche Merkmale.
+
+    Der Ersatzweg schlägt NUR zu, wenn genau EINE Zeile passt. Bei mehreren
+    bleibt es beim Nichts: Eine falsch zugeordnete Beschreibung wäre schlimmer
+    als eine fehlende — sie schriebe einem Vorgang den Grund eines anderen zu,
+    und niemand könnte das später auseinanderhalten.
+
+    DER RÜCKWEG IST KEINE SACKGASSE (seit 27.08.2026): Löst die gespeicherte
+    Kennung nicht mehr auf, wird die Merkmalssuche trotzdem versucht. Vorher kehrte
+    die Funktion bei gesetztem `source_id` sofort zurück — und meldete „keine
+    Quellzeile", obwohl Maschine, Zeitpunkt und Art sie eindeutig gefunden hätten.
+    Genau diese Lage entsteht, wenn die Quelltabellen neu aufgebaut werden und dabei
+    neue Kennungen vergeben: Die Zeile existiert, ihre alte Nummer nicht mehr. Für
+    den Nachtrag hiess das ein unnötiges Überspringen; für das Aufräumen hiesse es
+    eine Löschung.
+    """
+    ueber_rueckweg = await _ueber_rueckweg(session, quelle, payload)
+    if ueber_rueckweg is not None:
+        return ueber_rueckweg
+
+    treffer = await _ueber_merkmale(session, quelle, payload)
+    return treffer[0] if len(treffer) == 1 else None
 
 
 async def nachtragen(

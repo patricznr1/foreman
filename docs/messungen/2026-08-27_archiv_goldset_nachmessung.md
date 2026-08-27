@@ -81,6 +81,14 @@ in einer Liste stehen und die Trefferquote aufblähen. Nachgezählt: Dubletten t
 Rückweg, und keine davon ist im Goldset zutreffend. Sie verwässern die Präzision, aber sie
 zählen keinen zutreffenden Treffer doppelt.
 
+Seit dem 27.08.2026 hängt das nicht mehr am Nachzählen: `kennzahlen()` gutschreibt jeden
+Schlüssel nur bei seinem **ersten** Auftreten. Ohne diese Sperre lieferte derselbe Vorgang,
+zweimal ausgeliefert, Trefferquote **2,0** und Ranggüte **1,63** — Werte, die es nicht geben
+kann, und niemand hätte eine Meldung gesehen. Die Wiederholung belegt weiterhin einen Platz
+und senkt damit die Präzision; nur zählt sie nichts doppelt gut. Auf die Zahlen dieses Laufs
+wirkt sich die Sperre **nicht** aus (nachgerechnet: identische Werte vor und nach), weil der
+Fall hier nicht eintrat. Sie ist gesetzt, **bevor** er eintritt.
+
 ## 5. Die Schwelle wurde präzisiert — nach der Messung, mit Wirkung auf das Urteil
 
 Die ursprüngliche Fassung lautete „auf keiner Anfrage **schlechter** als die Baseline" und
@@ -138,3 +146,20 @@ unveränderter Trefferquote.
   aber sie stammen nicht von einem Meister.
 - **Keine Aussage über die Ranggüte als Schwelle.** Sie ist hier ausdrücklich Kennzahl.
 - **Kein Nachweis, dass das Aufräumen wirkt.** Der Wert dafür steht noch aus (§6).
+
+## 8. Was am Werkzeug selbst gefunden wurde
+
+Vor dem Push lief eine adversariale Prüfung gegen den fertigen Stand. Zwei Befunde betrafen
+dieses Messwerkzeug, und beide sind behoben:
+
+1. **Doppelte Gutschrift war möglich** — siehe §4. Ein Fall, der in diesem Lauf nicht eintrat,
+   aber eine Freigabe hätte belegen können, die nicht gilt.
+2. **Die Ausgabe nannte die frühere Schwellenfassung.** Das Werkzeug rechnete nach der neuen
+   Fassung und druckte darüber `(1) auf KEINER Anfrage schlechter als die Baseline … ERFUELLT`.
+   Wer nur die Werkzeugausgabe liest — und dazu lädt §2 dieses Berichts ausdrücklich ein —
+   hätte ein Urteil über eine Bedingung gelesen, die so nicht mehr gilt. Die Ausgabe nennt
+   jetzt den geltenden Wortlaut samt Fassungsdatum, und ein Prüffall fordert das ein.
+
+Beide Prüffälle liegen in `tests/unit/test_archiv_guete_auswertung.py`. Das Erheben braucht
+weiterhin eine laufende Instanz und gehört in keinen Prüflauf; das **Rechnen** braucht nichts
+als die Rohdateien und wird ab jetzt geprüft.

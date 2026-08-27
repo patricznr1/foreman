@@ -279,3 +279,129 @@ async def test_alarme_werden_ebenso_geraeumt(db_session: AsyncSession) -> None:
     assert stats.verwaist == 1
     assert substrat.geloescht == ["alarm-tot"]
     assert await _anzahl(db_session) == 1
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Die beiden Wege einzeln — was der Kopfkommentar zusichert
+#
+#  Befunde einer adversarialen Prüfung vom 27.08.2026. Beide waren am Code
+#  belegbar, und beide hatten dieselbe Wurzel: `nachtrag._quellzeile`
+#  beantwortet die Frage „WELCHE Zeile ist es" und darf „lässt sich nicht
+#  sagen" sagen. Hier steht die Frage „gibt es ÜBERHAUPT eine" — wer dafür
+#  dieselbe Antwort nimmt, löscht, wo er nur unsicher war.
+# ──────────────────────────────────────────────────────────────────────
+
+
+async def test_tote_kennung_bei_lebender_quelle_ueber_merkmale_loescht_nicht(
+    db_session: AsyncSession,
+) -> None:
+    """Der Rückweg darf keine Sackgasse sein.
+
+    Genau die Lage, für die dieses Werkzeug gebaut ist: Die Quelltabellen werden
+    neu aufgebaut und vergeben dabei neue Kennungen. Jede Spiegelung trägt danach
+    eine `source_id`, die nicht mehr auflöst — die Quellzeile selbst ist aber über
+    Maschine, Zeitpunkt und Art eindeutig da.
+
+    Kehrte die Suche beim toten Rückweg sofort um, gälte der GESAMTE Bestand als
+    verwaist und würde in einem Lauf entfernt. Kein Lauf legt die Erinnerungen
+    neu an.
+
+    Der Aufbau setzt die beiden Schlüssel deshalb GETRENNT: tote Kennung, aber
+    passende Merkmale. Ein Aufbau, der beides zugleich zerstört, kann nicht
+    sagen, welcher der beiden Wege die Entscheidung getragen hat.
+    """
+    machine_id = await _maschine(db_session)
+    lebt = MaintenanceEvent(
+        machine_id=machine_id, type="lubrication", description="Ein Grund.", performed_at=ZEIT
+    )
+    db_session.add(lebt)
+    await db_session.flush()
+
+    db_session.add(
+        SemanticEvent(
+            machine_id=machine_id,
+            event_type="maintenance_performed",
+            payload={
+                "type": "lubrication",
+                "machine_id": machine_id,
+                "performed_at": ZEIT.isoformat(),
+                "source_type": "maintenance",
+                "source_id": 999_999,  # tot — die Zeile trägt eine andere Kennung
+            },
+            substrate_ref="tote-kennung",
+        )
+    )
+    await db_session.flush()
+    substrat = _Substrat()
+
+    stats = await aufraeumen(db_session, substrat)
+
+    assert stats.mit_quelle == 1, "der tote Rückweg hat die Merkmalssuche verhindert"
+    assert stats.verwaist == 0
+    assert substrat.geloescht == []
+    assert await _anzahl(db_session) == 1
+
+
+async def test_mehrdeutige_merkmale_loeschen_nicht(db_session: AsyncSession) -> None:
+    """„Ich ordne nichts zu" ist nicht „es gibt nichts".
+
+    Passen ZWEI Quellzeilen auf dieselben Merkmale, gibt `_quellzeile` nichts
+    zurück — für den Nachtrag richtig, denn er dürfte keiner von beiden den Grund
+    der anderen zuschreiben. Hier hiesse dieselbe Antwort: löschen. Dabei
+    existiert die Quelle nicht nur, sie existiert doppelt.
+    """
+    machine_id = await _maschine(db_session)
+    for _ in range(2):
+        db_session.add(
+            MaintenanceEvent(
+                machine_id=machine_id,
+                type="lubrication",
+                description="Zweimal eingelesen.",
+                performed_at=ZEIT,
+            )
+        )
+    await db_session.flush()
+
+    db_session.add(
+        SemanticEvent(
+            machine_id=machine_id,
+            event_type="maintenance_performed",
+            payload={  # ohne Rückweg — wie der gesamte Altbestand
+                "type": "lubrication",
+                "machine_id": machine_id,
+                "performed_at": ZEIT.isoformat(),
+            },
+            substrate_ref="mehrdeutig",
+        )
+    )
+    await db_session.flush()
+    substrat = _Substrat()
+
+    stats = await aufraeumen(db_session, substrat)
+
+    assert stats.mehrdeutig == 1
+    assert stats.verwaist == 0, "eine doppelt vorhandene Quelle galt als verschwunden"
+    assert substrat.geloescht == []
+    assert await _anzahl(db_session) == 1
+
+
+async def test_scharfer_lauf_ohne_gegenstelle_wird_abgelehnt(db_session: AsyncSession) -> None:
+    """Sonst verschwände die Zeile und ihre Erinnerung bliebe — ohne jeden Bezug.
+
+    Über die Befehlszeile ist dieser Zustand unerreichbar; ein Aufrufer, der die
+    Funktion direkt benutzt, kann ihn herstellen. Ein Vorgang, der Daten
+    unumkehrbar entfernt, verlässt sich nicht auf seinen einzigen heutigen
+    Aufrufer.
+    """
+    machine_id = await _maschine(db_session)
+    await _spiegel(db_session, machine_id, ref="ohne-gegenstelle", mit_quelle=False)
+
+    with pytest.raises(ValueError, match="ohne Gegenstelle"):
+        await aufraeumen(db_session, None)
+
+    assert await _anzahl(db_session) == 1
+
+    # Der Trockenlauf braucht sie zu Recht nicht — er löscht nichts.
+    stats = await aufraeumen(db_session, None, trockenlauf=True)
+    assert stats.verwaist == 1
+    assert await _anzahl(db_session) == 1

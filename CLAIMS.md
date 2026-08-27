@@ -69,6 +69,7 @@ Stand: 2026-08-27
 | C-064 | Die Freigabe-Schwelle der Archiv-Suche verlangt, dass kein zutreffender Treffer verloren geht — nicht, dass keiner die Position wechselt. | gemessen | Präzisiert am 26.08.2026; Anlass ist eine Anfrage mit Trefferquote 0,50 auf 0,67 ohne Verlust, die nach der alten Fassung als verschlechtert galt | 2026-08-27 | gueltig | intern |
 | C-065 | Für Spiegelungen ohne Quellzeile besteht ein Weg, sie samt Erinnerung zu entfernen. | gemessen | Werkzeug gebaut und geprüft am 26.08.2026; betrifft 22 von 44 Spiegelungen (C-054), ohne sie steigt der Anteil zutreffender Treffer von 0,417 auf 0,562 | 2026-08-26 | gueltig | intern |
 | C-066 | Das Gedächtnis als vierte Quelle der Archiv-Suche erfüllt beide Schwellen der Freigabe-Bedingung 1. | gemessen | 0 von 18 Anfragen mit verlorenem Treffer, 11 von 18 = 61,1 % mit zusätzlichem zutreffendem Treffer; mittlere Trefferquote 0,256 auf 0,528, mittlere Ranggüte 0,372 auf 0,548, Anfragen ganz ohne zutreffenden Treffer 5 auf 1 | 2026-08-27 | gueltig | intern |
+| C-067 | Die adversariale Prüfung des Löschwerkzeugs fand vor dem Push zwei Wege, auf denen nicht verwaiste Zeilen gelöscht worden wären. | gemessen | 12 Prüfagenten, 8 Befunde verifiziert, 6 bestätigt, 2 widerlegt; 2 der bestätigten hätten lebende Quellzeilen unwiederbringlich entfernt | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -82,17 +83,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 64
+Einträge gesamt: 65
 
 Nach Status:
 
-- gemessen: 57
+- gemessen: 58
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 61
+- gueltig: 62
 - ueberholt: 3
 - ungeprueft: 0

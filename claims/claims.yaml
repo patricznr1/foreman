@@ -1602,10 +1602,18 @@ claims:
       Trefferliste. Gemessen an denselben 18 Anfragen wie in C-049 steigt ohne
       sie der Anteil zutreffender Treffer von 0,417 auf 0,562 und die Ranggüte
       von 0,552 auf 0,613, ohne dass ein zutreffender Treffer verloren geht.
-      Entfernt wird nur, was auf KEINEM der beiden Suchwege auffindbar ist — eine
-      Zeile wegen einer zu engen Suche zu löschen wäre der schlimmere Fehler, sie
-      käme nie wieder. Ableitungen des Systems (Empfehlung, Ereigniskette) werden
-      nicht angefasst; sie haben keine Quellzeile im Archiv-Sinn.
+      Entfernt wird nur, was auf KEINEM der beiden Suchwege auffindbar ist UND wo
+      die Zuordnung eindeutig ist — eine Zeile wegen einer zu engen oder einer
+      nicht entscheidbaren Suche zu löschen wäre der schlimmere Fehler, sie käme
+      nie wieder. Die Prüfung ist deshalb dreiwertig (GEFUNDEN / MEHRDEUTIG /
+      VERWAIST): Passen mehrere Quellzeilen auf dieselben Merkmale, existiert die
+      Quelle nicht nur, sie existiert doppelt; die Zeile bleibt stehen und wird
+      getrennt gezählt. Und der gespeicherte Rückweg ist keine Sackgasse: Löst die
+      Kennung nicht mehr auf, wird die Merkmalssuche trotzdem versucht — sonst
+      löschte gerade der Bestand, für den das Werkzeug gebaut ist, weil neu
+      aufgebaute Quelltabellen neue Kennungen vergeben. Ableitungen des Systems
+      (Empfehlung, Ereigniskette) werden nicht angefasst; sie haben keine
+      Quellzeile im Archiv-Sinn.
     datum: "2026-08-26"
     fundstelle:
       - "src/foreman/substrate/aufraeumen.py"
@@ -1654,3 +1662,42 @@ claims:
       einziger davon ist zutreffend. Sie sind der Grund, warum die Ranggüte auf
       sieben Anfragen fällt, obwohl kein Treffer verloren geht. Nach dem
       Aufräumen (C-065) ist erneut zu messen.
+
+  - id: "C-067"
+    aussage: "Die adversariale Prüfung des Löschwerkzeugs fand vor dem Push zwei Wege, auf denen nicht verwaiste Zeilen gelöscht worden wären."
+    status: "gemessen"
+    wert: "12 Prüfagenten, 8 Befunde verifiziert, 6 bestätigt, 2 widerlegt; 2 der bestätigten hätten lebende Quellzeilen unwiederbringlich entfernt"
+    bedingung: >-
+      Durchgeführt am 27.08.2026 gegen den fertigen, getesteten Stand, VOR dem
+      Push. Beide schweren Befunde hatten dieselbe Wurzel: Die Prüfung des
+      Löschwerkzeugs benutzte die Antwort einer Funktion, die eine ANDERE Frage
+      beantwortet. `nachtrag._quellzeile` sagt, WELCHE Quellzeile eine Spiegelung
+      beschreibt, und darf mit "lässt sich nicht sagen" antworten; das Aufräumen
+      fragt, ob es ÜBERHAUPT noch eine gibt. Aus "ich ordne nichts zu" wurde
+      damit "es gibt nichts" — einmal bei mehrdeutigen Merkmalen, einmal bei
+      einer Kennung, die nach einem Neuaufbau der Quelltabellen nicht mehr
+      auflöst. Der zweite Fall hätte den gesamten Bestand betroffen, für den das
+      Werkzeug gebaut ist. Beide Zusicherungen standen so im Kopfkommentar, und
+      der Code hielt sie nicht.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/substrate/aufraeumen.py"
+      - "src/foreman/substrate/nachtrag.py"
+      - "tests/unit/test_substrate_aufraeumen.py"
+      - "tests/unit/test_substrate_nachtrag.py"
+      - "tests/unit/test_archiv_guete_auswertung.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Eintrag steht hier, weil er die eigene Arbeitsweise belastet, nicht
+      entlastet: Acht Prüffälle und vier Gegenproben waren grün, bevor die
+      Prüfung lief. Sie waren es, weil jeder Aufbau BEIDE Schlüssel zugleich
+      zerstörte (tote Kennung UND unpassender Zeitpunkt) — ein Test, der so
+      gebaut ist, kann nicht sagen, welcher Weg die Entscheidung getragen hat.
+      Dieselbe Klasse trat bei der Gegenprobe zum Fix erneut auf: Die erste
+      Mutation blieb grün, weil sie eine Funktion traf, die der Prüfling gar
+      nicht mehr aufruft — die Mutation kam nicht dort an, wo geprüft wird. Zwei
+      weitere Befunde betrafen das Messwerkzeug; einer davon hätte eine
+      Trefferquote über 1,0 erlaubt, der andere druckte die frühere
+      Schwellenfassung über das neue Urteil.
