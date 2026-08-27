@@ -94,8 +94,23 @@ jobs:
       - name: Abhängigkeits-Audit — pip-audit
         # `--no-emit-project`: Der Export enthält sonst das Projekt selbst als
         # lokalen Pfad, und pip-audit versucht es zu installieren.
+        #
+        # DIE LOKALE VERSIONSMARKE WIRD ABGESCHNITTEN (`torch==2.13.0+cpu` →
+        # `torch==2.13.0`). torch kommt aus dem CPU-Index von pytorch.org und
+        # trägt dessen Marke; auf PyPI, wo pip-audit nachschlägt, gibt es sie
+        # nicht — der Lauf scheiterte mit „No matching distribution found".
+        #
+        # Das ist keine Umgehung, sondern die richtige Frage: Gesucht werden
+        # Sicherheitslücken in torch 2.13.0, und die CPU-Variante ist derselbe
+        # Quelltext ohne CUDA-Bibliotheken. Geprüft wird also genau das Paket,
+        # um das es geht.
+        #
+        # Bewusst eng gefasst (`+cpu` am Zeilenende), damit nicht versehentlich
+        # eine andere Marke mitverschwindet — die wäre dann ungeprüft.
         run: |
-          uv export --no-hashes --no-emit-project --format requirements-txt > /tmp/requirements.txt
+          uv export --no-hashes --no-emit-project --format requirements-txt \
+            | sed -E 's/^([A-Za-z0-9._-]+==[0-9][^+ ]*)\+cpu/\1/' > /tmp/requirements.txt
+          grep -E '^torch==' /tmp/requirements.txt || true
           uv run pip-audit -r /tmp/requirements.txt --progress-spinner off
 
   secret-scan:
