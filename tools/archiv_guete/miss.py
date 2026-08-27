@@ -76,7 +76,10 @@ def melde_an() -> urllib.request.OpenerDirector:
         if antwort.status != 200:
             raise SystemExit(f"❌ Anmeldung fehlgeschlagen: HTTP {antwort.status}")
         profil = json.load(antwort)
-    print(f"🔑 angemeldet als {profil['email']} (Rolle {profil['role']})")
+    # Nur die Rolle, nie die Adresse: Ein Protokolleintrag wird weitergereicht,
+    # aufbewahrt und durchsucht. Fuer den Zweck ("bin ich mit ausreichenden
+    # Rechten angemeldet") traegt die Rolle alles, was gebraucht wird.
+    print(f"🔑 angemeldet, Rolle {profil['role']}")
     return oeffner
 
 

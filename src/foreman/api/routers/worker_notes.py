@@ -11,7 +11,12 @@
 #         sieht auch ihre Berichte nicht. Der Strich ist derselbe wie im Live-Push.
 #  Identitätsbindung (§19): der Verfasser kommt aus dem Token, nicht aus dem Body
 #         — die Zuschreibung folgt der Authentifizierung, nicht den Nutzdaten.
-#         Unbekannte Felder ergeben 422 (`extra="forbid"`), statt still zu verfallen.
+#         `author` wird gezielt mit 422 abgewiesen (schemas/resources.py); alle
+#         ÜBRIGEN unbekannten Felder verfallen still (Pydantic-Vorgabe `ignore`)
+#         — das ist bewusst so, weil das Frontend `classification` als
+#         markierten Anschlusspunkt mitsendet (§21.16). Wer über diesen Weg
+#         lädt, prüft die ANTWORT gegen das Gesendete, nicht nur den Status:
+#         Ein Tippfehler im Feldnamen erzeugt sonst ein 201 mit fehlendem Wert.
 #  Embedding (F-SEM, §15): der NER-maskierte Text wird beim Insert eingebettet
 #         (best-effort) — Backend-Ausfall → embedding=NULL, Notiz wird trotzdem
 #         geschrieben; der Backfill holt es nach. Blockiert den Insert NIE.
@@ -58,6 +63,7 @@ async def create_worker_note(
         await scope.require(body.machine_id)
     data = body.model_dump()
     raw_text = data.pop("text")
+    occurred_at = data.pop("occurred_at", None)
     # 1) Freitext VOR dem Insert maskieren. 2) Autor aus dem TOKEN tokenisieren —
     # der Verfasser ist immer der eingeloggte Nutzer, nie ein Body-Feld.
     masked_text = redactor.redact_person_names(raw_text)
@@ -66,6 +72,14 @@ async def create_worker_note(
         text=masked_text,
         author=pseudo.tokenize_worker(str(current_user.id)),
     )
+    # 2b) NACHGETRAGENE Notiz: die Zeit der SCHICHT gilt, nicht die des Eintragens.
+    # VOR dem flush, damit der Wert in der Zeile UND in der Spiegel-Nutzlast steht —
+    # `notiz_payload` liest `note.created_at`, und daraus wird im Archiv die
+    # Zeitangabe des Erinnerungs-Treffers. Stünde er erst nach dem flush, trüge die
+    # Zeile die Schichtzeit und die Erinnerung den Ladezeitpunkt: zwei Zeiten für
+    # denselben Vorgang, die niemand mehr zusammenbringt.
+    if occurred_at is not None:
+        obj.created_at = occurred_at
     # 3) Embedding beim Insert (best-effort, §15): den MASKIERTEN Text einbetten.
     # `if vectors:` (nicht `is not None`) — eine leere Liste würde sonst bei vectors[0]
     # einen IndexError werfen und den „nie blockieren"-Insert-Pfad verletzen.
