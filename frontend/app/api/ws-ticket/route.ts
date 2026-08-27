@@ -9,6 +9,7 @@
 //  Architektur-Einordnung: BFF-Route-Handler (Schicht 1, server-seitig).
 // ============================================================
 import { NextResponse } from "next/server";
+import { isClientError } from "@/lib/api/backend-error";
 import { backendUrl, getSessionToken } from "@/lib/auth/session";
 
 // Secret-/Token-Antwort nie cachen — auf ALLEN Pfaden, auch bei Fehlern.
@@ -25,6 +26,15 @@ export async function GET(): Promise<NextResponse> {
       cache: "no-store",
       signal: AbortSignal.timeout(5_000),
     });
+    // 4xx heißt: die SITZUNG ist das Problem, nicht der Dienst. Das Backend
+    // antwortet auf ein abgelaufenes Token mit 401 (api/middleware.py) — daraus
+    // ein 502 zu machen schickt die Fehlersuche ins Netz statt zur Anmeldung.
+    if (isClientError(response.status)) {
+      return NextResponse.json(
+        { detail: "Sitzung abgelaufen — bitte neu anmelden" },
+        { status: 401, headers: NO_STORE },
+      );
+    }
     if (!response.ok) {
       return NextResponse.json(
         { detail: "WS-Ticket nicht verfügbar" },

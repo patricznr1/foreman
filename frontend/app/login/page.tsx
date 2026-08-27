@@ -30,7 +30,16 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       if (!response.ok) {
-        setError("Anmeldung fehlgeschlagen — bitte Zugangsdaten prüfen.");
+        // Die Fassade unterscheidet Eingabefehler (400) von Ausfall (502) und
+        // legt den Grund in `detail`. Wird der hier eingeebnet, kommt die
+        // Unterscheidung am Terminal nie an — dann sucht der Werker beim
+        // Betrieb, was in seinem Eingabefeld steht.
+        const body = (await response.json().catch(() => null)) as { detail?: unknown } | null;
+        setError(
+          typeof body?.detail === "string" && body.detail.length > 0
+            ? body.detail
+            : "Anmeldung fehlgeschlagen — bitte Zugangsdaten prüfen.",
+        );
         return;
       }
       const user = (await response.json()) as CurrentUser;

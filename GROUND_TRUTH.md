@@ -1021,6 +1021,13 @@ Strikte Transport-Entkopplung: `Transport`-Interface (`lib/realtime/transport.ts
 ### 21.4 Backend-Anbindung (BFF — kein CORS-Eingriff, chirurgisch)
 Next.js-Route-Handler-Proxy `app/api/v1/[...path]/route.ts` liest das JWT aus dem **httpOnly-Cookie** `foreman_token` und injiziert es als Bearer → das Backend braucht keine CORS-Lockerung. `app/api/session/route.ts` (Login → `/auth/login` + `/api/v1/me`, setzt Cookie; Logout; GET Session). `app/api/ws-ticket/route.ts` liefert dem Client das WS-Ticket just-in-time. Rolle/Scope kommen aus **GET /api/v1/me**. WS verbindet direkt zum Backend über `NEXT_PUBLIC_FOREMAN_WS_URL` (Route-Handler proxien kein WebSocket).
 
+**Fehlerabbildung der Fassade (verbindlich für JEDE BFF-Route):** Ein **4xx** des Backends beanstandet die **Anfrage** und darf nie als Ausfall gemeldet werden; **5xx, Netzfehler und Zeitüberschreitung** sind der Ausfall und bleiben **502**. Geteilte Grundlage: `lib/api/backend-error.ts` (`isClientError`, `invalidFields` — liest die beanstandeten Felder aus dem FastAPI-422 und **rät keinen Feldnamen**, wenn der Body fremder Form ist).
+- `POST /api/session`: Backend **401** → **401** „Ungültige Anmeldedaten"; jedes andere **4xx** (insbesondere **422** aus `EmailStr` / Passwortlänge, `schemas/auth.py`) → **400** mit einem Satz in Hallensprache, aus `loc` abgeleitet; **5xx**/Netz/Timeout → **502**. Der Fall ohne `access_token` bleibt 502 (der Dienst hält den Vertrag nicht).
+- `GET /api/ws-ticket`: Backend **4xx** (401 der Auth-Middleware bei abgelaufenem Token) → **401** „Sitzung abgelaufen — bitte neu anmelden"; 5xx/Netz → 502.
+- `app/api/v1/[...path]`: reicht den Backend-Status unverändert durch; 502 nur im `catch` (Netz/Timeout). Keine Anpassung nötig.
+- `app/login/page.tsx` **zeigt den `detail` der Fassade an** statt ihn auf einen Sammeltext einzuebnen — sonst kommt die Unterscheidung am Terminal nicht an.
+Anlass (27.08.2026): Eine E-Mail in ungültigem Format erzeugte im Backend 422; die Fassade meldete „Authentifizierungsdienst nicht erreichbar", und die Fehlersuche ging rund eine halbe Stunde in Netz, DNS, Portzuordnung, IPv6-Bindung und Deployment.
+
 ### 21.5 Atome & Shell (Studie §5.5/§3.3)
 Atome: `StatusIndicator` (FCSM mehrkanalig: Farbe+Kürzel+Label), `ProvenanceStamp` (Herkunft/Stand + AI-Act-Kennzeichnung), `KpiTile` (nie nackte Zahl), Fünf-Zustände-Hülle (`lib/ui/five-states.tsx`). Shell: `GlobalStatusBar` (live), `ScopeBreadcrumb`, `CommandPalette` (⌘K), `QuickCaptureFab`, `PrimaryNav` (rollengefiltert ≤7). Dark + HC-Light umschaltbar, drei Dichte-Modi, Touch-Ziele ≥56/64px, sichtbarer Fokusring, reduced-motion.
 
@@ -1043,7 +1050,7 @@ Rollenmatrix 3.1 als durchsetzbare Daten (`lib/auth/roles.ts`, `ACCESS_MATRIX`);
 | Anmeldung | `/login` | — | ✅ |
 
 ### 21.7 Env & Gates
-Env: `FOREMAN_API_URL` (server, Default `http://localhost:8000`), `NEXT_PUBLIC_FOREMAN_WS_URL` (Client-WS, z. B. `ws://localhost:8000/api/v1/ws`). Gates: `npm run typecheck` (tsc strict 0), `npm run lint` (ESLint 0), `npm test` (Vitest), `npm run build`, `npm run tokens:check`. CI: `.github/workflows/ci.yml` Job `frontend-gates` (Node 24) erzwingt diese Gates pro PR.
+Env: `FOREMAN_API_URL` (server, Default `http://localhost:8000` — **nur für die lokale Entwicklung**; bei `NODE_ENV=production` bricht `instrumentation.ts` → `assertBackendUrlConfigured()` (`lib/config/env.ts`) den **Serverstart** ab, wenn die Variable fehlt, statt eine Adresse zu raten, die im Betrieb nie stimmt. Beim Bauen läuft die Prüfung **nicht** — Next.js überspringt `register()` in `phase-production-build`), `NEXT_PUBLIC_FOREMAN_WS_URL` (Client-WS, z. B. `ws://localhost:8000/api/v1/ws`). Gates: `npm run typecheck` (tsc strict 0), `npm run lint` (ESLint 0), `npm test` (Vitest), `npm run build`, `npm run tokens:check`. CI: `.github/workflows/ci.yml` Job `frontend-gates` (Node 24) erzwingt diese Gates pro PR.
 
 ### 21.8 Bewusst verschoben (eigene Prompts/Schritte)
 Die zehn Sektionen (C/E zuerst). WebGL (A/G), Sprach-UI (J-Vision), Electron, Service-Worker-Vollausbau, Playwright-E2E (Durchstich derzeit als Vitest-Integrationstest auf Transport-Ebene), Font-Selfhosting. Erstbild Shared-JS ~102 kB (nahe Studien-Ziel <100 kB; schwere Teile sektionsweise lazy).

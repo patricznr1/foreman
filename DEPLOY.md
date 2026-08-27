@@ -163,7 +163,7 @@ Warten, bis der DB-Service **läuft**.
 
    | Variable | Wert | Wirkung |
    | --- | --- | --- |
-   | `FOREMAN_API_URL` | `http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:${{backend.PORT}}` | **server-seitig** (BFF-Proxy, `/me`, ws-ticket). **Intern** über Private Networking, `http` (verschlüsselt). |
+   | `FOREMAN_API_URL` | `http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:${{backend.PORT}}` | **server-seitig** (BFF-Proxy, `/me`, ws-ticket). **Intern** über Private Networking, `http` (verschlüsselt). | **Pflicht:** ohne sie bricht der Frontend-Start ab (`instrumentation.ts`), statt eine Adresse zu raten. |
    | `NEXT_PUBLIC_FOREMAN_WS_URL` | `wss://${{backend.RAILWAY_PUBLIC_DOMAIN}}/api/v1/ws` | **Browser** (Live-WebSocket). **Öffentlich** `wss://`. |
 
    > **`NEXT_PUBLIC_*` wird zur BUILD-ZEIT ins Bundle gebacken.** Diese Variable

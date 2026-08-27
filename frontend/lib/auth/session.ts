@@ -18,7 +18,14 @@ export const SESSION_COOKIE = "foreman_token";
  */
 export const SESSION_MAX_AGE = 60 * 60;
 
-/** Backend-Basis-URL (server-seitig, nie an den Browser ausgeliefert). */
+/**
+ * Backend-Basis-URL (server-seitig, nie an den Browser ausgeliefert).
+ *
+ * Der Vorgabewert gilt NUR für die lokale Entwicklung. Im Betrieb kann er nie
+ * stimmen — dort steht `assertBackendUrlConfigured()` (`lib/config/env.ts`,
+ * aufgerufen aus `instrumentation.ts`) davor und bricht den Serverstart ab,
+ * bevor dieser Zweig je erreicht wird.
+ */
 export function backendUrl(): string {
   return process.env.FOREMAN_API_URL ?? "http://localhost:8000";
 }

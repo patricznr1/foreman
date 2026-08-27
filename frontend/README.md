@@ -21,7 +21,7 @@ Backend braucht keine CORS-Lockerung.
 
 | Variable | Zweck | Default |
 |---|---|---|
-| `FOREMAN_API_URL` | Backend-Basis (server-seitig) | `http://localhost:8000` |
+| `FOREMAN_API_URL` | Backend-Basis (server-seitig) | `http://localhost:8000` (**nur lokal** — im Betrieb bricht der Serverstart ohne die Variable ab) |
 | `NEXT_PUBLIC_FOREMAN_WS_URL` | Live-WebSocket (client-seitig) | `ws://localhost:8000/api/v1/ws` empfohlen |
 
 Ohne gesetztes `NEXT_PUBLIC_FOREMAN_WS_URL` zeigt die Übersicht das HTTP-Erstbild
