@@ -83,6 +83,8 @@ Stand: 2026-08-27
 | C-081 | Von den drei eigenen Archiv-Quellen traegt praktisch nur eine — Wartungen und Alarme sind ueber die Suche fast nicht erreichbar. | gemessen | 100 ausgelieferte Plaetze: note 91, maintenance 1, alarm 0. Deutsche Volltextsuche: 4 Treffer ueber 10 Anfragen mal 3 Tabellen | 2026-08-27 | gueltig | intern |
 | C-082 | Der gemessene Aehnlichkeits-Grenzwert stand nirgends im Repository, und gegen welches Einbettungsmodell er erhoben wurde, ist nicht belegt. | gemessen | config.py fuehrte 0.55, Abschnitt 15.10 nannte 0,60; der wirksame Wert lag allein in einer Umgebungsvariable | 2026-08-27 | gueltig | intern |
 | C-083 | Die Ausgabelaenge der Archiv-Suche ist an drei Stellen verschieden belegt — die Verdraengungsmessung gilt deshalb nicht fuer das, was der Werker sieht. | gemessen | Backend-Vorgabe 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
+| C-084 | Der gemessene Vorsprung der vierten Quelle ist bei zehn Anfragen statistisch nicht gezeigt. | gemessen | Trefferquote p = 0,500 · Rangguete p = 0,672 · verdichtete Rangguete p = 0,492 (gepaarter Permutationstest, zweiseitig, exakt, n = 9) | 2026-08-27 | gueltig | intern |
+| C-085 | Der Lauf mit Gedaechtnis wird von der Pool-Verzerrung staerker benachteiligt als der ohne — er bringt mehr unbeurteilte Eintraege mit. | gemessen | unbeurteilte Plaetze: 20 von 92 ohne Gedaechtnis, 29 von 96 mit (21,7 % gegen 30,2 %) | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -99,17 +101,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 81
+Einträge gesamt: 83
 
 Nach Status:
 
-- gemessen: 74
+- gemessen: 76
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 75
+- gueltig: 77
 - ueberholt: 6
 - ungeprueft: 0

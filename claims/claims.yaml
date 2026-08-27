@@ -2248,3 +2248,72 @@ claims:
       Wer die Freigabe-Bedingung an die Verdraengung knuepft, muss vorher
       entscheiden, welche Ausgabelaenge gilt — sonst misst die Bedingung ein
       System, das so nicht ausgeliefert wird.
+  - id: "C-084"
+    aussage: "Der gemessene Vorsprung der vierten Quelle ist bei zehn Anfragen statistisch nicht gezeigt."
+    status: "gemessen"
+    wert: "Trefferquote p = 0,500 · Rangguete p = 0,672 · verdichtete Rangguete p = 0,492 (gepaarter Permutationstest, zweiseitig, exakt, n = 9)"
+    bedingung: >-
+      Gerechnet am 27.08.2026 auf denselben Laeufen wie C-078 und C-079
+      (messung_v2_basis.json gegen messung_v2_gedaechtnis.json, Bewertungssatz
+      goldset_v3.json). Verfahren: gepaarter Permutationstest ueber die
+      Vorzeichen der anfrageweisen Differenzen, zweiseitig und VOLLSTAENDIG
+      aufgezaehlt (2^9 = 512 Belegungen) — keine Naeherung, keine
+      Verteilungsannahme. Neun der zehn Anfragen sind vergleichbar; B01 faellt
+      heraus, weil der Bestand keinen zutreffenden Eintrag dazu fuehrt. Die
+      mittleren Differenzen sind +0,044 (Trefferquote), +0,033 (Rangguete) und
+      +0,040 (verdichtete Rangguete) — alle in dieselbe Richtung, keine davon
+      vom Zufall zu trennen.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/werte_aus.py, permutationstest"
+      - "tools/archiv_guete/messung_v2_basis.json"
+      - "tools/archiv_guete/messung_v2_gedaechtnis.json"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      NICHT GEZEIGT HEISST NICHT WIDERLEGT. Alle drei Kennzahlen zeigen in
+      dieselbe Richtung, und die Freigabe-Bedingung 1 haengt ohnehin nicht am
+      Mittelwert, sondern an verlorenen und gewonnenen Treffern — das ist eine
+      andere Frage. Was der Wert saubermacht: Ein Satz wie "die vierte Quelle
+      findet mehr" darf so nicht nach aussen. Dincer (2013) rechnet fuer
+      TREC-Daten 10 bis 722 Topics je Systempaar fuer 95 % Konfidenz, im Mittel
+      rund 50 bei einer Differenz ab 0,035. Zehn Anfragen tragen eine
+      Richtungsaussage, keine Kennzahl mit Vertrauensbereich. Die Wahl des
+      Verfahrens folgt Urbano, Lima und Hanjalic (SIGIR 2019): t-Test und
+      Permutationstest halten das Niveau ein, Bootstrap-Shift und Wilcoxon nicht.
+
+  - id: "C-085"
+    aussage: "Der Lauf mit Gedaechtnis wird von der Pool-Verzerrung staerker benachteiligt als der ohne — er bringt mehr unbeurteilte Eintraege mit."
+    status: "gemessen"
+    wert: "unbeurteilte Plaetze: 20 von 92 ohne Gedaechtnis, 29 von 96 mit (21,7 % gegen 30,2 %)"
+    bedingung: >-
+      Erhoben am 27.08.2026 aus denselben Laeufen, gegen die vollstaendige
+      beurteilte Menge (beurteilt_v3.json, 135 Anfrage-Eintrag-Paare, aus den
+      Rohurteilen reproduzierbar erzeugt von baue_goldset_v3.py). Ein Eintrag
+      gilt als unbeurteilt, wenn er in der Trefferliste steht, aber in keinem
+      Urteil vorkommt — weder als zutreffend noch als nicht zutreffend. In der
+      gewoehnlichen Rechnung zaehlt er als nicht zutreffend. Nach Sakai (2007)
+      zusaetzlich verdichtet gerechnet (unbeurteilte Eintraege aus der Liste
+      entfernt statt abgewertet): Rangguete 0,471 auf 0,503 gewoehnlich, 0,517
+      auf 0,557 verdichtet.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/beurteilt_v3.json"
+      - "tools/archiv_guete/baue_goldset_v3.py"
+      - "tools/archiv_guete/werte_aus.py, kennzahlen"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DAS IST DER PREIS JEDER NEUEN VARIANTE, nicht ein Fehler dieser einen:
+      Buettcher et al. (SIGIR 2007) beziffern den Verlust ausgeschlossener
+      Systeme auf im Mittel rund zwei Rangplaetze, in Einzelfaellen zwoelf bis
+      vierzehn. Wer eine Variante misst, ohne ihre neuen Treffer beurteilen zu
+      lassen, misst sie systematisch zu schlecht. PRAKTISCHE FOLGE: Die
+      Beurteilung kann EINMAL AM ENDE ueber alle Varianten laufen statt einmal
+      je Variante — die Verzerrung entsteht durch unbeurteilte Eintraege, nicht
+      durch die Reihenfolge des Beurteilens. Das spart bei vier Varianten drei
+      Runden Handarbeit. Der Bewertungssatz ist seit dem 27.08.2026
+      reproduzierbar erzeugbar; ohne das waere eine Erweiterung nicht moeglich
+      gewesen, ohne die Urteile von Hand nachzupflegen.

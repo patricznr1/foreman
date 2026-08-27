@@ -42,12 +42,100 @@ def lade_goldset(pfad: str = "goldset.json") -> dict[str, dict[str, int]]:
     return json.load(open(pfad, encoding="utf-8"))
 
 
+def lade_beurteilte(goldset_pfad: str) -> dict[str, dict[str, int]] | None:
+    """Die BEURTEILTE Menge zum Bewertungssatz — oder None, wenn es sie nicht gibt.
+
+    Das Goldset fuehrt nur die ZUTREFFENDEN Eintraege. Es kann deshalb nicht
+    ausdruecken, was ein Beurteiler gesehen und als nicht zutreffend eingestuft
+    hat — und genau dieser Unterschied traegt die Verzerrungskorrektur: Ein
+    Eintrag, den NIEMAND beurteilt hat, zaehlt in der gewoehnlichen Rechnung als
+    nicht zutreffend. Jede neue Variante bringt solche Eintraege mit und wird
+    dafuer bestraft (Buettcher et al., SIGIR 2007: im Mittel rund zwei
+    Rangplaetze, in Einzelfaellen zwoelf bis vierzehn).
+
+    Erzeugt wird die Datei von `baue_goldset_v3.py`. Fehlt sie, wird die
+    verdichtete Rangguete NICHT gerechnet und auch nicht geschaetzt — eine Zahl,
+    die so tut, als waere die Verzerrung behandelt, ist schlimmer als keine.
+    """
+    pfad = goldset_pfad.replace("goldset", "beurteilt", 1)
+    if pfad == goldset_pfad:
+        return None
+    try:
+        with open(pfad, encoding="utf-8") as datei:
+            return json.load(datei)
+    except FileNotFoundError:
+        return None
+
+
 def dcg(stufen: list[int]) -> float:
     return sum(s / math.log2(i + 2) for i, s in enumerate(stufen))
 
 
-def kennzahlen(treffer: list[dict], relevant: dict[str, int], k: int) -> dict:
-    """Recall/Praezision/nDCG fuer EINE Anfrage. `relevant` bildet Schluessel auf Stufe (1|2) ab."""
+# Ab dieser Anzahl Anfragen wird der Permutationstest nicht mehr vollstaendig
+# aufgezaehlt (2^n Vorzeichen-Belegungen), sondern deterministisch gezogen.
+_EXAKT_BIS = 16
+_ZIEHUNGEN = 200_000
+
+
+def permutationstest(differenzen: list[float]) -> tuple[float, bool] | None:
+    """Zweiseitiger gepaarter Permutationstest ueber die Vorzeichen. → (p, exakt?)
+
+    WARUM DIESER TEST: Urbano, Lima & Hanjalic (SIGIR 2019, arXiv:1905.11096)
+    haben Typ-I/II/III-Fehler empirisch verglichen. t-Test und Permutationstest
+    halten alpha = 0,05 korrekt ein (0,05 / 0,05), Bootstrap-Shift liegt bei
+    0,059, Wilcoxon und Vorzeichentest sind systematisch verzerrt. Ihre
+    Empfehlung woertlich: t-Test fuer Hypothesen zur mittleren Effektivitaet,
+    Permutationstest sonst; Bootstrap-Shift und Wilcoxon aufgeben.
+
+    Der Permutationstest braucht keine Verteilungsannahme, und bei zehn Anfragen
+    sind alle 2^10 = 1024 Belegungen aufzaehlbar — es gibt hier also gar keinen
+    Grund fuer eine Naeherung.
+
+    WAS ER NICHT LEISTET: Bei zehn Anfragen ist die Aussagekraft gering. Dincer
+    (2013) rechnet fuer TREC-Daten 10 bis 722 Topics je Systempaar fuer 95 %
+    Konfidenz, im Mittel rund 50 bei einer Differenz >= 0,035. Ein p-Wert ueber
+    0,05 heisst hier "nicht gezeigt", nicht "kein Unterschied".
+    """
+    echte = [d for d in differenzen if d is not None]
+    if not echte:
+        return None
+    n = len(echte)
+    beobachtet = abs(sum(echte))
+
+    if n <= _EXAKT_BIS:
+        mindestens_so_gross = 0
+        for muster in range(1 << n):
+            summe = sum(d if (muster >> i) & 1 else -d for i, d in enumerate(echte))
+            if abs(summe) >= beobachtet - 1e-12:
+                mindestens_so_gross += 1
+        return mindestens_so_gross / (1 << n), True
+
+    # Deterministisch gezogen (fester Startwert): Zwei Laeufe ueber dieselben
+    # Daten muessen denselben p-Wert liefern, sonst ist die Zahl nicht zitierbar.
+    import random
+
+    wuerfel = random.Random(0)
+    mindestens_so_gross = 0
+    for _ in range(_ZIEHUNGEN):
+        summe = sum(d if wuerfel.getrandbits(1) else -d for d in echte)
+        if abs(summe) >= beobachtet - 1e-12:
+            mindestens_so_gross += 1
+    return mindestens_so_gross / _ZIEHUNGEN, False
+
+
+def kennzahlen(
+    treffer: list[dict],
+    relevant: dict[str, int],
+    k: int,
+    beurteilt: dict[str, int] | None = None,
+) -> dict:
+    """Recall/Praezision/nDCG fuer EINE Anfrage. `relevant` bildet Schluessel auf Stufe (1|2) ab.
+
+    `beurteilt` ist die vollstaendige beurteilte Menge dieser Anfrage (auch die
+    Nullen). Liegt sie vor, wird zusaetzlich die VERDICHTETE Rangguete gerechnet
+    (Sakai 2007): Eintraege, die niemand beurteilt hat, werden aus der Liste
+    ENTFERNT, statt als nicht zutreffend zu zaehlen.
+    """
     oben = treffer[:k]
     schluessel = [_schluessel(t) for t in oben]
 
@@ -81,6 +169,24 @@ def kennzahlen(treffer: list[dict], relevant: dict[str, int], k: int) -> dict:
     bestenfalls = dcg(sorted(relevant.values(), reverse=True)[:k])
     ndcg = (ist / bestenfalls) if bestenfalls > 0 else None
 
+    # VERDICHTETE Rangguete (Sakai 2007): dieselbe Rechnung, aber ueber eine
+    # Liste, aus der die UNBEURTEILTEN Eintraege entfernt sind. Die Ideallinie
+    # (Nenner) bleibt dieselbe — verglichen wird gegen das Beste, was im Bestand
+    # moeglich waere, nicht gegen das Beste unter den Beurteilten.
+    #
+    # Wiederholungen fallen dabei mit heraus (sie stehen als "" in `erstmals`).
+    # Das ist vertretbar, seit die Fusion auf den Vorgang zusammenfuehrt und
+    # Wiederholungen gar nicht mehr entstehen; die gewoehnliche Rangguete
+    # bestraft sie weiterhin.
+    if beurteilt is None:
+        ndcg_verdichtet = None
+        unbeurteilt = None
+    else:
+        verdichtet = [s for s in erstmals if s in beurteilt]
+        unbeurteilt = len([s for s in erstmals if s and s not in beurteilt])
+        ist_v = dcg([relevant.get(s, 0) for s in verdichtet])
+        ndcg_verdichtet = (ist_v / bestenfalls) if bestenfalls > 0 else None
+
     return {
         "treffer_gesamt": len(oben),
         "davon_relevant": len(gefunden),
@@ -88,6 +194,8 @@ def kennzahlen(treffer: list[dict], relevant: dict[str, int], k: int) -> dict:
         "recall": recall,
         "praezision": praezision,
         "ndcg": ndcg,
+        "ndcg_verdichtet": ndcg_verdichtet,
+        "unbeurteilt": unbeurteilt,
         "gefundene_schluessel": gefunden,
         "alle_schluessel": schluessel,
     }
@@ -109,7 +217,7 @@ def pruefe_goldset(goldset: dict, pfad: str) -> None:
         raise SystemExit(f"❌ {pfad}: kein einziger relevanter Eintrag — falsches Goldset?")
 
 
-def werte_lauf(pfad: str, goldset: dict) -> dict:
+def werte_lauf(pfad: str, goldset: dict, beurteilte: dict | None = None) -> dict:
     roh = json.load(open(pfad, encoding="utf-8"))
     k = roh["k"]
     je_anfrage = {}
@@ -119,7 +227,12 @@ def werte_lauf(pfad: str, goldset: dict) -> dict:
             # Ein Fehler ist KEIN Nullergebnis. Er wird ausgewiesen, nicht verrechnet.
             je_anfrage[aid] = {"fehler": lauf["fehler"], "anfrage": lauf["anfrage"]}
             continue
-        z = kennzahlen(lauf["treffer"], goldset.get(aid, {}), k)
+        z = kennzahlen(
+            lauf["treffer"],
+            goldset.get(aid, {}),
+            k,
+            (beurteilte or {}).get(aid) if beurteilte is not None else None,
+        )
         z["anfrage"] = lauf["anfrage"]
         z["dauer_s"] = lauf["dauer_s"]
         je_anfrage[aid] = z
@@ -165,10 +278,47 @@ def zeige(a: dict) -> None:
         f"Praezision {mittel([z['praezision'] for z in gueltig]) or 0:.3f} · "
         f"nDCG {mittel([z['ndcg'] for z in gueltig]) or 0:.3f}"
     )
+    # Die VERDICHTETE Rangguete steht daneben, nicht anstelle: Sie behandelt die
+    # Pool-Verzerrung, aber sie ist gegenueber der gewoehnlichen nach oben
+    # verzerrt, weil sie unbeurteilte Eintraege gratis aus der Liste nimmt.
+    # Beide Zahlen nebeneinander sagen mehr als eine allein.
+    verdichtet = mittel([z.get("ndcg_verdichtet") for z in gueltig])
+    if verdichtet is not None:
+        unbeurteilt = sum(z.get("unbeurteilt") or 0 for z in gueltig)
+        plaetze = sum(z["treffer_gesamt"] for z in gueltig)
+        print(
+            f"        nDCG verdichtet {verdichtet:.3f} "
+            f"(unbeurteilt: {unbeurteilt} von {plaetze} Plaetzen)"
+        )
     ohne = [
         aid for aid, z in a["je_anfrage"].items() if "fehler" not in z and z["davon_relevant"] == 0
     ]
     print(f"Anfragen ohne EINEN relevanten Treffer: {len(ohne)} von {len(gueltig)}  {ohne}")
+
+
+def zeige_permutationstest(differenzen: dict[str, list[float]]) -> None:
+    """Traegt der Unterschied? — gepaarter Permutationstest je Kennzahl."""
+    print("\n" + "-" * 78)
+    print("TRAEGT DER UNTERSCHIED? (gepaarter Permutationstest, zweiseitig)")
+    for name, werte in differenzen.items():
+        ergebnis = permutationstest(werte)
+        if ergebnis is None:
+            print(f"  {name:16s} keine vergleichbaren Paare")
+            continue
+        p_wert, exakt = ergebnis
+        mittlere = sum(werte) / len(werte)
+        art = "exakt" if exakt else f"gezogen, {_ZIEHUNGEN}"
+        print(
+            f"  {name:16s} n={len(werte):2d}  mittlere Differenz {mittlere:+.3f}  "
+            f"p={p_wert:.3f} ({art})"
+        )
+    print(
+        "  Lesehilfe: p > 0,05 heisst NICHT GEZEIGT, nicht 'kein Unterschied'. Bei zehn\n"
+        "  Anfragen reicht die Erhebung fuer eine Richtungsaussage, nicht fuer eine\n"
+        "  Kennzahl mit Vertrauensbereich (Dincer 2013: 10 bis 722 Topics je Systempaar).\n"
+        "  Die Freigabe-Bedingung oben haengt NICHT an diesem Wert — sie zaehlt verlorene\n"
+        "  und gewonnene Treffer, und das ist eine andere Frage als die nach dem Mittel."
+    )
 
 
 def vergleiche(basis: dict, neu: dict) -> None:
@@ -182,6 +332,10 @@ def vergleiche(basis: dict, neu: dict) -> None:
     print("=" * 78)
 
     schlechter, mit_zusatz, unveraendert = [], [], []
+    # Paarweise Differenzen je Anfrage — die Grundlage des Permutationstests
+    # unten. Gesammelt wird HIER, wo die Paare ohnehin gebildet werden; ein
+    # zweiter Durchlauf koennte anders paaren, ohne dass es auffiele.
+    differenzen: dict[str, list[float]] = {"recall": [], "ndcg": [], "ndcg_verdichtet": []}
     print(f"{'ID':6s} {'Recall':>16s} {'nDCG':>16s}  neue relevante Treffer")
     print("-" * 78)
     for aid, alt in basis["je_anfrage"].items():
@@ -196,6 +350,11 @@ def vergleiche(basis: dict, neu: dict) -> None:
 
         r_alt, r_neu = alt["recall"], jung["recall"]
         n_alt, n_neu = alt["ndcg"], jung["ndcg"]
+
+        for name in differenzen:
+            a_wert, b_wert = alt.get(name), jung.get(name)
+            if a_wert is not None and b_wert is not None:
+                differenzen[name].append(b_wert - a_wert)
 
         # "Schlechter" heisst: ein zutreffender Treffer ist VERLOREN gegangen.
         #
@@ -248,6 +407,8 @@ def vergleiche(basis: dict, neu: dict) -> None:
     )
     print(f"\n  FREIGABE-BEDINGUNG 1 INSGESAMT: {'ERFUELLT' if (b1 and b2) else 'NICHT ERFUELLT'}")
 
+    zeige_permutationstest(differenzen)
+
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -264,10 +425,19 @@ def main() -> None:
 
     pruefe_goldset(goldset, goldset_pfad)
 
-    basis = werte_lauf(sys.argv[1], goldset)
+    beurteilte = lade_beurteilte(goldset_pfad)
+    if beurteilte is None:
+        print(
+            "⚠️  Keine beurteilte Menge gefunden — die VERDICHTETE Rangguete bleibt leer.\n"
+            "   Ohne sie ist nicht unterscheidbar, ob ein Eintrag als nicht zutreffend\n"
+            "   BEURTEILT oder gar nicht ANGESEHEN wurde.\n"
+            "   Erzeugen mit: python baue_goldset_v3.py --schreiben"
+        )
+
+    basis = werte_lauf(sys.argv[1], goldset, beurteilte)
     zeige(basis)
     if len(sys.argv) > 2:
-        neu = werte_lauf(sys.argv[2], goldset)
+        neu = werte_lauf(sys.argv[2], goldset, beurteilte)
         zeige(neu)
         vergleiche(basis, neu)
 
