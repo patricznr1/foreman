@@ -37,6 +37,16 @@ WORKDIR /app
 
 # 1) Abhängigkeiten zuerst (Layer-Cache): Manifest + README (für Package-Metadaten) kopieren, dann auflösen.
 COPY pyproject.toml README.md ./
+
+# torch ZUERST und ausdrücklich aus dem CPU-Index. Die Vorgabe von PyPI zieht die
+# CUDA-Bibliotheken mit — mehrere Gigabyte, die auf einer Maschine ohne
+# Grafikkarte nie benutzt werden. Der Schritt steht hier und nicht nur in
+# [tool.uv.sources], weil die `uv pip`-Schnittstelle diesen Abschnitt NICHT
+# liest; er gilt für `uv sync`/`uv lock`.
+#
+# Der zweite Aufruf lässt torch stehen: Die CPU-Variante erfüllt `torch>=2.2`
+# bereits, und uv installiert nichts nach, was schon passt.
+RUN uv pip install --system --no-cache torch --index-url https://download.pytorch.org/whl/cpu
 RUN uv pip install --system --no-cache .
 
 # 2) NER-Modell für die Freitext-Maskierung (Research §5.3 b).

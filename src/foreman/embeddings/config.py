@@ -74,9 +74,25 @@ class EmbeddingSettings(BaseSettings):
     local_base_url: str = "http://localhost:11434"
     model: str = "bge-m3"
 
-    # --- sentence-transformers-Alternative (gleiche Schnittstelle, lazy geladen) ---
+    # --- sentence-transformers, der LOKALE Pfad (gleiche Schnittstelle, lazy geladen) ---
     # Modell-Repo-Name (HF); CPU-Default, damit kein GPU-Zwang im API-Prozess.
-    st_model: str = "BAAI/bge-m3"
+    #
+    # SNOWFLAKE ARCTIC v2.0 statt bge-m3 (27.08.2026). Gründe, alle belegt:
+    #   - Deutsch: Auf CLEF (europäische Sprachen) liegt arctic-l-v2.0 bei 52,9
+    #     bzw. 54,3 gegen 40,8 bzw. 41,3 für bge-m3 — rund zwölf Punkte.
+    #   - Passt ohne Migration: `hidden_size` 1024, wie `worker_notes.embedding`.
+    #   - Apache-2.0, also auch beim Kunden einsetzbar.
+    #   - NEXUS benutzt dasselbe Modell. Laufen beide darauf, liegen Notizen und
+    #     Gedächtnis erstmals im SELBEN Vektorraum.
+    #
+    # ES VERLANGT EINEN ANFRAGE-PRÄFIX. Der steht in `kalibrierung.QUERY_PRAEFIX`
+    # und wird über `embed(..., mode="query")` gesetzt; ein Test fordert für jedes
+    # wählbare Modell einen Eintrag.
+    #
+    # Das Modell wiegt 2,27 GB und wird beim ersten Aufruf geladen. Wohin, sagt
+    # `HF_HOME` — im Betrieb auf ein dauerhaftes Verzeichnis legen, sonst lädt
+    # jeder neue Behälter es erneut.
+    st_model: str = "Snowflake/snowflake-arctic-embed-l-v2.0"
     st_device: str = "cpu"
 
     # --- OpenAI-Cloud-Backend (optionaler Demo-Pfad, US-Drittland — §15.2/§18) ---

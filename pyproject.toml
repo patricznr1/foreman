@@ -60,7 +60,37 @@ dependencies = [
     # --- MCP-Server (F7): Anthropic Model Context Protocol SDK (FastMCP). FOREMAN als
     #     offener Knoten — read-only Tools an Drittsysteme über Streamable HTTP/SSE. ---
     "mcp>=1.9,<2",
+    # --- Lokales Einbettungsmodell (F-SEM, Betrieb beim Kunden): Snowflake Arctic
+    #     über sentence-transformers, IM Anwendungsprozess (lazy geladen, ein
+    #     Modell je Prozess). Der Cloud-Pfad über OpenAI bleibt daneben bestehen;
+    #     welcher greift, entscheidet FOREMAN_EMBED_PRIORITY.
+    #
+    #     WARUM ALS LAUFZEIT-ABHÄNGIGKEIT: Bis hierher war sentence-transformers
+    #     ausdrücklich KEINE — der ST-Zweig existierte im Code, konnte im
+    #     ausgelieferten Abbild aber gar nicht laufen. Ein Backend, das nur auf dem
+    #     Entwicklungsrechner funktioniert, ist kein Ausweichpfad.
+    #
+    #     torch kommt aus dem CPU-Index (siehe [tool.uv.sources] unten): Die
+    #     Vorgabe von PyPI zieht die CUDA-Bibliotheken mit und macht das Abbild um
+    #     mehrere Gigabyte grösser — für eine Maschine ohne Grafikkarte umsonst. ---
+    "sentence-transformers>=3.0",
+    "torch>=2.2",
 ]
+
+# torch AUSSCHLIESSLICH aus dem CPU-Index. `explicit = true` sorgt dafür, dass
+# nur die hier genannten Pakete von dort kommen und nicht das ganze Projekt.
+#
+# ACHTUNG, DAS GILT NUR FÜR `uv sync`/`uv lock`. Die `uv pip`-Schnittstelle liest
+# [tool.uv.sources] NICHT — das Dockerfile installiert torch deshalb zusätzlich
+# als eigenen Schritt mit `--index-url`. Zwei Stellen für dieselbe Sache, und das
+# ist hier unvermeidbar: Es sind zwei verschiedene Werkzeug-Schnittstellen.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [project.optional-dependencies]
 dev = [
