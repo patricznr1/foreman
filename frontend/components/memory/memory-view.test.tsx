@@ -6,7 +6,7 @@
 //         Quellen korrekt typisiert, KEINE Verdichtung/Verknüpfung, Quellen-Toggles
 //         steuern sources[], 503 ohne Sonderpfad (generisch), Offline-Degradation.
 // ============================================================
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CurrentUser } from "@/lib/api/contracts";
@@ -72,15 +72,35 @@ describe("Archiv (MemoryView, On-Demand)", () => {
     expect(document.body.textContent).not.toMatch(/%/);
   });
 
-  it("typisiert die drei Quellen korrekt und rendert KEINE Verdichtung/Verknüpfung", async () => {
+  it("typisiert die Quellen korrekt und rendert KEINE Verdichtung/Verknüpfung", async () => {
     mockFetch(HITS);
     render(<MemoryView user={user({ role: "technician" })} initialQuery="Fett" />);
     await waitFor(() => expect(screen.getByText(/3 Treffer im Archiv/)).toBeInTheDocument());
-    expect(screen.getByLabelText("Schichtnotiz, Maschine 12")).toBeInTheDocument();
-    expect(screen.getByLabelText("Wartung, Maschine 12")).toBeInTheDocument();
-    expect(screen.getByLabelText("Alarm, Maschine 12")).toBeInTheDocument();
+
+    // AUF DIE RANGLISTE EINGEGRENZT: Seit den Quellen-Blöcken stehen dieselben
+    // Treffer ein zweites Mal in der Seite (zugeklappt, aber im DOM). Eine
+    // Suche über das ganze Dokument fände sie doppelt — und ein Test, der
+    // deshalb auf `getAllBy…` ausweicht, prüfte nicht mehr, WO der Treffer
+    // steht. Genau das soll er aber: in der Rangliste, nicht irgendwo.
+    const rangliste = within(screen.getByLabelText("Treffer nach Relevanz"));
+    expect(rangliste.getByLabelText("Schichtnotiz, Maschine 12")).toBeInTheDocument();
+    expect(rangliste.getByLabelText("Wartung, Maschine 12")).toBeInTheDocument();
+    expect(rangliste.getByLabelText("Alarm, Maschine 12")).toBeInTheDocument();
     // assoziative Sicht (relation-view) NICHT gerendert
     expect(screen.queryByText(/zusammenhängen/)).toBeNull();
+  });
+
+  it("zeigt dieselben Treffer darunter nach Quelle geordnet, zugeklappt", async () => {
+    mockFetch(HITS);
+    render(<MemoryView user={user({ role: "technician" })} initialQuery="Fett" />);
+    await waitFor(() => expect(screen.getByText(/3 Treffer im Archiv/)).toBeInTheDocument());
+
+    const bloecke = within(screen.getByLabelText("Nach Quelle"));
+    expect(bloecke.getByLabelText("Schichtnotiz, Maschine 12")).toBeInTheDocument();
+    // Zugeklappt: Die Rangliste darüber trägt die Treffer schon vollständig.
+    for (const block of document.querySelectorAll("details")) {
+      expect(block.open).toBe(false);
+    }
   });
 
   it("benennt den Verarbeitungszustand (kein generischer Spinner)", async () => {

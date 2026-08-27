@@ -2443,3 +2443,37 @@ claims:
       der Liste (55 von 133 ohne, 54 von 138 mit Gedaechtnis). Trefferquote und
       Bedingung 1 sind davon unberuehrt — sie zaehlen nur bekannte zutreffende
       Eintraege —, Praezision und Rangguete sind nach unten verzerrt.
+
+  - id: "C-089"
+    aussage: "Produktiv laeuft das Cloud-Einbettungsmodell text-embedding-3-small ohne lokalen Ausweichpfad."
+    status: "gemessen"
+    wert: "FOREMAN_EMBED_PRIORITY = openai_only, FOREMAN_EMBED_OPENAI_MODEL = text-embedding-3-small"
+    bedingung: >-
+      Abgelesen am 27.08.2026 aus den Umgebungsvariablen des Backend-Dienstes der
+      laufenden Instanz. `openai_only` traegt ausdruecklich KEINEN lokalen
+      Ausweichpfad (backends.py: die openai-Modi enthalten nur das Cloud-Backend)
+      — faellt die Cloud aus, gibt es keinen Vektorzweig, und die Notiz-Suche
+      degradiert auf reinen Volltext.
+      IM SELBEN ZUG ABGELESEN: FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE = 0.60, also
+      genau der gemessene Wert aus C-048. Damit ist belegt, dass die Kalibrierung
+      auch wirklich greift; das war bis dahin nur behauptet.
+    datum: "2026-08-27"
+    fundstelle:
+      - "Umgebungsvariablen des Backend-Dienstes (Railway, Projekt foreman, Environment production)"
+      - "src/foreman/embeddings/backends.py, _CHAINS"
+      - "src/foreman/embeddings/kalibrierung.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DAMIT NOCH IMMER OFFEN IST: Gegen welches Modell der Grenzwert 0,60 am
+      24.08.2026 erhoben wurde, ist nach wie vor nicht belegt (C-082). Bekannt ist
+      jetzt das Modell, das HEUTE laeuft — nicht das, das damals lief. Der
+      Startlauf meldet die Luecke deshalb weiter, und `kalibrierung.py` fuehrt
+      `modell=None`. Sie schliesst sich erst, wenn die Distanzverteilung gegen das
+      laufende Modell neu erhoben wird.
+      DIESER EINTRAG STAND BIS HEUTE NIRGENDS. Welches Modell die Instanz
+      benutzt, war allein aus einer Umgebungsvariable zu erfahren — dieselbe
+      Zerbrechlichkeit, die bei der Schwelle behoben wurde (C-082): Ein Redeploy
+      von einem anderen Rechner haette es stillschweigend geaendert, und keine
+      Messung haette gesagt, gegen was sie eigentlich lief.
