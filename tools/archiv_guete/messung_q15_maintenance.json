@@ -1,0 +1,107 @@
+{
+ "lauf": "q15_maintenance",
+ "anfragedatei": "goldset_v2_anfragen.yaml",
+ "basis": "https://frontend-production-169a.up.railway.app",
+ "quellen": [
+  "maintenance"
+ ],
+ "k": 15,
+ "laeufe": [
+  {
+   "anfrage_id": "B01",
+   "anfrage": "Undichtigkeit an Achse",
+   "machine_id": null,
+   "dauer_s": 0.3,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B02",
+   "anfrage": "Fleck auf Bild",
+   "machine_id": null,
+   "dauer_s": 0.27,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B03",
+   "anfrage": "Lagerschaden am Lagerbock",
+   "machine_id": null,
+   "dauer_s": 0.28,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B04",
+   "anfrage": "Dosierunregelmäßigkeiten",
+   "machine_id": null,
+   "dauer_s": 0.64,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B05",
+   "anfrage": "Schleppfehler an AX",
+   "machine_id": null,
+   "dauer_s": 0.31,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B06",
+   "anfrage": "Durckabfall Hydraulik",
+   "machine_id": null,
+   "dauer_s": 0.12,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B07",
+   "anfrage": "Nullpunktverschiebung an AX",
+   "machine_id": null,
+   "dauer_s": 0.16,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B08",
+   "anfrage": "Ruckeln beim Hub",
+   "machine_id": null,
+   "dauer_s": 0.14,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B09",
+   "anfrage": "Versatz an PR",
+   "machine_id": null,
+   "dauer_s": 0.12,
+   "fehler": null,
+   "treffer": []
+  },
+  {
+   "anfrage_id": "B10",
+   "anfrage": "Öl Temperatur an PR",
+   "machine_id": null,
+   "dauer_s": 0.14,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "maintenance:112",
+     "source_type": "maintenance",
+     "id": 112,
+     "machine_id": 9,
+     "timestamp": "2026-07-17T04:30:00Z",
+     "gefunden_von": [
+      "maintenance"
+     ],
+     "excerpt": "Prüfung Ölkreis PR-03. Thermostatventil des Kühlers klemmt in Bypass-Stellung, Öl wird am Kühler vorbeigeführt. Ventil ersetzt, Öl gewechselt (HLP 46), Temperatur im Betrieb …",
+     "detail": {
+      "type": "inspection"
+     }
+    }
+   ]
+  }
+ ]
+}

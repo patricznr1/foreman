@@ -25,8 +25,7 @@ from foreman.api.deps import (
     SubstrateClientDep,
 )
 from foreman.archive.schemas import ArchiveHit, SourceType
-from foreman.archive.search import ALL_SOURCES, search_archive
-from foreman.notes.search import DEFAULT_SEARCH_K
+from foreman.archive.search import ALL_SOURCES, ARCHIV_AUSGABELAENGE, search_archive
 
 router = APIRouter(prefix="/archive", tags=["archive_search"])
 
@@ -82,7 +81,7 @@ async def search_archive_endpoint(
     q: str = Query(min_length=1, description="Such-Anfrage (Freitext)."),
     machine_id: int | None = Query(default=None, description="Optionaler Maschinen-Filter."),
     sources: list[str] | None = _SOURCES_QUERY,
-    k: int = Query(default=DEFAULT_SEARCH_K, ge=1, le=50, description="Maximale Trefferzahl."),
+    k: int = Query(default=ARCHIV_AUSGABELAENGE, ge=1, le=50, description="Maximale Trefferzahl."),
 ) -> list[ArchiveHit]:
     """Archiv-Suche über die abgelegten Berichte, Wartungen und Alarme (read-only).
 

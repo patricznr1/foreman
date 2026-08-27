@@ -50,6 +50,23 @@ from foreman.substrate.client import SubstrateClient
 # Alle Archiv-Quellen — Default-Suchraum, wenn `sources` nicht gesetzt ist.
 ALL_SOURCES: tuple[SourceType, ...] = ("note", "maintenance", "alarm", "memory")
 
+# WIE VIELE TREFFER DIE ARCHIV-SUCHE AUSGIBT — die EINZIGE Stelle, an der die
+# Zahl steht. Die Anzeige schickt sie nicht mehr mit, sondern erbt sie; das
+# Messwerkzeug fuehrt sie in der Anfragedatei und wird von einem Test dagegen
+# gehalten.
+#
+# WARUM DAS ZAEHLT (C-083, 27.08.2026): Sie stand an drei Orten verschieden —
+# Backend 5, Anzeige 12, Messwerkzeug 10. Gemessen wurde damit ein System, das
+# so nicht ausgeliefert wird, und die Verdraengungsmessung galt fuer eine
+# Ausgabelaenge, die niemand zu sehen bekam.
+#
+# WARUM 15 (gemessen am 27.08.2026, C-087): Erst ab dieser Laenge sinkt die
+# Trefferquote auf KEINER Anfrage mehr, wenn das Gedaechtnis dazukommt — bei
+# zehn Plaetzen tut sie das auf zwei. Der Kandidatenpool umfasst rund 20
+# Eintraege je Anfrage; mehr als 15 Plaetze zeigen ihn faktisch ganz und geben
+# damit die Rangfolge auf, statt sie zu verbessern.
+ARCHIV_AUSGABELAENGE = 15
+
 # Auszugs-Budget (Zeichen) — spiegelt frontend/lib/memory/excerpt.ts (Wortgrenze, " …").
 EXCERPT_MAX = 180
 

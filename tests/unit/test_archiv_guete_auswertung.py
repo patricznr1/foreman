@@ -160,22 +160,46 @@ def test_eigener_treffer_und_erinnerung_auf_dieselbe_zeile_zaehlen_einmal(
 def test_die_ausgabe_nennt_die_geltende_schwellenfassung() -> None:
     """Der Messbericht lädt dazu ein, das Werkzeug selbst laufen zu lassen.
 
-    Stünde dort noch der frühere Wortlaut („schlechter als die Baseline"), läse
-    ein Dritter ein Urteil über eine Bedingung, die so nicht mehr gilt — und
-    zwar ausgerechnet in der Zeile, die ERFUELLT meldet.
+    Stünde dort noch ein früherer Wortlaut, läse ein Dritter ein Urteil über
+    eine Bedingung, die so nicht mehr gilt — und zwar ausgerechnet in der Zeile,
+    die ERFUELLT meldet. Die Bedingung hat inzwischen DREI Fassungen gehabt:
+    gefallene Ranggüte, dann ein verlorener Treffer, seit dem 27.08.2026 eine
+    gesunkene Trefferquote.
 
     Geprüft wird auf dem QUELLTEXT der Ausgabezeilen, nicht auf der ganzen
-    Datei: Der frühere Wortlaut steht als Erklärung weiterhin im Kommentar, und
-    genau daran bliebe eine Suche über die ganze Datei hängen.
+    Datei: Die früheren Wortlaute stehen als Erklärung weiterhin in den
+    Kommentaren, und genau daran bliebe eine Suche über die ganze Datei hängen.
     """
     quelltext = _PFAD.read_text(encoding="utf-8")
     zeilen = [z.strip() for z in quelltext.splitlines() if z.strip().startswith("print(")]
     ausgabe = "\n".join(zeilen)
 
-    assert "ein zutreffender Treffer VERLOREN" in ausgabe
-    assert "kein verlorener Treffer" in ausgabe
+    assert "keine gesunkene Trefferquote" in ausgabe
+    assert "Trefferquote gesunken" in ausgabe
     assert "schlechter als die Baseline" not in ausgabe
     assert "keine Verschlechterung" not in ausgabe
+
+
+def test_die_ausgabe_zeigt_auch_die_strengere_vorgaengerlesart() -> None:
+    """Eine präzisierte Schwelle, die nur ihre eigene Zahl zeigt, ist verdächtig.
+
+    Die Bedingung wurde zweimal geändert, und beide Male MIT Wirkung auf das
+    Urteil. Wer nur noch die günstigere Lesart ausgibt, ist von jemandem, der
+    die Schwelle nachträglich passend gemacht hat, nicht zu unterscheiden — auch
+    dann nicht, wenn die Präzisierung sachlich richtig war.
+
+    Deshalb steht die strengere Vorgängerin immer daneben, samt ihrem
+    abweichenden Urteil. Ohne diesen Fall liesse sie sich später still
+    entfernen, und niemand könnte den Lauf noch anders lesen.
+    """
+    quelltext = _PFAD.read_text(encoding="utf-8")
+    zeilen = [
+        z.strip() for z in quelltext.splitlines() if z.strip().startswith(("print(", '"', 'f"'))
+    ]
+    ausgabe = "\n".join(zeilen)
+
+    assert "Fassung bis 27.08.2026" in ausgabe
+    assert "JEDER verlorene Treffer zaehlt" in ausgabe
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -415,3 +439,94 @@ def test_die_erhebung_laeuft_mit_allen_drei_angaben_an(monkeypatch: Any) -> None
 
     with pytest.raises(SystemExit, match="bis hierher gekommen"):
         miss.main()
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Die Freigabe-Bedingung selbst — sie entscheidet, also wird sie geprüft
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _lauf(recall: float | None, gefunden: list[str]) -> dict:
+    return {"recall": recall, "gefundene_schluessel": gefunden}
+
+
+def test_ein_tausch_der_mehr_bringt_gilt_nicht_als_verschlechterung(werte_aus: Any) -> None:
+    """DER FALL, für den die Bedingung am 27.08.2026 präzisiert wurde.
+
+    Gemessen bei k=15: B04 verliert `note:115` und gewinnt `maintenance:43` und
+    `maintenance:69`; die Trefferquote steigt von 0,44 auf 0,56. Die vorige
+    Fassung („ein Treffer VERLOREN") wies das als Verschlechterung aus — sie
+    verbietet damit einen Tausch, der eindeutig mehr liefert.
+
+    Beide Auskünfte bleiben erhalten: `netto_schlechter` ist falsch, `verlorene`
+    nennt trotzdem den herausgefallenen Treffer. Wer die strengere Lesart
+    bevorzugt, kann denselben Lauf danach lesen.
+    """
+    wandel = werte_aus.veraenderung(
+        _lauf(0.44, ["note:115", "note:9"]),
+        _lauf(0.56, ["note:9", "maintenance:43", "maintenance:69"]),
+    )
+
+    assert wandel["netto_schlechter"] is False
+    assert wandel["verlorene"] == ["note:115"]
+    assert wandel["neue"] == ["maintenance:43", "maintenance:69"]
+
+
+def test_eine_gesunkene_trefferquote_gilt_als_verschlechterung(werte_aus: Any) -> None:
+    """AUFBAU-KONTROLLE zum Fall darüber: Die Bedingung darf nicht alles durchlassen.
+
+    Ohne diesen Zwilling wäre eine Fassung, die immer `False` liefert, von der
+    geltenden nicht zu unterscheiden — und jede Messung meldete Freigabe.
+    """
+    wandel = werte_aus.veraenderung(
+        _lauf(0.60, ["note:1", "note:2", "note:3"]),
+        _lauf(0.40, ["note:1", "memory:0"]),
+    )
+
+    assert wandel["netto_schlechter"] is True
+
+
+def test_gleiche_trefferquote_ist_keine_verschlechterung(werte_aus: Any) -> None:
+    """Die Grenze liegt bei „sinkt", nicht bei „ändert sich".
+
+    Eine Anfrage, die dieselbe Zahl zutreffender Treffer liefert — nur andere —,
+    ist weder besser noch schlechter. Sie als verschlechtert zu zählen hiesse,
+    jede Umsortierung zu bestrafen; genau daran ist die ERSTE Fassung der
+    Bedingung gescheitert.
+    """
+    wandel = werte_aus.veraenderung(
+        _lauf(0.50, ["note:1", "note:2"]),
+        _lauf(0.50, ["note:1", "maintenance:7"]),
+    )
+
+    assert wandel["netto_schlechter"] is False
+    assert wandel["verlorene"] == ["note:2"]
+
+
+def test_eine_unmessbare_anfrage_wird_nicht_gegen_die_quelle_gebucht(werte_aus: Any) -> None:
+    """Ohne zutreffenden Eintrag im Bestand gibt es keine Trefferquote (B01).
+
+    `None` als „gesunken" zu werten hiesse, eine Anfrage, die im Bestand
+    überhaupt nicht beantwortbar ist, der vierten Quelle anzulasten. Sie zählt
+    weder für noch gegen sie.
+    """
+    wandel = werte_aus.veraenderung(_lauf(None, []), _lauf(None, ["memory:0"]))
+
+    assert wandel["netto_schlechter"] is False
+
+
+def test_der_vergleich_benutzt_genau_diese_funktion(werte_aus: Any) -> None:
+    """Eine Bedingung, die nur in der Druckschleife steht, ist nicht prüfbar.
+
+    Geprüft wird auf dem ANWEISUNGSBLOCK (Kommentarzeilen entfernt) und auf die
+    ausführbare Form mit Klammern — eine Suche über die ganze Funktion fände den
+    Namen auch in dem Kommentar, der sie erklärt, und bliebe grün, während der
+    Aufruf verschwunden ist.
+    """
+    import inspect
+
+    quelle = inspect.getsource(werte_aus.vergleiche)
+    anweisungen = "\n".join(z for z in quelle.splitlines() if not z.lstrip().startswith("#"))
+
+    assert "veraenderung(alt, jung)" in anweisungen
+    assert 'wandel["netto_schlechter"]' in anweisungen

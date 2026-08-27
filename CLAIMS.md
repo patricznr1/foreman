@@ -85,6 +85,9 @@ Stand: 2026-08-27
 | C-083 | Die Ausgabelaenge der Archiv-Suche ist an drei Stellen verschieden belegt — die Verdraengungsmessung gilt deshalb nicht fuer das, was der Werker sieht. | gemessen | Backend-Vorgabe 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
 | C-084 | Der gemessene Vorsprung der vierten Quelle ist bei zehn Anfragen statistisch nicht gezeigt. | gemessen | Trefferquote p = 0,500 · Rangguete p = 0,672 · verdichtete Rangguete p = 0,492 (gepaarter Permutationstest, zweiseitig, exakt, n = 9) | 2026-08-27 | gueltig | intern |
 | C-085 | Der Lauf mit Gedaechtnis wird von der Pool-Verzerrung staerker benachteiligt als der ohne — er bringt mehr unbeurteilte Eintraege mit. | gemessen | unbeurteilte Plaetze: 20 von 92 ohne Gedaechtnis, 29 von 96 mit (21,7 % gegen 30,2 %) | 2026-08-27 | gueltig | intern |
+| C-086 | Freigabe-Bedingung 1 fragt seit dem 27.08.2026, ob die Trefferquote einer Anfrage SINKT — nicht mehr, ob ein einzelner Treffer herausfaellt. | gemessen | Dritte Fassung. Am selben Lauf: 0 von 10 Anfragen nach der geltenden Lesart, 2 von 10 nach der vorigen | 2026-08-27 | gueltig | intern |
+| C-087 | Die Archiv-Suche gibt 15 Treffer aus, und diese Zahl steht an genau einer Stelle. | gemessen | ARCHIV_AUSGABELAENGE = 15; vorher Backend 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
+| C-088 | Mit der zusammenfuehrenden Fusion und 15 Plaetzen ist Freigabe-Bedingung 1 erfuellt, und der Gewinn an Rangguete ist statistisch gezeigt. | gemessen | Trefferquote 0,565 auf 0,641 (p=0,062) · Rangguete 0,493 auf 0,585 (p=0,016) · verdichtet 0,542 auf 0,644 (p=0,020) · 0 von 10 Anfragen mit gesunkener Trefferquote, 5 von 10 mit Zusatztreffer | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -101,17 +104,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 83
+Einträge gesamt: 86
 
 Nach Status:
 
-- gemessen: 76
+- gemessen: 79
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 77
+- gueltig: 80
 - ueberholt: 6
 - ungeprueft: 0

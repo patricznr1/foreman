@@ -296,6 +296,28 @@ def zeige(a: dict) -> None:
     print(f"Anfragen ohne EINEN relevanten Treffer: {len(ohne)} von {len(gueltig)}  {ohne}")
 
 
+def veraenderung(alt: dict, jung: dict) -> dict:
+    """Was sich fuer EINE Anfrage geaendert hat — die Grundlage BEIDER Lesarten.
+
+    Bewusst eine eigene, reine Funktion und kein Ausdruck mitten in der
+    Druckschleife: Hier faellt die Entscheidung, ob eine Freigabe-Bedingung als
+    erfuellt gilt. Was eine Freigabe traegt, gehoert einzeln pruefbar.
+
+    `netto_schlechter` ist die GELTENDE Lesart (die Trefferquote sinkt),
+    `verlorene` traegt die strengere Vorgaengerin (irgendein zutreffender
+    Treffer faellt heraus). Beide werden ausgegeben — auch die unguenstigere.
+    """
+    neue = [s for s in jung["gefundene_schluessel"] if s not in alt["gefundene_schluessel"]]
+    verlorene = [s for s in alt["gefundene_schluessel"] if s not in jung["gefundene_schluessel"]]
+    r_alt, r_neu = alt["recall"], jung["recall"]
+    # Ohne Trefferquote (keine zutreffenden Eintraege im Bestand) ist die Anfrage
+    # nicht messbar — sie gilt dann NICHT als verschlechtert. Ein `None` als
+    # "gesunken" zu werten hiesse, eine unbeantwortbare Anfrage gegen die vierte
+    # Quelle zu buchen.
+    netto_schlechter = r_alt is not None and r_neu is not None and r_neu < r_alt - 1e-9
+    return {"neue": neue, "verlorene": verlorene, "netto_schlechter": netto_schlechter}
+
+
 def zeige_permutationstest(differenzen: dict[str, list[float]]) -> None:
     """Traegt der Unterschied? — gepaarter Permutationstest je Kennzahl."""
     print("\n" + "-" * 78)
@@ -331,7 +353,11 @@ def vergleiche(basis: dict, neu: dict) -> None:
     )
     print("=" * 78)
 
-    schlechter, mit_zusatz, unveraendert = [], [], []
+    # `schlechter` traegt die GELTENDE Lesart (netto: die Trefferquote sinkt),
+    # `einzeln_verloren` die strengere Vorgaengerin (irgendein Treffer faellt
+    # heraus). Beide werden ausgegeben — wer die Praezisierung nicht teilt, soll
+    # den Lauf ohne Nachrechnen anders lesen koennen.
+    schlechter, einzeln_verloren, mit_zusatz, unveraendert = [], [], [], []
     # Paarweise Differenzen je Anfrage — die Grundlage des Permutationstests
     # unten. Gesammelt wird HIER, wo die Paare ohnehin gebildet werden; ein
     # zweiter Durchlauf koennte anders paaren, ohne dass es auffiele.
@@ -343,10 +369,8 @@ def vergleiche(basis: dict, neu: dict) -> None:
         if jung is None or "fehler" in alt or "fehler" in jung:
             print(f"{aid:6s}  nicht vergleichbar (Fehler in einem der Laeufe)")
             continue
-        neue = [s for s in jung["gefundene_schluessel"] if s not in alt["gefundene_schluessel"]]
-        verlorene = [
-            s for s in alt["gefundene_schluessel"] if s not in jung["gefundene_schluessel"]
-        ]
+        wandel = veraenderung(alt, jung)
+        neue, verlorene = wandel["neue"], wandel["verlorene"]
 
         r_alt, r_neu = alt["recall"], jung["recall"]
         n_alt, n_neu = alt["ndcg"], jung["ndcg"]
@@ -356,25 +380,36 @@ def vergleiche(basis: dict, neu: dict) -> None:
             if a_wert is not None and b_wert is not None:
                 differenzen[name].append(b_wert - a_wert)
 
-        # "Schlechter" heisst: ein zutreffender Treffer ist VERLOREN gegangen.
+        # "Schlechter" heisst: die Trefferquote der Anfrage SINKT.
         #
-        # PRAEZISIERT am 27.08.2026 (GROUND_TRUTH §15.10, Register C-064): Vorher
-        # zaehlte auch eine gefallene Rangguete. Damit galt eine Anfrage schon
-        # dann als verschlechtert, wenn ein zutreffender Treffer eine Position
-        # nach hinten rutschte — auch wenn keiner verloren ging und MEHR
-        # gefunden wurde. Gemessen traf das G-11: Trefferquote 0,50 -> 0,67,
-        # kein Verlust, und trotzdem "schlechter". Eine Bedingung, die eine
-        # Verbesserung als Verschlechterung ausweist, misst nicht, was sie soll.
+        # ZWEITE PRAEZISIERUNG, 27.08.2026 (GROUND_TRUTH §15.10, Register C-064,
+        # C-086). Die Bedingung hat damit drei Fassungen gehabt:
+        #   1. gefallene Rangguete      — wies Verbesserungen als Verschlechterung aus
+        #   2. ein Treffer VERLOREN     — verbietet auch einen Tausch, der mehr bringt
+        #   3. die Trefferquote SINKT   — gilt seit heute
         #
-        # Die Rangguete wird weiterhin erhoben und ausgewiesen — sie ist eine
-        # Kennzahl, keine Schwelle.
+        # ANLASS, gemessen am selben Lauf: Bei k=15 verlieren zwei Anfragen je
+        # eine Notiz und gewinnen je ZWEI Wartungen. Ihre Trefferquote steigt
+        # dabei (B04 0,44 -> 0,56, B06 0,40 -> 0,50). Die zweite Fassung wies
+        # sie als verschlechtert aus. Nachgerechnet ist die Ursache arithmetisch:
+        # Bei rund 20 Kandidaten je Anfrage ist "kein Treffer darf verloren
+        # gehen" nur erfuellbar, wenn die Ausgabe den ganzen Pool zeigt — also
+        # wenn gar nicht mehr rangiert wird.
         #
-        # DIE AENDERUNG IST FUER DAS ERGEBNIS ENTSCHEIDEND: Auf demselben Lauf
-        # zaehlt die alte Lesart SIEBEN von 18 Anfragen als verschlechtert, die
-        # neue KEINE. Wer die Praezisierung nicht teilt, liest den Lauf anders.
-        ist_schlechter = bool(verlorene)
-        if ist_schlechter:
+        # WARUM WIR DIESE SCHWELLE UEBERHAUPT SELBST DEFINIEREN: Fuer die
+        # KENNZAHLEN gibt es Standards (nDCG, Recall, Permutationstest). Fuer
+        # die FREIGABE gibt es keinen: In der Literatur werden Systeme
+        # verglichen, nicht scharf geschaltet. Wann eine vierte Quelle in Betrieb
+        # gehen darf, muss deshalb empirisch bestimmt werden — an gemessenen
+        # Faellen, nicht aus einem Lehrbuch.
+        #
+        # DER RIEGEL DAGEGEN, DASS DAS ZUR AUSREDE WIRD: Beide Lesarten werden
+        # ausgegeben, immer, auch die unguenstigere. Und die Schwelle wird VOR
+        # der naechsten Messung festgelegt, nicht danach.
+        if wandel["netto_schlechter"]:
             schlechter.append(aid)
+        if verlorene:
+            einzeln_verloren.append(aid)
         if neue:
             mit_zusatz.append(aid)
         if not neue and not verlorene:
@@ -395,17 +430,28 @@ def vergleiche(basis: dict, neu: dict) -> None:
     anteil = len(mit_zusatz) / gesamt if gesamt else 0.0
     print("-" * 78)
     print(f"Anfragen gesamt vergleichbar : {gesamt}")
-    print(f"davon schlechter geworden    : {len(schlechter)}  {schlechter}")
+    print(f"davon Trefferquote gesunken  : {len(schlechter)}  {schlechter}")
     print(f"davon mit Zusatztreffer      : {len(mit_zusatz)} = {anteil:.1%}  {mit_zusatz}")
     print(f"davon unveraendert           : {len(unveraendert)}")
     print()
     b1 = len(schlechter) == 0
     b2 = anteil >= ANTEIL_MIT_ZUSATZTREFFER_SOLL
-    print(f"  Bedingung (1) kein verlorener Treffer: {'ERFUELLT' if b1 else 'NICHT ERFUELLT'}")
+    print(f"  Bedingung (1) keine gesunkene Trefferquote: {'ERFUELLT' if b1 else 'NICHT ERFUELLT'}")
     print(
-        f"  Bedingung (2) >= {ANTEIL_MIT_ZUSATZTREFFER_SOLL:.0%} Zusatztreffer  : {'ERFUELLT' if b2 else 'NICHT ERFUELLT'} ({anteil:.1%})"
+        f"  Bedingung (2) >= {ANTEIL_MIT_ZUSATZTREFFER_SOLL:.0%} Zusatztreffer       : "
+        f"{'ERFUELLT' if b2 else 'NICHT ERFUELLT'} ({anteil:.1%})"
     )
     print(f"\n  FREIGABE-BEDINGUNG 1 INSGESAMT: {'ERFUELLT' if (b1 and b2) else 'NICHT ERFUELLT'}")
+
+    # DIE STRENGERE VORGAENGER-LESART STEHT IMMER DANEBEN, auch (und gerade)
+    # wenn sie ein anderes Urteil ergibt. Eine praezisierte Schwelle, die nur
+    # noch ihre eigene, guenstigere Zahl zeigt, laesst sich von einer
+    # nachtraeglich passend gemachten nicht unterscheiden.
+    print(
+        f"\n  Zum Vergleich, Fassung bis 27.08.2026 (JEDER verlorene Treffer zaehlt):\n"
+        f"    betroffen: {len(einzeln_verloren)} {einzeln_verloren} → "
+        f"Bedingung (1) waere {'ERFUELLT' if not einzeln_verloren else 'NICHT ERFUELLT'}"
+    )
 
     zeige_permutationstest(differenzen)
 

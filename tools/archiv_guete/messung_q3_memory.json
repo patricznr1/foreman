@@ -1,0 +1,1101 @@
+{
+ "lauf": "q3_memory",
+ "anfragedatei": "goldset_v2_anfragen.yaml",
+ "basis": "https://frontend-production-169a.up.railway.app",
+ "quellen": [
+  "memory"
+ ],
+ "k": 10,
+ "laeufe": [
+  {
+   "anfrage_id": "B01",
+   "anfrage": "Undichtigkeit an Achse",
+   "machine_id": null,
+   "dauer_s": 0.94,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "timestamp": "2026-07-22T08:15:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 3 (2026-07-22T08:15:00+00:00): Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "53b0d103-ff65-4a03-b9b0-61f82b7c405e",
+      "quelle": {
+       "art": "note",
+       "id": 159
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-08-21T11:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-08-21T11:10:00+00:00): Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "5ae31da3-3850-4539-92e2-588670701000",
+      "quelle": {
+       "art": "note",
+       "id": 197
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 10,
+     "timestamp": "2026-04-23T07:10:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 10 durchgeführt (2026-04-23T07:10:00+02:00). Prüfung Getriebe RB-01. Radialwellendichtring an der Abtriebsseite undicht, Ölstand am unteren Rand des Schauglases. Dich…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "bbf5b242-bbde-49aa-933f-d70de21ad583",
+      "quelle": {
+       "art": "maintenance",
+       "id": 64
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "timestamp": "2026-04-24T07:20:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 2 durchgeführt (2026-04-24T07:20:00+02:00). Regelprüfung Kugelgewindetrieb AX-02. Umkehrspiel 0,02 mm, Abstreifer dicht. Ohne Befund.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "a82daed4-9e9c-4cc7-8b41-f575a1e18635",
+      "quelle": {
+       "art": "maintenance",
+       "id": 65
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "timestamp": "2026-06-09T11:40:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 4 (2026-06-09T11:40:00+00:00): AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "7c466f5b-3aa8-4193-95e2-ddbb884475f9",
+      "quelle": {
+       "art": "note",
+       "id": 117
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B02",
+   "anfrage": "Fleck auf Bild",
+   "machine_id": null,
+   "dauer_s": 0.78,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-02-06T08:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-02-06T08:10:00+00:00): VS-01 hat auf dem Bild einen dunklen Fleck, immer an derselben Stelle, egal welches Teil. Teile werden deswegen abgewiesen.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "1cb36d6b-377d-48ae-af73-39466bf46f50",
+      "quelle": {
+       "art": "note",
+       "id": 20
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-06-30T04:40:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-06-30T04:40:00+00:00): VS-01 Bild ist dunkel, Scheibe ist aber sauber. Gestern Abend wurde die Belichtung im Prüfprogramm geändert.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "78377c23-43cb-40be-b5ec-2e940c593a3b",
+      "quelle": {
+       "art": "note",
+       "id": 137
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "timestamp": "2026-05-05T07:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 5 (2026-05-05T07:10:00+00:00): Beleuchtung über FD-01 flackert. Nichts mit der Anlage zu tun, aber schlecht zu arbeiten.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "449c2324-6bc5-43cc-9408-dfaaa1ad4e57",
+      "quelle": {
+       "art": "note",
+       "id": 84
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-03-19T20:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-03-19T20:10:00+00:00): VS-01 weist mehr Teile ab als sonst, Bild sieht flau aus. Teile selbst sind unauffällig.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "d6855991-581c-42aa-bb98-c2d10fecfee7",
+      "quelle": {
+       "art": "note",
+       "id": 54
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-07-09T18:50:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-07-09T18:50:00+00:00): VS-01 sieht nichts mehr richtig, alles wird bemängelt. Auf der Scheibe vor der Kamera liegt eine Staubschicht.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "f451001c-c5f6-49e7-8642-e3177d177f50",
+      "quelle": {
+       "art": "note",
+       "id": 145
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B03",
+   "anfrage": "Lagerschaden am Lagerbock",
+   "machine_id": null,
+   "dauer_s": 0.91,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "timestamp": "2026-07-09T08:00:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 1 durchgeführt (2026-07-09T08:00:00+02:00). Prüfung Spindellagerung AX-01. Loslagerbock hat sich gelöst, Passstifte fehlen, Gewinde im Grundkörper ausgerissen. Gewind…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "4dd803bc-0cc2-4ecb-904e-0634957e3b99",
+      "quelle": {
+       "art": "maintenance",
+       "id": 107
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "timestamp": "2026-07-22T08:15:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 3 (2026-07-22T08:15:00+00:00): Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "53b0d103-ff65-4a03-b9b0-61f82b7c405e",
+      "quelle": {
+       "art": "note",
+       "id": 159
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "timestamp": "2026-04-09T04:30:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 3 (2026-04-09T04:30:00+00:00): Das Klopfen an AX-03 ist lauter geworden. Wenn man die Hand an den Lagerbock legt, spürt man den Schlag deutlich.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "2b04dc76-92eb-4718-a5be-af4872e887f7",
+      "quelle": {
+       "art": "note",
+       "id": 69
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 11,
+     "timestamp": "2026-06-19T07:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 11 durchgeführt (2026-06-19T07:40:00+02:00). Prüfung Gelenklager RB-02. Spiel in Achse 1 messbar, Fett verbraucht und mit Abrieb dunkel. Lager gereinigt, mit Lithiumk…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "13e07075-7c74-416a-8b72-e9a0dc511f14",
+      "quelle": {
+       "art": "maintenance",
+       "id": 96
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "timestamp": "2026-05-14T13:05:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Alarm AXIS_VIB_WARN (warning/hardware) an Maschine 3 ausgelöst (2026-05-14T13:05:00+02:00). Lagerschwingung AX-03 über Warnschwelle (Zone C/D)",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "472e0f2f-ca37-48bc-bd58-9f21a943271d",
+      "quelle": {
+       "art": "alarm",
+       "id": 12
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B04",
+   "anfrage": "Dosierunregelmäßigkeiten",
+   "machine_id": null,
+   "dauer_s": 0.89,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "timestamp": "2026-08-06T07:15:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 5 (2026-08-06T07:15:00+00:00): Dosierung an FD-01 schwankt, mal zu viel mal gar nichts. Über die Schicht gemittelt passt die Menge.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "4bfb795d-2ad2-45fe-aaa8-208d87aaa270",
+      "quelle": {
+       "art": "note",
+       "id": 173
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "timestamp": "2026-03-16T07:30:00+01:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-03-16T07:30:00+01:00). Prüfung Dosiertrichter FD-01. Innenwand mit Ablagerungen aus Trennmittelrückständen, Auslaufwinkel dadurch verringert. Tri…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "d0039ad9-9cde-405e-ac7b-68c385b4eea2",
+      "quelle": {
+       "art": "maintenance",
+       "id": 43
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "timestamp": "2026-08-05T07:10:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-08-05T07:10:00+02:00). Regelprüfung Dosiertrichter FD-01. Klemmzylinder schaltet im Sollfenster, Auslauf frei. Ohne Befund.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "332ead78-a8c7-4dce-a334-4e517610ab1f",
+      "quelle": {
+       "art": "maintenance",
+       "id": 120
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "timestamp": "2026-05-08T13:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (lubrication) an Maschine 9 durchgeführt (2026-05-08T13:40:00+02:00). Schmierung Ram-Führung PR-03. Dosierverteiler blockiert, zwei von vier Auslässen ohne Durchgang. Verteiler ersetzt, Bahne…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "260ab9f6-d70a-47d3-be7c-65878b67a34a",
+      "quelle": {
+       "art": "maintenance",
+       "id": 69
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "timestamp": "2026-06-05T15:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-06-05T15:03:51.561708+00:00). [PERSON] Teilezufuehrung A: Foerderschnecke, Klemmzylinder und Dosierung sichtgeprueft, ohne Befund. Wartungsplan e…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "2c06100e-8bb7-4a0f-9ab7-8749418b02e3",
+      "quelle": {
+       "art": "maintenance",
+       "id": 8
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B05",
+   "anfrage": "Schleppfehler an AX",
+   "machine_id": null,
+   "dauer_s": 0.77,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "timestamp": "2026-05-28T07:20:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 3 (2026-05-28T07:20:00+00:00): AX-03 geht seit gestern in Schleppfehler. Gestern wurde das Programm angepasst, Beschleunigung höher. Zusammenhang liegt nahe.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "a77c25bd-758b-4a5d-8fb3-21c565d508f3",
+      "quelle": {
+       "art": "note",
+       "id": 106
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "timestamp": "2026-03-17T22:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 2 (2026-03-17T22:10:00+00:00): AX-02 ist heute zweimal in Störung gegangen, Schleppfehler. [PERSON] und weitergelaufen, ohne dass wir was gemacht haben.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "252d3515-a980-4d9d-807e-25e8f17cdde3",
+      "quelle": {
+       "art": "note",
+       "id": 52
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "timestamp": "2026-08-10T08:30:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 2 (2026-08-10T08:30:00+00:00): AX-02 hat Schlupf beim Reversieren, man hört das leise Klacken wenn sie umkehrt. Die Korrektur im Programm bleibt keine Schicht stehen.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "7918a7f0-ec8e-4288-a174-a568ad28deb6",
+      "quelle": {
+       "art": "note",
+       "id": 177
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "timestamp": "2026-06-09T11:40:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 4 (2026-06-09T11:40:00+00:00): AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "7c466f5b-3aa8-4193-95e2-ddbb884475f9",
+      "quelle": {
+       "art": "note",
+       "id": 117
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-08-21T11:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-08-21T11:10:00+00:00): Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "5ae31da3-3850-4539-92e2-588670701000",
+      "quelle": {
+       "art": "note",
+       "id": 197
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B06",
+   "anfrage": "Durckabfall Hydraulik",
+   "machine_id": null,
+   "dauer_s": 0.86,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-05-13T07:00:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 8 durchgeführt (2026-05-13T07:00:00+02:00). Prüfung Druckmessung PR-02. Hydraulik ohne Befund, Ölstand und Leckölmenge im Sollbereich. Drucksensor zeigt 14 bar zu wen…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "c3ba8416-f734-4510-8ca4-0a3827242dc7",
+      "quelle": {
+       "art": "maintenance",
+       "id": 71
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-06T18:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 7 durchgeführt (2026-06-06T18:03:51.561708+00:00). Planmaessige Inspektion Hydraulikkreis PR-01: Druck im Sollband, Dichtungen sichtgeprueft, keine sichtbare Leckage.…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "bd41958b-9c64-4f08-a534-eb3fc1195d88",
+      "quelle": {
+       "art": "maintenance",
+       "id": 10
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-20T17:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Alarm HYD_PRESS_LOW_WARN (warning/hardware) an Maschine 7 ausgelöst (2026-06-20T17:03:51.561708+00:00). Hydraulikdruck PR-01 unter Warnschwelle (Leckage vermutet)",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "740aad32-68d4-41d0-85f9-e558718eb76c",
+      "quelle": {
+       "art": "alarm",
+       "id": 3
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-06-05T06:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 8 durchgeführt (2026-06-05T06:40:00+02:00). Prüfung Hydraulik PR-02. Hochdruckschlauch am Pressenkopf an der Pressverschraubung gerissen, Ölaustritt an der Verkleidun…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "78a13860-3109-4b74-8f64-bb78a3471111",
+      "quelle": {
+       "art": "maintenance",
+       "id": 84
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-22T19:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Alarm HYD_PRESS_LOW_CRIT (critical/hardware) an Maschine 7 ausgelöst (2026-06-22T19:03:51.561708+00:00). Hydraulikdruck PR-01 kritisch — Dichtungswechsel erforderlich",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "aaeec226-e4f3-4fb6-930f-2941a5b8dc34",
+      "quelle": {
+       "art": "alarm",
+       "id": 4
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B07",
+   "anfrage": "Nullpunktverschiebung an AX",
+   "machine_id": null,
+   "dauer_s": 0.91,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 4,
+     "timestamp": "2026-06-09T11:40:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 4 (2026-06-09T11:40:00+00:00): AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "7c466f5b-3aa8-4193-95e2-ddbb884475f9",
+      "quelle": {
+       "art": "note",
+       "id": 117
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-08-21T11:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-08-21T11:10:00+00:00): Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "5ae31da3-3850-4539-92e2-588670701000",
+      "quelle": {
+       "art": "note",
+       "id": 197
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "timestamp": "2026-03-10T06:45:00+01:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 1 durchgeführt (2026-03-10T06:45:00+01:00). Prüfung Kugelgewindetrieb AX-01. Umkehrspiel an drei Messpunkten 0,08 bis 0,11 mm gegen 0,02 mm Sollwert. Mutter mit Vorsp…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "51d5479e-56e4-4a30-b43c-e3ea0f6c851e",
+      "quelle": {
+       "art": "maintenance",
+       "id": 37
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "timestamp": "2026-06-29T20:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 1 (2026-06-29T20:10:00+00:00): AX-01 gibt beim Richtungswechsel einen Stoß, den man im Gestell spürt. Kam nicht von jetzt auf gleich, wird langsam mehr.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "cbd77dde-a24a-4ca9-ba29-80dd3d4c6e14",
+      "quelle": {
+       "art": "note",
+       "id": 136
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "timestamp": "2026-08-10T08:30:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 2 (2026-08-10T08:30:00+00:00): AX-02 hat Schlupf beim Reversieren, man hört das leise Klacken wenn sie umkehrt. Die Korrektur im Programm bleibt keine Schicht stehen.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "7918a7f0-ec8e-4288-a174-a568ad28deb6",
+      "quelle": {
+       "art": "note",
+       "id": 177
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B08",
+   "anfrage": "Ruckeln beim Hub",
+   "machine_id": null,
+   "dauer_s": 0.77,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "timestamp": "2026-08-11T20:20:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 9 (2026-08-11T20:20:00+00:00): PR-03 stoppt im Hub kurz, sieht aus wie Ruckeln. Die Fahne vom Endschalter hat sich gelöst und schaltet zwischendurch.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "ee101acb-64f8-4c18-a999-0a2e82333360",
+      "quelle": {
+       "art": "note",
+       "id": 183
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 10,
+     "timestamp": "2026-02-10T08:20:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 10 (2026-02-10T08:20:00+00:00): RB-01 ruckt beim Anfahren aus dem Stillstand. Seit dem Umbau vom Donnerstag ist das so.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "85c69127-2e01-4256-88b1-83cfa4b03577",
+      "quelle": {
+       "art": "note",
+       "id": 23
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 2,
+     "timestamp": "2026-05-27T18:40:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 2 (2026-05-27T18:40:00+00:00): AX-02 stockt bei langsamer Fahrt, ganz feines Ruckeln. Bei voller Geschwindigkeit merkt man nichts.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "46e716c6-0495-4e4d-9bfd-d06c41ec4980",
+      "quelle": {
+       "art": "note",
+       "id": 105
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-07-10T06:20:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 8 (2026-07-10T06:20:00+00:00): PR-02 läuft im Hub etwas unrund, hört man am Geräusch. Kraft und Maß sind unauffällig.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "a1aa5b6d-c442-498b-aabd-9cf2e795e4b0",
+      "quelle": {
+       "art": "note",
+       "id": 146
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-02-16T08:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 7 (2026-02-16T08:10:00+00:00): Ram an PR-01 ruckelt weiter. Beim Zurückfahren ist es sauber, nur abwärts nicht.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "5fcf04d6-5e2b-457e-bdde-f61166e06c79",
+      "quelle": {
+       "art": "note",
+       "id": 27
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B09",
+   "anfrage": "Versatz an PR",
+   "machine_id": null,
+   "dauer_s": 0.36,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-07-01T11:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 7 (2026-07-01T11:10:00+00:00): Der Versatz an PR-01 ist geblieben. Werkzeug wurde letzte Woche gewechselt, seitdem ist es so.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "d2f88777-81f1-4e29-93bc-b647889b9483",
+      "quelle": {
+       "art": "note",
+       "id": 140
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "timestamp": "2026-05-25T06:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (tool_change) an Maschine 9 durchgeführt (2026-05-25T06:40:00+02:00). Werkzeugwechsel PR-03 wegen Variantenwechsel im Auftrag. Altsatz ohne Verschleißbefund, eingelagert.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "29ff59b6-696b-4041-9c7f-15c38df14704",
+      "quelle": {
+       "art": "maintenance",
+       "id": 79
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-08-04T19:40:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 8 (2026-08-04T19:40:00+00:00): PR-02 zieht den Druck unsauber auf, schwankt um ein paar bar. Vermutlich wieder eine Dichtung wie im Juni.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "3919ad83-57cc-4e2f-a57e-644d9104e25c",
+      "quelle": {
+       "art": "note",
+       "id": 170
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-06-04T21:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 8 (2026-06-04T21:10:00+00:00): PR-02 hat mitten in der Nacht den Druck verloren, Teile nicht durchgefügt. Anlage steht.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "97e13500-4904-4897-92f1-c33663b6aee2",
+      "quelle": {
+       "art": "note",
+       "id": 112
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-08-24T06:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (tool_change) an Maschine 7 durchgeführt (2026-08-24T06:40:00+02:00). Werkzeugwechsel PR-01 nach Standmenge. Verschleißmaß 0,08 mm. Neuer Satz eingebaut, erste zwanzig Teile vermessen und im…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "c13481b6-f41b-4838-be0f-e814011d2ac1",
+      "quelle": {
+       "art": "maintenance",
+       "id": 137
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B10",
+   "anfrage": "Öl Temperatur an PR",
+   "machine_id": null,
+   "dauer_s": 0.83,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-04-15T07:00:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 7 durchgeführt (2026-04-15T07:00:00+02:00). Prüfung Kühlkreis PR-01. Lamellen des Ölkühlers mit Staub und Sprühnebel zugesetzt, Lüfter läuft. [PERSON] gereinigt, Filt…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "86f8e059-6857-4219-9192-bf1df553941c",
+      "quelle": {
+       "art": "maintenance",
+       "id": 58
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-07-30T12:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 7 (2026-07-30T12:10:00+00:00): Alle drei Pressen haben heute warmes Öl, nicht nur PR-01. Draußen 34 Grad und das Hallentor stand den ganzen Vormittag offen.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "8e1b5d96-8ea5-4f49-9b4e-b4f7af577529",
+      "quelle": {
+       "art": "note",
+       "id": 165
+      }
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-08-12T07:10:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 8 durchgeführt (2026-08-12T07:10:00+02:00). Prüfung Hydrauliktank PR-02. Lüfter des Ölkühlers läuft nur auf halber Drehzahl, Kondensator der Ansteuerung defekt. Lüfte…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "8cefda79-3c3f-4e73-b3e7-ed3721bd8ead",
+      "quelle": {
+       "art": "maintenance",
+       "id": 126
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-08-07T07:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 8 (2026-08-07T07:10:00+00:00): An PR-02 ist nichts undicht, Ölstand steht seit vier Wochen gleich. Dafür ist der Tank auffällig warm.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "2a0bdfad-1d19-4fc0-9dd7-849f2f8938f8",
+      "quelle": {
+       "art": "note",
+       "id": 175
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-04-10T18:10:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 7 (2026-04-10T18:10:00+00:00): PR-01 Öltemperatur oben. In der Nacht läuft die Presse sauber, tagsüber nicht.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "3500d4d8-0d16-4d20-8e16-9f6837741f30",
+      "quelle": {
+       "art": "note",
+       "id": 72
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

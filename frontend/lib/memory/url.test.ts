@@ -21,11 +21,23 @@ describe("searchNotesEndpoint", () => {
 });
 
 describe("searchArchiveEndpoint", () => {
-  it("baut den relativen BFF-Pfad mit q und Default-k", () => {
+  it("baut den relativen BFF-Pfad mit q", () => {
     const url = searchArchiveEndpoint("Fett");
     expect(url).toContain("/api/v1/archive/search?");
-    expect(url).toContain(`k=${DEFAULT_SEARCH_K}`);
     expect(url).toContain("q=Fett");
+  });
+
+  it("schickt KEIN k mit — die Ausgabelaenge kommt vom Backend", () => {
+    // Sie steht seit dem 27.08.2026 an genau einer Stelle
+    // (ARCHIV_AUSGABELAENGE, src/foreman/archive/search.py). Vorher stand sie
+    // an dreien verschieden — Backend 5, hier 12, Messwerkzeug 10 (C-083) —,
+    // und die Verdraengungsmessung galt fuer eine Laenge, die niemand sah.
+    //
+    // Der fruehere Fall hier prueste gegen DIESELBE Konstante, die die URL
+    // erzeugt: Er waere bei jeder Aenderung von 12 gruen geblieben und haette
+    // den Auseinanderlauf nie bemerkt.
+    expect(searchArchiveEndpoint("Fett")).not.toContain("k=");
+    expect(searchArchiveEndpoint("Fett", 42, ["note"])).not.toContain("k=");
   });
 
   it("lässt machine_id und sources weg, wenn null/leer", () => {
