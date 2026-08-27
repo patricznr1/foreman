@@ -49,6 +49,28 @@ export const VERFUEGBARE_QUELLEN: readonly SourceType[] = [
   "memory",
 ];
 
+/**
+ * Der sichtbare Beleg dafuer, dass sich zwei Quellen einig sind — oder `null`.
+ *
+ * WOZU: Seit dem 27.08.2026 fuehrt die Fusion denselben Vorgang aus mehreren
+ * Ranglisten zusammen und HEBT ihn dadurch (Einigkeit zaehlt doppelt). Vorher
+ * wurde die Erinnerung in genau diesem Fall weggeworfen. Ohne dieses Label
+ * bliebe die Hebung unsichtbar: Der Treffer stuende weiter oben, und niemand
+ * saehe, warum — waehrend der Werker gerade DAS wissen will ("das hatten wir
+ * schon, und das Gedaechtnis kennt es auch").
+ *
+ * Der eigene Treffer vertritt den Vorgang immer (Backend), deshalb ist die
+ * fremde Quelle praktisch immer das Gedaechtnis. Der allgemeine Zweig steht
+ * trotzdem da — er behauptet nur nichts ueber eine Paarung, die es nicht gibt.
+ */
+export function bestaetigungsLabel(hit: ArchiveHitView): string | null {
+  const fremde = hit.foundBy.filter((quelle) => quelle !== hit.source);
+  if (fremde.length === 0) {
+    return null;
+  }
+  return fremde.includes("memory") ? "Auch im Gedächtnis" : "Von mehreren Quellen bestätigt";
+}
+
 /** Farbunabhaengiges Form-Kuerzel je Quelltyp (zweiter Kanal). */
 export const SOURCE_GLYPH: Record<SourceType, string> = {
   note: "N",

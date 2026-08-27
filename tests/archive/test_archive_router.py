@@ -26,7 +26,18 @@ from foreman.embeddings.provider import Vector
 
 _SEARCH = "/api/v1/archive/search"
 _DIM = 1024
-_HIT_FIELDS = {"source_type", "id", "machine_id", "timestamp", "excerpt", "detail"}
+_HIT_FIELDS = {
+    "source_type",
+    "id",
+    "machine_id",
+    "timestamp",
+    "excerpt",
+    "detail",
+    # Welche Quellen den Vorgang gefunden haben (27.08.2026). `source_type` sagt,
+    # WAS der Treffer ist; `gefunden_von` sagt, WER ihn fand — seit die Fusion
+    # denselben Vorgang aus mehreren Ranglisten zusammenführt, fällt das auseinander.
+    "gefunden_von",
+}
 
 
 def _unit(index: int) -> Vector:
@@ -93,6 +104,10 @@ async def test_archive_route_default_alle_quellen_flach_ohne_score(
     assert set(body[0]) == _HIT_FIELDS
     for forbidden in ("score", "rrf_score", "embedding", "distance"):
         assert all(forbidden not in item for item in body)
+    # Über die ECHTE Route, nicht nur gegen `_fusioniere`: Jeder ausgelieferte
+    # Treffer nennt seine Quelle, und ohne Gedächtnis ist das genau die eigene.
+    for item in body:
+        assert item["gefunden_von"] == [item["source_type"]]
 
 
 @pytest.mark.integration

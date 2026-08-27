@@ -109,6 +109,16 @@ export interface ArchiveHitView {
   detail: ArchiveHitDetail;
   /** Rang-Position in der Trefferliste (0 = relevantester). */
   rank: number;
+  /**
+   * Welche Quellen diesen Vorgang gefunden haben. Mehr als eine heisst:
+   * bestaetigt statt nur gefunden — zwei Ranglisten sind sich einig. `source`
+   * bleibt davon unberuehrt und sagt weiter, WAS der Treffer ist.
+   *
+   * Faellt eine aeltere Backend-Fassung das Feld weg, steht hier die eigene
+   * Quelle allein — nie eine leere Liste, damit die Anzeige nicht zwischen
+   * "keine Auskunft" und "niemand hat es gefunden" unterscheiden muss.
+   */
+  foundBy: SourceType[];
 }
 
 /** Das flache, sortierte Ergebnis einer Archiv-Suche (Reihenfolge = Relevanz-Rang). */

@@ -1,12 +1,21 @@
 # ============================================================
 #  FOREMAN — archive/search.py
-#  Zweck: Quellenübergreifende Archiv-Suche (Paket 1b) über drei Quellen:
-#         - Notiz   : der 1a-Hybrid (Volltext + Vektor + RRF + Distanz-Cutoff,
-#                     `embed_and_search_hybrid`) UNVERÄNDERT wiederverwendet.
-#         - Wartung : NUR deutscher Volltext (`maintenance_events.text_tsv`).
-#         - Alarm   : NUR deutscher Volltext (`alarms.text_tsv`).
-#         Jede Quelle liefert eine Rangliste; global per RRF (k=60) zu einem Rang
-#         fusioniert. Ergebnis = flache list[ArchiveHit] in globaler RRF-Reihenfolge.
+#  Zweck: Quellenübergreifende Archiv-Suche (Paket 1b) über vier Quellen:
+#         - Notiz     : der 1a-Hybrid (Volltext + Vektor + RRF + Distanz-Cutoff,
+#                       `embed_and_search_hybrid`) UNVERÄNDERT wiederverwendet.
+#         - Wartung   : NUR deutscher Volltext (`maintenance_events.text_tsv`).
+#         - Alarm     : NUR deutscher Volltext (`alarms.text_tsv`).
+#         - Gedächtnis: semantischer Abruf gegen die Gegenstelle (best-effort).
+#         Jede Quelle liefert eine Rangliste; `_fusioniere` führt sie auf den
+#         VORGANG zusammen und summiert `1/(RRF_K + Rang)` über die Quellen, die
+#         denselben Vorgang gefunden haben. Ergebnis = flache list[ArchiveHit].
+#  Was sich am 27.08.2026 geändert hat: Vorher bekam jeder Treffer genau einen
+#         Rang aus genau einer Liste — eine Summierung über Quellen war strukturell
+#         unmöglich, und die Fusion war ein faires Interleaving nach quelleninternem
+#         Rang, nicht RRF. Doppelfunde wurden ENTFERNT (die Erinnerung fiel gegen
+#         den eigenen Treffer), also genau dann verworfen, wenn zwei Quellen sich
+#         einig waren. Jetzt werden sie verrechnet, und `gefunden_von` macht die
+#         Einigkeit nach aussen sichtbar.
 #  Architektur-Einordnung: Schicht 2. Koppelt für den Notiz-Zweig nur an
 #         `foreman.notes` (das 1a-Service-Surface), nie an eine Embedding-Library.
 #  Verfügbarkeit: erbt die graceful degradation des Notiz-Zweigs — fällt das
@@ -152,12 +161,98 @@ def _alarm_hit(alarm: Alarm) -> ArchiveHit:
     )
 
 
-def _rrf_key(item: tuple[int, ArchiveHit]) -> tuple[float, float, str, int]:
-    """Sortier-Schlüssel der globalen RRF-Fusion: höchster RRF-Score zuerst,
-    deterministischer Tiebreaker (jüngster Zeitstempel, dann Quelle, dann id)."""
-    rank, hit = item
-    rrf_score = 1.0 / (RRF_K + rank)
-    return (-rrf_score, -hit.timestamp.timestamp(), hit.source_type, hit.id)
+def _vorgangsschluessel(hit: ArchiveHit, quelle: SourceType, rang: int) -> str:
+    """Der VORGANG, auf den ein Treffer zeigt — quellenübergreifend eindeutig.
+
+    Zwei Ranglisten können denselben Vorgang meinen: eine Schichtnotiz ist als
+    `note` auffindbar und über ihre Spiegelung als `memory`. Erst ein gemeinsamer
+    Schlüssel macht sie für die Fusion zu EINEM Ding — vorher waren es zwei, und
+    Einigkeit zwischen Quellen konnte gar nicht entstehen.
+
+    DIE FALLE, gegen die die zweite Hälfte gebaut ist: Eine Erinnerung trägt
+    `source_type="memory"` und fest `id=0` (sie hat keinen Primärschlüssel). Über
+    `(source_type, id)` fielen deshalb ALLE Erinnerungen ohne Rückweg auf denselben
+    Schlüssel zusammen und addierten ihre Punkte zu einem Phantom-Treffer. Die
+    Substrat-Kennung hält sie auseinander; fehlt auch die, tut es der Platz in der
+    eigenen Liste — der ist je Treffer verschieden und kann mit nichts verschmelzen.
+    """
+    zeile = _quellzeile(hit)
+    if zeile is not None:
+        return f"{zeile[0]}:{zeile[1]}"
+    kennung = hit.detail.get("erinnerung")
+    if isinstance(kennung, str) and kennung:
+        return f"erinnerung:{kennung}"
+    return f"{quelle}#{rang}"
+
+
+def _ist_besserer_vertreter(neu: ArchiveHit, alt: ArchiveHit) -> bool:
+    """Welcher von zwei Treffern auf denselben Vorgang ausgeliefert wird.
+
+    DER EIGENE TREFFER SCHLÄGT DIE ERINNERUNG — dieselbe Begründung, aus der die
+    frühere Entdoppelung ihn behielt: Er ist die Quelle, sie die Ableitung. Er
+    trägt die echte Kennung, seine Zeitangabe stammt aus der Datenbank statt aus
+    dem Abruf, und sein Auszug ist der ungekürzte Originaltext.
+
+    Was sich gegenüber der Entdoppelung geändert hat: Die Erinnerung wird nicht
+    mehr WEGGEWORFEN, sondern zählt als zweite findende Quelle mit. Genau in dem
+    Augenblick, in dem zwei Quellen sich einig sind, wurde die Einigkeit vorher
+    verworfen statt verrechnet.
+    """
+    return alt.source_type == "memory" and neu.source_type != "memory"
+
+
+def _fusioniere(
+    listen: Sequence[tuple[SourceType, Sequence[ArchiveHit]]], k: int
+) -> list[ArchiveHit]:
+    """Führt die Ranglisten zu einer zusammen — Reciprocal Rank Fusion, summierend.
+
+    Je Treffer `1/(RRF_K + quelleninterner Rang)`, SUMMIERT über die Quellen, die
+    denselben Vorgang gefunden haben. Das ist der Punkt, an dem sich diese Fassung
+    von der vorigen unterscheidet: Dort bekam jeder Treffer genau einen Rang aus
+    genau einer Liste, eine Summierung war strukturell unmöglich, und `RRF_K` war
+    quellenübergreifend ohne jede Wirkung — die Fusion war ein faires Interleaving
+    nach quelleninternem Rang, nicht mehr.
+
+    NUR DER BESTE RANG JE QUELLE zählt. RRF summiert über VERSCHIEDENE Ranglisten;
+    zweimal derselbe Vorgang innerhalb einer Liste ist keine zweite Meinung,
+    sondern eine Dublette. Ohne diese Zeile hätte eine Quelle, die einen Vorgang
+    doppelt liefert, ihn allein nach oben gehebelt.
+
+    Der Tiebreaker endet auf dem Vorgangsschlüssel, nicht auf `(source_type, id)`:
+    Erinnerungen tragen alle `id=0`, und zwei davon mit gleicher Zeit wären sonst
+    nicht auseinanderzuhalten — die Reihenfolge hinge an der Aufzählungsreihenfolge
+    eines Wörterbuchs.
+    """
+    punkte: dict[str, float] = {}
+    gefunden_von: dict[str, list[SourceType]] = {}
+    vertreter: dict[str, ArchiveHit] = {}
+
+    for quelle, treffer in listen:
+        gesehen: set[str] = set()
+        for rang, hit in enumerate(treffer, start=1):
+            schluessel = _vorgangsschluessel(hit, quelle, rang)
+            if schluessel in gesehen:
+                continue
+            gesehen.add(schluessel)
+            punkte[schluessel] = punkte.get(schluessel, 0.0) + 1.0 / (RRF_K + rang)
+            gefunden_von.setdefault(schluessel, []).append(quelle)
+            if schluessel not in vertreter or _ist_besserer_vertreter(hit, vertreter[schluessel]):
+                vertreter[schluessel] = hit
+
+    geordnet = sorted(
+        punkte,
+        key=lambda s: (
+            -punkte[s],
+            -vertreter[s].timestamp.timestamp(),
+            vertreter[s].source_type,
+            vertreter[s].id,
+            s,
+        ),
+    )
+    return [
+        vertreter[s].model_copy(update={"gefunden_von": list(gefunden_von[s])})
+        for s in geordnet[:k]
+    ]
 
 
 def _quellzeile(hit: ArchiveHit) -> tuple[str, int] | None:
@@ -175,39 +270,6 @@ def _quellzeile(hit: ArchiveHit) -> tuple[str, int] | None:
         if isinstance(art, str) and art and isinstance(kennung, int) and kennung > 0:
             return (art, kennung)
     return None
-
-
-def _ohne_doppelfunde(ranked: list[tuple[int, ArchiveHit]]) -> list[tuple[int, ArchiveHit]]:
-    """Entfernt Erinnerungen, deren Quellzeile bereits als eigener Treffer dasteht.
-
-    DASSELBE EREIGNIS, ZWEI RANGLISTEN: Eine Schichtnotiz ist über ihr Embedding
-    als `note` auffindbar und über ihre Spiegelung als `memory`. Die Fusion sieht
-    zwei getrennte Ströme und rangiert denselben Vorgang deshalb doppelt hoch —
-    er verdrängt andere Treffer, ohne mehr zu sagen. Gemessen (25.08.2026):
-    Die Auflösung hebt den Anteil zutreffender Treffer von 0,403 auf 0,445, ohne
-    dass ein einziger relevanter Treffer verloren geht.
-
-    DER EIGENE TREFFER BLEIBT, die Erinnerung fällt: Er ist die Quelle, sie die
-    Ableitung. Er trägt die echte Kennung, seine Zeitangabe stammt aus der
-    Datenbank statt aus dem Abruf, und sein Auszug ist der ungekürzte Originaltext.
-
-    VOR DEM KÜRZEN, nicht danach: Sonst hinterliesse jede entfernte Dublette eine
-    Lücke in der Liste, statt einen echten Treffer nachrücken zu lassen.
-
-    Eine Erinnerung OHNE Rückweg bleibt unangetastet — sie könnte auf denselben
-    Vorgang zeigen oder auf einen anderen; das ist nicht entscheidbar, und eine
-    geratene Entfernung nähme dem Werker einen Treffer, den niemand geprüft hat.
-    """
-    eigene: set[tuple[str, int]] = {
-        (hit.source_type, hit.id) for _rang, hit in ranked if hit.source_type != "memory"
-    }
-    behalten: list[tuple[int, ArchiveHit]] = []
-    for rang, hit in ranked:
-        zeile = _quellzeile(hit)
-        if hit.source_type == "memory" and zeile is not None and zeile in eigene:
-            continue
-        behalten.append((rang, hit))
-    return behalten
 
 
 async def _substrat_treffer(
@@ -320,8 +382,11 @@ async def search_archive(
     auf `k`. KEIN Score-Feld nach außen.
     """
     selected = tuple(sources) if sources is not None else ALL_SOURCES
-    # (quelleninterner 1-basierter Rang, Treffer) — über alle Quellen gesammelt.
-    ranked: list[tuple[int, ArchiveHit]] = []
+    # Je Quelle EINE Rangliste, in fester Reihenfolge. Die Reihenfolge ist nicht
+    # gleichgültig: Bei gleichem Punktestand und gleichem Zeitstempel entscheidet
+    # am Ende der Vorgangsschlüssel — aber welcher Treffer VERTRETER eines
+    # zusammengeführten Vorgangs wird, hängt daran, welche Liste zuerst kam.
+    listen: list[tuple[SourceType, Sequence[ArchiveHit]]] = []
 
     if "note" in selected:
         notes = await embed_and_search_hybrid(
@@ -333,27 +398,26 @@ async def search_archive(
             k=k,
             max_distance=max_distance,
         )
-        ranked.extend((rank, _note_hit(note)) for rank, note in enumerate(notes, start=1))
+        listen.append(("note", [_note_hit(note) for note in notes]))
 
     if "maintenance" in selected:
         ids = await _fulltext_ids(
             session, "maintenance_events", q, machine_id=machine_id, scope=scope, k=k
         )
         events = await _fetch_maintenance(session, ids)
-        ranked.extend((rank, _maintenance_hit(event)) for rank, event in enumerate(events, start=1))
+        listen.append(("maintenance", [_maintenance_hit(event) for event in events]))
 
     if "alarm" in selected:
         ids = await _fulltext_ids(session, "alarms", q, machine_id=machine_id, scope=scope, k=k)
         alarms = await _fetch_alarms(session, ids)
-        ranked.extend((rank, _alarm_hit(alarm)) for rank, alarm in enumerate(alarms, start=1))
+        listen.append(("alarm", [_alarm_hit(alarm) for alarm in alarms]))
 
     if "memory" in selected:
         erinnerungen = await _substrat_treffer(
             substrate, q, machine_id=machine_id, scope=scope, k=substrate_k
         )
-        ranked.extend((rang, hit) for rang, hit in enumerate(erinnerungen, start=1))
+        listen.append(("memory", erinnerungen))
 
-    ranked.sort(key=_rrf_key)
-    # Erst entdoppeln, DANN kürzen: Sonst hinterliesse jede entfernte Dublette
-    # eine Lücke, statt einen echten Treffer nachrücken zu lassen.
-    return [hit for _rank, hit in _ohne_doppelfunde(ranked)[:k]]
+    # Zusammenführen, DANN kürzen: Sonst hinterliesse jeder zusammengeführte
+    # Vorgang eine Lücke, statt einen echten Treffer nachrücken zu lassen.
+    return _fusioniere(listen, k)

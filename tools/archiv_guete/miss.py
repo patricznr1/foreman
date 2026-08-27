@@ -100,17 +100,26 @@ def suche(oeffner, frage: dict, quellen: list[str], k: int) -> tuple[list[dict],
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
+    # ALLE DREI ANGABEN SIND PFLICHT — keine Vorgaben mehr.
+    #
+    # Anfragedatei und Quellen waren bis zum 27.08.2026 waehlbar MIT VORGABE. Das
+    # war der halbe Schritt: Wer den Pfad vergisst, bekommt weiterhin ein
+    # Ergebnis, nur gegen die ALTEN Anfragen — und die Kennzahlen sehen dann aus
+    # wie ein Urteil ueber die Suche statt wie ein Verdrahtungsfehler. Genau so
+    # ist es an einem Tag zweimal passiert (hier und in `werte_aus.py`).
+    # Ohne Vorgabe kann der Fehler nicht mehr eintreten.
+    if len(sys.argv) != 4:
         raise SystemExit(
-            "Aufruf: python miss.py <lauf-name> [quelle,quelle,...] [anfragedatei.yaml]"
+            "Aufruf: python miss.py <lauf-name> <quelle,quelle,...> <anfragedatei.yaml>\n"
+            "        Alle drei Angaben sind Pflicht — eine Vorgabe waere die\n"
+            "        Gelegenheit, gegen den falschen Bestand zu messen.\n"
+            "  Beispiel: python miss.py q3_note note goldset_v2_anfragen.yaml"
         )
     lauf = sys.argv[1]
-    quellen = (sys.argv[2] if len(sys.argv) > 2 else "note,maintenance,alarm").split(",")
-    # Die Anfragedatei ist waehlbar, seit es einen ZWEITEN Bewertungssatz gibt
-    # (27.08.2026). Vorher stand der Pfad fest — ein Lauf gegen das neue Goldset
-    # nahm stillschweigend die alten Anfragen und schrieb ein plausibles,
-    # falsches Ergebnis. Der Name des Bestandes steht deshalb jetzt IM Ergebnis.
-    anfragedatei = sys.argv[3] if len(sys.argv) > 3 else "goldset_anfragen.yaml"
+    quellen = sys.argv[2].split(",")
+    # Der Name des Bestandes steht ausserdem IM Ergebnis, damit ein Lauf hinterher
+    # seinem Massstab zuzuordnen ist.
+    anfragedatei = sys.argv[3]
 
     anfragen, k = lade_anfragen(anfragedatei)
     print(f"📋 {len(anfragen)} Anfragen aus {anfragedatei}, k={k}, Quellen={quellen}")
@@ -143,6 +152,14 @@ def main() -> None:
                         "source_type": t["source_type"],
                         "id": t["id"],
                         "machine_id": t.get("machine_id"),
+                        # Der Zeitstempel ist der Tiebreaker der Fusion. Ohne ihn
+                        # laesst sich aus Einzelquellen-Laeufen keine Fusion
+                        # nachbilden — die Rohdatei waere nur fuer die eine
+                        # Zusammenstellung brauchbar, mit der sie erhoben wurde.
+                        "timestamp": t.get("timestamp"),
+                        # Welche Quellen den Vorgang gefunden haben (Backend ab
+                        # 27.08.2026). Fehlt bei aelteren Laeufen.
+                        "gefunden_von": t.get("gefunden_von") or [],
                         "excerpt": t.get("excerpt", ""),
                         "detail": t.get("detail") or {},
                     }

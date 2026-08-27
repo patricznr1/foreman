@@ -6,7 +6,7 @@
 //         mehrere Treffer dieselbe id tragen — Erinnerungen tragen alle id=0.
 // ============================================================
 import { describe, expect, it } from "vitest";
-import { SOURCE_GLYPH, SOURCE_LABEL, hitKey } from "./source";
+import { SOURCE_GLYPH, SOURCE_LABEL, bestaetigungsLabel, hitKey } from "./source";
 import type { ArchiveHitView, SourceType } from "./types";
 
 /** Alle Quelltypen — bewusst hier wiederholt, damit eine neue Quelle auffaellt. */
@@ -21,6 +21,7 @@ function treffer(teil: Partial<ArchiveHitView>): ArchiveHitView {
     excerpt: "Auszug",
     detail: {},
     rank: 0,
+    foundBy: ["note"],
     ...teil,
   };
 }
@@ -90,5 +91,34 @@ describe("hitKey", () => {
     ];
     const schluessel = liste.map(hitKey);
     expect(new Set(schluessel).size).toBe(liste.length);
+  });
+});
+describe("bestaetigungsLabel", () => {
+  it("nennt das Gedaechtnis, wenn es denselben Vorgang mitgefunden hat", () => {
+    // Der Fall, um den es beim Umbau vom 27.08.2026 geht: Vorher wurde die
+    // Erinnerung genau hier weggeworfen. Jetzt hebt sie den Treffer — und ohne
+    // dieses Label saehe der Werker die Hebung, nicht aber ihren Grund.
+    const label = bestaetigungsLabel(treffer({ source: "note", foundBy: ["note", "memory"] }));
+    expect(label).toBe("Auch im Gedächtnis");
+  });
+
+  it("sagt nichts, wenn nur eine Quelle gefunden hat", () => {
+    // AUFBAU-KONTROLLE: Ein Label, das immer erscheint, belegt nichts. Es waere
+    // schlimmer als keines — es behauptete Einigkeit, wo eine Quelle allein steht.
+    expect(bestaetigungsLabel(treffer({ source: "note", foundBy: ["note"] }))).toBeNull();
+  });
+
+  it("sagt nichts bei einem eigenstaendigen Gedaechtnis-Treffer", () => {
+    // Das ist der Zusatznutzen der vierten Quelle, nicht ihre Bestaetigung:
+    // Ein Treffer, den nur das Gedaechtnis kennt, ist keine zweite Meinung.
+    expect(bestaetigungsLabel(treffer({ source: "memory", foundBy: ["memory"] }))).toBeNull();
+  });
+
+  it("behauptet keine Paarung, die es nicht gibt", () => {
+    // Zwei EIGENE Quellen koennen denselben Vorgang nicht finden — ihre
+    // Schluessel tragen den Quelltyp. Der allgemeine Zweig bleibt trotzdem
+    // ehrlich statt "Auch im Gedaechtnis" zu raten.
+    const label = bestaetigungsLabel(treffer({ source: "note", foundBy: ["note", "alarm"] }));
+    expect(label).toBe("Von mehreren Quellen bestätigt");
   });
 });

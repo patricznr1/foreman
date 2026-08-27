@@ -99,10 +99,17 @@ class Settings(BaseSettings):
     # Volltext-Match) verworfen wird — der Riegel gegen semantisch-vages Auffüllen.
     # Ein Kandidat bleibt nur, wenn er einen Volltext-Match hat ODER seine Distanz
     # unter dieser Schwelle liegt. Bereich der Cosine-Distanz bei L2-normierten
-    # Vektoren: 0 (identisch) … 2 (entgegengesetzt); konservativer Start 0.55, auf
-    # Realdaten ohne Redeploy justierbar (kleiner = strenger).
+    # Vektoren: 0 (identisch) … 2 (entgegengesetzt); kleiner = strenger.
+    #
+    # 0.60 ist der GEMESSENE Wert (C-048, 24.08.2026), nicht mehr der frühere
+    # konservative Start 0.55. Er stand bis hierher ausschliesslich in einer
+    # Umgebungsvariable der laufenden Instanz — eine erhobene Kalibrierung, die
+    # kein Redeploy von einem anderen Rechner überlebt und die kein Prüflauf je
+    # zu sehen bekam. Der Geltungsbereich (gegen welches Einbettungsmodell
+    # erhoben) steht in `embeddings.kalibrierung.ARCHIV_VEKTOR_GRENZWERT`; der
+    # Start meldet, solange er unbelegt ist.
     archive_vector_max_distance: float = Field(
-        default=0.55,
+        default=0.60,
         ge=0.0,
         le=2.0,
         validation_alias="FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE",
