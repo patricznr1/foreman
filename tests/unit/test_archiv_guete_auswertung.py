@@ -334,3 +334,84 @@ def test_die_beurteilte_menge_wird_neben_dem_bewertungssatz_gesucht(
 
     assert gefunden == {"B01": {"note:7": 2}}
     assert fehlend is None
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Keine Vorgabewerte mehr — der Fehler soll gar nicht mehr eintreten können
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _miss() -> Any:
+    """Lädt das Erhebungswerkzeug (Modul-Ebene ist nebenwirkungsfrei)."""
+    pfad = Path(__file__).resolve().parents[2] / "tools" / "archiv_guete" / "miss.py"
+    spec = importlib.util.spec_from_file_location("archiv_guete_miss", pfad)
+    assert spec is not None and spec.loader is not None
+    modul = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = modul
+    spec.loader.exec_module(modul)
+    return modul
+
+
+def test_die_auswertung_verlangt_den_bewertungssatz(werte_aus: Any, monkeypatch: Any) -> None:
+    """Ohne Bewertungssatz gibt es KEIN Ergebnis mehr, auch kein falsches.
+
+    Bis zum 27.08.2026 stand `goldset.json` als Vorgabe da. Wer den Pfad vergass,
+    bekam trotzdem Zahlen — gerechnet gegen die Urteile eines ANDEREN Bestandes.
+    Kein Schlüssel passte, alles wurde null, und es las sich wie ein Urteil über
+    die Suche. Wählbar-mit-Vorgabe war der halbe Schritt: Der Fehler blieb
+    möglich, er wurde nur unwahrscheinlicher.
+    """
+    monkeypatch.setattr(sys, "argv", ["werte_aus.py", "messung_irgendwas.json"])
+
+    with pytest.raises(SystemExit):
+        werte_aus.main()
+
+
+def test_die_auswertung_erkennt_den_vertauschten_bewertungssatz(
+    werte_aus: Any, monkeypatch: Any
+) -> None:
+    """AUFBAU-KONTROLLE zur Reihenfolge: Eine Rohdatei an letzter Stelle wird
+    abgewiesen.
+
+    Ohne diese Prüfung führte der Dreher zu genau demselben Bild wie die
+    vergessene Angabe — null passende Schlüssel, lauter Nullen, plausibel.
+    Die Pflichtangabe allein schützt davor nicht.
+    """
+    monkeypatch.setattr(sys, "argv", ["werte_aus.py", "goldset_v3.json", "messung_v2_basis.json"])
+
+    with pytest.raises(SystemExit):
+        werte_aus.main()
+
+
+def test_die_erhebung_verlangt_alle_drei_angaben(monkeypatch: Any) -> None:
+    """Dieselbe Klasse im Erhebungsschritt: die Anfragedatei war vorbelegt.
+
+    Ein Lauf gegen den neuen Bestand nahm damit stillschweigend die ALTEN
+    Anfragen — und schrieb eine Rohdatei, die aussah wie jede andere.
+    """
+    miss = _miss()
+    monkeypatch.setattr(sys, "argv", ["miss.py", "lauf", "note"])
+
+    with pytest.raises(SystemExit):
+        miss.main()
+
+
+def test_die_erhebung_laeuft_mit_allen_drei_angaben_an(monkeypatch: Any) -> None:
+    """AUFBAU-KONTROLLE: Der Wächter darf einen vollständigen Aufruf nicht abweisen.
+
+    Geprüft wird bis zur ANMELDUNG — weiter kommt der Lauf ohne Instanz nicht,
+    und genau das belegt, dass die Argumentprüfung durchgelassen hat. Ohne diesen
+    Zwilling liesse sich die Bedingung auf „vier Argumente" verschärfen, und der
+    richtige Aufruf bräche mit derselben Meldung ab wie der falsche.
+    """
+    miss = _miss()
+    monkeypatch.setattr(sys, "argv", ["miss.py", "lauf", "note", "goldset_v2_anfragen.yaml"])
+    monkeypatch.setattr(miss, "lade_anfragen", lambda pfad: ([], 10))
+
+    def _keine_anmeldung() -> None:
+        raise SystemExit("bis hierher gekommen")
+
+    monkeypatch.setattr(miss, "melde_an", _keine_anmeldung)
+
+    with pytest.raises(SystemExit, match="bis hierher gekommen"):
+        miss.main()

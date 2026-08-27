@@ -411,16 +411,34 @@ def vergleiche(basis: dict, neu: dict) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
+    # DER BEWERTUNGSSATZ IST PFLICHT UND STEHT IMMER ZULETZT.
+    #
+    # Er war bis zum 27.08.2026 waehlbar MIT VORGABE `goldset.json` — und genau
+    # diese Vorgabe hat an einem Tag zweimal zugeschlagen: Ein Lauf gegen den
+    # neuen Bestand rechnete stillschweigend gegen die ALTEN Urteile, kein
+    # Schluessel passte, alle Kennzahlen wurden null. Das las sich wie ein
+    # vernichtendes Urteil ueber die Suche statt wie ein Verdrahtungsfehler.
+    #
+    # Waehlbar-mit-Vorgabe war der halbe Schritt: Wer den Pfad vergisst, bekommt
+    # weiterhin ein Ergebnis, nur das falsche. Ohne Vorgabe kann der Fehler nicht
+    # mehr eintreten. Die Zahl der Argumente entscheidet, ob verglichen wird —
+    # damit braucht es keine Schalter und keine Reihenfolge zum Merken:
+    #   werte_aus.py <messung.json> <goldset.json>
+    #   werte_aus.py <messung.json> <vergleich.json> <goldset.json>
+    if len(sys.argv) not in (3, 4):
         raise SystemExit(
-            "Aufruf: python werte_aus.py <messung.json> [<vergleich.json>] [<goldset.json>]"
+            "Aufruf: python werte_aus.py <messung.json> [<vergleich.json>] <goldset.json>\n"
+            "        Der Bewertungssatz steht IMMER zuletzt und ist Pflicht."
         )
-    # Das Goldset ist waehlbar, seit es einen ZWEITEN Bewertungssatz gibt
-    # (27.08.2026). Vorher stand der Pfad fest, und ein Lauf gegen den neuen
-    # Bestand rechnete stillschweigend gegen die alten Urteile: Kein Schluessel
-    # passte, alle Kennzahlen wurden null, und das Ergebnis sah aus wie ein
-    # Messergebnis. Genau derselbe Fehler steckte in `miss.py`.
-    goldset_pfad = sys.argv[3] if len(sys.argv) > 3 else "goldset.json"
+    goldset_pfad = sys.argv[-1]
+    messungen = sys.argv[1:-1]
+    # AUFBAU-KONTROLLE gegen den Dreher: Eine Rohdatei als Bewertungssatz
+    # uebergeben ergaebe wieder null passende Schluessel — dieselbe Klasse.
+    if "messung" in goldset_pfad:
+        raise SystemExit(
+            f"❌ {goldset_pfad} sieht nach einer Rohdatei aus, nicht nach einem "
+            "Bewertungssatz. Der Bewertungssatz steht ZULETZT."
+        )
     goldset = lade_goldset(goldset_pfad)
 
     pruefe_goldset(goldset, goldset_pfad)
@@ -434,10 +452,10 @@ def main() -> None:
             "   Erzeugen mit: python baue_goldset_v3.py --schreiben"
         )
 
-    basis = werte_lauf(sys.argv[1], goldset, beurteilte)
+    basis = werte_lauf(messungen[0], goldset, beurteilte)
     zeige(basis)
-    if len(sys.argv) > 2:
-        neu = werte_lauf(sys.argv[2], goldset, beurteilte)
+    if len(messungen) > 1:
+        neu = werte_lauf(messungen[1], goldset, beurteilte)
         zeige(neu)
         vergleiche(basis, neu)
 

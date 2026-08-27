@@ -26,15 +26,42 @@ kein Fehltreffer.
 
 ## Dateien
 
+> **Es gibt ZWEI Bestände.** `goldset_anfragen.yaml` + `goldset.json` gehören zum
+> alten Bestand (18 Anfragen, 36 Einträge), `goldset_v2_anfragen.yaml` +
+> `goldset_v3.json` zum erweiterten (10 Anfragen, 365 Einträge). Sie lassen sich
+> nicht mischen: Kein Schlüssel passt, alle Kennzahlen werden null — und das liest
+> sich wie ein vernichtendes Urteil über die Suche statt wie ein Verdrahtungsfehler.
+> Genau deshalb haben `miss.py` und `werte_aus.py` seit dem 27.08.2026 **keine
+> Vorgabewerte mehr**: Beide Pfade sind Pflichtangaben.
+
+### Aktueller Bestand (erweitert, 27.08.2026)
+
+| Datei | Rolle |
+|---|---|
+| `goldset_v2_anfragen.yaml` | 10 Anfragen eines Inbetriebnehmers, wörtlich übernommen (samt Tippfehler) |
+| `goldset_v2_zuordnung.json` | Vorgangskürzel (`SN-070`) → Datenbank-Schlüssel (`note:16`) |
+| `gegenprobe/relevanz_urteile_2026-08-27.txt` | die Rohurteile, 135 Paare, Stufen 0/1/2 |
+| `baue_goldset_v3.py` | erzeugt daraus **reproduzierbar** die beiden Dateien darunter und prüft gegen den vorhandenen Satz |
+| `goldset_v3.json` | die **zutreffenden** Einträge (80: 43 Stufe 2, 37 Stufe 1) |
+| `beurteilt_v3.json` | **alle** beurteilten Einträge, auch die Nullen — Grundlage der verdichteten Ranggüte |
+
+### Werkzeuge
+
+| Datei | Rolle |
+|---|---|
+| `miss.py` | erhebt gegen die laufende Instanz (Schritt 1) |
+| `neu_fusionieren.py` | baut aus Einzelquellen-Läufen das fusionierte Ergebnis — misst eine Fusionsänderung **ohne Deploy** |
+| `werte_aus.py` | wertet aus, prüft beide Schwellen und rechnet den Permutationstest (Schritt 2) |
+| `messung_*.json` | Rohdaten der Läufe — nach der Erhebung wird an ihnen nichts mehr geändert |
+
+### Alter Bestand (18 Anfragen, bis 25.08.2026)
+
 | Datei | Rolle |
 |---|---|
 | `goldset_anfragen.yaml` | 18 Anfragen mit Absicht — **ohne** Relevanzurteil |
 | `bestand_flach.json` | der gelesene Bestand (36 Einträge), Grundlage der Beurteilung |
-| `goldset.json` | die verdichteten Relevanzurteile — das eigentliche Goldset |
+| `goldset.json` | die verdichteten Relevanzurteile |
 | `baue_goldset.py` | verdichtet mehrere unabhängige Urteile per Mehrheit |
-| `miss.py` | erhebt (Schritt 1) |
-| `werte_aus.py` | wertet aus und prüft beide Schwellen (Schritt 2) |
-| `messung_*.json` | Rohdaten der Läufe — nach der Erhebung wird an ihnen nichts mehr geändert |
 
 ## Anwenden
 
@@ -42,17 +69,37 @@ kein Fehltreffer.
 export FOREMAN_DEMO_URL=https://…
 export FOREMAN_DEMO_EMAIL=…
 export FOREMAN_DEMO_PASSWORT=…
-
-python miss.py baseline note,maintenance,alarm
-python werte_aus.py messung_baseline.json
 ```
 
-Zwei Läufe vergleichen — die Schwellen aus §15.10 werden dabei direkt geprüft:
+Zwei Läufe vergleichen — die Schwellen aus §15.10 werden dabei direkt geprüft.
+**Der Bewertungssatz steht immer zuletzt**, Anfragedatei und Quellen sind Pflicht:
 
 ```bash
-python miss.py mit_gedaechtnis note,maintenance,alarm,memory
-python werte_aus.py messung_baseline.json messung_mit_gedaechtnis.json
+python miss.py basis note,maintenance,alarm goldset_v2_anfragen.yaml
+python miss.py gedaechtnis note,maintenance,alarm,memory goldset_v2_anfragen.yaml
+python werte_aus.py messung_basis.json messung_gedaechtnis.json goldset_v3.json
 ```
+
+### Eine Fusionsänderung messen, bevor sie ausgerollt ist
+
+Einzelquellen-Listen hängen **nicht** an der Fusion: `sources=note` liefert dieselbe
+Rangfolge, egal wie danach zusammengeführt wird. Einmal je Quelle erheben, dann
+lokal mit der Fusionsfunktion des Quelltextes zusammenführen:
+
+```bash
+python miss.py q_note note goldset_v2_anfragen.yaml
+python miss.py q_maintenance maintenance goldset_v2_anfragen.yaml
+python miss.py q_alarm alarm goldset_v2_anfragen.yaml
+python miss.py q_memory memory goldset_v2_anfragen.yaml
+
+python neu_fusionieren.py neu_basis messung_q_note.json messung_q_maintenance.json messung_q_alarm.json
+python neu_fusionieren.py neu_gedaechtnis messung_q_note.json messung_q_maintenance.json messung_q_alarm.json messung_q_memory.json
+python werte_aus.py messung_neu_basis.json messung_neu_gedaechtnis.json goldset_v3.json
+```
+
+> Die Erhebung läuft gegen die **ausgerollte** Instanz, die Fusion gegen den
+> **lokalen** Quelltext. Das ist kein Behelf, sondern die saubere Trennung —
+> und es erspart einen Deploy je Variante.
 
 > **Ohne den Schalter misst der zweite Lauf dasselbe wie der erste.**
 > `FOREMAN_ARCHIVE_SUBSTRATE_ENABLED` muss auf der gemessenen Instanz `true` sein. Steht er
