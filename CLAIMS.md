@@ -88,6 +88,7 @@ Stand: 2026-08-27
 | C-086 | Freigabe-Bedingung 1 fragt seit dem 27.08.2026, ob die Trefferquote einer Anfrage SINKT — nicht mehr, ob ein einzelner Treffer herausfaellt. | gemessen | Dritte Fassung. Am selben Lauf: 0 von 10 Anfragen nach der geltenden Lesart, 2 von 10 nach der vorigen | 2026-08-27 | gueltig | intern |
 | C-087 | Die Archiv-Suche gibt 15 Treffer aus, und diese Zahl steht an genau einer Stelle. | gemessen | ARCHIV_AUSGABELAENGE = 15; vorher Backend 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
 | C-088 | Mit der zusammenfuehrenden Fusion und 15 Plaetzen ist Freigabe-Bedingung 1 erfuellt, und der Gewinn an Rangguete ist statistisch gezeigt. | gemessen | Trefferquote 0,565 auf 0,641 (p=0,062) · Rangguete 0,493 auf 0,585 (p=0,016) · verdichtet 0,542 auf 0,644 (p=0,020) · 0 von 10 Anfragen mit gesunkener Trefferquote, 5 von 10 mit Zusatztreffer | 2026-08-27 | gueltig | intern |
+| C-089 | Produktiv laeuft das Cloud-Einbettungsmodell text-embedding-3-small ohne lokalen Ausweichpfad. | gemessen | FOREMAN_EMBED_PRIORITY = openai_only, FOREMAN_EMBED_OPENAI_MODEL = text-embedding-3-small | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -104,17 +105,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 86
+Einträge gesamt: 87
 
 Nach Status:
 
-- gemessen: 79
+- gemessen: 80
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 80
+- gueltig: 81
 - ueberholt: 6
 - ungeprueft: 0
