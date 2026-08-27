@@ -57,6 +57,28 @@ describe("GET /api/ws-ticket (BFF)", () => {
     expect(response.status).toBe(502);
   });
 
+  it("abgelaufenes Token (Backend 401) → 401, NICHT 502", async () => {
+    // Das Backend antwortet auf ein abgelaufenes Token mit 401
+    // (api/middleware.py). Ein 502 hier meldete eine abgelaufene Sitzung als
+    // Ausfall und schickte die Fehlersuche ins Netz. Kontroll-Zwilling ist der
+    // Erfolgsfall oben (200) und der Ausfall-Fall (500 → 502) darüber: derselbe
+    // Aufbau liefert drei verschiedene Codes, ein pauschaler Handler fiele auf.
+    mockedGetSessionToken.mockResolvedValue("ABGELAUFENES_JWT");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ detail: "Ungültiges oder abgelaufenes Token" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const response = await GET();
+
+    expect(response.status).toBe(401);
+    const body = (await response.json()) as { detail: string };
+    expect(body.detail).toBe("Sitzung abgelaufen — bitte neu anmelden");
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+
   it("502 wenn das Ticket kein String ist (strikte Validierung)", async () => {
     mockedGetSessionToken.mockResolvedValue("SESSION_JWT");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(

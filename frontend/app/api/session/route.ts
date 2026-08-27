@@ -7,6 +7,7 @@
 // ============================================================
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { invalidFields, isClientError } from "@/lib/api/backend-error";
 import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
@@ -18,6 +19,33 @@ import {
 interface LoginBody {
   email?: string;
   password?: string;
+}
+
+/**
+ * Beanstandetes Feld → Satz in Hallensprache.
+ *
+ * Das Backend prüft die Anmeldedaten mit Pydantic (`schemas/auth.py`): `EmailStr`
+ * für die Adresse, 1–72 Zeichen fürs Passwort (bcrypt verarbeitet max. 72 Byte).
+ * Beides ergibt 422 — ein EINGABE-Fehler, der auch als solcher am Terminal
+ * ankommen muss.
+ */
+const LOGIN_FIELD_MESSAGES: Record<string, string> = {
+  email: "E-Mail-Adresse hat kein gültiges Format",
+  password: "Passwort hat kein zulässiges Format (1 bis 72 Zeichen)",
+};
+
+/** Wenn das Backend ein Feld beanstandet, das hier nicht steht (oder keines nennt). */
+const LOGIN_INPUT_FALLBACK = "Eingabe wurde abgelehnt — bitte E-Mail und Passwort prüfen";
+
+/** Übersetzt einen 422-Body in einen Satz für die Halle; nennt nie ein geratenes Feld. */
+function loginInputMessage(payload: unknown): string {
+  for (const field of invalidFields(payload)) {
+    const message = LOGIN_FIELD_MESSAGES[field];
+    if (message !== undefined) {
+      return message;
+    }
+  }
+  return LOGIN_INPUT_FALLBACK;
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -37,6 +65,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
     if (loginResponse.status === 401) {
       return NextResponse.json({ detail: "Ungültige Anmeldedaten" }, { status: 401 });
+    }
+    // Jedes andere 4xx beanstandet die EINGABE, nicht den Dienst. Ohne diesen
+    // Zweig meldete eine E-Mail in ungültigem Format (Backend: 422) hier
+    // „Authentifizierungsdienst nicht erreichbar" — und die Fehlersuche ging in
+    // Netz, DNS und Deployment statt ins Eingabefeld.
+    if (isClientError(loginResponse.status)) {
+      const payload = (await loginResponse.json().catch(() => null)) as unknown;
+      return NextResponse.json({ detail: loginInputMessage(payload) }, { status: 400 });
     }
     if (!loginResponse.ok) {
       return NextResponse.json(
