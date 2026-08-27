@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Die drei durchsuchbaren Archiv-Quellen.
 # "memory" ist die vierte Quelle (Substrat-Veredelung): ein Treffer aus dem
@@ -29,10 +29,17 @@ class ArchiveHit(BaseModel):
     Alarm→raised_at). `excerpt` ist der durchsuchbare Freitext gekürzt (Notiz→text,
     Wartung→description, Alarm→message). `detail` trägt quellenspezifische, PII-freie
     Anzeige-Attribute: Notiz→{shift}; Wartung→{type}; Alarm→{severity, category, code};
-    Gedaechtnis→{herkunft} plus, falls bekannt, {quelle, quelle_id} als Rueckweg auf
+    Gedaechtnis→{herkunft} plus, falls bekannt, {quelle: {art, id}} als Rueckweg auf
     die Zeile, aus der die Erinnerung entstand. Fuer Altbestand fehlt dieser Rueckweg —
     er wird NICHT geraten (siehe substrate/backfill.py::herkunft_ergaenzen).
     Reihenfolge der Liste = globaler RRF-Rang; KEIN Score-Feld nach außen.
+
+    `source_type` sagt, WAS der ausgelieferte Treffer ist. `gefunden_von` sagt,
+    WELCHE Quellen ihn gefunden haben — beides kann auseinanderfallen, seit die
+    Fusion denselben Vorgang aus mehreren Ranglisten zusammenführt: Eine Notiz,
+    die auch das Gedächtnis kennt, kommt als `note` mit `["note", "memory"]`. Das
+    ist die einzige Stelle, an der Einigkeit zwischen Quellen nach außen sichtbar
+    wird; ohne sie sähe ein bestätigter Treffer aus wie ein Einzelfund.
     """
 
     source_type: SourceType
@@ -41,3 +48,7 @@ class ArchiveHit(BaseModel):
     timestamp: datetime
     excerpt: str
     detail: dict[str, Any]
+    # Leer nur, solange ein Treffer nicht durch die Fusion gelaufen ist (Bau in
+    # `_note_hit` & Co.). Was `search_archive` ausliefert, trägt IMMER mindestens
+    # eine Quelle — `tests/archive/test_fusion.py` fordert das ein.
+    gefunden_von: list[SourceType] = Field(default_factory=list)

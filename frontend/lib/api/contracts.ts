@@ -425,6 +425,19 @@ export interface ArchiveHit {
   timestamp: string; // ISO 8601
   excerpt: string;
   detail: ArchiveHitDetail;
+  /**
+   * Welche Quellen diesen Vorgang gefunden haben (Backend ab 27.08.2026).
+   *
+   * `source_type` sagt, WAS der Treffer ist; `gefunden_von` sagt, WER ihn fand.
+   * Seit die Fusion denselben Vorgang aus mehreren Ranglisten zusammenführt,
+   * fällt beides auseinander: Eine Notiz, die auch das Gedächtnis kennt, kommt
+   * als `note` mit `["note", "memory"]` — sie wurde bestätigt, nicht nur
+   * gefunden. Mehr als ein Eintrag heisst: zwei Quellen sind sich einig.
+   *
+   * Optional, weil eine ältere Backend-Fassung das Feld nicht mitschickt; die
+   * Anzeige muss dann ohne die Auskunft auskommen statt zu brechen.
+   */
+  gefunden_von?: ArchiveSourceType[];
 }
 
 /**

@@ -37,6 +37,8 @@ from foreman.api.routers import (
 from foreman.archive.router import router as archive_router
 from foreman.config import Settings, get_settings
 from foreman.db.session import dispose_engine, init_engine
+from foreman.embeddings.config import get_embedding_settings
+from foreman.embeddings.kalibrierung import offene_meldungen
 from foreman.llm.errors import BackendUnavailable, GatewayTimeout, RateLimited
 from foreman.logging_setup import ALERT, INFO, OK, get_logger, setup_logging
 from foreman.notes.router import router as notes_search_router
@@ -160,6 +162,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         init_engine(cfg)
         logger.info("%s FOREMAN startet (env=%s)", INFO, cfg.environment)
+        # Erhobene Grenzwerte gegen das laufende Einbettungsmodell halten. Ein
+        # Grenzwert, der für ein anderes Modell bestimmt wurde, fällt STILL aus:
+        # Die Suche verwirft mehr oder weniger als gemeint, und das sieht von
+        # aussen aus wie ein leeres Archiv (C-048). Der Start bricht deshalb NICHT
+        # ab — die Anwendung ist benutzbar, der Wert nur unbelegt.
+        for meldung in offene_meldungen(get_embedding_settings()):
+            logger.warning("%s Kalibrierung ungeprüft: %s", ALERT, meldung)
         await _startup_substrate_smoke(cfg)
         # Live-Push (F5): ein LISTEN-Listener + Hub pro Worker.
         await start_dashboard_push(app, cfg)

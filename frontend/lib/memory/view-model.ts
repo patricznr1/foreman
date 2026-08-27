@@ -69,6 +69,10 @@ export function assembleArchiveResult(
       excerpt: hit.excerpt,
       detail: hit.detail,
       rank: index,
+      // Faellt das Feld weg (aeltere Backend-Fassung) oder kommt es leer, steht
+      // die eigene Quelle allein da. Eine leere Liste waere schlimmer als eine
+      // fehlende Auskunft: Die Anzeige laese sie als "niemand hat das gefunden".
+      foundBy: hit.gefunden_von?.length ? hit.gefunden_von : [hit.source_type],
     })),
     total: hits.length,
   };

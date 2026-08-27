@@ -18,8 +18,7 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from foreman.archive.schemas import ArchiveHit
-from foreman.archive.search import _ohne_doppelfunde, search_archive
+from foreman.archive.search import search_archive
 from foreman.substrate.client import SubstrateClient
 
 
@@ -117,8 +116,12 @@ async def test_maschinen_filter_wirkt_auch_auf_erinnerungen() -> None:
     Abruf ist semantisch und kennt ihn nicht — nachgefiltert wird trotzdem,
     sonst behauptete ein Treffer eine Zugehörigkeit, die niemand geprüft hat."""
     substrate = _mit_treffern(
-        _erinnerung(metadata={"machine_id": 3}),
-        _erinnerung(metadata={"machine_id": 7}, content="Anderer Vorfall"),
+        _erinnerung(id="aaaaaaaa-0000-0000-0000-000000000001", metadata={"machine_id": 3}),
+        _erinnerung(
+            id="aaaaaaaa-0000-0000-0000-000000000002",
+            metadata={"machine_id": 7},
+            content="Anderer Vorfall",
+        ),
     )
 
     treffer = await _nur_gedaechtnis(substrate, machine_id=3)
@@ -135,9 +138,19 @@ async def test_erinnerung_ohne_maschine_faellt_bei_gesetztem_filter_heraus() -> 
 
 
 async def test_ohne_filter_bleiben_alle() -> None:
+    """Die beiden Kennungen sind ausdrücklich VERSCHIEDEN.
+
+    Die Fusion führt seit dem 27.08.2026 auf den Vorgang zusammen; zwei Treffer
+    mit derselben Substrat-Kennung sind dieselbe Erinnerung, zweimal geliefert,
+    und belegen einen Platz. Die Vorlage prägte vorher beide mit DERSELBEN
+    Kennung — zwei Erinnerungen, die es so nicht geben kann. Solange die
+    Zusammenführung fehlte, fiel das nicht auf.
+    """
     substrate = _mit_treffern(
-        _erinnerung(metadata={"machine_id": 3}),
-        _erinnerung(metadata={}, content="ohne Maschine"),
+        _erinnerung(id="bbbbbbbb-0000-0000-0000-000000000001", metadata={"machine_id": 3}),
+        _erinnerung(
+            id="bbbbbbbb-0000-0000-0000-000000000002", metadata={}, content="ohne Maschine"
+        ),
     )
 
     assert len(await _nur_gedaechtnis(substrate)) == 2
@@ -239,14 +252,9 @@ def test_gedaechtnis_gehoert_zu_den_waehlbaren_quellen() -> None:
     assert "memory" in ALL_SOURCES
 
 
-def test_erinnerungen_mischen_sich_unter_die_eigenen_treffer() -> None:
-    """Die Fusion ordnet nach quelleninternem Rang — eine Erinnerung auf Rang 1
-    steht damit vor einem eigenen Treffer auf Rang 2, nicht hinter allen."""
-    from foreman.archive.search import _rrf_key
-
-    rang_eins = _rrf_key((1, MagicMock(timestamp=datetime.now(UTC), source_type="memory", id=0)))
-    rang_zwei = _rrf_key((2, MagicMock(timestamp=datetime.now(UTC), source_type="note", id=5)))
-    assert rang_eins < rang_zwei
+# Dass eine Erinnerung auf Rang 1 vor einem eigenen Treffer auf Rang 2 steht,
+# prueft jetzt tests/archive/test_fusion.py gegen die Fusion selbst statt gegen
+# einen Sortierschluessel, den es so nicht mehr gibt.
 
 
 def test_antwortform_der_fassade_ist_die_gepinnte() -> None:
@@ -373,124 +381,10 @@ async def test_halber_rueckweg_wird_nicht_ausgeliefert(unvollstaendig: dict[str,
 
 
 # ------------------------------------------------------------
-#  Doppelfunde: derselbe Vorgang steht nur einmal in der Liste
+#  Doppelfunde: verschoben nach tests/archive/test_fusion.py
 # ------------------------------------------------------------
-
-
-def _hit(art: str, kennung: int, *, quelle: dict | None = None) -> ArchiveHit:
-    """Ein Treffer, wie ihn die Fusion sieht — knapp gehalten."""
-    detail: dict[str, Any] = {"herkunft": "gedaechtnis"} if art == "memory" else {}
-    if quelle is not None:
-        detail["quelle"] = quelle
-    return ArchiveHit(
-        source_type=art,  # type: ignore[arg-type]
-        id=kennung,
-        machine_id=1,
-        timestamp=datetime(2026, 6, 6, tzinfo=UTC),
-        excerpt="Auszug",
-        detail=detail,
-    )
-
-
-def test_erinnerung_auf_eine_bereits_gelistete_zeile_faellt_weg() -> None:
-    """Dasselbe Ereignis, zwei Ranglisten — aber ein Vorgang.
-
-    Eine Schichtnotiz ist über ihr Embedding als `note` auffindbar und über ihre
-    Spiegelung als `memory`. Ungefiltert rangiert die Fusion denselben Vorgang
-    doppelt hoch: Er verdrängt andere Treffer, ohne mehr zu sagen.
-    """
-    ranked = [
-        (1, _hit("note", 7)),
-        (1, _hit("memory", 0, quelle={"art": "note", "id": 7})),
-        (2, _hit("alarm", 3)),
-    ]
-    behalten = [h for _r, h in _ohne_doppelfunde(ranked)]
-
-    assert [(h.source_type, h.id) for h in behalten] == [("note", 7), ("alarm", 3)]
-
-
-def test_der_eigene_treffer_bleibt_nicht_die_erinnerung() -> None:
-    """Er ist die Quelle, sie die Ableitung.
-
-    AUFBAU-KONTROLLE zur Auflösung: Ohne diese Zusicherung bliebe offen, WELCHER
-    der beiden fällt. Der eigene Treffer trägt die echte Kennung, seine
-    Zeitangabe stammt aus der Datenbank statt aus dem Abruf, und sein Auszug ist
-    der ungekürzte Originaltext — er ist in jeder Hinsicht der belastbarere.
-    """
-    ranked = [
-        # Die Erinnerung steht VORNE — trotzdem muss sie weichen.
-        (1, _hit("memory", 0, quelle={"art": "maintenance", "id": 2})),
-        (5, _hit("maintenance", 2)),
-    ]
-    behalten = [h for _r, h in _ohne_doppelfunde(ranked)]
-
-    assert len(behalten) == 1
-    assert behalten[0].source_type == "maintenance"
-
-
-def test_erinnerung_ohne_rueckweg_bleibt_stehen() -> None:
-    """Altbestand trägt den Rückweg nicht — dann wird NICHT geraten.
-
-    Sie könnte auf denselben Vorgang zeigen oder auf einen anderen; das ist nicht
-    entscheidbar. Eine geratene Entfernung nähme dem Werker einen Treffer, den
-    niemand geprüft hat.
-    """
-    ranked = [(1, _hit("note", 7)), (1, _hit("memory", 0))]
-    behalten = [h for _r, h in _ohne_doppelfunde(ranked)]
-
-    assert len(behalten) == 2
-
-
-def test_erinnerung_auf_eine_NICHT_gelistete_zeile_bleibt() -> None:
-    """Der eigentliche Gewinn der vierten Quelle darf nicht wegfallen.
-
-    Zeigt eine Erinnerung auf einen Vorgang, den keine eigene Quelle gefunden
-    hat, ist sie der einzige Weg dorthin — genau der Fall, in dem die
-    Volltextsuche an deutschen Wortzusammensetzungen scheitert.
-    """
-    ranked = [
-        (1, _hit("note", 7)),
-        (1, _hit("memory", 0, quelle={"art": "maintenance", "id": 2})),
-    ]
-    behalten = [h for _r, h in _ohne_doppelfunde(ranked)]
-
-    assert len(behalten) == 2
-
-
-def test_zwei_erinnerungen_auf_dieselbe_zeile_bleiben_beide_wenn_sie_frei_ist() -> None:
-    """Die Auflösung greift NUR gegen eigene Treffer, nicht untereinander.
-
-    Zwei Erinnerungen zu demselben Vorgang sind ein eigenes Thema (die Gegenstelle
-    kann denselben Vorgang mehrfach erinnern) und hier ausdrücklich nicht gelöst.
-    Ohne diesen Test liesse sich später stillschweigend auch das mit entfernen —
-    und damit ein Verhalten ändern, das niemand geprüft hat.
-    """
-    ranked = [
-        (1, _hit("memory", 0, quelle={"art": "maintenance", "id": 2})),
-        (2, _hit("memory", 0, quelle={"art": "maintenance", "id": 2})),
-    ]
-    behalten = [h for _r, h in _ohne_doppelfunde(ranked)]
-
-    assert len(behalten) == 2
-
-
-def test_die_reihenfolge_der_uebrigen_bleibt_unveraendert() -> None:
-    """Entdoppeln ist kein Umsortieren.
-
-    Die Fusion hat die Reihenfolge bereits bestimmt; hier fällt nur etwas weg.
-    Würde dabei umsortiert, wäre eine Änderung der Rangfolge in einer Funktion
-    versteckt, deren Name das nicht ankündigt.
-    """
-    ranked = [
-        (1, _hit("note", 7)),
-        (1, _hit("memory", 0, quelle={"art": "note", "id": 7})),
-        (2, _hit("alarm", 3)),
-        (3, _hit("maintenance", 9)),
-    ]
-    behalten = [h for _r, h in _ohne_doppelfunde(ranked)]
-
-    assert [(h.source_type, h.id) for h in behalten] == [
-        ("note", 7),
-        ("alarm", 3),
-        ("maintenance", 9),
-    ]
+# Seit dem 27.08.2026 entfernt die Suche Doppelfunde nicht mehr, sondern
+# fuehrt sie auf den VORGANG zusammen und verrechnet ihre Raenge. Damit ist
+# es keine Frage der Substrat-Veredelung mehr, sondern der Fusion ueber alle
+# vier Quellen — jede frueher hier stehende Zusicherung steht dort in ihrer
+# neuen Form, eine davon mit geaendertem Ergebnis.

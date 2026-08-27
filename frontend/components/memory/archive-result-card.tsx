@@ -8,7 +8,7 @@
 //  Architektur-Einordnung: Sektions-Molekül (Schicht 2). Rein präsentational.
 // ============================================================
 import Link from "next/link";
-import { SOURCE_LABEL } from "@/lib/memory/source";
+import { bestaetigungsLabel, SOURCE_LABEL } from "@/lib/memory/source";
 import { relativeTime } from "@/lib/memory/time";
 import type { ArchiveHitView } from "@/lib/memory/types";
 import { cx } from "@/lib/ui/cx";
@@ -53,15 +53,31 @@ function detailChips(hit: ArchiveHitView): string[] {
 export function ArchiveResultCard({ hit, largeCards }: ArchiveResultCardProps) {
   const machineLabel = hit.machineId !== null ? `Maschine ${hit.machineId}` : "ohne Maschinenbezug";
   const chips = detailChips(hit);
+  const bestaetigung = bestaetigungsLabel(hit);
   return (
     <article
-      aria-label={`${SOURCE_LABEL[hit.source]}, ${machineLabel}`}
+      aria-label={
+        bestaetigung
+          ? `${SOURCE_LABEL[hit.source]}, ${machineLabel}, ${bestaetigung}`
+          : `${SOURCE_LABEL[hit.source]}, ${machineLabel}`
+      }
       className={cx(
         "flex flex-col gap-3 rounded-lg border border-line-subtle bg-surface-raised",
         largeCards ? "p-5" : "p-4",
       )}
     >
-      <SourceGlyph source={hit.source} />
+      <div className="flex flex-wrap items-center gap-2">
+        <SourceGlyph source={hit.source} />
+        {/* Der Beleg der Einigkeit steht NEBEN dem Quellen-Glyph, nicht darin:
+            Die Quelle sagt, WAS der Treffer ist; das hier sagt, WER ihn noch
+            gefunden hat. Beides zu vermischen waere genau die Tarnung, die
+            §15.10 ausschliesst. */}
+        {bestaetigung ? (
+          <span className="rounded-full border border-line-subtle px-2 py-0.5 text-caption text-fg-secondary">
+            {bestaetigung}
+          </span>
+        ) : null}
+      </div>
 
       <p className={cx("text-fg-primary", largeCards ? "text-body-l" : "text-body")}>{hit.excerpt}</p>
 

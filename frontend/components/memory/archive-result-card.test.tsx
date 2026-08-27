@@ -18,6 +18,7 @@ function hit(over: Partial<ArchiveHitView> = {}): ArchiveHitView {
     excerpt: "Lager läuft heiß, zu wenig Fett.",
     detail: { shift: "Früh" },
     rank: 0,
+    foundBy: ["note"],
     ...over,
   };
 }
@@ -107,4 +108,36 @@ describe("ArchiveResultCard", () => {
     expect(screen.queryByText(/Klasse/)).not.toBeInTheDocument();
   });
 
+  it("zeigt den Beleg, wenn das Gedaechtnis denselben Vorgang mitgefunden hat", () => {
+    render(
+      <ArchiveResultCard
+        hit={hit({ source: "note", foundBy: ["note", "memory"] })}
+        largeCards={false}
+      />,
+    );
+    expect(screen.getByText("Auch im Gedächtnis")).toBeInTheDocument();
+    // Die Herkunft bleibt, was sie ist — der Beleg steht DANEBEN, nicht darin.
+    expect(screen.getByLabelText("Schichtnotiz")).toBeInTheDocument();
+  });
+
+  it("zeigt keinen Beleg, wenn nur eine Quelle gefunden hat", () => {
+    // AUFBAU-KONTROLLE: Ein Beleg auf jeder Karte belegt nichts.
+    render(<ArchiveResultCard hit={hit({ source: "note", foundBy: ["note"] })} largeCards={false} />);
+    expect(screen.queryByText("Auch im Gedächtnis")).not.toBeInTheDocument();
+  });
+
+  it("nennt den Beleg auch in der Vorlese-Beschriftung", () => {
+    // Die Karte traegt ihre Auskunft mehrkanalig (Studie §5.8): Wer sie nicht
+    // sieht, muss sie hoeren. Ein Beleg nur im Bild waere fuer den halben
+    // Nutzerkreis gar keiner.
+    render(
+      <ArchiveResultCard
+        hit={hit({ source: "note", machineId: 12, foundBy: ["note", "memory"] })}
+        largeCards={false}
+      />,
+    );
+    expect(
+      screen.getByLabelText("Schichtnotiz, Maschine 12, Auch im Gedächtnis"),
+    ).toBeInTheDocument();
+  });
 });
