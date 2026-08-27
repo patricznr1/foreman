@@ -74,6 +74,7 @@ Stand: 2026-08-27
 | C-071 | Ein Erinnerungs-Treffer zeigte das Datum seiner Speicherung statt das des Vorgangs. | gemessen | 19 von 19 geprüften Treffern trugen ein Datum, dem ihr eigener Auszug widersprach; behoben am 27.08.2026 | 2026-08-27 | gueltig | intern |
 | C-072 | Ein Löschverlangen für eine ins Gedächtnis gespiegelte Erinnerung läuft durch — von der Plattform bis zur Gegenstelle. | gemessen | 22 von 22 Löschverlangen mit 200 OK, kein Fehlschlag; ein zweiter Lauf findet nichts mehr | 2026-08-27 | gueltig | intern |
 | C-073 | Die vierte Quelle ist am laufenden System abgenommen: Sie wird angeboten, sie liefert Treffer, und deren Datumsangaben stimmen. | gemessen | Datumsangaben 19 von 19 korrekt (vorher 0 von 19); Quelle und Treffer in der Anzeige gesichtet | 2026-08-27 | gueltig | intern |
+| C-074 | Wartungen und Alarme, die ein Mensch über die Anwendung einträgt, waren für die vierte Archiv-Quelle unsichtbar. | gemessen | record_semantic_event kam in maintenance_events.py und alarms.py null-mal vor, in worker_notes.py zweimal; behoben am 27.08.2026 | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -89,17 +90,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 71
+Einträge gesamt: 72
 
 Nach Status:
 
-- gemessen: 64
+- gemessen: 65
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 66
+- gueltig: 67
 - ueberholt: 5
 - ungeprueft: 0

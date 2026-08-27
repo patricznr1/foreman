@@ -1913,3 +1913,35 @@ claims:
       Im gemessenen Bestand wiederholt sich kein einziger Vorgang (C-050), eine
       Ansicht für "hatten wir das schon mal" hätte dort nichts zu zeigen. Der
       Blocker ist nicht Code, sondern Material.
+
+  - id: "C-074"
+    aussage: "Wartungen und Alarme, die ein Mensch über die Anwendung einträgt, waren für die vierte Archiv-Quelle unsichtbar."
+    status: "gemessen"
+    wert: "record_semantic_event kam in maintenance_events.py und alarms.py null-mal vor, in worker_notes.py zweimal; behoben am 27.08.2026"
+    bedingung: >-
+      Gegen den Code erhoben am 27.08.2026. Beide Schreibwege legen über POST
+      echte Zeilen an, riefen aber die Spiegelung nicht auf. Alles im Gedächtnis
+      stammte damit aus dem Adapter-Weg. Der Backfill fängt das NICHT auf: Er
+      wählt semantic_events mit substrate_ref IS NULL; wo gar keine Zeile
+      entstanden ist, hat er nichts zu holen. Behoben nach dem Vorbild des
+      Notiz-Schreibwegs, mit einer gemeinsamen Quelle für Nutzlast und
+      Maskierung (ingestion/semantic.py), damit Adapter und HTTP nicht
+      auseinanderlaufen.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/api/routers/maintenance_events.py"
+      - "src/foreman/api/routers/alarms.py"
+      - "src/foreman/ingestion/semantic.py"
+      - "tests/integration/test_spiegelung_schreibwege.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Die Lehre ist nicht der Fehler, sondern seine Entstehung: Die Spiegelung
+      kam am 24.08.2026 mit der Schichtnotiz und wurde für die beiden anderen
+      Schreibwege nie nachgezogen — dieselbe Klasse wie bei
+      visible_machine_scope (C-059). Eine neue Schutzmassnahme wird dort
+      eingebaut, wo gerade gearbeitet wird, und die Liste der Stellen, die sie
+      noch nicht haben, entsteht nie. Gefunden wurde es NICHT durch einen Test,
+      sondern beim Nachdenken darüber, wie neue Daten überhaupt ins Gedächtnis
+      kämen. Fünf Prüffälle und fünf greifende Gegenproben halten es jetzt fest.
