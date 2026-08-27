@@ -8,8 +8,17 @@
 // ============================================================
 import type { SourceType } from "./types";
 
-/** Default-Trefferzahl der Sicht (Backend erlaubt 1 bis 50, Default 5; die Sicht
- *  fordert etwas mehr fuer eine brauchbare Liste). */
+/**
+ * Trefferzahl der reinen NOTIZ-Suche (Kontextvorschlag der Erfassung J).
+ * Das Backend erlaubt 1 bis 50 und gibt 5 vor; fuer eine brauchbare
+ * Vorschlagsliste fordert die Sicht etwas mehr.
+ *
+ * GILT NICHT FUERS ARCHIV. Dessen Ausgabelaenge steht seit dem 27.08.2026 an
+ * genau einer Stelle im Backend (`ARCHIV_AUSGABELAENGE`), und
+ * `searchArchiveEndpoint` schickt gar kein `k` mehr mit. Dass diese Konstante
+ * frueher fuer BEIDE galt, war die Haelfte des Befunds C-083 — drei Orte, drei
+ * verschiedene Zahlen.
+ */
 export const DEFAULT_SEARCH_K = 12;
 
 /** GET — reine Notiz-Suche (alter F-SEM-Endpoint, weiterhin vom Kontextvorschlag der
@@ -28,14 +37,26 @@ export function searchNotesEndpoint(
   return `/api/v1/worker_notes/search?${params.toString()}`;
 }
 
-/** GET — Archiv-Suche ueber Notizen + Wartung + Alarme (relevanteste zuerst, ohne Score).
- *  `sources` waehlt die Quellen (CSV; das Backend akzeptiert CSV oder wiederholt). Leer
- *  oder null = der Backend-Default (alle Quellen). */
+/**
+ * GET — Archiv-Suche ueber Notizen + Wartung + Alarme + Gedaechtnis
+ * (relevanteste zuerst, ohne Score). `sources` waehlt die Quellen (CSV; das
+ * Backend akzeptiert CSV oder wiederholt). Leer oder null = der Backend-Default
+ * (alle Quellen).
+ *
+ * OHNE `k`, UND DAS IST DER PUNKT: Die Ausgabelaenge steht seit dem 27.08.2026
+ * an genau EINER Stelle — `ARCHIV_AUSGABELAENGE` im Backend. Die Anzeige erbt
+ * sie, statt eine eigene zu fuehren.
+ *
+ * Vorher stand sie an drei Orten verschieden (Backend 5, hier 12, Messwerkzeug
+ * 10, siehe C-083). Gemessen wurde damit eine Ausgabelaenge, die niemand zu
+ * sehen bekam — und die Aussage ueber Verdraengung galt fuer ein System, das so
+ * nicht ausgeliefert wird. Zwei Zahlen, die dasselbe bedeuten sollen, laufen
+ * frueher oder spaeter auseinander; eine kann das nicht.
+ */
 export function searchArchiveEndpoint(
   query: string,
   machineId: number | null = null,
   sources: SourceType[] | null = null,
-  k: number = DEFAULT_SEARCH_K,
 ): string {
   const params = new URLSearchParams();
   params.set("q", query);
@@ -45,6 +66,5 @@ export function searchArchiveEndpoint(
   if (sources !== null && sources.length > 0) {
     params.set("sources", sources.join(","));
   }
-  params.set("k", String(k));
   return `/api/v1/archive/search?${params.toString()}`;
 }

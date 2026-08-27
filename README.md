@@ -55,7 +55,8 @@ so every capability is reachable from a single account.
 
 **Where to start:** the fleet cockpit gives you the overall picture; a machine card shows live
 sensor values with an honest status per data point; the archive searches notes, maintenance
-records and alarms together. The reasoners are on demand — reconstructing an event chain or
+records, alarms and the memory together, and marks a result that two of them found
+independently. The reasoners are on demand — reconstructing an event chain or
 requesting a recommendation is a deliberate click, never automatic.
 
 **A few honest notes before you click:**

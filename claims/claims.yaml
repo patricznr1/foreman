@@ -2317,3 +2317,129 @@ claims:
       Runden Handarbeit. Der Bewertungssatz ist seit dem 27.08.2026
       reproduzierbar erzeugbar; ohne das waere eine Erweiterung nicht moeglich
       gewesen, ohne die Urteile von Hand nachzupflegen.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Ausgabelaenge und Freigabe-Schwelle — 27.08.2026
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-086"
+    aussage: "Freigabe-Bedingung 1 fragt seit dem 27.08.2026, ob die Trefferquote einer Anfrage SINKT — nicht mehr, ob ein einzelner Treffer herausfaellt."
+    status: "gemessen"
+    wert: "Dritte Fassung. Am selben Lauf: 0 von 10 Anfragen nach der geltenden Lesart, 2 von 10 nach der vorigen"
+    bedingung: >-
+      Die Bedingung hat drei Fassungen gehabt. (1) Gefallene Rangguete — wies
+      Verbesserungen als Verschlechterung aus, praezisiert am 27.08.2026 (C-064).
+      (2) Ein zutreffender Treffer geht VERLOREN. (3) Seit heute: Die Trefferquote
+      der Anfrage sinkt.
+      ANLASS, gemessen am Lauf messung_v15_basis gegen messung_v15_gedaechtnis:
+      Zwei Anfragen verlieren je eine Notiz und gewinnen je ZWEI Wartungen; ihre
+      Trefferquote steigt dabei (B04 0,44 auf 0,56, B06 0,40 auf 0,50). Die zweite
+      Fassung wies genau diesen Tausch als Verschlechterung aus.
+      DIE URSACHE IST ARITHMETISCH, nicht zufaellig: Der Kandidatenpool umfasst
+      rund 20 Eintraege je Anfrage. "Kein Treffer darf verloren gehen" ist bei
+      fester Ausgabelaenge nur erfuellbar, wenn die Ausgabe den ganzen Pool zeigt
+      — also wenn gar nicht mehr rangiert wird. Nachgerechnet: Bei k=20 ist die
+      zweite Fassung erfuellt, aber dann stehen 20 Plaetze fuer rund 20
+      Kandidaten.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/werte_aus.py, veraenderung"
+      - "tests/unit/test_archiv_guete_auswertung.py"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DIE SCHWELLE WURDE ZWEIMAL GEAENDERT, BEIDE MALE MIT WIRKUNG AUF DAS
+      URTEIL. Das ist die Stelle, an der eine Messung unglaubwuerdig wird, wenn
+      man sie nicht sichtbar macht. Zwei Riegel dagegen: Die Auswertung gibt
+      BEIDE Lesarten aus, immer, auch die unguenstigere — ein Test fordert das
+      ein. Und die Schwelle wird vor der naechsten Messung festgelegt, nicht
+      danach.
+      WARUM WIR SIE UEBERHAUPT SELBST DEFINIEREN: Fuer die Kennzahlen gibt es
+      Standards (nDCG, Recall, Permutationstest). Fuer die FREIGABE gibt es
+      keinen — in der Literatur werden Systeme verglichen, nicht scharf
+      geschaltet. Wann eine vierte Quelle in Betrieb gehen darf, ist deshalb
+      empirisch zu bestimmen. Das ist kein Mangel der Arbeit, sondern ihre Lage;
+      es gehoert nur ausdruecklich dazugesagt.
+
+  - id: "C-087"
+    aussage: "Die Archiv-Suche gibt 15 Treffer aus, und diese Zahl steht an genau einer Stelle."
+    status: "gemessen"
+    wert: "ARCHIV_AUSGABELAENGE = 15; vorher Backend 5, Anzeige 12, Messwerkzeug 10"
+    bedingung: >-
+      Erhoben am 27.08.2026 gegen die laufende Instanz ueber vier
+      Einzelquellen-Laeufe, lokal fusioniert und gegen goldset_v3 ausgewertet.
+      Bei k=10 sinkt die Trefferquote auf ZWEI von zehn Anfragen, sobald das
+      Gedaechtnis dazukommt; ab k=15 auf keiner. Der Kandidatenpool umfasst rund
+      20 Eintraege je Anfrage — bei k=20 ist er faktisch vollstaendig gezeigt,
+      und die Bedingung waere dann erfuellt, ohne dass noch rangiert wird.
+      Zusaetzlich geprueft, ob weniger Erinnerungen dasselbe leisten
+      (archive_substrate_k von 5 auf 1): Nur bei substrate_k=1 verschwinden die
+      Verluste, und dafuer faellt der Gewinn von fuenf auf drei Anfragen mit
+      Zusatztreffer. Mehr Plaetze schlagen weniger Erinnerungen.
+      Die Zahl steht seit dieser Aenderung nur noch in
+      `src/foreman/archive/search.py`; die Anzeige schickt kein `k` mehr mit und
+      erbt sie, und ein Test haelt die Anfragedatei des Messwerkzeugs dagegen.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/archive/search.py, ARCHIV_AUSGABELAENGE"
+      - "tests/archive/test_ausgabelaenge.py"
+      - "frontend/lib/memory/url.ts"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      C-083 bleibt der Befund, C-087 die Behebung: Drei Orte mit drei Zahlen
+      hiessen, dass die Messung ein System bewertete, das so nicht ausgeliefert
+      wurde. Der frontend-seitige Test dazu prueste sich bis heute selbst — er
+      verglich die URL gegen dieselbe Konstante, die sie erzeugt, und waere bei
+      jeder Aenderung gruen geblieben.
+
+  - id: "C-088"
+    aussage: "Mit der zusammenfuehrenden Fusion und 15 Plaetzen ist Freigabe-Bedingung 1 erfuellt, und der Gewinn an Rangguete ist statistisch gezeigt."
+    status: "gemessen"
+    wert: "Trefferquote 0,565 auf 0,641 (p=0,062) · Rangguete 0,493 auf 0,585 (p=0,016) · verdichtet 0,542 auf 0,644 (p=0,020) · 0 von 10 Anfragen mit gesunkener Trefferquote, 5 von 10 mit Zusatztreffer"
+    bedingung: >-
+      Gemessen am 27.08.2026 gegen die laufende Instanz. Vier Einzelquellen-Laeufe
+      bei k=15 (messung_q15_*), lokal mit der Fusionsfunktion des Produkts
+      zusammengefuehrt (messung_v15_basis, messung_v15_gedaechtnis), ausgewertet
+      gegen goldset_v3 mit der beurteilten Menge beurteilt_v3. Signifikanz ueber
+      den gepaarten Permutationstest, zweiseitig, vollstaendig aufgezaehlt
+      (2^9 = 512 Belegungen), neun vergleichbare Anfragen.
+      KONTROLLE DES VERFAHRENS: Derselbe Weg reproduziert den ausgerollten
+      Dreiquellen-Lauf exakt (Trefferquote 0,507, Rangguete 0,471, note 91 /
+      maintenance 1 — Ziffer fuer Ziffer wie messung_v2_basis). Die lokale
+      Fusion bildet die ausgerollte also fehlerfrei nach.
+      NACH DER STRENGEREN VORGAENGERLESART waeren zwei Anfragen betroffen (B04,
+      B06); beide gewinnen dabei netto (siehe C-086).
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/messung_v15_basis.json"
+      - "tools/archiv_guete/messung_v15_gedaechtnis.json"
+      - "tools/archiv_guete/goldset_v3.json"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DER UMBAU GEBRACHT HAT, an derselben Grundlinie gemessen: Die vorige
+      Fusion kam bei k=10 auf eine Rangguete von 0,503 (p=0,672, also nicht
+      gezeigt), die zusammenfuehrende auf 0,542 (p=0,039). Der Gewinn hat sich
+      verdoppelt und ist zum ersten Mal belegt.
+      DER MECHANISMUS IST SICHTBAR: 24 von 100 Plaetzen sind Vorgaenge, die zwei
+      Quellen unabhaengig gefunden haben — genau die, die die vorige Fassung
+      verworfen hat.
+      UND EIN BEFUND, DER EINEN GEPLANTEN UMBAU ERSPART: Die eigenstaendigen
+      Gedaechtnis-Treffer zeigen auf 16 Wartungen, 7 Notizen und 3 Alarme,
+      waehrend die Volltextsuche fuer Wartung EINEN und fuer Alarm KEINEN Treffer
+      findet (C-081). Das Gedaechtnis liefert also genau die Datensaetze, fuer die
+      ein lokaler Vektorzweig gebaut werden muesste. Alle 50 abgerufenen
+      Erinnerungen tragen dabei einen Rueckweg auf ihre Quellzeile — die
+      Abdeckung ist lueckenlos.
+      GRENZE: zehn Anfragen, ein Beurteiler, eine Demo-Instanz. Richtungsaussage,
+      keine Kennzahl mit Vertrauensbereich. Der Pool wurde auf den Top-10 zweier
+      frueherer Laeufe beurteilt; bei k=15 stehen mehr unbeurteilte Eintraege in
+      der Liste (55 von 133 ohne, 54 von 138 mit Gedaechtnis). Trefferquote und
+      Bedingung 1 sind davon unberuehrt — sie zaehlen nur bekannte zutreffende
+      Eintraege —, Praezision und Rangguete sind nach unten verzerrt.

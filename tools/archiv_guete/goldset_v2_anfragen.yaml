@@ -7,7 +7,11 @@ hinweis: 'Anfragen eines Fehlersuchers mit Berufserfahrung, woertlich uebernomme
 relevanz:
   '2': gleiche Ursache (dasselbe Stoerungsbild)
   '1': gleiches Symptombild, ANDERE Ursache — siehe C-075
-k: 10
+# Ausgabelaenge der Messung. Sie MUSS die der Anzeige sein, sonst misst der Lauf
+# ein System, das so nicht ausgeliefert wird (C-083: sie war Backend 5, Anzeige
+# 12, Messung 10). Seit dem 27.08.2026 einheitlich 15 — erhoben daran, dass die
+# vierte Quelle erst ab dieser Laenge keinen zutreffenden Treffer mehr verdraengt.
+k: 15
 anfragen:
 - id: B01
   anfrage: Undichtigkeit an Achse
