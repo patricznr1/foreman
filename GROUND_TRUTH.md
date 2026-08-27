@@ -726,7 +726,22 @@ Die Archiv-Suche kann seit dem 20.08.2026 eine **vierte** Quelle einbeziehen: Er
 - **Messergebnis vom 27.08.2026 — Bedingung 1 ERFÜLLT (C-066).** Gegen die laufende Demo-Instanz, gegen denselben Bewertungssatz wie C-049: **0 von 18** Anfragen mit verlorenem Treffer, **11 von 18 = 61,1 %** mit zusätzlichem zutreffendem Treffer. Mittlere Trefferquote **0,256 → 0,528**, mittlere Ranggüte **0,372 → 0,548**, Anfragen ganz ohne zutreffenden Treffer **5 → 1** (übrig bleibt G-18, für die das Goldset keinen zutreffenden Eintrag im Bestand führt). Rohdaten: `tools/archiv_guete/messung_2026-08-27_{basis,gedaechtnis}.json`.
   - **Erst jetzt messbar:** Die Bewertung löst den Rückweg auf (`werte_aus.py::_schluessel`) — ohne ihn trägt jeder Erinnerungs-Treffer `memory:0` und ist auf keinen Goldset-Schlüssel abbildbar. Derselbe Lauf ohne Auflösung meldet **0 %** Zusatztreffer. Der Rückweg kommt dabei aus dem **Produktpfad** — die Antwort der Suche liefert ihn mit; es wird nichts danebengerechnet. Damit ist der unter C-060 vermerkte Vorbehalt („belegt ist das erst, wenn die Zuordnung im Produktpfad geschieht statt daneben") eingelöst.
   - **ERFÜLLT heisst NICHT freigegeben.** Bedingung 1 ist eine von mehreren; der Schalter `FOREMAN_ARCHIVE_SUBSTRATE_ENABLED` bleibt aus, bis alle stehen.
-  - **Offener Mangel, den die Schwelle nicht abfängt:** **40 von 137** ausgelieferten Plätzen (29,2 %) belegen Erinnerungen **ohne** Rückweg — auf der laufenden Instanz überwiegend verwaiste Spiegelungen (C-054). **Kein einziger davon ist zutreffend.** Sie sind der Grund, warum die Ranggüte auf sieben Anfragen fällt, obwohl kein Treffer verloren geht. Das Aufräumen (§12.4, C-065) entfernt genau sie; danach ist erneut zu messen.
+  - **Die Messung braucht den Schalter `FOREMAN_ARCHIVE_SUBSTRATE_ENABLED` auf `true`.** Steht er auf `false`, reicht `archive/router.py` den Substrat-Client gar nicht durch und setzt `substrate_k=0`; die vierte Quelle ist dann **strukturell still**, unabhängig von den angeforderten Quellen. Ein Lauf mit ausgeschaltetem Schalter misst drei Quellen gegen drei und meldet null Zusatztreffer. Die Zahlen oben stammen also aus einem eigens hergestellten Messzustand; im Regelbetrieb ist der Schalter **aus** und geht nach jeder Messung wieder aus.
+- **Nach dem Aufräumen erneut gemessen — 27.08.2026 (C-068).** Der scharfe Lauf entfernte **22** Spiegelungen samt Erinnerung (alle `200 OK`, kein Fehlschlag); der zweite Trockenlauf meldet `geprüft=22 · mit_quelle=22 · mehrdeutig=0 · verwaist=0`. Dieselben 18 Anfragen danach:
+
+| Kennzahl (Mittel) | drei Quellen | + Gedächtnis, vorher | + Gedächtnis, nachher |
+|---|---|---|---|
+| Trefferquote | 0,256 | 0,528 | **0,558** |
+| Präzision | 0,415 | 0,394 | **0,425** |
+| Ranggüte | 0,372 | 0,548 | **0,597** |
+| Anfragen mit Zusatztreffer | — | 61,1 % | **66,7 %** |
+| verlorene zutreffende Treffer | — | 0 | **0** |
+| Plätze für Erinnerungen ohne Rückweg | — | 29,2 % | **11,0 %** |
+| Anfragen mit gefallener Ranggüte | — | 7 von 18 | **5 von 18** |
+
+  - **Tragende Kontrolle:** Die Grundlinie aus drei Quellen ist vor und nach dem Lauf **identisch** (0,256 / 0,372). Sie muss es sein, weil das Aufräumen ausschliesslich das Gedächtnis angefasst hat; bewegte sie sich, wäre zwischen den Läufen noch etwas anderes geschehen und der Vergleich wertlos.
+  - **Die Vorhersage war in einem Punkt falsch, zugunsten der Sache.** Erwartet war eine steigende Präzision und Ranggüte bei **unveränderter** Trefferquote; sie steigt mit. Grund ist eine übersehene Grenze: Der Abruf aus dem Gedächtnis liefert je Anfrage nur eine begrenzte Zahl von Erinnerungen — die verwaisten belegten davon Plätze und verdrängten damit schon **eine Ebene vor** der Verschmelzung. Das steht hier, weil eine nachträglich passend gemachte Vorhersage nichts mehr wert ist.
+  - **Was offen bleibt:** **11,0 %** der Plätze gehen weiterhin an Erinnerungen ohne Rückweg — Notiz-Spiegelungen und **Ableitungen des Systems**, die das Aufräumen bewusst nicht anfasst (§12.4). Fünf Anfragen verlieren weiterhin Ranggüte; die Ursache ist nicht erhoben. C-054 ist damit `ueberholt`.
 
 ### 15.9 Archiv-Quellen: Wartung + Alarme (Paket 1b)
 

@@ -1,6 +1,6 @@
 # Messbericht — Nachmessung der Archiv-Güte, Freigabe-Bedingung 1
 
-**Stand:** 2026-08-27 · **Gemessen gegen:** laufende Demo-Instanz (`frontend-production-169a`)
+**Stand:** 2026-08-27 (zwei Läufe: vor und nach dem Aufräumen) · **Gemessen gegen:** laufende Demo-Instanz (`frontend-production-169a`)
 **Status:** intern, nicht freigegeben
 
 > Fortschreibung von `2026-08-24_archiv_goldset.md`. Derselbe Bewertungssatz, dieselben
@@ -8,7 +8,7 @@
 > dazwischen), das **Auswertwerkzeug** (der Rückweg wird aufgelöst) und die **Schwelle**
 > (präzisiert). Alle drei Änderungen sind unten einzeln ausgewiesen.
 >
-> Die abgeleiteten Aussagen stehen im Register als **C-064** und **C-066**; was hier steht
+> Die abgeleiteten Aussagen stehen im Register als **C-064**, **C-066** und **C-068**; was hier steht
 > und dort nicht, geht nicht nach draussen.
 
 ---
@@ -53,11 +53,24 @@ Gegen die beiden Schwellen der Freigabe-Bedingung 1:
 bleibt G-18 („Kühlschmierstoff Konzentration") — für sie führt das Goldset keinen
 zutreffenden Eintrag im Bestand, sie kann also gar nicht erfüllt werden.
 
-## 3. Erfüllt heisst nicht freigegeben
+## 3. Unter welcher Bedingung gemessen wurde — und was das heisst
 
-Bedingung 1 ist **eine von mehreren** in `GROUND_TRUTH.md` §15.10. Der Schalter
-`FOREMAN_ARCHIVE_SUBSTRATE_ENABLED` steht weiterhin auf `false` und bleibt es, bis alle
-stehen. Dieser Bericht belegt eine Bedingung, keine Freigabe.
+**Die Messung braucht den Schalter `FOREMAN_ARCHIVE_SUBSTRATE_ENABLED` auf `true`.**
+Steht er auf `false`, reicht `archive/router.py` den Substrat-Client gar nicht erst durch und
+setzt `substrate_k=0`: Die vierte Quelle ist dann **strukturell still**, unabhängig davon,
+welche Quellen der Aufrufer anfordert. Ein Lauf mit ausgeschaltetem Schalter misst drei
+Quellen gegen drei Quellen und meldet null Zusatztreffer.
+
+Der Schalter war während dieses Laufs **an** und ist im Regelbetrieb **aus**. Die Zahlen oben
+stammen also aus einem eigens hergestellten Messzustand, nicht aus dem Normalzustand der
+Instanz. *(Nachtrag vom selben Tag: In der ersten Fassung dieses Berichts stand an dieser
+Stelle nur „der Schalter steht weiterhin auf `false`" — das liest sich, als seien die Zahlen
+im Normalzustand entstanden. Belegt ist der Messzustand durch zwei Läufe gegeneinander: mit
+Schalter 77 Gedächtnis-Treffer über 18 Anfragen, ohne Schalter null.)*
+
+**Erfüllt heisst nicht freigegeben.** Bedingung 1 ist **eine von mehreren** in
+`GROUND_TRUTH.md` §15.10. Der Schalter geht nach jeder Messung wieder aus und bleibt es, bis
+alle Bedingungen stehen. Dieser Bericht belegt eine Bedingung, keine Freigabe.
 
 ## 4. Warum die Auflösung des Rückwegs entscheidend ist
 
@@ -134,9 +147,9 @@ Datenbestand wurde zwischenzeitlich neu aufgebaut, die zugehörigen Erinnerungen
 stehen. Sie beschreiben Vorgänge, die niemand mehr nachschlagen kann, belegen aber Plätze
 in jeder Trefferliste.
 
-Das Aufräumen (`substrate/aufraeumen.py`, C-065) entfernt genau sie. **Nach dem scharfen
-Lauf ist erneut zu messen** — erwartet wird eine steigende Präzision und Ranggüte bei
-unveränderter Trefferquote.
+Das Aufräumen (`substrate/aufraeumen.py`, C-065) entfernt genau sie. Der scharfe Lauf ist noch
+am selben Tag gefahren worden; **das Ergebnis steht in §8** — und es fällt deutlicher aus als
+hier erwartet.
 
 ## 7. Was dieser Bericht nicht belegt
 
@@ -145,9 +158,52 @@ unveränderter Trefferquote.
   Freitext-Einträgen. Die Anfragen sind formuliert, wie ein Meister sie eintippen würde,
   aber sie stammen nicht von einem Meister.
 - **Keine Aussage über die Ranggüte als Schwelle.** Sie ist hier ausdrücklich Kennzahl.
-- **Kein Nachweis, dass das Aufräumen wirkt.** Der Wert dafür steht noch aus (§6).
+- **Kein Nachweis, dass die verbleibende Ranggüte-Schwäche behoben ist.** Fünf von 18 Anfragen
+  verlieren weiterhin Ranggüte (§8). Die Ursache ist nicht erhoben.
+- **Kein Nachweis über Ableitungen des Systems.** Ob Empfehlung und Ereigniskette in die
+  Archiv-Suche gehören, ist ungeklärt und wird von diesem Bericht nicht beantwortet.
 
-## 8. Was am Werkzeug selbst gefunden wurde
+## 8. Nach dem Aufräumen — dieselbe Messung noch einmal
+
+Der scharfe Lauf fand am 27.08.2026 statt: **22 Erinnerungen entfernt**, alle `200 OK`, kein
+Fehlschlag. Der zweite Trockenlauf meldet `geprüft=22 · mit_quelle=22 · mehrdeutig=0 ·
+verwaist=0` — nichts übrig, und der Vorgang ist wiederholbar, ohne etwas anzurichten.
+
+Danach dieselben 18 Anfragen, dieselben Beurteilungen, derselbe Messzustand:
+
+| Kennzahl (Mittel) | drei Quellen | + Gedächtnis, vorher | + Gedächtnis, nachher |
+|---|---|---|---|
+| Trefferquote | 0,256 | 0,528 | **0,558** |
+| Präzision | 0,415 | 0,394 | **0,425** |
+| Ranggüte | 0,372 | 0,548 | **0,597** |
+| Anfragen mit Zusatztreffer | — | 61,1 % | **66,7 %** |
+| verlorene zutreffende Treffer | — | 0 | **0** |
+| Plätze für Erinnerungen ohne Rückweg | — | 29,2 % | **11,0 %** |
+| Anfragen mit gefallener Ranggüte | — | 7 von 18 | **5 von 18** |
+
+Rohdaten: `tools/archiv_guete/messung_2026-08-27b_nach_aufraeumen_{basis,gedaechtnis}.json`.
+
+**Kontrolle, ohne die die Zahlen nichts belegen:** Die Grundlinie aus drei Quellen ist vor und
+nach dem Aufräumen **identisch** (Trefferquote 0,256, Ranggüte 0,372). Sie muss es sein — das
+Aufräumen hat ausschliesslich das Gedächtnis angefasst. Bewegte sie sich, wäre zwischen den
+beiden Läufen noch etwas anderes passiert und der Vergleich wertlos.
+
+**Meine Vorhersage war in einem Punkt falsch, und zwar zugunsten der Sache.** Erwartet hatte
+ich „steigende Präzision und Ranggüte bei **unveränderter** Trefferquote" — tatsächlich steigt
+auch die Trefferquote, von 0,528 auf 0,558. Der Grund liegt in einer Grenze, die ich übersehen
+hatte: Der Abruf aus dem Gedächtnis liefert je Anfrage nur eine begrenzte Zahl von Erinnerungen.
+Die verwaisten belegten davon Plätze — sie verdrängten also nicht nur in der Trefferliste,
+sondern schon **eine Ebene früher**, im Abruf selbst. Ihr Wegfall macht Platz für Erinnerungen,
+die vorher gar nicht bis zur Verschmelzung kamen.
+
+**Was bleibt:** 11,0 % der Plätze gehen weiterhin an Erinnerungen ohne Rückweg. Das Aufräumen
+fasst ausdrücklich nur Wartung und Alarm an; die übrigen stammen aus Notiz-Spiegelungen und aus
+Ableitungen des Systems (Empfehlung, Ereigniskette). Ob Ableitungen überhaupt in die
+Archiv-Suche gehören, ist eine eigene, bewusst offen gelassene Frage — sie hier nebenbei mit zu
+entfernen hiesse, sie stillschweigend zu entscheiden. Fünf Anfragen verlieren weiterhin
+Ranggüte; das ist die nächste Spur.
+
+## 9. Was am Werkzeug selbst gefunden wurde
 
 Vor dem Push lief eine adversariale Prüfung gegen den fertigen Stand. Zwei Befunde betrafen
 dieses Messwerkzeug, und beide sind behoben:
