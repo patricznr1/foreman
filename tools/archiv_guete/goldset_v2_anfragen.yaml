@@ -1,0 +1,41 @@
+schema_version: 2
+hinweis: 'Anfragen eines Fehlersuchers mit Berufserfahrung, woertlich uebernommen
+  samt Tippfehler. Er sah je Stoerungsbild NUR EIN Vorkommen — wer alle drei sieht,
+  formuliert auf sie hin, und die Messung misst dann Formulierungskunst statt Suche.
+  Das Vorkommen, aus dem eine Anfrage stammt, ist im Goldset AUSGESCHLOSSEN: Es steht
+  fuer den Fall, an dem der Werker gerade steht, und ist noch gar nicht im Archiv.'
+relevanz:
+  '2': gleiche Ursache (dasselbe Stoerungsbild)
+  '1': gleiches Symptombild, ANDERE Ursache — siehe C-075
+k: 10
+anfragen:
+- id: B01
+  anfrage: Undichtigkeit an Achse
+  absicht: Falscher Schmierstoff bei der Nachschmierung, Führung läuft nicht frei
+- id: B02
+  anfrage: Fleck auf Bild
+  absicht: Sicht der Inspektionskamera verlegt, Prüfung wird unzuverlässig
+- id: B03
+  anfrage: Lagerschaden am Lagerbock
+  absicht: Lagerbock der Spindel gelockert, Schlag am Umkehrpunkt
+- id: B04
+  anfrage: Dosierunregelmäßigkeiten
+  absicht: Brückenbildung im Dosiertrichter, Zuführung setzt aus
+- id: B05
+  anfrage: Schleppfehler an AX
+  absicht: Geberrückführung am Motor gestört, sporadische Schleppfehler
+- id: B06
+  anfrage: Durckabfall Hydraulik
+  absicht: Innere Undichtigkeit im Hydraulikkreis, Druck bricht weg
+- id: B07
+  anfrage: Nullpunktverschiebung an AX
+  absicht: Spiel im Kugelgewindetrieb, Positionsabweichung beim Richtungswechsel
+- id: B08
+  anfrage: Ruckeln beim Hub
+  absicht: Gleitbahnen des Ram-Antriebs ohne Schmierfilm, Hub läuft ungleichmäßig
+- id: B09
+  anfrage: Versatz an PR
+  absicht: Werkzeug sitzt nicht fest in der Aufnahme, Fügemaß wandert
+- id: B10
+  anfrage: Öl Temperatur an PR
+  absicht: Wärmeabfuhr im Ölkreis gestört, Druck wird unruhig

@@ -101,16 +101,24 @@ def suche(oeffner, frage: dict, quellen: list[str], k: int) -> tuple[list[dict],
 
 def main() -> None:
     if len(sys.argv) < 2:
-        raise SystemExit("Aufruf: python miss.py <lauf-name> [quelle,quelle,...]")
+        raise SystemExit(
+            "Aufruf: python miss.py <lauf-name> [quelle,quelle,...] [anfragedatei.yaml]"
+        )
     lauf = sys.argv[1]
     quellen = (sys.argv[2] if len(sys.argv) > 2 else "note,maintenance,alarm").split(",")
+    # Die Anfragedatei ist waehlbar, seit es einen ZWEITEN Bewertungssatz gibt
+    # (27.08.2026). Vorher stand der Pfad fest — ein Lauf gegen das neue Goldset
+    # nahm stillschweigend die alten Anfragen und schrieb ein plausibles,
+    # falsches Ergebnis. Der Name des Bestandes steht deshalb jetzt IM Ergebnis.
+    anfragedatei = sys.argv[3] if len(sys.argv) > 3 else "goldset_anfragen.yaml"
 
-    anfragen, k = lade_anfragen()
-    print(f"📋 {len(anfragen)} Anfragen, k={k}, Quellen={quellen}")
+    anfragen, k = lade_anfragen(anfragedatei)
+    print(f"📋 {len(anfragen)} Anfragen aus {anfragedatei}, k={k}, Quellen={quellen}")
 
     oeffner = melde_an()
     ergebnis = {
         "lauf": lauf,
+        "anfragedatei": anfragedatei,
         "basis": BASIS,
         "quellen": quellen,
         "k": k,

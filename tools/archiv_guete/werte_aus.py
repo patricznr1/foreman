@@ -93,6 +93,22 @@ def kennzahlen(treffer: list[dict], relevant: dict[str, int], k: int) -> dict:
     }
 
 
+def pruefe_goldset(goldset: dict, pfad: str) -> None:
+    """Weist einen Bewertungssatz ohne einen einzigen relevanten Eintrag ab.
+
+    WARUM ABWEISEN STATT RECHNEN (Befund 27.08.2026): Ein Lauf gegen das falsche
+    Goldset findet keinen passenden Schluessel, alle Kennzahlen werden null — und
+    das Ergebnis sieht aus wie ein vernichtendes Urteil ueber die Suche. Genau so
+    passiert, als der Goldset-Pfad noch fest verdrahtet war und ein Lauf gegen
+    den neuen Bestand stillschweigend die alten Urteile nahm.
+
+    Ein Aufbaufehler, der sich als Messergebnis liest, ist schlimmer als ein
+    Absturz: Er wird geglaubt.
+    """
+    if not any(goldset.values()):
+        raise SystemExit(f"❌ {pfad}: kein einziger relevanter Eintrag — falsches Goldset?")
+
+
 def werte_lauf(pfad: str, goldset: dict) -> dict:
     roh = json.load(open(pfad, encoding="utf-8"))
     k = roh["k"]
@@ -235,8 +251,19 @@ def vergleiche(basis: dict, neu: dict) -> None:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        raise SystemExit("Aufruf: python werte_aus.py <messung.json> [<vergleich.json>]")
-    goldset = lade_goldset()
+        raise SystemExit(
+            "Aufruf: python werte_aus.py <messung.json> [<vergleich.json>] [<goldset.json>]"
+        )
+    # Das Goldset ist waehlbar, seit es einen ZWEITEN Bewertungssatz gibt
+    # (27.08.2026). Vorher stand der Pfad fest, und ein Lauf gegen den neuen
+    # Bestand rechnete stillschweigend gegen die alten Urteile: Kein Schluessel
+    # passte, alle Kennzahlen wurden null, und das Ergebnis sah aus wie ein
+    # Messergebnis. Genau derselbe Fehler steckte in `miss.py`.
+    goldset_pfad = sys.argv[3] if len(sys.argv) > 3 else "goldset.json"
+    goldset = lade_goldset(goldset_pfad)
+
+    pruefe_goldset(goldset, goldset_pfad)
+
     basis = werte_lauf(sys.argv[1], goldset)
     zeige(basis)
     if len(sys.argv) > 2:
