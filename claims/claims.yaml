@@ -1882,3 +1882,34 @@ claims:
       Wirkung. Und es ist keine Aussage über die Erfüllung einer Rechtspflicht:
       Ob ein konkretes Löschverlangen vollständig erfüllt ist, hängt an mehr als
       diesem einen Weg.
+
+  - id: "C-073"
+    aussage: "Die vierte Quelle ist am laufenden System abgenommen: Sie wird angeboten, sie liefert Treffer, und deren Datumsangaben stimmen."
+    status: "gemessen"
+    wert: "Datumsangaben 19 von 19 korrekt (vorher 0 von 19); Quelle und Treffer in der Anzeige gesichtet"
+    bedingung: >-
+      Abgenommen am 27.08.2026, unmittelbar nach dem Ausrollen beider Hälften
+      (Backend und Anzeige, dieselbe Merge-Welle 08:27:41). ZWEI VERSCHIEDENE
+      BELEGARTEN, und der Unterschied gehört benannt: Die Datumsangaben sind
+      GEMESSEN — dieselbe Erhebung über vier Anfragen, die vor dem Fix 19 von 19
+      Abweichungen zwischen angezeigtem Datum und dem Datum im Auszug fand,
+      findet danach keine mehr. Dass die Quelle im Umschalter erscheint und
+      Treffer aus dem Gedächtnis in der Liste stehen, ist dagegen eine SICHTUNG
+      des Betreibers an der laufenden Anzeige, keine Messung: Ein Passwort in
+      ein Feld einzugeben ist eine Grenze, die diese Sitzung nicht überschreitet,
+      und ohne Anmeldung ist die Archiv-Ansicht nicht erreichbar.
+    datum: "2026-08-27"
+    fundstelle:
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+      - "docs/messungen/2026-08-27_archiv_goldset_nachmessung.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Nav-Eintrag "Hatten wir das schon mal" bleibt bewusst DEAKTIVIERT und
+      ist von dieser Abnahme nicht berührt. Er verspricht die intelligente
+      Verknüpfung (Paket 3), nicht die Suche — und die Sperre ist durch zwei
+      Tests festgehalten. Ihn jetzt zu öffnen wäre der leerste mögliche Fall:
+      Im gemessenen Bestand wiederholt sich kein einziger Vorgang (C-050), eine
+      Ansicht für "hatten wir das schon mal" hätte dort nichts zu zeigen. Der
+      Blocker ist nicht Code, sondern Material.
