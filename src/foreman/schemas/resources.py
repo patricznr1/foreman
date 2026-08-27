@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # Geschlossene Wertebereiche (GROUND_TRUTH §5, ohne „…"-Erweiterung).
 DataPointKind = Literal["analog", "digital", "setpoint", "counter"]
@@ -197,6 +197,35 @@ class WorkerNoteCreate(BaseModel):
     text: str = Field(min_length=1, max_length=WORKER_NOTE_TEXT_MAX)
     machine_id: int | None = None
     shift: str | None = Field(default=None, max_length=16)
+    # Zeitpunkt der SCHICHT, nicht des Eintragens. Weggelassen = jetzt, der
+    # Regelfall aus der Halle. Ein gesetzter Wert ist der Nachtrag: eine Notiz,
+    # die auf Papier stand oder aus einem Altbestand kommt.
+    #
+    # WARUM ES DAS FELD BRAUCHT (27.08.2026): Der Adapter-Weg setzt die
+    # historische Zeit seit jeher von Hand (`ingestion/service.py`, "created_at
+    # sonst server-default now()"), die HTTP-Schicht konnte es nicht. Wer eine
+    # Notiz für die gestrige Schicht einträgt, bekam den Eintragungszeitpunkt.
+    # Das Archiv ordnet Notiz-Treffer nach `created_at` — die Reihenfolge eines
+    # Vorgangs bricht damit STILL, ohne Fehler und ohne Meldung.
+    #
+    # Keine Migration: Die Spalte gibt es (`TimestampMixin`); ein am Objekt
+    # gesetzter Wert schlägt den Server-Default.
+    occurred_at: datetime | None = None
+
+    @field_validator("occurred_at")
+    @classmethod
+    def _zeitzone_verlangt(cls, wert: datetime | None) -> datetime | None:
+        """Eine naive Zeitangabe wird abgelehnt statt gedeutet.
+
+        Die Anlage rechnet in Ortszeit mit Offset, und `shift` benennt eine
+        Ortszeit-Schicht. Eine naive Frühschicht-Notiz als UTC gelesen liegt im
+        Sommer zwei Stunden daneben — sie passt dann nicht mehr zu ihrem eigenen
+        `shift`-Feld, und das fällt niemandem auf. Lieber eine abgewiesene
+        Eingabe als eine stillschweigend verschobene.
+        """
+        if wert is not None and wert.tzinfo is None:
+            raise ValueError("`occurred_at` braucht eine Zeitzone, z. B. 2026-02-09T07:15:00+01:00")
+        return wert
 
     @model_validator(mode="before")
     @classmethod
