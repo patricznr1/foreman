@@ -1945,3 +1945,69 @@ claims:
       noch nicht haben, entsteht nie. Gefunden wurde es NICHT durch einen Test,
       sondern beim Nachdenken darüber, wie neue Daten überhaupt ins Gedächtnis
       kämen. Fünf Prüffälle und fünf greifende Gegenproben halten es jetzt fest.
+
+  - id: "C-075"
+    aussage: "Ein Fehlersucher beurteilt zwei Vorfälle nach dem Symptombild, nicht nach der Ursache — die bisher angesetzte Relevanz-Definition war zu eng."
+    status: "gemessen"
+    wert: "6 von 8 Ablenkerpaaren als dasselbe Problem gewertet, obwohl sie eine andere Ursache haben; Aufbau-Kontrollen 5 von 5 getroffen"
+    bedingung: >-
+      Erhoben am 27.08.2026 an einem blinden Fragenkatalog: 40 Paare von
+      Schichtnotizen, beurteilt von einem Beurteiler mit Berufserfahrung als
+      Inbetriebnehmer und Anlagen-Fehlersucher. Der Beurteiler sah weder die
+      Typ-Zuordnung des Materialautors noch die späteren Suchanfragen; kein Wort
+      aus dem Lösungsschlüssel stand im Katalog (nachgeprüft). Ein "Ablenker" ist
+      dabei ein Fall mit GLEICHEM Symptom und ANDERER Ursache — nach der
+      Definition des Autors kein Treffer. Der Beurteiler wertete sechs davon als
+      dasselbe Problem, mit erkennbarem Muster: Roboter setzt daneben gegen
+      Roboter setzt daneben wegen eines fremden Werkstückträgers, Öl unter dem
+      Roboter gegen Öl vom Nachbarn, Presse verliert Druck gegen Presse mit
+      falschem Drucksensor.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/gegenprobe/FRAGENKATALOG_schluessel.json"
+      - "tools/archiv_guete/gegenprobe/urteile_2026-08-27.json"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      TRAGENDE KONTROLLE: Fünf der 40 Paare stammten aus DEMSELBEN Vorgang und
+      mussten "ja" ergeben. Alle fünf wurden getroffen. Ohne sie liesse sich ein
+      abweichendes Urteil nicht von einem missverständlichen Fragebogen
+      unterscheiden. GRENZEN: EIN Beurteiler, acht Ablenkerpaare. Das trägt eine
+      Entscheidung über die Relevanz-Definition, nicht eine Aussage über
+      Fehlersucher im Allgemeinen. Die Folge für das Goldset ist deshalb keine
+      Umdeutung, sondern eine ZWEITE Stufe: gleiche Ursache bleibt die starke
+      Relevanz, gleiches Symptombild bei anderer Ursache wird als schwächere
+      Relevanz geführt. Wer die engere Definition bevorzugt, kann denselben Lauf
+      gegen nur die starke Stufe nachrechnen.
+
+  - id: "C-076"
+    aussage: "Die behaupteten Wiederholungen im erzeugten Störungsmaterial halten der Prüfung durch einen Fachmann stand."
+    status: "gemessen"
+    wert: "10 von 12 Paaren aus verschiedenen Vorkommen desselben Störungsbildes als dasselbe Problem erkannt; 17 von 20 Störungsbildern ohne Stichwort-Brücke"
+    bedingung: >-
+      Zwei unabhängige Prüfungen am selben Material (327 Einträge, erzeugt am
+      27.08.2026). ERSTENS maschinell: Für 17 der 20 Störungsbilder gibt es kein
+      Wort, das alle drei Vorkommen verbindet und zugleich im übrigen Bestand
+      selten ist — die Wiederholung ist dort also nicht über Wortgleichheit
+      auffindbar. Drei Ausnahmen mit Brückenwort: V3 ("motor", 6 Notizen), S2
+      ("bild", 4), S3 ("ausschuss", 6). ZWEITENS durch den Beurteiler (siehe
+      C-075): 10 von 12 gemischten Paaren als dasselbe Problem erkannt.
+      Verneint wurden die Störungsbilder "Klemmzylinder schaltet verzögert" und
+      "Werkzeug sitzt nicht fest"; beide betreffen Notizen mit der vom
+      Beurteiler ausdrücklich als unüblich bezeichneten Wendung "Kraft steht
+      oben".
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/gegenprobe/AUSWERTUNG_Vorgangstypen.md"
+      - "tools/archiv_guete/gegenprobe/urteile_2026-08-27.json"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DAS NICHT SAGT: dass eine Messung auf diesem Material die Bewährung in
+      einer echten Halle belegt. Die Wiederholungen sind GEPFLANZT; wer misst, ob
+      die Suche sie findet, misst den Mechanismus. Die drei Störungsbilder mit
+      Brückenwort sind zusätzlich schwächere Belege für die vierte Quelle — dort
+      fände die Volltextsuche die Wiederholung womöglich allein. Beides gehört in
+      jeden Messbericht auf diesem Bestand.
