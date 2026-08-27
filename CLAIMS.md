@@ -75,6 +75,8 @@ Stand: 2026-08-27
 | C-072 | Ein Löschverlangen für eine ins Gedächtnis gespiegelte Erinnerung läuft durch — von der Plattform bis zur Gegenstelle. | gemessen | 22 von 22 Löschverlangen mit 200 OK, kein Fehlschlag; ein zweiter Lauf findet nichts mehr | 2026-08-27 | gueltig | intern |
 | C-073 | Die vierte Quelle ist am laufenden System abgenommen: Sie wird angeboten, sie liefert Treffer, und deren Datumsangaben stimmen. | gemessen | Datumsangaben 19 von 19 korrekt (vorher 0 von 19); Quelle und Treffer in der Anzeige gesichtet | 2026-08-27 | gueltig | intern |
 | C-074 | Wartungen und Alarme, die ein Mensch über die Anwendung einträgt, waren für die vierte Archiv-Quelle unsichtbar. | gemessen | record_semantic_event kam in maintenance_events.py und alarms.py null-mal vor, in worker_notes.py zweimal; behoben am 27.08.2026 | 2026-08-27 | gueltig | intern |
+| C-075 | Ein Fehlersucher beurteilt zwei Vorfälle nach dem Symptombild, nicht nach der Ursache — die bisher angesetzte Relevanz-Definition war zu eng. | gemessen | 6 von 8 Ablenkerpaaren als dasselbe Problem gewertet, obwohl sie eine andere Ursache haben; Aufbau-Kontrollen 5 von 5 getroffen | 2026-08-27 | gueltig | intern |
+| C-076 | Die behaupteten Wiederholungen im erzeugten Störungsmaterial halten der Prüfung durch einen Fachmann stand. | gemessen | 10 von 12 Paaren aus verschiedenen Vorkommen desselben Störungsbildes als dasselbe Problem erkannt; 17 von 20 Störungsbildern ohne Stichwort-Brücke | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -90,6 +92,11 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
+Einträge gesamt: 74
+
+Nach Status:
+
+- gemessen: 67
 Einträge gesamt: 72
 
 Nach Status:
@@ -101,6 +108,7 @@ Nach Status:
 
 Nach Geltung:
 
+- gueltig: 69
 - gueltig: 67
 - ueberholt: 5
 - ungeprueft: 0

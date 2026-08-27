@@ -1,0 +1,339 @@
+{
+  "erzeugt_am": "2026-08-27",
+  "startwert": 20260827,
+  "hinweis": "Loesungsschluessel — beim Ausfuellen NICHT ansehen. 'kontrolle' sind Aufbau-Kontrollen und muessen 'ja' ergeben; verneint der Beurteiler sie, ist der Katalog missverstaendlich und das Ergebnis unbelegbar.",
+  "teil_a": [
+    {
+      "nr": "A01",
+      "a": "SN-176",
+      "b": "SN-168",
+      "sorte": "fremd",
+      "typ": "P5/F1"
+    },
+    {
+      "nr": "A02",
+      "a": "SN-103",
+      "b": "SN-026",
+      "sorte": "echt",
+      "typ": "R1"
+    },
+    {
+      "nr": "A03",
+      "a": "SN-158",
+      "b": "SN-040",
+      "sorte": "echt",
+      "typ": "V5"
+    },
+    {
+      "nr": "A04",
+      "a": "SN-157",
+      "b": "SN-081",
+      "sorte": "ablenker",
+      "typ": "F2"
+    },
+    {
+      "nr": "A05",
+      "a": "SN-180",
+      "b": "SN-084",
+      "sorte": "ablenker",
+      "typ": "R1"
+    },
+    {
+      "nr": "A06",
+      "a": "SN-165",
+      "b": "SN-062",
+      "sorte": "fremd",
+      "typ": "R1/R2"
+    },
+    {
+      "nr": "A07",
+      "a": "SN-178",
+      "b": "SN-165",
+      "sorte": "fremd",
+      "typ": "V3/R1"
+    },
+    {
+      "nr": "A08",
+      "a": "SN-129",
+      "b": "SN-121",
+      "sorte": "ablenker",
+      "typ": "S2"
+    },
+    {
+      "nr": "A09",
+      "a": "SN-025",
+      "b": "SN-063",
+      "sorte": "ablenker",
+      "typ": "V2"
+    },
+    {
+      "nr": "A10",
+      "a": "SN-011",
+      "b": "SN-071",
+      "sorte": "echt",
+      "typ": "P4"
+    },
+    {
+      "nr": "A11",
+      "a": "SN-163",
+      "b": "SN-041",
+      "sorte": "ablenker",
+      "typ": "F1"
+    },
+    {
+      "nr": "A12",
+      "a": "SN-096",
+      "b": "SN-075",
+      "sorte": "ablenker",
+      "typ": "P1"
+    },
+    {
+      "nr": "A13",
+      "a": "SN-168",
+      "b": "SN-070",
+      "sorte": "echt",
+      "typ": "F1"
+    },
+    {
+      "nr": "A14",
+      "a": "SN-146",
+      "b": "SN-076",
+      "sorte": "echt",
+      "typ": "V1"
+    },
+    {
+      "nr": "A15",
+      "a": "SN-031",
+      "b": "SN-106",
+      "sorte": "echt",
+      "typ": "F2"
+    },
+    {
+      "nr": "A16",
+      "a": "SN-176",
+      "b": "SN-124",
+      "sorte": "echt",
+      "typ": "P5"
+    },
+    {
+      "nr": "A17",
+      "a": "SN-007",
+      "b": "SN-184",
+      "sorte": "ablenker",
+      "typ": "R3"
+    },
+    {
+      "nr": "A18",
+      "a": "SN-021",
+      "b": "SN-015",
+      "sorte": "kontrolle",
+      "typ": "P3"
+    },
+    {
+      "nr": "A19",
+      "a": "SN-009",
+      "b": "SN-011",
+      "sorte": "kontrolle",
+      "typ": "P4"
+    },
+    {
+      "nr": "A20",
+      "a": "SN-183",
+      "b": "SN-062",
+      "sorte": "echt",
+      "typ": "R2"
+    },
+    {
+      "nr": "A21",
+      "a": "SN-007",
+      "b": "SN-124",
+      "sorte": "fremd",
+      "typ": "R3/P5"
+    },
+    {
+      "nr": "A22",
+      "a": "SN-164",
+      "b": "SN-006",
+      "sorte": "fremd",
+      "typ": "V3/V1"
+    },
+    {
+      "nr": "A23",
+      "a": "SN-179",
+      "b": "SN-159",
+      "sorte": "fremd",
+      "typ": "S3/P2"
+    },
+    {
+      "nr": "A24",
+      "a": "SN-150",
+      "b": "SN-139",
+      "sorte": "kontrolle",
+      "typ": "V1"
+    },
+    {
+      "nr": "A25",
+      "a": "SN-185",
+      "b": "SN-034",
+      "sorte": "rauschen",
+      "typ": null
+    },
+    {
+      "nr": "A26",
+      "a": "SN-102",
+      "b": "SN-123",
+      "sorte": "rauschen",
+      "typ": null
+    },
+    {
+      "nr": "A27",
+      "a": "SN-017",
+      "b": "SN-104",
+      "sorte": "fremd",
+      "typ": "V4/S1"
+    },
+    {
+      "nr": "A28",
+      "a": "SN-003",
+      "b": "SN-148",
+      "sorte": "echt",
+      "typ": "R3"
+    },
+    {
+      "nr": "A29",
+      "a": "SN-031",
+      "b": "SN-096",
+      "sorte": "fremd",
+      "typ": "F2/P1"
+    },
+    {
+      "nr": "A30",
+      "a": "SN-085",
+      "b": "SN-004",
+      "sorte": "echt",
+      "typ": "S2"
+    },
+    {
+      "nr": "A31",
+      "a": "SN-019",
+      "b": "SN-155",
+      "sorte": "fremd",
+      "typ": "V3/P3"
+    },
+    {
+      "nr": "A32",
+      "a": "SN-159",
+      "b": "SN-052",
+      "sorte": "echt",
+      "typ": "P2"
+    },
+    {
+      "nr": "A33",
+      "a": "SN-131",
+      "b": "SN-021",
+      "sorte": "fremd",
+      "typ": "P2/P3"
+    },
+    {
+      "nr": "A34",
+      "a": "SN-135",
+      "b": "SN-142",
+      "sorte": "kontrolle",
+      "typ": "R2"
+    },
+    {
+      "nr": "A35",
+      "a": "SN-160",
+      "b": "SN-118",
+      "sorte": "rauschen",
+      "typ": null
+    },
+    {
+      "nr": "A36",
+      "a": "SN-073",
+      "b": "SN-070",
+      "sorte": "kontrolle",
+      "typ": "F1"
+    },
+    {
+      "nr": "A37",
+      "a": "SN-073",
+      "b": "SN-161",
+      "sorte": "fremd",
+      "typ": "F1/V2"
+    },
+    {
+      "nr": "A38",
+      "a": "SN-059",
+      "b": "SN-097",
+      "sorte": "ablenker",
+      "typ": "R2"
+    },
+    {
+      "nr": "A39",
+      "a": "SN-057",
+      "b": "SN-125",
+      "sorte": "echt",
+      "typ": "F3"
+    },
+    {
+      "nr": "A40",
+      "a": "SN-151",
+      "b": "SN-170",
+      "sorte": "fremd",
+      "typ": "R3/S1"
+    }
+  ],
+  "teil_b": [
+    {
+      "nr": "B01",
+      "notiz": "SN-143",
+      "typ": "V4"
+    },
+    {
+      "nr": "B02",
+      "notiz": "SN-004",
+      "typ": "S2"
+    },
+    {
+      "nr": "B03",
+      "notiz": "SN-053",
+      "typ": "V6"
+    },
+    {
+      "nr": "B04",
+      "notiz": "SN-157",
+      "typ": "F2"
+    },
+    {
+      "nr": "B05",
+      "notiz": "SN-036",
+      "typ": "V5"
+    },
+    {
+      "nr": "B06",
+      "notiz": "SN-141",
+      "typ": "P1"
+    },
+    {
+      "nr": "B07",
+      "notiz": "SN-025",
+      "typ": "V2"
+    },
+    {
+      "nr": "B08",
+      "notiz": "SN-067",
+      "typ": "P4"
+    },
+    {
+      "nr": "B09",
+      "notiz": "SN-124",
+      "typ": "P5"
+    },
+    {
+      "nr": "B10",
+      "notiz": "SN-159",
+      "typ": "P2"
+    }
+  ]
+}
