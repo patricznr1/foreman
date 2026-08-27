@@ -143,6 +143,14 @@ def main() -> None:
                         "source_type": t["source_type"],
                         "id": t["id"],
                         "machine_id": t.get("machine_id"),
+                        # Der Zeitstempel ist der Tiebreaker der Fusion. Ohne ihn
+                        # laesst sich aus Einzelquellen-Laeufen keine Fusion
+                        # nachbilden — die Rohdatei waere nur fuer die eine
+                        # Zusammenstellung brauchbar, mit der sie erhoben wurde.
+                        "timestamp": t.get("timestamp"),
+                        # Welche Quellen den Vorgang gefunden haben (Backend ab
+                        # 27.08.2026). Fehlt bei aelteren Laeufen.
+                        "gefunden_von": t.get("gefunden_von") or [],
                         "excerpt": t.get("excerpt", ""),
                         "detail": t.get("detail") or {},
                     }

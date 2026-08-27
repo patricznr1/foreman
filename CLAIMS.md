@@ -79,7 +79,10 @@ Stand: 2026-08-27
 | C-076 | Die behaupteten Wiederholungen im erzeugten Störungsmaterial halten der Prüfung durch einen Fachmann stand. | gemessen | 10 von 12 Paaren aus verschiedenen Vorkommen desselben Störungsbildes als dasselbe Problem erkannt; 17 von 20 Störungsbildern ohne Stichwort-Brücke | 2026-08-27 | gueltig | intern |
 | C-077 | Die Namensmaskierung hielt deutsche Fachkomposita für Personennamen und ersetzte den Befund im Text. | gemessen | 90 von 327 Instandhaltungs-Texten verändert, bei den Wartungsberichten 77 von 124; nach der Behebung 22 von 327 | 2026-08-27 | gueltig | intern |
 | C-078 | Gegen die beurteilte Relevanz misst die Archiv-Suche fast doppelt so gut wie gegen die vom Störungsbild geerbte. | gemessen | Trefferquote 0,300 auf 0,550, Ranggüte 0,246 auf 0,503 — dieselben Läufe, nur ein anderer Maßstab | 2026-08-27 | gueltig | intern |
-| C-079 | Die vierte Quelle verdrängt zutreffende Treffer aus der Ergebnisliste. | gemessen | Auf 4 von 10 Anfragen geht mindestens ein zutreffender Treffer verloren; 6 von 10 gewinnen einen hinzu | 2026-08-27 | gueltig | intern |
+| C-080 | Die RRF-Konstante der Archiv-Suche war quellenuebergreifend wirkungslos — sie wurde als offene Kalibrierung gefuehrt, obwohl kein Wert das Ergebnis aenderte. | gemessen | Top-10 identisch fuer k aus {1, 10, 60, 100, 500, 1000}; wirksam war die Konstante nur notiz-intern | 2026-08-27 | gueltig | intern |
+| C-081 | Von den drei eigenen Archiv-Quellen traegt praktisch nur eine — Wartungen und Alarme sind ueber die Suche fast nicht erreichbar. | gemessen | 100 ausgelieferte Plaetze: note 91, maintenance 1, alarm 0. Deutsche Volltextsuche: 4 Treffer ueber 10 Anfragen mal 3 Tabellen | 2026-08-27 | gueltig | intern |
+| C-082 | Der gemessene Aehnlichkeits-Grenzwert stand nirgends im Repository, und gegen welches Einbettungsmodell er erhoben wurde, ist nicht belegt. | gemessen | config.py fuehrte 0.55, Abschnitt 15.10 nannte 0,60; der wirksame Wert lag allein in einer Umgebungsvariable | 2026-08-27 | gueltig | intern |
+| C-083 | Die Ausgabelaenge der Archiv-Suche ist an drei Stellen verschieden belegt — die Verdraengungsmessung gilt deshalb nicht fuer das, was der Werker sieht. | gemessen | Backend-Vorgabe 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -92,20 +95,21 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
 | C-052 | FOREMAN | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | ueberholt | Am 27.08.2026 eingelöst, nicht widerlegt: Die Gegenstelle führt seit dem einen löschenden Weg, und 22 Löschverlangen sind gegen die laufende Instanz durchgelaufen, jedes mit 200 OK und ohne einen Fehlschlag (C-072). Damit ist genau das Kriterium erfüllt, das dieser Eintrag selbst genannt hat — "erst erfüllt, wenn ein Löschverlangen tatsächlich durchläuft". Der Eintrag bleibt stehen, weil er die Lage beschreibt, in der die Plattform ihren Löschweg gebaut hat, bevor es ein Gegenstück gab. |
 | C-054 | FOREMAN | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | ueberholt | Am 27.08.2026 behoben, nicht widerlegt: Alle 22 verwaisten Spiegelungen wurden samt Erinnerung entfernt (C-068), ein zweiter Trockenlauf findet keine mehr. Die Zahl 22 hat sich dabei aus drei unabhängigen Richtungen bestätigt — Spiegelungen gegen Quellzeilen (32 zu 16 und 12 zu 6), die Prüfung des Werkzeugs selbst, und zwei getrennte Anlage-Stapel (0 gegen 22 gespeicherte Rückwege). Der Eintrag bleibt stehen, weil er die Lage beschreibt, gegen die das Werkzeug gebaut wurde. |
+| C-079 | FOREMAN | Die vierte Quelle verdrängt zutreffende Treffer aus der Ergebnisliste. | ueberholt | Der gemessene Pfad wurde geaendert. Die Fusion entdoppelt nicht mehr, sondern fuehrt denselben Vorgang aus mehreren Ranglisten auf einen Schluessel zusammen und summiert die Raenge (archive/search.py::_fusioniere, Commit 362a3a6). Damit gilt der hier beschriebene Mechanismus nicht mehr: Ein Gedaechtnis-Treffer, der auf eine bereits gefundene Zeile zeigt, verdraengt sie nicht, sondern hebt sie. Die ZAHLEN bleiben richtig fuer die damalige Fassung und werden nicht geloescht; sie beschreiben nur nicht mehr das laufende System. Eine Neumessung steht aus — bis dahin ist Freigabe-Bedingung 1 auf dem erweiterten Bestand UNGEMESSEN, nicht erfuellt. |
 
 ## Zählung
 
-Einträge gesamt: 77
+Einträge gesamt: 81
 
 Nach Status:
 
-- gemessen: 70
+- gemessen: 74
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 72
-- ueberholt: 5
+- gueltig: 75
+- ueberholt: 6
 - ungeprueft: 0

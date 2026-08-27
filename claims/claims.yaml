@@ -2097,7 +2097,17 @@ claims:
     fundstelle:
       - "tools/archiv_guete/goldset_v3.json"
       - "GROUND_TRUTH.md, Abschnitt 15.10"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Der gemessene Pfad wurde geaendert. Die Fusion entdoppelt nicht mehr,
+      sondern fuehrt denselben Vorgang aus mehreren Ranglisten auf einen
+      Schluessel zusammen und summiert die Raenge (archive/search.py::_fusioniere,
+      Commit 362a3a6). Damit gilt der hier beschriebene Mechanismus nicht mehr:
+      Ein Gedaechtnis-Treffer, der auf eine bereits gefundene Zeile zeigt,
+      verdraengt sie nicht, sondern hebt sie. Die ZAHLEN bleiben richtig fuer
+      die damalige Fassung und werden nicht geloescht; sie beschreiben nur
+      nicht mehr das laufende System. Eine Neumessung steht aus — bis dahin ist
+      Freigabe-Bedingung 1 auf dem erweiterten Bestand UNGEMESSEN, nicht erfuellt.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -2114,3 +2124,127 @@ claims:
       haben keine gemeinsame Skala, und die Fusion verwirft sie. Es gibt derzeit
       kein Signal, an dem sich entscheiden liesse, ob ein Erinnerungs-Treffer
       besser ist als eine verdrängte Notiz.
+  # ──────────────────────────────────────────────────────────────────────
+  # Fusion der Archiv-Suche — Befunde vom 27.08.2026
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-080"
+    aussage: "Die RRF-Konstante der Archiv-Suche war quellenuebergreifend wirkungslos — sie wurde als offene Kalibrierung gefuehrt, obwohl kein Wert das Ergebnis aenderte."
+    status: "gemessen"
+    wert: "Top-10 identisch fuer k aus {1, 10, 60, 100, 500, 1000}; wirksam war die Konstante nur notiz-intern"
+    bedingung: >-
+      Erhoben am 27.08.2026 auf zwei Wegen. Erstens am Quelltext: `archive/search.py`
+      haengte jeden Treffer als (Rang, Treffer) in EINE Liste und sortierte danach
+      ueber `1/(RRF_K + Rang)` je einzelnem Eintrag — eine Summierung ueber Quellen
+      war strukturell unmoeglich. Zweitens nachgerechnet: Bei disjunkten Ranglisten
+      faellt `1/(k+r)` in r streng monoton, jedes k liefert dieselbe Reihenfolge; die
+      globale Top-10 ist ueber sechs Werte byte-gleich. WIRKSAM war die Konstante
+      sehr wohl innerhalb der Notiz-Quelle, wo `notes/search.py` die Vektor- und die
+      Volltexthaelfte summiert — dort ist sie eine echte Stellschraube und war es
+      immer. Die Aussage betrifft ausschliesslich die quellenuebergreifende Fusion.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/archive/search.py (Fassung vor Commit 362a3a6)"
+      - "src/foreman/notes/search.py, ORDER BY der hybriden Notiz-Suche"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DIE FEHLERKLASSE IST ALLGEMEINER ALS DER EINZELFALL: eine Zahl als offene
+      Kalibrierung fuehren, ohne dass ein Lauf mit zwei Werten zwei Ergebnisse
+      liefert. Sie band Aufmerksamkeit, die woanders fehlte. Zweiter Fall in
+      derselben Liste: die nDCG-Gewichtung 2/1, deren Wahl das Systemranking bei
+      drei Relevanzstufen nicht dreht (Kanoulas & Aslam, CIKM 2009: Kendall's tau
+      0,9414 bis 0,9772). Seit dem Umbau auf den Vorgangsschluessel wirkt die
+      Konstante auch quellenuebergreifend; ein Test fordert das mit zwei Werten
+      und zwei Ergebnissen ein.
+
+  - id: "C-081"
+    aussage: "Von den drei eigenen Archiv-Quellen traegt praktisch nur eine — Wartungen und Alarme sind ueber die Suche fast nicht erreichbar."
+    status: "gemessen"
+    wert: "100 ausgelieferte Plaetze: note 91, maintenance 1, alarm 0. Deutsche Volltextsuche: 4 Treffer ueber 10 Anfragen mal 3 Tabellen"
+    bedingung: >-
+      Erhoben am 27.08.2026 aus den Rohdaten der Messlaeufe
+      tools/archiv_guete/messung_v2_basis.json (drei Quellen) und
+      messung_v2_gedaechtnis.json (vier Quellen), zehn Anfragen mal zehn Plaetze.
+      Mit Gedaechtnis: note 69, memory 26, maintenance 1, alarm 0. Die Ursache
+      wurde getrennt erhoben, indem `websearch_to_tsquery('german')` je Anfrage
+      gegen jede der drei Tabellen gefahren wurde: vier Treffer insgesamt, davon
+      einer in maintenance_events und keiner in alarms. Grund ist die Kombination
+      aus fehlendem Vektorzweig (nur worker_notes traegt ein Embedding) und einer
+      deutschen Volltextkonfiguration, die Komposita nicht zerlegt.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/messung_v2_basis.json"
+      - "tools/archiv_guete/messung_v2_gedaechtnis.json"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DIE ZAHL AENDERT: Die Rede von "drei eigenen Quellen gegen eine vierte"
+      beschreibt die Anlage, nicht den Betrieb. Wartung und Alarm sind keine
+      schwachen Mitspieler, sie sind nicht im Spiel. Das verschiebt auch die
+      Deutung von C-079: Das Gedaechtnis verdraengt keine drei Quellen, sondern
+      Schichtnotizen. UND ES ZEIGT EINEN WEG: Beide Tabellen werden bereits ins
+      Gedaechtnis gespiegelt, dessen Abruf semantisch sucht. Mit der Rueckabbildung
+      auf die Quellzeile kommt eine semantisch gefundene Wartung als vollwertiger
+      Archiv-Treffer zurueck — ohne Migration, ohne Index, ohne Backfill. Wie
+      vollstaendig der Rueckweg im Bestand ist, ist NICHT erhoben.
+
+  - id: "C-082"
+    aussage: "Der gemessene Aehnlichkeits-Grenzwert stand nirgends im Repository, und gegen welches Einbettungsmodell er erhoben wurde, ist nicht belegt."
+    status: "gemessen"
+    wert: "config.py fuehrte 0.55, Abschnitt 15.10 nannte 0,60; der wirksame Wert lag allein in einer Umgebungsvariable"
+    bedingung: >-
+      Erhoben am 27.08.2026 gegen den Quelltext und die Konfigurationsdateien:
+      src/foreman/config.py trug 0.55 als Vorgabe, GROUND_TRUTH Abschnitt 15.8
+      ebenfalls, Abschnitt 15.10 nannte 0,60, und C-048 belegt 0,60 als gemessen.
+      Weder .env noch .env.example fuehren FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE.
+      Zur Kalibrierungsgrundlage: C-048 misst "gegen die laufende Instanz" und
+      nennt das Einbettungsmodell nicht; die Umgebung jener Instanz liegt nicht im
+      Repository. Die Zuschreibung "fuer bge-m3 bestimmt" in Abschnitt 15.10 hat
+      im Repository KEINE Fundstelle.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/config.py, archive_vector_max_distance"
+      - "src/foreman/embeddings/kalibrierung.py"
+      - "GROUND_TRUTH.md, Abschnitte 15.8 und 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Ein Wert ohne bekannte Grundlage ist schlechter als ein Wert mit falscher:
+      Er laesst sich nicht einmal widerlegen. Cosinus-Abstaende sind zwischen
+      Modellen nicht vergleichbar (Steck, Ekanadham, Kallus, WWW 2024) — dieselbe
+      Zahl bedeutet bei einem anderen Modell eine andere Strenge, und der Ausfall
+      ist still: Die Suche liefert weniger, und das sieht von aussen aus wie ein
+      leerer Bestand. Behoben am 27.08.2026: Die Vorgabe ist jetzt der gemessene
+      0.60, ein Test bindet sie an den Registereintrag, und der Start meldet,
+      solange die Grundlage unbelegt ist oder ein anderes Modell laeuft.
+
+  - id: "C-083"
+    aussage: "Die Ausgabelaenge der Archiv-Suche ist an drei Stellen verschieden belegt — die Verdraengungsmessung gilt deshalb nicht fuer das, was der Werker sieht."
+    status: "gemessen"
+    wert: "Backend-Vorgabe 5, Anzeige 12, Messwerkzeug 10"
+    bedingung: >-
+      Erhoben am 27.08.2026 gegen den Quelltext: DEFAULT_SEARCH_K = 5 in
+      src/foreman/notes/search.py (uebernommen als Vorgabe des Query-Parameters in
+      archive/router.py), 12 in frontend/lib/memory/url.ts, 10 in
+      tools/archiv_guete/miss.py und in der Anfragedatei des Bewertungssatzes.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/notes/search.py"
+      - "frontend/lib/memory/url.ts"
+      - "tools/archiv_guete/miss.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      FOLGE FUER C-079: Die dort gemessene Verdraengung gilt fuer zehn Plaetze.
+      Der Werker sieht zwoelf, und bei mehr Plaetzen ist weniger zu verdraengen.
+      Die Zahl ist damit eine Obergrenze fuer das Produkt, keine Aussage ueber es.
+      Wer die Freigabe-Bedingung an die Verdraengung knuepft, muss vorher
+      entscheiden, welche Ausgabelaenge gilt — sonst misst die Bedingung ein
+      System, das so nicht ausgeliefert wird.
