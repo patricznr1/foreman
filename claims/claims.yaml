@@ -1814,3 +1814,35 @@ claims:
       perfekter Suche keine Antwort. Die Freigabe belegt, dass die vierte Quelle
       mehr Zutreffendes findet als die drei eigenen allein — nicht, dass sie das
       Produktversprechen einlöst.
+
+  - id: "C-071"
+    aussage: "Ein Erinnerungs-Treffer zeigte das Datum seiner Speicherung statt das des Vorgangs."
+    status: "gemessen"
+    wert: "19 von 19 geprüften Treffern trugen ein Datum, dem ihr eigener Auszug widersprach; behoben am 27.08.2026"
+    bedingung: >-
+      Erhoben am 27.08.2026 gegen die laufende Instanz, bei der Sichtprüfung
+      dessen, was die Anzeige nach dem Umlegen des Schalters bekommen hätte. Die
+      Fassade führt unter occurred_at den Zeitpunkt, zu dem die Erinnerung
+      ANGELEGT wurde; die Zeit des Vorgangs steht in der Nutzlast (performed_at,
+      raised_at, started_at, created_at) und geht jetzt vor. Vorher zeigte die
+      Trefferkarte den 25.08. für Vorgänge aus dem Juni, während der Auszug
+      darunter das richtige Datum nannte. Kein Absturz, keine Meldung.
+      Ableitungen des Systems behalten die Fassadenzeit — sie haben keinen
+      eigenen Vorgangszeitpunkt, und wann sie abgeleitet wurden, IST ihre Zeit;
+      eine Aufbau-Kontrolle hält das fest.
+    datum: "2026-08-27"
+    fundstelle:
+      - "src/foreman/reasoners/event_chain/recall.py"
+      - "tests/reasoners/event_chain/test_recall.py"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Der Eintrag steht hier, weil er zeigt, was ein grüner Prüflauf NICHT
+      leistet: Alle sieben Freigabe-Bedingungen standen, 1333 Tests waren grün,
+      und trotzdem hätte jede Erinnerung in der Halle ein falsches Datum
+      getragen. Gefunden wurde es beim Nachsehen, was die Anzeige tatsächlich
+      bekommt — dem Schritt, den man am ehesten weglässt, wenn alles grün ist.
+      Deshalb gehört er in §15.10 als Schritt vor jedes Umlegen eines
+      Anzeige-Schalters, nicht danach.

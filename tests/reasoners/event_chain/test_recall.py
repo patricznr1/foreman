@@ -312,3 +312,79 @@ def test_treffer_aus_der_gegenstelle_wird_entpackt() -> None:
     assert len(items) == 1
     assert items[0].content == "Spindel mahlte beim Hochlauf."
     assert items[0].ref == "e-9"
+
+
+# ------------------------------------------------------------
+#  Die Zeit des VORGANGS, nicht die des Speicherns (Befund 27.08.2026)
+# ------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("zeitschluessel", "ereignisart"),
+    [
+        ("performed_at", "Wartung"),
+        ("raised_at", "Alarm"),
+        ("started_at", "Produktionslauf"),
+        ("created_at", "Schichtnotiz"),
+    ],
+)
+def test_die_ereigniszeit_schlaegt_die_speicherzeit(zeitschluessel: str, ereignisart: str) -> None:
+    """Angezeigt wird, WANN DER VORGANG WAR — nicht, wann jemand ihn notiert hat.
+
+    Die Fassade führt unter `occurred_at` den Zeitpunkt, zu dem die Erinnerung
+    ANGELEGT wurde. Gegen die laufende Instanz erhoben trugen damit 19 von 19
+    Erinnerungs-Treffern ein Datum, dem ihr eigener Auszug direkt widersprach:
+    angezeigt der 25.08., im Text der Juni. Kein Absturz, keine Fehlermeldung —
+    eine stille Unwahrheit über die eigene Datenlage, und in einer nach Zeit
+    lesbaren Trefferliste die schlimmste Sorte.
+
+    Alle vier gespiegelten Ereignisarten werden geprüft: Ein Zeitschlüssel, den
+    nur eine davon trägt, hilft den anderen nicht.
+    """
+    antwort = {
+        "results": [
+            {
+                "id": "aaaaaaaa-0000-4000-8000-000000000000",
+                "content": f"{ereignisart} an Maschine 4 (2026-06-11).",
+                "occurred_at": "2026-08-25T21:27:27.808597",  # Speicherzeit
+                "metadata": {
+                    "machine_id": 4,
+                    zeitschluessel: "2026-06-11T17:03:51.561708+00:00",  # Vorgangszeit
+                },
+            }
+        ]
+    }
+
+    items = map_recall_response(antwort, max_results=5)
+
+    assert len(items) == 1
+    assert items[0].occurred_at is not None
+    assert items[0].occurred_at.date().isoformat() == "2026-06-11", (
+        f"{ereignisart}: angezeigt würde die Speicherzeit statt der Vorgangszeit"
+    )
+
+
+def test_ohne_ereigniszeit_traegt_die_fassadenzeit() -> None:
+    """AUFBAU-KONTROLLE zur Vorrangregel: Sie darf die Rückfallposition nicht kappen.
+
+    Ableitungen des Systems (Drift, Ereigniskette) haben keinen eigenen
+    Vorgangszeitpunkt in der Nutzlast — wann sie abgeleitet wurden, IST ihre
+    Zeit. Ohne diesen Fall verlören sie ihre Zeitangabe ganz und wären in einer
+    nach Zeit sortierten Liste nicht mehr einsortierbar (Freigabe-Bedingung 4).
+    """
+    antwort = {
+        "results": [
+            {
+                "id": "bbbbbbbb-0000-4000-8000-000000000000",
+                "content": "Verhaltens-Drift an Datenpunkt 12 erkannt.",
+                "occurred_at": "2026-08-25T21:27:27.808597",
+                "metadata": {"machine_id": 4, "data_point_id": 12},
+            }
+        ]
+    }
+
+    items = map_recall_response(antwort, max_results=5)
+
+    assert len(items) == 1
+    assert items[0].occurred_at is not None
+    assert items[0].occurred_at.date().isoformat() == "2026-08-25"
