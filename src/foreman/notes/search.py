@@ -81,7 +81,10 @@ async def embed_and_search(
     ob das ehrlich durchgereicht (Such-Route → 503) oder best-effort gefangen wird
     (Ereignisketten-Reasoner → Zeitfenster-Fallback, §15).
     """
-    vectors = await provider.embed([query_text])
+    # mode="query": Manche Modelle (Snowflake Arctic v2.0) verlangen auf der
+    # Anfrageseite einen Praefix, auf der Dokumentseite nicht. Ohne ihn laeuft
+    # so ein Modell still schlechter — kein Fehler, nur weniger Treffer.
+    vectors = await provider.embed([query_text], mode="query")
     return await search_similar_notes(session, vectors[0], machine_id=machine_id, k=k)
 
 
@@ -208,7 +211,7 @@ async def embed_and_search_hybrid(
     """
     query_embedding: Vector | None
     try:
-        query_embedding = (await provider.embed([query_text]))[0]
+        query_embedding = (await provider.embed([query_text], mode="query"))[0]
     except EmbeddingError as exc:
         # Graceful: kein Vektor-Zweig, Volltext trägt allein. Kein Query-Text/keine PII im Log (§15.7).
         logger.warning(

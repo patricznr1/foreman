@@ -42,6 +42,11 @@ Priority = Literal[
 ]
 
 # Backend-Namen (niedrig-kardinale Metrik-Labels, keine Library-Typen nach außen).
+# Wofuer ein Text eingebettet wird. Manche Modelle (Snowflake Arctic v2.0)
+# verlangen auf der ANFRAGE-Seite einen Praefix, auf der Dokumentseite nicht;
+# ohne die Unterscheidung laeuft so ein Modell still schlechter.
+EmbeddingMode = Literal["query", "passage"]
+
 OLLAMA_BACKEND = "ollama"
 ST_BACKEND = "sentence_transformers"
 OPENAI_BACKEND = "openai"

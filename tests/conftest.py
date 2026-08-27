@@ -46,6 +46,7 @@ from foreman.core.roles import Role
 from foreman.db.models import Machine, User
 from foreman.db.provisioning import create_user
 from foreman.db.session import get_session
+from foreman.embeddings.config import EmbeddingMode
 from foreman.main import create_app
 
 # Test-Schlüssel für die HMAC-Pseudonymisierung (32-Byte-Hex). Nur für Tests.
@@ -182,7 +183,9 @@ class _StubEmbeddingProvider:
     läuft so ohne Netz/Timeout durch. Tests, die echte Such-Reihenfolge oder den
     Backend-Ausfall prüfen, überschreiben den Provider gezielt selbst."""
 
-    async def embed(self, texts: list[str]) -> list[list[float]]:
+    async def embed(
+        self, texts: list[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[list[float]]:
         return [[0.0] * 1024 for _ in texts]
 
 

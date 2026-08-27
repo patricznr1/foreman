@@ -25,6 +25,7 @@ from foreman.db.models import (
     ReasonerExplanationRecord,
     WorkerNote,
 )
+from foreman.embeddings.config import EmbeddingMode
 from foreman.mcp import tools
 from foreman.reasoners.drift.service import DRIFT_ALARM_CODE
 
@@ -40,7 +41,9 @@ _SIM_CAVEAT = (
 class _StubProvider:
     """Embedding-Stub: liefert einen festen Query-Vektor (kein echtes Backend)."""
 
-    async def embed(self, texts: list[str]) -> list[list[float]]:
+    async def embed(
+        self, texts: list[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[list[float]]:
         return [[0.1] * 1024 for _ in texts]
 
 

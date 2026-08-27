@@ -19,6 +19,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.db.models import Alarm, Machine, WorkerNote
+from foreman.embeddings.config import EmbeddingMode
 from foreman.llm import LiteLLMGateway
 from foreman.reasoners.event_chain.chain import reconstruct_chain
 from foreman.reasoners.event_chain.schema import ChainEventType, ChainWindow
@@ -64,12 +65,16 @@ class _FixedProvider:
     def __init__(self, vector: list[float]) -> None:
         self._vector = vector
 
-    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    async def embed(
+        self, texts: Sequence[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[list[float]]:
         return [list(self._vector) for _ in texts]
 
 
 class _FailProvider:
-    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    async def embed(
+        self, texts: Sequence[str], *, mode: EmbeddingMode = "passage"
+    ) -> list[list[float]]:
         raise RuntimeError("Embedding-Backend aus (Test)")
 
 

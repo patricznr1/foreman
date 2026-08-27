@@ -21,6 +21,7 @@ from sqlalchemy.pool import NullPool
 from foreman.api.deps import get_embedding_provider
 from foreman.config import Settings
 from foreman.db.models import Machine, WorkerNote
+from foreman.embeddings.config import EmbeddingMode
 from foreman.embeddings.errors import ProviderUnavailable
 from foreman.embeddings.provider import Vector
 
@@ -49,14 +50,14 @@ class _FixedProvider:
     def __init__(self, vector: Vector) -> None:
         self._vector = vector
 
-    async def embed(self, texts: Sequence[str]) -> list[Vector]:
+    async def embed(self, texts: Sequence[str], *, mode: EmbeddingMode = "passage") -> list[Vector]:
         return [list(self._vector) for _ in texts]
 
 
 class _FailProvider:
     """Simuliert ein nicht erreichbares Embedding-Backend (→ graceful Degradation)."""
 
-    async def embed(self, texts: Sequence[str]) -> list[Vector]:
+    async def embed(self, texts: Sequence[str], *, mode: EmbeddingMode = "passage") -> list[Vector]:
         raise ProviderUnavailable("❌ kein Backend (Test)", attempted=("ollama",))
 
 

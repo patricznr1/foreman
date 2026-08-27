@@ -19,6 +19,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.db.models import Machine, WorkerNote
+from foreman.embeddings.config import EmbeddingMode
 from foreman.embeddings.errors import ProviderUnavailable
 from foreman.embeddings.provider import Vector
 from foreman.notes import embed_and_search_hybrid, hybrid_search_notes
@@ -50,14 +51,14 @@ class _FixedProvider:
     def __init__(self, vector: Vector) -> None:
         self._vector = vector
 
-    async def embed(self, texts: Sequence[str]) -> list[Vector]:
+    async def embed(self, texts: Sequence[str], *, mode: EmbeddingMode = "passage") -> list[Vector]:
         return [list(self._vector) for _ in texts]
 
 
 class _FailProvider:
     """Simuliert ein nicht erreichbares Embedding-Backend (wirft EmbeddingError)."""
 
-    async def embed(self, texts: Sequence[str]) -> list[Vector]:
+    async def embed(self, texts: Sequence[str], *, mode: EmbeddingMode = "passage") -> list[Vector]:
         raise ProviderUnavailable("❌ kein Backend (Test)", attempted=("ollama",))
 
 
