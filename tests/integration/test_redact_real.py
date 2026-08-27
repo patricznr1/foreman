@@ -50,3 +50,53 @@ def test_real_presidio_keeps_text_without_names() -> None:
     redactor = PresidioRedactor()
     text = "Spindeltemperatur erhöht, Vorschub reduziert, läuft wieder stabil"
     assert redactor.redact_person_names(text) == text
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Hallensprache bleibt stehen (Befund 27.08.2026)
+#
+#  An 327 echten Instandhaltungs-Texten gemessen: Das Modell hält deutsche
+#  Fachkomposita für Personennamen und ist sich dabei GENAU SO SICHER wie bei
+#  echten Namen — "Klemmer", "Nachtschicht" und "Energiekette" bekommen 0,85,
+#  "Thomas Weber" ebenfalls. Die Schwelle kann das nicht trennen.
+#
+#  DIESE FÄLLE BRAUCHEN DAS ECHTE MODELL. Eine Attrappe würde sie nicht fangen:
+#  Sie prüfen nicht den Filter (das tun die Einheitstests), sondern ob der
+#  Filter am ECHTEN Erkenner das Richtige tut.
+# ──────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Prüfung AX-01 auf Laufgeräusch. Führung und Lager ohne Befund. "
+        "Energiekette hatte Kontakt zur Verkleidung.",
+        "Prüfung Fügewerkzeug PR-02 auf Meldung aus der Endkontrolle. Niederhalterfeder gebrochen.",
+        "FD-02 macht den Klemmer doppelt so langsam zu wie FD-01.",
+        "AX-04 hat heute Nacht die Position verloren. Nachtschicht hat nichts dazu geschrieben.",
+    ],
+)
+def test_der_befund_bleibt_im_text(text: str) -> None:
+    """Der Wortlaut wird nicht angetastet, wo kein Name steht.
+
+    Ersetzt wurde vorher der BEFUND: aus „Niederhalterfeder gebrochen" wurde
+    „[PERSON] gebrochen" — der Satz verlor genau das Wort, wegen dessen ihn
+    jemand später sucht. Für eine Suche über Instandhaltungstexte ist das der
+    teuerste denkbare Verlust.
+    """
+    assert PresidioRedactor().redact_person_names(text) == text
+
+
+def test_echter_name_faellt_auch_neben_fachsprache() -> None:
+    """AUFBAU-KONTROLLE am echten Modell: Der Filter darf nichts durchlassen.
+
+    Ohne diese Zusicherung wäre die Verbesserung der Lesbarkeit zugleich ein
+    Datenschutz-Verlust — ein Name, der sich hinter einem Fachbegriff versteckt.
+    """
+    text = "Nachschmierung Gelenklager mit Thomas Weber besprochen, Regelintervall bleibt."
+    maskiert = PresidioRedactor().redact_person_names(text)
+    assert "Weber" not in maskiert
+    assert PERSON_PLACEHOLDER in maskiert
+    # Und die Fachbegriffe stehen weiterhin da.
+    assert "Gelenklager" in maskiert
+    assert "Regelintervall" in maskiert

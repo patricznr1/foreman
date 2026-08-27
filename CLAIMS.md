@@ -77,6 +77,7 @@ Stand: 2026-08-27
 | C-074 | Wartungen und Alarme, die ein Mensch über die Anwendung einträgt, waren für die vierte Archiv-Quelle unsichtbar. | gemessen | record_semantic_event kam in maintenance_events.py und alarms.py null-mal vor, in worker_notes.py zweimal; behoben am 27.08.2026 | 2026-08-27 | gueltig | intern |
 | C-075 | Ein Fehlersucher beurteilt zwei Vorfälle nach dem Symptombild, nicht nach der Ursache — die bisher angesetzte Relevanz-Definition war zu eng. | gemessen | 6 von 8 Ablenkerpaaren als dasselbe Problem gewertet, obwohl sie eine andere Ursache haben; Aufbau-Kontrollen 5 von 5 getroffen | 2026-08-27 | gueltig | intern |
 | C-076 | Die behaupteten Wiederholungen im erzeugten Störungsmaterial halten der Prüfung durch einen Fachmann stand. | gemessen | 10 von 12 Paaren aus verschiedenen Vorkommen desselben Störungsbildes als dasselbe Problem erkannt; 17 von 20 Störungsbildern ohne Stichwort-Brücke | 2026-08-27 | gueltig | intern |
+| C-077 | Die Namensmaskierung hielt deutsche Fachkomposita für Personennamen und ersetzte den Befund im Text. | gemessen | 90 von 327 Instandhaltungs-Texten verändert, bei den Wartungsberichten 77 von 124; nach der Behebung 22 von 327 | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -92,17 +93,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 74
+Einträge gesamt: 75
 
 Nach Status:
 
-- gemessen: 67
+- gemessen: 68
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 69
+- gueltig: 70
 - ueberholt: 5
 - ungeprueft: 0

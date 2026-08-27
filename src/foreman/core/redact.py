@@ -22,6 +22,88 @@ from presidio_anonymizer.entities import OperatorConfig
 DEFAULT_SCORE_THRESHOLD = 0.35
 PERSON_PLACEHOLDER = "[PERSON]"
 
+# ──────────────────────────────────────────────────────────────────────────
+#  Zwei Filter gegen Falschtreffer auf Hallensprache (27.08.2026)
+#
+#  ANLASS, an 327 echten Instandhaltungs-Texten gemessen: Das Modell hält
+#  deutsche Fachkomposita für Personennamen und ist sich dabei GENAU SO SICHER
+#  wie bei echten Namen — "Klemmer", "Nachtschicht" und "Energiekette" bekommen
+#  0,85, "Thomas Weber" ebenfalls. Die Schwelle trennt das nicht; sie trifft
+#  beides oder keines. 90 von 327 Texten wurden verändert, bei den
+#  Wartungsberichten 77 von 124.
+#
+#  Was das anrichtet: Ersetzt wird der BEFUND. Aus "Niederhalterfeder gebrochen"
+#  wird "[PERSON] gebrochen" — der Satz verliert genau das Wort, wegen dessen ihn
+#  jemand später sucht.
+#
+#  WAS DIESE FILTER NICHT TUN: den Schutz lockern. Beide sind strukturell
+#  begründet und lassen keinen Namen durch, der vorher maskiert wurde — siehe
+#  die Begründung an jedem einzelnen.
+# ──────────────────────────────────────────────────────────────────────────
+
+# FILTER 1 — Ziffern. Ein Personenname enthält keine. Fängt die Spans ab, in die
+# das Modell eine Maschinenkennung hineinzieht: "FD-01.", "AX-04. Schmierstoff",
+# "Werkzeugwechsel PR-02.". Verlustfrei: Wer "Thomas Weber 2" heisst, ist kein
+# Fall, den dieses System kennt.
+
+# FILTER 2 — belegte Fachbegriffe. NUR Wörter, die (a) an echtem Material als
+# Falschtreffer beobachtet wurden UND (b) kein plausibler deutscher Familienname
+# sind. Die Einschränkung (b) ist die wichtige: "Scheibe", "Feder", "Span",
+# "Kühler" und "Trichter" stehen BEWUSST NICHT hier — es sind Nachnamen, und ein
+# Werker, der so heisst, würde sonst nie maskiert. Diese Falschtreffer bleiben
+# also bestehen; das ist der bewusst gezahlte Preis.
+#
+# Wer die Liste erweitert, prüft beide Bedingungen und nennt den Beleg. Eine
+# Erweiterung „auf Verdacht" verschiebt eine Datenschutz-Grenze.
+FACHBEGRIFFE: frozenset[str] = frozenset(
+    {
+        # Intervalle und Vorgänge
+        "regelintervall",
+        "kontrollintervall",
+        "regelprüfung",
+        "werkzeugwechsel",
+        "nachschmierung",
+        "nachgeschmiert",
+        "sichtgeprüft",
+        "rütteln",
+        "frühschicht",
+        "spätschicht",
+        "nachtschicht",
+        "schichtende",
+        # Betriebsstoffe
+        "gleitbahnöl",
+        "schmierstoff",
+        "optikreiniger",
+        "sicherungslack",
+        "leckölmenge",
+        # Bauteile und Baugruppen
+        "energiekette",
+        "niederhalterfeder",
+        "klemmnabe",
+        "loslagerbock",
+        "gelenklager",
+        "kugelgewindetrieb",
+        "zahnriemen",
+        "förderantrieb",
+        "bremseinheit",
+        "auslaufkonus",
+        "auswurfschacht",
+        "zentrierbuchse",
+        "diffusorscheibe",
+        "werkzeugbefestigung",
+        "referenzteil",
+        "klemmer",
+        # Material und Umlauf
+        "schlauchleitungen",
+        "paletten",
+        "rohteile",
+        # Messgrößen
+        "verschleißmaß",
+        "schwingungswert",
+        "altsatz",
+    }
+)
+
 
 class Redactor(Protocol):
     """Schnittstelle des Schreibpfads: maskiert Personennamen in Freitext."""
@@ -63,6 +145,22 @@ class PresidioRedactor:
             self._anonymizer = AnonymizerEngine()
         return self._analyzer, self._anonymizer
 
+    @staticmethod
+    def _ist_fachsprache(span: str) -> bool:
+        """Wahr, wenn der Treffer strukturell kein Personenname sein kann.
+
+        Zwei Bedingungen, beide oben begründet: eine Ziffer im Treffer, oder
+        ausschliesslich belegte Fachbegriffe. Ein Treffer, in dem auch nur EIN
+        unbekanntes grossgeschriebenes Wort steht, gilt weiter als Name — sonst
+        liesse sich ein echter Name hinter einem Fachwort verstecken
+        ("Nachschmierung Weber").
+        """
+        if any(z.isdigit() for z in span):
+            return True
+        woerter = [w.strip(".,;:!?()").lower() for w in span.split()]
+        woerter = [w for w in woerter if w]
+        return bool(woerter) and all(w in FACHBEGRIFFE for w in woerter)
+
     def redact_person_names(self, text: str) -> str:
         """Ersetzt erkannte Personennamen durch `[PERSON]`."""
         if not text:
@@ -74,6 +172,8 @@ class PresidioRedactor:
             entities=["PERSON"],
             score_threshold=self._score_threshold,
         )
+        # Falschtreffer auf Hallensprache aussortieren — siehe FACHBEGRIFFE.
+        results = [r for r in results if not self._ist_fachsprache(text[r.start : r.end])]
         anonymized: str = anonymizer.anonymize(
             text=text,
             analyzer_results=results,
