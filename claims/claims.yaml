@@ -1315,7 +1315,15 @@ claims:
     datum: "2026-08-25"
     fundstelle:
       - "src/foreman/substrate/nachtrag.py"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Am 27.08.2026 behoben, nicht widerlegt: Alle 22 verwaisten Spiegelungen
+      wurden samt Erinnerung entfernt (C-068), ein zweiter Trockenlauf findet
+      keine mehr. Die Zahl 22 hat sich dabei aus drei unabhängigen Richtungen
+      bestätigt — Spiegelungen gegen Quellzeilen (32 zu 16 und 12 zu 6), die
+      Prüfung des Werkzeugs selbst, und zwei getrennte Anlage-Stapel (0 gegen 22
+      gespeicherte Rückwege). Der Eintrag bleibt stehen, weil er die Lage
+      beschreibt, gegen die das Werkzeug gebaut wurde.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -1644,6 +1652,16 @@ claims:
       Zusammenführung der Doppelfunde (C-063). Die Schwelle gilt in der am
       selben Tag präzisierten Fassung; nach der vorherigen Lesart wäre sie NICHT
       erfüllt — siehe C-064, wo beide Zahlen nebeneinanderstehen.
+
+      MESSBEDINGUNG, nachgetragen am 27.08.2026: Die Zahlen stammen aus einem
+      eigens hergestellten Messzustand mit eingeschaltetem
+      FOREMAN_ARCHIVE_SUBSTRATE_ENABLED, nicht aus dem Normalzustand der
+      Instanz, in dem der Schalter aus ist. Steht er aus, reicht der Router den
+      Substrat-Client nicht durch und setzt substrate_k=0; die vierte Quelle ist
+      dann strukturell still, unabhängig von den angeforderten Quellen. Belegt
+      durch zwei Läufe gegeneinander: mit Schalter 77 Gedächtnis-Treffer über 18
+      Anfragen, ohne Schalter null. Das gehört hierher, weil ein Leser sonst
+      annimmt, die Zahlen seien im laufenden Betrieb entstanden.
     datum: "2026-08-27"
     fundstelle:
       - "tools/archiv_guete/messung_2026-08-27_basis.json"
@@ -1701,3 +1719,40 @@ claims:
       weitere Befunde betrafen das Messwerkzeug; einer davon hätte eine
       Trefferquote über 1,0 erlaubt, der andere druckte die frühere
       Schwellenfassung über das neue Urteil.
+
+  - id: "C-068"
+    aussage: "Nach dem Entfernen der verwaisten Spiegelungen findet die Archiv-Suche mehr Zutreffendes und ordnet es besser."
+    status: "gemessen"
+    wert: "Trefferquote 0,528 auf 0,558, Präzision 0,394 auf 0,425, Ranggüte 0,548 auf 0,597; Anfragen mit zusätzlichem zutreffendem Treffer 61,1 % auf 66,7 %, verlorene Treffer weiterhin 0"
+    bedingung: >-
+      Gemessen am 27.08.2026 unmittelbar vor und nach dem scharfen Lauf, gegen
+      dieselben 18 Anfragen und dieselben Beurteilungen wie C-049 und C-066, im
+      selben Messzustand (Schalter an, siehe C-066). Entfernt wurden 22
+      Spiegelungen samt Erinnerung, alle mit 200 OK, kein Fehlschlag; ein
+      zweiter Trockenlauf meldet 22 geprüft, 22 mit Quelle, 0 verwaist. Der
+      Anteil der Plätze, die Erinnerungen ohne Rückweg belegen, fällt von 29,2 %
+      auf 11,0 %, die Zahl der Anfragen mit gefallener Ranggüte von 7 auf 5.
+      TRAGENDE KONTROLLE: Die Grundlinie aus drei Quellen ist vor und nach dem
+      Lauf identisch (Trefferquote 0,256, Ranggüte 0,372) — sie muss es sein,
+      weil das Aufräumen ausschliesslich das Gedächtnis angefasst hat. Bewegte
+      sie sich, wäre zwischen den Läufen noch etwas anderes geschehen und der
+      Vergleich wertlos.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/messung_2026-08-27b_nach_aufraeumen_basis.json"
+      - "tools/archiv_guete/messung_2026-08-27b_nach_aufraeumen_gedaechtnis.json"
+      - "docs/messungen/2026-08-27_archiv_goldset_nachmessung.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      Die Vorhersage lautete "steigende Präzision und Ranggüte bei
+      UNVERÄNDERTER Trefferquote" und war in diesem Punkt falsch — die
+      Trefferquote steigt mit. Der Grund ist eine übersehene Grenze: Der Abruf
+      aus dem Gedächtnis liefert je Anfrage nur eine begrenzte Zahl von
+      Erinnerungen; die verwaisten belegten davon Plätze und verdrängten damit
+      schon eine Ebene VOR der Verschmelzung. Das gehört festgehalten, weil eine
+      Vorhersage, die man nachträglich passend macht, nichts mehr wert ist.
+      Offen bleibt: 11,0 % der Plätze gehen weiterhin an Erinnerungen ohne
+      Rückweg (Notiz-Spiegelungen und Ableitungen des Systems, die das Werkzeug
+      bewusst nicht anfasst), und fünf Anfragen verlieren weiterhin Ranggüte.

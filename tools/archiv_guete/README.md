@@ -54,6 +54,20 @@ python miss.py mit_gedaechtnis note,maintenance,alarm,memory
 python werte_aus.py messung_baseline.json messung_mit_gedaechtnis.json
 ```
 
+> **Ohne den Schalter misst der zweite Lauf dasselbe wie der erste.**
+> `FOREMAN_ARCHIVE_SUBSTRATE_ENABLED` muss auf der gemessenen Instanz `true` sein. Steht er
+> auf `false`, reicht `archive/router.py` den Substrat-Client gar nicht durch und setzt
+> `substrate_k=0` — die vierte Quelle ist dann **strukturell still**, egal welche Quellen der
+> Aufrufer anfordert, und die Messung meldet null Zusatztreffer. Im Regelbetrieb ist der
+> Schalter aus; er wird für die Messung an- und danach wieder ausgeschaltet.
+>
+> **Prüfe ihn im laufenden Prozess, nicht in der Variablen** — nach dem Setzen dauert es, bis
+> der neue Stand ausgerollt ist, und eine Messung dazwischen misst den alten:
+>
+> ```bash
+> railway ssh 'python -c "from foreman.config import get_settings; print(get_settings().archive_substrate_enabled)"'
+> ```
+
 **Die Schwellen im Wortlaut** (§15.10, Fassung vom 27.08.2026):
 
 1. Auf **keiner** Anfrage geht ein zutreffender Treffer **verloren**.

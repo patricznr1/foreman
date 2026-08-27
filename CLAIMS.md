@@ -58,7 +58,6 @@ Stand: 2026-08-27
 | C-051 | Der Rückweg für ein Löschverlangen war über die Betriebskonfiguration nicht erreichbar; er ist es seit dem 25.08.2026. | gemessen | Aufruf schlug im Betrieb fehl, während alle Tests bestanden — 22 von 22 Versuchen | 2026-08-25 | gueltig | intern |
 | C-052 | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | gemessen | Die Schnittstelle der Gegenstelle bietet keinen Löschweg — 6 Wege vorhanden, keiner davon löschend | 2026-08-25 | gueltig | intern |
 | C-053 | Die Verdichtung des Gedächtnisses wird von der Plattform nicht angestossen. | gemessen | 62 von 63 Erinnerungen auf der mittleren Ebene, 1 auf der gefestigten; 1 von 63 im Wissensnetz verarbeitet | 2026-08-25 | gueltig | intern |
-| C-054 | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | gemessen | 22 von 44 Spiegelungen ohne zugehörige Quellzeile | 2026-08-25 | gueltig | intern |
 | C-055 | Die Plattform kann das Entfernen einer einzelnen gespiegelten Erinnerung bei der Gegenstelle anfordern. | gemessen | Anforderung nach dem vereinbarten Muster, mit unterscheidbarer Antwort auf einen nicht vorhandenen Eintrag | 2026-08-25 | gueltig | intern |
 | C-056 | Für die Plattform liegt keine Einstufung nach den einschlägigen Regelwerken vor. | gemessen | Kein Verzeichnis für die Einstufung, keine Sektion in der Wahrheitsdatei — 4 Regelwerke offen | 2026-08-25 | gueltig | intern |
 | C-057 | Die Zugriffskontrolle der Schnittstelle wirkt auf der Ebene der Anmeldung, nicht auf der Ebene der einzelnen Ressource. | gemessen | 31 von 47 geprüften Routen ohne Feststellung des Aufrufers an der Route selbst | 2026-08-25 | gueltig | intern |
@@ -70,6 +69,7 @@ Stand: 2026-08-27
 | C-065 | Für Spiegelungen ohne Quellzeile besteht ein Weg, sie samt Erinnerung zu entfernen. | gemessen | Werkzeug gebaut und geprüft am 26.08.2026; betrifft 22 von 44 Spiegelungen (C-054), ohne sie steigt der Anteil zutreffender Treffer von 0,417 auf 0,562 | 2026-08-26 | gueltig | intern |
 | C-066 | Das Gedächtnis als vierte Quelle der Archiv-Suche erfüllt beide Schwellen der Freigabe-Bedingung 1. | gemessen | 0 von 18 Anfragen mit verlorenem Treffer, 11 von 18 = 61,1 % mit zusätzlichem zutreffendem Treffer; mittlere Trefferquote 0,256 auf 0,528, mittlere Ranggüte 0,372 auf 0,548, Anfragen ganz ohne zutreffenden Treffer 5 auf 1 | 2026-08-27 | gueltig | intern |
 | C-067 | Die adversariale Prüfung des Löschwerkzeugs fand vor dem Push zwei Wege, auf denen nicht verwaiste Zeilen gelöscht worden wären. | gemessen | 12 Prüfagenten, 8 Befunde verifiziert, 6 bestätigt, 2 widerlegt; 2 der bestätigten hätten lebende Quellzeilen unwiederbringlich entfernt | 2026-08-27 | gueltig | intern |
+| C-068 | Nach dem Entfernen der verwaisten Spiegelungen findet die Archiv-Suche mehr Zutreffendes und ordnet es besser. | gemessen | Trefferquote 0,528 auf 0,558, Präzision 0,394 auf 0,425, Ranggüte 0,548 auf 0,597; Anfragen mit zusätzlichem zutreffendem Treffer 61,1 % auf 66,7 %, verlorene Treffer weiterhin 0 | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -80,14 +80,15 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 | C-030 | FOREMAN | Die lesenden Listen sind nicht nach Zuständigkeit gefiltert; die Rollensicht ist dort nur eine Anzeigehilfe. | ueberholt | Am 25.08.2026 durch C-057 im Umfang widerlegt: Die Zahl 3 war aus der Beschreibung im Repository abgelesen, nicht an der Anwendung erhoben. Gegen die real gebaute Anwendung sind es 31 von 47 Routen. |
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
+| C-054 | FOREMAN | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | ueberholt | Am 27.08.2026 behoben, nicht widerlegt: Alle 22 verwaisten Spiegelungen wurden samt Erinnerung entfernt (C-068), ein zweiter Trockenlauf findet keine mehr. Die Zahl 22 hat sich dabei aus drei unabhängigen Richtungen bestätigt — Spiegelungen gegen Quellzeilen (32 zu 16 und 12 zu 6), die Prüfung des Werkzeugs selbst, und zwei getrennte Anlage-Stapel (0 gegen 22 gespeicherte Rückwege). Der Eintrag bleibt stehen, weil er die Lage beschreibt, gegen die das Werkzeug gebaut wurde. |
 
 ## Zählung
 
-Einträge gesamt: 65
+Einträge gesamt: 66
 
 Nach Status:
 
-- gemessen: 58
+- gemessen: 59
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
@@ -95,5 +96,5 @@ Nach Status:
 Nach Geltung:
 
 - gueltig: 62
-- ueberholt: 3
+- ueberholt: 4
 - ungeprueft: 0
