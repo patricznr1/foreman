@@ -78,6 +78,8 @@ Stand: 2026-08-27
 | C-075 | Ein Fehlersucher beurteilt zwei Vorfälle nach dem Symptombild, nicht nach der Ursache — die bisher angesetzte Relevanz-Definition war zu eng. | gemessen | 6 von 8 Ablenkerpaaren als dasselbe Problem gewertet, obwohl sie eine andere Ursache haben; Aufbau-Kontrollen 5 von 5 getroffen | 2026-08-27 | gueltig | intern |
 | C-076 | Die behaupteten Wiederholungen im erzeugten Störungsmaterial halten der Prüfung durch einen Fachmann stand. | gemessen | 10 von 12 Paaren aus verschiedenen Vorkommen desselben Störungsbildes als dasselbe Problem erkannt; 17 von 20 Störungsbildern ohne Stichwort-Brücke | 2026-08-27 | gueltig | intern |
 | C-077 | Die Namensmaskierung hielt deutsche Fachkomposita für Personennamen und ersetzte den Befund im Text. | gemessen | 90 von 327 Instandhaltungs-Texten verändert, bei den Wartungsberichten 77 von 124; nach der Behebung 22 von 327 | 2026-08-27 | gueltig | intern |
+| C-078 | Gegen die beurteilte Relevanz misst die Archiv-Suche fast doppelt so gut wie gegen die vom Störungsbild geerbte. | gemessen | Trefferquote 0,300 auf 0,550, Ranggüte 0,246 auf 0,503 — dieselben Läufe, nur ein anderer Maßstab | 2026-08-27 | gueltig | intern |
+| C-079 | Die vierte Quelle verdrängt zutreffende Treffer aus der Ergebnisliste. | gemessen | Auf 4 von 10 Anfragen geht mindestens ein zutreffender Treffer verloren; 6 von 10 gewinnen einen hinzu | 2026-08-27 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -93,17 +95,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 75
+Einträge gesamt: 77
 
 Nach Status:
 
-- gemessen: 68
+- gemessen: 70
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 70
+- gueltig: 72
 - ueberholt: 5
 - ungeprueft: 0

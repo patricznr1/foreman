@@ -2048,3 +2048,69 @@ claims:
       Wörtern sind der bewusst gezahlte Preis; ein Test nagelt die Entscheidung
       fest, damit niemand die Liste stillschweigend erweitert. Das Restrisiko aus
       §8 bleibt unberührt: Der Freitext wird weiterhin NIE als anonym deklariert.
+
+  - id: "C-078"
+    aussage: "Gegen die beurteilte Relevanz misst die Archiv-Suche fast doppelt so gut wie gegen die vom Störungsbild geerbte."
+    status: "gemessen"
+    wert: "Trefferquote 0,300 auf 0,550, Ranggüte 0,246 auf 0,503 — dieselben Läufe, nur ein anderer Maßstab"
+    bedingung: >-
+      Gemessen am 27.08.2026 gegen den erweiterten Bestand (365 Freitext-Einträge
+      mit 20 je dreimal wiederkehrenden Störungsbildern), mit zehn Anfragen eines
+      Inbetriebnehmers. ZWEI MASSSTÄBE auf DENSELBEN Messläufen: Der erste erbt
+      die Relevanz vom Störungsbild (ein Eintrag zählt, weil er zum selben
+      Vorgangstyp gehört). Der zweite ist paarweise beurteilt — derselbe
+      Beurteiler entschied für 135 Anfrage-Eintrag-Paare, ob er den Eintrag zu
+      DIESER Anfrage sehen wollte. Der Pool umfasst beide Richtungen: was das
+      Goldset erwartete UND was die Suche lieferte.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/goldset_v3.json"
+      - "tools/archiv_guete/gegenprobe/relevanz_urteile_2026-08-27.txt"
+      - "tools/archiv_guete/messung_v2_basis.json"
+      - "tools/archiv_guete/messung_v2_gedaechtnis.json"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DER UNTERSCHIED IST EIN MESSFEHLER, KEINE VERBESSERUNG DER SUCHE — an den
+      Läufen hat sich nichts geändert. Vererbte Relevanz misst, ob die Suche die
+      Typ-Zuordnung des Materialautors reproduziert; beurteilte misst, ob sie
+      liefert, was ein Fehlersucher sehen will. Extremfall B01: Das geerbte
+      Goldset erwartete zehn Treffer, der Beurteiler wertete ALLE 19 Pool-Einträge
+      als "nein" — die Anfrage ist im Bestand nicht beantwortbar, und sie zählt
+      seitdem als nicht messbar statt als Totalausfall der Suche. Auffällig ist
+      die Verteilung: 43 "derselbe Fall" gegen 37 "verwandt". Fast die Hälfte der
+      Treffer liegt auf der mittleren Stufe; ein einstufiger Maßstab hätte 37
+      echte Treffer als Fehlgriffe gezählt.
+
+  - id: "C-079"
+    aussage: "Die vierte Quelle verdrängt zutreffende Treffer aus der Ergebnisliste."
+    status: "gemessen"
+    wert: "Auf 4 von 10 Anfragen geht mindestens ein zutreffender Treffer verloren; 6 von 10 gewinnen einen hinzu"
+    bedingung: >-
+      Gemessen am 27.08.2026 gegen die beurteilte Relevanz (C-078). Freigabe-
+      Bedingung 1 ist damit NICHT erfüllt: Bedingung 2 (mindestens 30 % mit
+      Zusatztreffer) steht bei 60 %, Bedingung 1 (kein verlorener Treffer) ist auf
+      vier Anfragen verletzt. Netto steigt die Trefferquote von 0,507 auf 0,550,
+      die Präzision fällt von 0,440 auf 0,433.
+    datum: "2026-08-27"
+    fundstelle:
+      - "tools/archiv_guete/goldset_v3.json"
+      - "GROUND_TRUTH.md, Abschnitt 15.10"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DER MECHANISMUS IST ARITHMETISCH, NICHT ZUFÄLLIG: Die Ausgabelänge ist fest
+      auf zehn, aber vier Ranglisten liefern bis zu 35 Kandidaten. Ein
+      Gedächtnis-Treffer auf lokalem Rang 1 erhält 1/61 und schlägt jeden eigenen
+      Treffer ab lokalem Rang 2 (1/62). Die Fusion gewichtet ausschliesslich die
+      Position innerhalb einer Liste — nicht die Güte der Liste und nicht die des
+      Treffers. Verloren gehen fast ausschliesslich Schichtnotizen, also Treffer
+      aus der einzigen Quelle mit Vektorzweig; gewonnen werden überwiegend
+      Wartungen. Auf dem alten Bestand trat das nie auf, weil dort kaum etwas zu
+      verdrängen war (C-050). Erschwerend: Die Ranglisten sind nicht
+      kommensurabel — ts_rank, Cosinus-Distanz und die Relevanz der Gegenstelle
+      haben keine gemeinsame Skala, und die Fusion verwirft sie. Es gibt derzeit
+      kein Signal, an dem sich entscheiden liesse, ob ein Erinnerungs-Treffer
+      besser ist als eine verdrängte Notiz.

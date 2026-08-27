@@ -175,3 +175,32 @@ def test_die_ausgabe_nennt_die_geltende_schwellenfassung() -> None:
     assert "kein verlorener Treffer" in ausgabe
     assert "schlechter als die Baseline" not in ausgabe
     assert "keine Verschlechterung" not in ausgabe
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Ein falsch verdrahteter Lauf darf sich nicht wie ein Messergebnis lesen
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_leerer_bewertungssatz_wird_abgewiesen(werte_aus: Any) -> None:
+    """Der gefährlichste Aufbaufehler: null Kennzahlen, die geglaubt werden.
+
+    Als der Goldset-Pfad noch fest verdrahtet war, rechnete ein Lauf gegen den
+    NEUEN Bestand stillschweigend gegen die ALTEN Urteile. Kein Schlüssel passte,
+    alle Kennzahlen wurden null — und das las sich wie ein vernichtendes Urteil
+    über die Suche statt wie ein Verdrahtungsfehler. Ein Aufbaufehler, der sich
+    als Messergebnis liest, ist schlimmer als ein Absturz: Er wird geglaubt.
+    """
+    with pytest.raises(SystemExit):
+        werte_aus.pruefe_goldset({"B01": {}, "B02": {}}, "goldset_falsch.json")
+
+
+def test_bewertungssatz_mit_eintraegen_laeuft_durch(werte_aus: Any) -> None:
+    """AUFBAU-KONTROLLE: Der Wächter darf keinen gültigen Satz abweisen.
+
+    Ohne diesen Fall liesse sich die Bedingung später verschärfen — etwa auf
+    „jede Anfrage braucht Einträge" —, und ein Bewertungssatz mit einer bewusst
+    leeren Anfrage (im Bestand gibt es keinen zutreffenden Eintrag) wäre plötzlich
+    nicht mehr auswertbar.
+    """
+    werte_aus.pruefe_goldset({"B01": {"note:7": 2}, "B02": {}}, "goldset_v2.json")

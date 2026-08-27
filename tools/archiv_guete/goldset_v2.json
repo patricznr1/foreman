@@ -1,0 +1,97 @@
+{
+  "B01": {
+    "note:33": 2,
+    "note:38": 2,
+    "note:105": 2,
+    "note:111": 2,
+    "maintenance:22": 2,
+    "maintenance:35": 2,
+    "maintenance:77": 2,
+    "maintenance:85": 2,
+    "note:116": 1,
+    "maintenance:87": 1
+  },
+  "B02": {
+    "alarm:15": 2,
+    "note:96": 2,
+    "note:101": 2,
+    "note:145": 2,
+    "maintenance:80": 2,
+    "maintenance:108": 2,
+    "note:137": 1
+  },
+  "B03": {
+    "note:136": 2,
+    "note:143": 2,
+    "note:191": 2,
+    "maintenance:107": 2,
+    "maintenance:134": 2,
+    "note:150": 1
+  },
+  "B04": {
+    "note:47": 2,
+    "note:49": 2,
+    "note:115": 2,
+    "note:122": 2,
+    "maintenance:43": 2,
+    "maintenance:92": 2,
+    "note:97": 1
+  },
+  "B05": {
+    "note:127": 2,
+    "note:129": 2,
+    "note:174": 2,
+    "note:185": 2,
+    "maintenance:99": 2,
+    "note:106": 1,
+    "note:107": 1
+  },
+  "B06": {
+    "alarm:9": 2,
+    "alarm:10": 2,
+    "alarm:13": 2,
+    "note:43": 2,
+    "note:48": 2,
+    "note:112": 2,
+    "maintenance:44": 2,
+    "maintenance:84": 2,
+    "note:91": 1,
+    "maintenance:71": 1
+  },
+  "B07": {
+    "note:103": 2,
+    "note:110": 2,
+    "note:117": 2,
+    "note:172": 2,
+    "note:177": 2,
+    "maintenance:88": 2,
+    "maintenance:124": 2,
+    "note:79": 1
+  },
+  "B08": {
+    "note:25": 2,
+    "note:27": 2,
+    "note:146": 2,
+    "maintenance:25": 2,
+    "maintenance:109": 2,
+    "note:183": 1
+  },
+  "B09": {
+    "alarm:20": 2,
+    "note:62": 2,
+    "note:64": 2,
+    "note:192": 2,
+    "maintenance:51": 2,
+    "maintenance:133": 2,
+    "note:81": 1
+  },
+  "B10": {
+    "alarm:16": 2,
+    "note:68": 2,
+    "note:72": 2,
+    "note:147": 2,
+    "maintenance:58": 2,
+    "maintenance:112": 2,
+    "note:165": 1
+  }
+}
