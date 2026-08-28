@@ -1,0 +1,2117 @@
+{
+ "lauf": "k_wdh1",
+ "anfragedatei": "goldset_v2_anfragen.yaml",
+ "basis": "https://frontend-production-169a.up.railway.app",
+ "quellen": [
+  "note",
+  "maintenance",
+  "alarm",
+  "memory"
+ ],
+ "k": 15,
+ "laeufe": [
+  {
+   "anfrage_id": "B01",
+   "anfrage": "Undichtigkeit an Achse",
+   "machine_id": null,
+   "dauer_s": 6.52,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:159",
+     "source_type": "note",
+     "id": 159,
+     "machine_id": 3,
+     "timestamp": "2026-07-22T08:15:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:16",
+     "source_type": "note",
+     "id": 16,
+     "machine_id": 1,
+     "timestamp": "2026-02-03T12:50:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-01 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 3,
+     "timestamp": "2026-06-06T18:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 3 durchgeführt (2026-06-06T18:03:51.561708+00:00). Inspektion Vertikalachse AX-03: Fuehrung und Lager geprueft, Schmierung bestaetigt. Hohe Grundlast durch Einbaulage…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "3abf36ec-434e-463b-833c-dd7900038ae5",
+      "quelle": {
+       "art": "maintenance",
+       "id": 4
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:41",
+     "source_type": "note",
+     "id": 41,
+     "machine_id": 1,
+     "timestamp": "2026-03-03T09:05:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:117",
+     "source_type": "note",
+     "id": 117,
+     "machine_id": 4,
+     "timestamp": "2026-06-09T11:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-06T18:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 7 durchgeführt (2026-06-06T18:03:51.561708+00:00). Planmaessige Inspektion Hydraulikkreis PR-01: Druck im Sollband, Dichtungen sichtgeprueft, keine sichtbare Leckage.…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "bd41958b-9c64-4f08-a534-eb3fc1195d88",
+      "quelle": {
+       "art": "maintenance",
+       "id": 10
+      }
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "note:175",
+     "source_type": "note",
+     "id": 175,
+     "machine_id": 8,
+     "timestamp": "2026-08-07T07:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "An PR-02 ist nichts undicht, Ölstand steht seit vier Wochen gleich. Dafür ist der Tank auffällig warm.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 10,
+     "timestamp": "2026-04-23T07:10:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 10 durchgeführt (2026-04-23T07:10:00+02:00). Prüfung Getriebe RB-01. Radialwellendichtring an der Abtriebsseite undicht, Ölstand am unteren Rand des Schauglases. Dich…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "bbf5b242-bbde-49aa-933f-d70de21ad583",
+      "quelle": {
+       "art": "maintenance",
+       "id": 64
+      }
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:82",
+     "source_type": "note",
+     "id": 82,
+     "machine_id": 1,
+     "timestamp": "2026-04-28T19:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 macht beim Verfahren ein Geräusch, klingt erst mal nach Führung. Beim genauen Hinsehen schleift die Energiekette am Blech.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:77",
+     "source_type": "note",
+     "id": 77,
+     "machine_id": 4,
+     "timestamp": "2026-04-17T19:45:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-04 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 11,
+     "schluessel": "note:134",
+     "source_type": "note",
+     "id": 134,
+     "machine_id": 2,
+     "timestamp": "2026-06-26T11:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 12,
+     "schluessel": "note:79",
+     "source_type": "note",
+     "id": 79,
+     "machine_id": 2,
+     "timestamp": "2026-04-22T07:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 setzt daneben. Bevor jemand die Spindel aufmacht: die Greiferbacke ist lose, die hat Spiel und nicht die Achse.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 13,
+     "schluessel": "note:204",
+     "source_type": "note",
+     "id": 204,
+     "machine_id": 3,
+     "timestamp": "2026-08-28T11:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 14,
+     "schluessel": "note:45",
+     "source_type": "note",
+     "id": 45,
+     "machine_id": 1,
+     "timestamp": "2026-03-06T14:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Abweichung an AX-01 ist wieder da. Nur wenn sie aus der Gegenrichtung kommt, in einer Richtung stimmt es.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 15,
+     "schluessel": "note:126",
+     "source_type": "note",
+     "id": 126,
+     "machine_id": 1,
+     "timestamp": "2026-06-16T05:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Es riecht an AX-01 nach heißem Belag, wenn man an den Motor rangeht. Achse blockiert nicht, aber gut ist das nicht.",
+     "detail": {
+      "shift": "frueh"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B02",
+   "anfrage": "Fleck auf Bild",
+   "machine_id": null,
+   "dauer_s": 1.14,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:20",
+     "source_type": "note",
+     "id": 20,
+     "machine_id": 12,
+     "timestamp": "2026-02-06T08:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "VS-01 hat auf dem Bild einen dunklen Fleck, immer an derselben Stelle, egal welches Teil. Teile werden deswegen abgewiesen.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:137",
+     "source_type": "note",
+     "id": 137,
+     "machine_id": 12,
+     "timestamp": "2026-06-30T04:40:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "VS-01 Bild ist dunkel, Scheibe ist aber sauber. Gestern Abend wurde die Belichtung im Prüfprogramm geändert.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:96",
+     "source_type": "note",
+     "id": 96,
+     "machine_id": 12,
+     "timestamp": "2026-05-18T04:20:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Kamerabild an VS-01 ist heute morgen milchig, wird im Lauf des Vormittags besser. Ausschuss in der ersten Stunde hoch.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:54",
+     "source_type": "note",
+     "id": 54,
+     "machine_id": 12,
+     "timestamp": "2026-03-19T20:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "VS-01 weist mehr Teile ab als sonst, Bild sieht flau aus. Teile selbst sind unauffällig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:44",
+     "source_type": "note",
+     "id": 44,
+     "machine_id": 5,
+     "timestamp": "2026-03-06T12:45:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "FD-01 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 12,
+     "timestamp": "2026-07-09T18:50:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 12 (2026-07-09T18:50:00+00:00): VS-01 sieht nichts mehr richtig, alles wird bemängelt. Auf der Scheibe vor der Kamera liegt eine Staubschicht.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "f451001c-c5f6-49e7-8642-e3177d177f50",
+      "quelle": {
+       "art": "note",
+       "id": 145
+      }
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "note:114",
+     "source_type": "note",
+     "id": 114,
+     "machine_id": 6,
+     "timestamp": "2026-06-05T19:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "FD-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B03",
+   "anfrage": "Lagerschaden am Lagerbock",
+   "machine_id": null,
+   "dauer_s": 1.4,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:69",
+     "source_type": "note",
+     "id": 69,
+     "machine_id": 3,
+     "timestamp": "2026-04-09T04:30:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Das Klopfen an AX-03 ist lauter geworden. Wenn man die Hand an den Lagerbock legt, spürt man den Schlag deutlich.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:159",
+     "source_type": "note",
+     "id": 159,
+     "machine_id": 3,
+     "timestamp": "2026-07-22T08:15:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "timestamp": "2026-07-09T08:00:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 1 durchgeführt (2026-07-09T08:00:00+02:00). Prüfung Spindellagerung AX-01. Loslagerbock hat sich gelöst, Passstifte fehlen, Gewinde im Grundkörper ausgerissen. Gewind…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "4dd803bc-0cc2-4ecb-904e-0634957e3b99",
+      "quelle": {
+       "art": "maintenance",
+       "id": 107
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:181",
+     "source_type": "note",
+     "id": 181,
+     "machine_id": 10,
+     "timestamp": "2026-08-11T11:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "RB-01 streut wieder in der Wiederholgenauigkeit, wie im Frühjahr. Lager war damals angemeldet, getauscht wurde es nie.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 11,
+     "timestamp": "2026-06-19T07:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 11 durchgeführt (2026-06-19T07:40:00+02:00). Prüfung Gelenklager RB-02. Spiel in Achse 1 messbar, Fett verbraucht und mit Abrieb dunkel. Lager gereinigt, mit Lithiumk…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "13e07075-7c74-416a-8b72-e9a0dc511f14",
+      "quelle": {
+       "art": "maintenance",
+       "id": 96
+      }
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:100",
+     "source_type": "note",
+     "id": 100,
+     "machine_id": 10,
+     "timestamp": "2026-05-20T19:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "RB-01 greift daneben an Station 3. Der Werkstückträger rastet dort nicht sauber ein, der Roboter kann nichts dafür.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 10,
+     "timestamp": "2026-03-13T07:00:00+01:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 10 durchgeführt (2026-03-13T07:00:00+01:00). Prüfung Gelenklager Achse 1 RB-01. Radialspiel 0,25 mm gegen 0,08 mm Grenzwert, Laufbahn mit Riefen. Lagerung zum Tausch…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "54bd176c-7b8c-4e02-83bc-8f7b9aa7c083",
+      "quelle": {
+       "art": "maintenance",
+       "id": 40
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B04",
+   "anfrage": "Dosierunregelmäßigkeiten",
+   "machine_id": null,
+   "dauer_s": 1.33,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:173",
+     "source_type": "note",
+     "id": 173,
+     "machine_id": 5,
+     "timestamp": "2026-08-06T07:15:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Dosierung an FD-01 schwankt, mal zu viel mal gar nichts. Über die Schicht gemittelt passt die Menge.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:6",
+     "source_type": "note",
+     "id": 6,
+     "machine_id": 6,
+     "timestamp": "2026-06-08T21:03:51.561708Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus. [PERSON] beobachten.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "timestamp": "2026-03-16T07:30:00+01:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-03-16T07:30:00+01:00). Prüfung Dosiertrichter FD-01. Innenwand mit Ablagerungen aus Trennmittelrückständen, Auslaufwinkel dadurch verringert. Tri…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "d0039ad9-9cde-405e-ac7b-68c385b4eea2",
+      "quelle": {
+       "art": "maintenance",
+       "id": 43
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 5,
+     "timestamp": "2026-08-05T07:10:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 5 durchgeführt (2026-08-05T07:10:00+02:00). Regelprüfung Dosiertrichter FD-01. Klemmzylinder schaltet im Sollfenster, Auslauf frei. Ohne Befund.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "332ead78-a8c7-4dce-a334-4e517610ab1f",
+      "quelle": {
+       "art": "maintenance",
+       "id": 120
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:5",
+     "source_type": "note",
+     "id": 5,
+     "machine_id": 5,
+     "timestamp": "2026-06-08T16:03:51.561708Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "FD-01 laeuft sauber, Dosierung stabil. [PERSON] in der Frueh.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "timestamp": "2026-05-08T13:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (lubrication) an Maschine 9 durchgeführt (2026-05-08T13:40:00+02:00). Schmierung Ram-Führung PR-03. Dosierverteiler blockiert, zwei von vier Auslässen ohne Durchgang. Verteiler ersetzt, Bahne…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "260ab9f6-d70a-47d3-be7c-65878b67a34a",
+      "quelle": {
+       "art": "maintenance",
+       "id": 69
+      }
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "note:56",
+     "source_type": "note",
+     "id": 56,
+     "machine_id": 2,
+     "timestamp": "2026-03-24T14:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 Störungen kommen unregelmäßig, manchmal drei am Tag, manchmal keine. Kein Muster erkennbar.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 6,
+     "timestamp": "2026-06-25T19:30:00Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Schichtnotiz zu Maschine 6 (2026-06-25T19:30:00+00:00): FD-02 hat den ganzen Abend sauber dosiert. Nach dem Umbau am Auslauf ist Ruhe.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "2b50adad-c504-40b1-9728-7f68ea685640",
+      "quelle": {
+       "art": "note",
+       "id": 133
+      }
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B05",
+   "anfrage": "Schleppfehler an AX",
+   "machine_id": null,
+   "dauer_s": 1.06,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:106",
+     "source_type": "note",
+     "id": 106,
+     "machine_id": 3,
+     "timestamp": "2026-05-28T07:20:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-03 geht seit gestern in Schleppfehler. Gestern wurde das Programm angepasst, Beschleunigung höher. Zusammenhang liegt nahe.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:52",
+     "source_type": "note",
+     "id": 52,
+     "machine_id": 2,
+     "timestamp": "2026-03-17T22:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-02 ist heute zweimal in Störung gegangen, Schleppfehler. [PERSON] und weitergelaufen, ohne dass wir was gemacht haben.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:177",
+     "source_type": "note",
+     "id": 177,
+     "machine_id": 2,
+     "timestamp": "2026-08-10T08:30:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-02 hat Schlupf beim Reversieren, man hört das leise Klacken wenn sie umkehrt. Die Korrektur im Programm bleibt keine Schicht stehen.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:66",
+     "source_type": "note",
+     "id": 66,
+     "machine_id": 3,
+     "timestamp": "2026-04-07T18:50:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "An AX-03 klopft es jedes Mal am Umkehrpunkt, ein einzelner Schlag. Sonst läuft sie sauber durch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:117",
+     "source_type": "note",
+     "id": 117,
+     "machine_id": 4,
+     "timestamp": "2026-06-09T11:40:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:174",
+     "source_type": "note",
+     "id": 174,
+     "machine_id": 1,
+     "timestamp": "2026-08-06T20:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 wirft sprunghaft eine Fehlermeldung und steht. Zweimal in der Nacht, jeweils weggedrückt und weiter.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "note:197",
+     "source_type": "note",
+     "id": 197,
+     "machine_id": 12,
+     "timestamp": "2026-08-21T11:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:159",
+     "source_type": "note",
+     "id": 159,
+     "machine_id": 3,
+     "timestamp": "2026-07-22T08:15:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:82",
+     "source_type": "note",
+     "id": 82,
+     "machine_id": 1,
+     "timestamp": "2026-04-28T19:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 macht beim Verfahren ein Geräusch, klingt erst mal nach Führung. Beim genauen Hinsehen schleift die Energiekette am Blech.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:79",
+     "source_type": "note",
+     "id": 79,
+     "machine_id": 2,
+     "timestamp": "2026-04-22T07:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 setzt daneben. Bevor jemand die Spindel aufmacht: die Greiferbacke ist lose, die hat Spiel und nicht die Achse.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 11,
+     "schluessel": "note:53",
+     "source_type": "note",
+     "id": 53,
+     "machine_id": 2,
+     "timestamp": "2026-03-19T07:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Wieder eine Störung an AX-02, immer beim schnellen Verfahren. Steckverbindungen sichtgeprüft, alles fest.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 12,
+     "schluessel": "note:111",
+     "source_type": "note",
+     "id": 111,
+     "machine_id": 2,
+     "timestamp": "2026-06-03T07:00:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 klemmt montags in den ersten Fahrten, danach gibt sich das. Steht ja über das Wochenende kalt.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 13,
+     "schluessel": "note:41",
+     "source_type": "note",
+     "id": 41,
+     "machine_id": 1,
+     "timestamp": "2026-03-03T09:05:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 14,
+     "schluessel": "note:105",
+     "source_type": "note",
+     "id": 105,
+     "machine_id": 2,
+     "timestamp": "2026-05-27T18:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 stockt bei langsamer Fahrt, ganz feines Ruckeln. Bei voller Geschwindigkeit merkt man nichts.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 15,
+     "schluessel": "note:103",
+     "source_type": "note",
+     "id": 103,
+     "machine_id": 4,
+     "timestamp": "2026-05-25T07:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-04 legt die Teile mal so mal so ab, Streuung ist größer geworden. Noch innerhalb, aber früher war das stabiler.",
+     "detail": {
+      "shift": "frueh"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B06",
+   "anfrage": "Durckabfall Hydraulik",
+   "machine_id": null,
+   "dauer_s": 1.05,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-06T18:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 7 durchgeführt (2026-06-06T18:03:51.561708+00:00). Planmaessige Inspektion Hydraulikkreis PR-01: Druck im Sollband, Dichtungen sichtgeprueft, keine sichtbare Leckage.…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "bd41958b-9c64-4f08-a534-eb3fc1195d88",
+      "quelle": {
+       "art": "maintenance",
+       "id": 10
+      }
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:86",
+     "source_type": "note",
+     "id": 86,
+     "machine_id": 5,
+     "timestamp": "2026-05-06T19:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Der Klemmzylinder an FD-01 ruckt beim Zufahren, fährt nicht in einem Zug durch. Teile fallen trotzdem richtig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:112",
+     "source_type": "note",
+     "id": 112,
+     "machine_id": 8,
+     "timestamp": "2026-06-04T21:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-02 hat mitten in der Nacht den Druck verloren, Teile nicht durchgefügt. Anlage steht.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-05-13T07:00:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 8 durchgeführt (2026-05-13T07:00:00+02:00). Prüfung Druckmessung PR-02. Hydraulik ohne Befund, Ölstand und Leckölmenge im Sollbereich. Drucksensor zeigt 14 bar zu wen…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "c3ba8416-f734-4510-8ca4-0a3827242dc7",
+      "quelle": {
+       "art": "maintenance",
+       "id": 71
+      }
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:157",
+     "source_type": "note",
+     "id": 157,
+     "machine_id": 7,
+     "timestamp": "2026-07-21T19:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "An PR-01 fällt der Haltedruck über Nacht komplett ab. Morgens erstmal aufbauen lassen.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-20T17:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Alarm HYD_PRESS_LOW_WARN (warning/hardware) an Maschine 7 ausgelöst (2026-06-20T17:03:51.561708+00:00). Hydraulikdruck PR-01 unter Warnschwelle (Leckage vermutet)",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "740aad32-68d4-41d0-85f9-e558718eb76c",
+      "quelle": {
+       "art": "alarm",
+       "id": 3
+      }
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-06-05T06:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 8 durchgeführt (2026-06-05T06:40:00+02:00). Prüfung Hydraulik PR-02. Hochdruckschlauch am Pressenkopf an der Pressverschraubung gerissen, Ölaustritt an der Verkleidun…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "78a13860-3109-4b74-8f64-bb78a3471111",
+      "quelle": {
+       "art": "maintenance",
+       "id": 84
+      }
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:48",
+     "source_type": "note",
+     "id": 48,
+     "machine_id": 9,
+     "timestamp": "2026-03-11T19:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 weiter zäh im Druckaufbau. Unter dem Aggregat liegt ein dünner Ölfilm auf dem Blech.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:133",
+     "source_type": "note",
+     "id": 133,
+     "machine_id": 6,
+     "timestamp": "2026-06-25T19:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "FD-02 hat den ganzen Abend sauber dosiert. Nach dem Umbau am Auslauf ist Ruhe.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-22T19:03:51.561708Z",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Alarm HYD_PRESS_LOW_CRIT (critical/hardware) an Maschine 7 ausgelöst (2026-06-22T19:03:51.561708+00:00). Hydraulikdruck PR-01 kritisch — Dichtungswechsel erforderlich",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "aaeec226-e4f3-4fb6-930f-2941a5b8dc34",
+      "quelle": {
+       "art": "alarm",
+       "id": 4
+      }
+     }
+    },
+    {
+     "rang": 11,
+     "schluessel": "note:184",
+     "source_type": "note",
+     "id": 184,
+     "machine_id": 6,
+     "timestamp": "2026-08-12T07:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "An FD-02 ist die Schaltzeit immer noch lang. [PERSON] war es nicht, Schlauch ist frei. Bleibt die Mechanik.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 12,
+     "schluessel": "note:7",
+     "source_type": "note",
+     "id": 7,
+     "machine_id": 6,
+     "timestamp": "2026-06-18T06:03:51.561708Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 13,
+     "schluessel": "note:189",
+     "source_type": "note",
+     "id": 189,
+     "machine_id": 9,
+     "timestamp": "2026-08-14T19:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 macht jetzt Ausschuss, Fügetiefe zu gering. Werkzeug muss raus, egal was der Plan sagt.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B07",
+   "anfrage": "Nullpunktverschiebung an AX",
+   "machine_id": null,
+   "dauer_s": 2.01,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:117",
+     "source_type": "note",
+     "id": 117,
+     "machine_id": 4,
+     "timestamp": "2026-06-09T11:40:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:16",
+     "source_type": "note",
+     "id": 16,
+     "machine_id": 1,
+     "timestamp": "2026-02-03T12:50:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-01 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:127",
+     "source_type": "note",
+     "id": 127,
+     "machine_id": 4,
+     "timestamp": "2026-06-18T04:15:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-04 hat heute Nacht zweimal die Position verloren und musste referenziert werden. Nachtschicht hat nichts weiter dazu geschrieben.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:177",
+     "source_type": "note",
+     "id": 177,
+     "machine_id": 2,
+     "timestamp": "2026-08-10T08:30:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "AX-02 hat Schlupf beim Reversieren, man hört das leise Klacken wenn sie umkehrt. Die Korrektur im Programm bleibt keine Schicht stehen.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:41",
+     "source_type": "note",
+     "id": 41,
+     "machine_id": 1,
+     "timestamp": "2026-03-03T09:05:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:197",
+     "source_type": "note",
+     "id": 197,
+     "machine_id": 12,
+     "timestamp": "2026-08-21T11:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 1,
+     "timestamp": "2026-03-10T06:45:00+01:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 1 durchgeführt (2026-03-10T06:45:00+01:00). Prüfung Kugelgewindetrieb AX-01. Umkehrspiel an drei Messpunkten 0,08 bis 0,11 mm gegen 0,02 mm Sollwert. Mutter mit Vorsp…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "51d5479e-56e4-4a30-b43c-e3ea0f6c851e",
+      "quelle": {
+       "art": "maintenance",
+       "id": 37
+      }
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:136",
+     "source_type": "note",
+     "id": 136,
+     "machine_id": 1,
+     "timestamp": "2026-06-29T20:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 gibt beim Richtungswechsel einen Stoß, den man im Gestell spürt. Kam nicht von jetzt auf gleich, wird langsam mehr.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:45",
+     "source_type": "note",
+     "id": 45,
+     "machine_id": 1,
+     "timestamp": "2026-03-06T14:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Abweichung an AX-01 ist wieder da. Nur wenn sie aus der Gegenrichtung kommt, in einer Richtung stimmt es.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:204",
+     "source_type": "note",
+     "id": 204,
+     "machine_id": 3,
+     "timestamp": "2026-08-28T11:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 11,
+     "schluessel": "note:106",
+     "source_type": "note",
+     "id": 106,
+     "machine_id": 3,
+     "timestamp": "2026-05-28T07:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-03 geht seit gestern in Schleppfehler. Gestern wurde das Programm angepasst, Beschleunigung höher. Zusammenhang liegt nahe.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 12,
+     "schluessel": "note:79",
+     "source_type": "note",
+     "id": 79,
+     "machine_id": 2,
+     "timestamp": "2026-04-22T07:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 setzt daneben. Bevor jemand die Spindel aufmacht: die Greiferbacke ist lose, die hat Spiel und nicht die Achse.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 13,
+     "schluessel": "note:134",
+     "source_type": "note",
+     "id": 134,
+     "machine_id": 2,
+     "timestamp": "2026-06-26T11:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 14,
+     "schluessel": "note:174",
+     "source_type": "note",
+     "id": 174,
+     "machine_id": 1,
+     "timestamp": "2026-08-06T20:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 wirft sprunghaft eine Fehlermeldung und steht. Zweimal in der Nacht, jeweils weggedrückt und weiter.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 15,
+     "schluessel": "note:66",
+     "source_type": "note",
+     "id": 66,
+     "machine_id": 3,
+     "timestamp": "2026-04-07T18:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "An AX-03 klopft es jedes Mal am Umkehrpunkt, ein einzelner Schlag. Sonst läuft sie sauber durch.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B08",
+   "anfrage": "Ruckeln beim Hub",
+   "machine_id": null,
+   "dauer_s": 0.95,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:183",
+     "source_type": "note",
+     "id": 183,
+     "machine_id": 9,
+     "timestamp": "2026-08-11T20:20:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "PR-03 stoppt im Hub kurz, sieht aus wie Ruckeln. Die Fahne vom Endschalter hat sich gelöst und schaltet zwischendurch.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:23",
+     "source_type": "note",
+     "id": 23,
+     "machine_id": 10,
+     "timestamp": "2026-02-10T08:20:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "RB-01 ruckt beim Anfahren aus dem Stillstand. Seit dem Umbau vom Donnerstag ist das so.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:146",
+     "source_type": "note",
+     "id": 146,
+     "machine_id": 8,
+     "timestamp": "2026-07-10T06:20:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "PR-02 läuft im Hub etwas unrund, hört man am Geräusch. Kraft und Maß sind unauffällig.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:27",
+     "source_type": "note",
+     "id": 27,
+     "machine_id": 7,
+     "timestamp": "2026-02-16T08:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Ram an PR-01 ruckelt weiter. Beim Zurückfahren ist es sauber, nur abwärts nicht.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "note:164",
+     "source_type": "note",
+     "id": 164,
+     "machine_id": 11,
+     "timestamp": "2026-07-29T19:20:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "RB-02 schwingt am Ende der Bewegung nach, wackelt kurz aus. Vorher war die Bahn sauber, dazwischen lag die Störung im Schutztürkreis.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:105",
+     "source_type": "note",
+     "id": 105,
+     "machine_id": 2,
+     "timestamp": "2026-05-27T18:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-02 stockt bei langsamer Fahrt, ganz feines Ruckeln. Bei voller Geschwindigkeit merkt man nichts.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "note:46",
+     "source_type": "note",
+     "id": 46,
+     "machine_id": 10,
+     "timestamp": "2026-03-09T19:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Wenn RB-01 den Arm ausstreckt, sieht man am Fuß ein leichtes Wackeln. Bei kurzen Wegen fällt es nicht auf.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:124",
+     "source_type": "note",
+     "id": 124,
+     "machine_id": 1,
+     "timestamp": "2026-06-15T21:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 fährt beim Anfahren mit einem Ruck los, als ob was festhält. Danach läuft sie normal.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:83",
+     "source_type": "note",
+     "id": 83,
+     "machine_id": 9,
+     "timestamp": "2026-05-04T18:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 hakt kurz im Abwärtshub, immer an der gleichen Stelle.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:86",
+     "source_type": "note",
+     "id": 86,
+     "machine_id": 5,
+     "timestamp": "2026-05-06T19:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Der Klemmzylinder an FD-01 ruckt beim Zufahren, fährt nicht in einem Zug durch. Teile fallen trotzdem richtig.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 11,
+     "schluessel": "note:92",
+     "source_type": "note",
+     "id": 92,
+     "machine_id": 3,
+     "timestamp": "2026-05-12T20:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Die Senkrechte mahlt beim Hochfahren, hört sich rau an. Gestern war davon nichts.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 12,
+     "schluessel": "note:155",
+     "source_type": "note",
+     "id": 155,
+     "machine_id": 1,
+     "timestamp": "2026-07-20T12:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "AX-01 läuft unruhig, es rumpelt beim Anfahren. Klingt für mich nach Motor, der ist aber erst im Frühjahr gewesen.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 13,
+     "schluessel": "note:90",
+     "source_type": "note",
+     "id": 90,
+     "machine_id": 10,
+     "timestamp": "2026-05-12T07:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "RB-01 hat beim Richtungswechsel ein Spiel bekommen, das vorher nicht da war. Vielleicht hängt das mit den ruppigen Bremsungen vom Dienstag zusammen.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 14,
+     "schluessel": "note:78",
+     "source_type": "note",
+     "id": 78,
+     "machine_id": 10,
+     "timestamp": "2026-04-21T07:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "RB-01 Getriebe brummt beim Schwenken, war vorher nicht so. Die Ölspur wird größer.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 15,
+     "schluessel": "note:158",
+     "source_type": "note",
+     "id": 158,
+     "machine_id": 11,
+     "timestamp": "2026-07-21T19:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Das Dröhnen an RB-02 sitzt im Antrieb der Hauptachse. Mit dem Schraubendreher am Gehäuse gut zu orten.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B09",
+   "anfrage": "Versatz an PR",
+   "machine_id": null,
+   "dauer_s": 0.71,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:140",
+     "source_type": "note",
+     "id": 140,
+     "machine_id": 7,
+     "timestamp": "2026-07-01T11:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Der Versatz an PR-01 ist geblieben. Werkzeug wurde letzte Woche gewechselt, seitdem ist es so.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:112",
+     "source_type": "note",
+     "id": 112,
+     "machine_id": 8,
+     "timestamp": "2026-06-04T21:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "PR-02 hat mitten in der Nacht den Druck verloren, Teile nicht durchgefügt. Anlage steht.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 9,
+     "timestamp": "2026-05-25T06:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (tool_change) an Maschine 9 durchgeführt (2026-05-25T06:40:00+02:00). Werkzeugwechsel PR-03 wegen Variantenwechsel im Auftrag. Altsatz ohne Verschleißbefund, eingelagert.",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "29ff59b6-696b-4041-9c7f-15c38df14704",
+      "quelle": {
+       "art": "maintenance",
+       "id": 79
+      }
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "note:132",
+     "source_type": "note",
+     "id": 132,
+     "machine_id": 7,
+     "timestamp": "2026-06-24T20:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-01 fügt einseitig, auf einer Seite tiefer als auf der anderen. Teile gehen gerade noch durch.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-06-03T07:10:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (tool_change) an Maschine 7 durchgeführt (2026-06-03T07:10:00+02:00). Werkzeugwechsel PR-01 nach Erreichen der Standmenge. Verschleißmaß am Stempel 0,18 mm gegen 0,10 mm Grenzwert. Satz getau…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "46ea557e-90e1-4af4-8dfd-ec13ac9f10ea",
+      "quelle": {
+       "art": "maintenance",
+       "id": 83
+      }
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "note:98",
+     "source_type": "note",
+     "id": 98,
+     "machine_id": 7,
+     "timestamp": "2026-05-20T04:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-01 nach dem Werkzeugwechsel eingefahren, erste Teile vermessen, alles mittig.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-08-24T06:40:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (tool_change) an Maschine 7 durchgeführt (2026-08-24T06:40:00+02:00). Werkzeugwechsel PR-01 nach Standmenge. Verschleißmaß 0,08 mm. Neuer Satz eingebaut, erste zwanzig Teile vermessen und im…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "c13481b6-f41b-4838-be0f-e814011d2ac1",
+      "quelle": {
+       "art": "maintenance",
+       "id": 137
+      }
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:37",
+     "source_type": "note",
+     "id": 37,
+     "machine_id": 8,
+     "timestamp": "2026-02-25T19:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-02 setzt sichtbare Druckstellen auf die Teile. Kraft weiter oben.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:203",
+     "source_type": "note",
+     "id": 203,
+     "machine_id": 9,
+     "timestamp": "2026-08-27T19:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 seit dem Werkzeugwechsel wieder in der Kraft, wo sie hingehört. Sonst nichts zu vermerken.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:171",
+     "source_type": "note",
+     "id": 171,
+     "machine_id": 9,
+     "timestamp": "2026-08-05T07:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 Kraft klettert seit einer Woche. [PERSON] war für letzte Woche geplant, wurde wegen Auftrag geschoben.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 11,
+     "schluessel": "note:197",
+     "source_type": "note",
+     "id": 197,
+     "machine_id": 12,
+     "timestamp": "2026-08-21T11:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 12,
+     "schluessel": "note:81",
+     "source_type": "note",
+     "id": 81,
+     "machine_id": 8,
+     "timestamp": "2026-04-27T07:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-02 Fügemaße angeblich alle daneben. Mit der zweiten Lehre gemessen passt alles — die erste Lehre war verstellt.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 13,
+     "schluessel": "note:83",
+     "source_type": "note",
+     "id": 83,
+     "machine_id": 9,
+     "timestamp": "2026-05-04T18:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 hakt kurz im Abwärtshub, immer an der gleichen Stelle.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 14,
+     "schluessel": "note:170",
+     "source_type": "note",
+     "id": 170,
+     "machine_id": 8,
+     "timestamp": "2026-08-04T19:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-02 zieht den Druck unsauber auf, schwankt um ein paar bar. Vermutlich wieder eine Dichtung wie im Juni.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 15,
+     "schluessel": "note:99",
+     "source_type": "note",
+     "id": 99,
+     "machine_id": 7,
+     "timestamp": "2026-05-20T04:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-01 liegt in der Presskraft am oberen Rand. Standmenge ist fast erreicht, passt zeitlich.",
+     "detail": {
+      "shift": "frueh"
+     }
+    }
+   ]
+  },
+  {
+   "anfrage_id": "B10",
+   "anfrage": "Öl Temperatur an PR",
+   "machine_id": null,
+   "dauer_s": 1.37,
+   "fehler": null,
+   "treffer": [
+    {
+     "rang": 1,
+     "schluessel": "note:165",
+     "source_type": "note",
+     "id": 165,
+     "machine_id": 7,
+     "timestamp": "2026-07-30T12:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "Alle drei Pressen haben heute warmes Öl, nicht nur PR-01. Draußen 34 Grad und das Hallentor stand den ganzen Vormittag offen.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 2,
+     "schluessel": "note:72",
+     "source_type": "note",
+     "id": 72,
+     "machine_id": 7,
+     "timestamp": "2026-04-10T18:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "PR-01 Öltemperatur oben. In der Nacht läuft die Presse sauber, tagsüber nicht.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 3,
+     "schluessel": "note:175",
+     "source_type": "note",
+     "id": 175,
+     "machine_id": 8,
+     "timestamp": "2026-08-07T07:10:00Z",
+     "gefunden_von": [
+      "note",
+      "memory"
+     ],
+     "excerpt": "An PR-02 ist nichts undicht, Ölstand steht seit vier Wochen gleich. Dafür ist der Tank auffällig warm.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 4,
+     "schluessel": "maintenance:112",
+     "source_type": "maintenance",
+     "id": 112,
+     "machine_id": 9,
+     "timestamp": "2026-07-17T04:30:00Z",
+     "gefunden_von": [
+      "maintenance"
+     ],
+     "excerpt": "Prüfung Ölkreis PR-03. Thermostatventil des Kühlers klemmt in Bypass-Stellung, Öl wird am Kühler vorbeigeführt. Ventil ersetzt, Öl gewechselt (HLP 46), Temperatur im Betrieb …",
+     "detail": {
+      "type": "inspection"
+     }
+    },
+    {
+     "rang": 5,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 7,
+     "timestamp": "2026-04-15T07:00:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 7 durchgeführt (2026-04-15T07:00:00+02:00). Prüfung Kühlkreis PR-01. Lamellen des Ölkühlers mit Staub und Sprühnebel zugesetzt, Lüfter läuft. [PERSON] gereinigt, Filt…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "86f8e059-6857-4219-9192-bf1df553941c",
+      "quelle": {
+       "art": "maintenance",
+       "id": 58
+      }
+     }
+    },
+    {
+     "rang": 6,
+     "schluessel": "memory:0",
+     "source_type": "memory",
+     "id": 0,
+     "machine_id": 8,
+     "timestamp": "2026-08-12T07:10:00+02:00",
+     "gefunden_von": [
+      "memory"
+     ],
+     "excerpt": "Wartung (inspection) an Maschine 8 durchgeführt (2026-08-12T07:10:00+02:00). Prüfung Hydrauliktank PR-02. Lüfter des Ölkühlers läuft nur auf halber Drehzahl, Kondensator der Ansteuerung defekt. Lüfte…",
+     "detail": {
+      "herkunft": "gedaechtnis",
+      "erinnerung": "8cefda79-3c3f-4e73-b3e7-ed3721bd8ead",
+      "quelle": {
+       "art": "maintenance",
+       "id": 126
+      }
+     }
+    },
+    {
+     "rang": 7,
+     "schluessel": "note:87",
+     "source_type": "note",
+     "id": 87,
+     "machine_id": 9,
+     "timestamp": "2026-05-07T04:30:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "An PR-03 sieht man Reibspuren auf der Ram-Führung, blank gelaufen. Öl steht oben im Behälter.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 8,
+     "schluessel": "note:147",
+     "source_type": "note",
+     "id": 147,
+     "machine_id": 9,
+     "timestamp": "2026-07-13T12:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 Tank ist so heiß dass man die Hand nicht drauf lassen kann. Sie fügt zwar, aber der Druck steht nicht so satt wie sonst.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 9,
+     "schluessel": "note:144",
+     "source_type": "note",
+     "id": 144,
+     "machine_id": 8,
+     "timestamp": "2026-07-08T20:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-02 in der Nacht durchgelaufen, keine Störung. Ölstand kontrolliert, passt.",
+     "detail": {
+      "shift": "nacht"
+     }
+    },
+    {
+     "rang": 10,
+     "schluessel": "note:48",
+     "source_type": "note",
+     "id": 48,
+     "machine_id": 9,
+     "timestamp": "2026-03-11T19:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 weiter zäh im Druckaufbau. Unter dem Aggregat liegt ein dünner Ölfilm auf dem Blech.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 11,
+     "schluessel": "note:99",
+     "source_type": "note",
+     "id": 99,
+     "machine_id": 7,
+     "timestamp": "2026-05-20T04:50:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-01 liegt in der Presskraft am oberen Rand. Standmenge ist fast erreicht, passt zeitlich.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 12,
+     "schluessel": "note:68",
+     "source_type": "note",
+     "id": 68,
+     "machine_id": 7,
+     "timestamp": "2026-04-08T11:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "Bei PR-01 schwankt der Druck über die Schicht, morgens stabil, nachmittags unruhig. Aggregat ist deutlich wärmer als bei PR-02.",
+     "detail": {
+      "shift": "frueh"
+     }
+    },
+    {
+     "rang": 13,
+     "schluessel": "note:170",
+     "source_type": "note",
+     "id": 170,
+     "machine_id": 8,
+     "timestamp": "2026-08-04T19:40:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-02 zieht den Druck unsauber auf, schwankt um ein paar bar. Vermutlich wieder eine Dichtung wie im Juni.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 14,
+     "schluessel": "note:24",
+     "source_type": "note",
+     "id": 24,
+     "machine_id": 9,
+     "timestamp": "2026-02-12T13:10:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-03 stand zwei Stunden, Material war alle. Kein technischer Grund.",
+     "detail": {
+      "shift": "spaet"
+     }
+    },
+    {
+     "rang": 15,
+     "schluessel": "note:37",
+     "source_type": "note",
+     "id": 37,
+     "machine_id": 8,
+     "timestamp": "2026-02-25T19:20:00Z",
+     "gefunden_von": [
+      "note"
+     ],
+     "excerpt": "PR-02 setzt sichtbare Druckstellen auf die Teile. Kraft weiter oben.",
+     "detail": {
+      "shift": "spaet"
+     }
+    }
+   ]
+  }
+ ]
+}
