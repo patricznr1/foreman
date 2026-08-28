@@ -1,0 +1,477 @@
+[
+ {
+  "id": "B01",
+  "frage": "Undichtigkeit an Achse",
+  "absicht": "Falscher Schmierstoff bei der Nachschmierung, Führung läuft nicht frei",
+  "eintraege": [
+   {
+    "kuerzel": "SN-025",
+    "typ": "note",
+    "text": "AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende."
+   },
+   {
+    "kuerzel": "SN-061",
+    "typ": "note",
+    "text": "AX-04 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   },
+   {
+    "kuerzel": "SN-066",
+    "typ": "note",
+    "text": "AX-01 macht beim Verfahren ein Geräusch, klingt erst mal nach Führung. Beim genauen Hinsehen schleift die Energiekette am Blech."
+   },
+   {
+    "kuerzel": "SN-101",
+    "typ": "note",
+    "text": "AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es."
+   },
+   {
+    "kuerzel": "SN-110",
+    "typ": "note",
+    "text": "Es riecht an AX-01 nach heißem Belag, wenn man an den Motor rangeht. Achse blockiert nicht, aber gut ist das nicht."
+   },
+   {
+    "kuerzel": "SN-116",
+    "typ": "note",
+    "text": "PR-01 fügt einseitig, auf einer Seite tiefer als auf der anderen. Teile gehen gerade noch durch."
+   },
+   {
+    "kuerzel": "SN-118",
+    "typ": "note",
+    "text": "AX-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   },
+   {
+    "kuerzel": "SN-143",
+    "typ": "note",
+    "text": "Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse."
+   },
+   {
+    "kuerzel": "SN-158",
+    "typ": "note",
+    "text": "AX-01 wirft sprunghaft eine Fehlermeldung und steht. Zweimal in der Nacht, jeweils weggedrückt und weiter."
+   },
+   {
+    "kuerzel": "SN-159",
+    "typ": "note",
+    "text": "An PR-02 ist nichts undicht, Ölstand steht seit vier Wochen gleich. Dafür ist der Tank auffällig warm."
+   },
+   {
+    "kuerzel": "SN-188",
+    "typ": "note",
+    "text": "AX-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   }
+  ]
+ },
+ {
+  "id": "B02",
+  "frage": "Fleck auf Bild",
+  "absicht": "Sicht der Inspektionskamera verlegt, Prüfung wird unzuverlässig",
+  "eintraege": [
+   {
+    "kuerzel": "SN-004",
+    "typ": "note",
+    "text": "VS-01 hat auf dem Bild einen dunklen Fleck, immer an derselben Stelle, egal welches Teil. Teile werden deswegen abgewiesen."
+   },
+   {
+    "kuerzel": "SN-103",
+    "typ": "note",
+    "text": "RB-02 greift daneben, zwei Fehlgriffe in der Schicht. Läuft ja selten, deshalb ist das lange keinem aufgefallen."
+   }
+  ]
+ },
+ {
+  "id": "B03",
+  "frage": "Lagerschaden am Lagerbock",
+  "absicht": "Lagerbock der Spindel gelockert, Schlag am Umkehrpunkt",
+  "eintraege": [
+   {
+    "kuerzel": "SN-053",
+    "typ": "note",
+    "text": "Das Klopfen an AX-03 ist lauter geworden. Wenn man die Hand an den Lagerbock legt, spürt man den Schlag deutlich."
+   },
+   {
+    "kuerzel": "SN-084",
+    "typ": "note",
+    "text": "RB-01 greift daneben an Station 3. Der Werkstückträger rastet dort nicht sauber ein, der Roboter kann nichts dafür."
+   },
+   {
+    "kuerzel": "SN-165",
+    "typ": "note",
+    "text": "RB-01 streut wieder in der Wiederholgenauigkeit, wie im Frühjahr. Lager war damals angemeldet, getauscht wurde es nie."
+   }
+  ]
+ },
+ {
+  "id": "B04",
+  "frage": "Dosierunregelmäßigkeiten",
+  "absicht": "Brückenbildung im Dosiertrichter, Zuführung setzt aus",
+  "eintraege": [
+   {
+    "kuerzel": "SN-012",
+    "typ": "note",
+    "text": "PR-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   },
+   {
+    "kuerzel": "SN-039",
+    "typ": "note",
+    "text": "RB-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   },
+   {
+    "kuerzel": "SN-152",
+    "typ": "note",
+    "text": "FD-01 in der Nacht zweimal leergelaufen, jeweils nachgefüllt. Ist Organisation, nicht Technik."
+   },
+   {
+    "kuerzel": "SN-157",
+    "typ": "note",
+    "text": "Dosierung an FD-01 schwankt, mal zu viel mal gar nichts. Über die Schicht gemittelt passt die Menge."
+   }
+  ]
+ },
+ {
+  "id": "B05",
+  "frage": "Schleppfehler an AX",
+  "absicht": "Geberrückführung am Motor gestört, sporadische Schleppfehler",
+  "eintraege": [
+   {
+    "kuerzel": "SN-022",
+    "typ": "note",
+    "text": "AX-04 zäh im Kaltlauf, Strom beim Anfahren höher. Das Fett an der Führung sieht komisch aus, klebrig."
+   },
+   {
+    "kuerzel": "SN-025",
+    "typ": "note",
+    "text": "AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende."
+   },
+   {
+    "kuerzel": "SN-036",
+    "typ": "note",
+    "text": "AX-02 ist heute zweimal in Störung gegangen, Schleppfehler. [PERSON] und weitergelaufen, ohne dass wir was gemacht haben."
+   },
+   {
+    "kuerzel": "SN-037",
+    "typ": "note",
+    "text": "Wieder eine Störung an AX-02, immer beim schnellen Verfahren. Steckverbindungen sichtgeprüft, alles fest."
+   },
+   {
+    "kuerzel": "SN-050",
+    "typ": "note",
+    "text": "An AX-03 klopft es jedes Mal am Umkehrpunkt, ein einzelner Schlag. Sonst läuft sie sauber durch."
+   },
+   {
+    "kuerzel": "SN-063",
+    "typ": "note",
+    "text": "AX-02 setzt daneben. Bevor jemand die Spindel aufmacht: die Greiferbacke ist lose, die hat Spiel und nicht die Achse."
+   },
+   {
+    "kuerzel": "SN-066",
+    "typ": "note",
+    "text": "AX-01 macht beim Verfahren ein Geräusch, klingt erst mal nach Führung. Beim genauen Hinsehen schleift die Energiekette am Blech."
+   },
+   {
+    "kuerzel": "SN-087",
+    "typ": "note",
+    "text": "AX-04 legt die Teile mal so mal so ab, Streuung ist größer geworden. Noch innerhalb, aber früher war das stabiler."
+   },
+   {
+    "kuerzel": "SN-089",
+    "typ": "note",
+    "text": "AX-02 stockt bei langsamer Fahrt, ganz feines Ruckeln. Bei voller Geschwindigkeit merkt man nichts."
+   },
+   {
+    "kuerzel": "SN-094",
+    "typ": "note",
+    "text": "An AX-04 muss ich zum zweiten Mal in vier Wochen nachkorrigieren. Kommt nach ein paar Stunden wieder."
+   },
+   {
+    "kuerzel": "SN-095",
+    "typ": "note",
+    "text": "AX-02 klemmt montags in den ersten Fahrten, danach gibt sich das. Steht ja über das Wochenende kalt."
+   },
+   {
+    "kuerzel": "SN-100",
+    "typ": "note",
+    "text": "AX-01 geht schwer, obwohl vorgestern geschmiert wurde. Ich tippe auf falsches Fett wie bei AX-04 im Winter."
+   }
+  ]
+ },
+ {
+  "id": "B06",
+  "frage": "Durckabfall Hydraulik",
+  "absicht": "Innere Undichtigkeit im Hydraulikkreis, Druck bricht weg",
+  "eintraege": [
+   {
+    "kuerzel": "SN-031",
+    "typ": "note",
+    "text": "FD-01 fördert zwischendurch nichts, Trichter ist aber voll. Einmal mit der Hand angeklopft, dann läuft es wieder."
+   },
+   {
+    "kuerzel": "SN-073",
+    "typ": "note",
+    "text": "FD-01 hakelig beim Klemmen, seit ein paar Tagen. Wenn wir die Anlage warmfahren lassen wird es besser."
+   },
+   {
+    "kuerzel": "SN-093",
+    "typ": "note",
+    "text": "VS-01 Auswurfschacht war verstopft, zwei Teile verkantet. Freigemacht, läuft."
+   },
+   {
+    "kuerzel": "SN-117",
+    "typ": "note",
+    "text": "FD-02 hat den ganzen Abend sauber dosiert. Nach dem Umbau am Auslauf ist Ruhe."
+   },
+   {
+    "kuerzel": "SN-132",
+    "typ": "note",
+    "text": "PR-01 hält den Druck in der Pause nicht, das Aggregat schaltet öfter nach als früher."
+   },
+   {
+    "kuerzel": "SN-141",
+    "typ": "note",
+    "text": "An PR-01 fällt der Haltedruck über Nacht komplett ab. Morgens erstmal aufbauen lassen."
+   },
+   {
+    "kuerzel": "SN-163",
+    "typ": "note",
+    "text": "FD-02 macht den Klemmer doppelt so langsam zu wie FD-01. Ventil getauscht, keine Änderung."
+   },
+   {
+    "kuerzel": "SN-168",
+    "typ": "note",
+    "text": "An FD-02 ist die Schaltzeit immer noch lang. [PERSON] war es nicht, Schlauch ist frei. Bleibt die Mechanik."
+   },
+   {
+    "kuerzel": "SN-173",
+    "typ": "note",
+    "text": "PR-03 macht jetzt Ausschuss, Fügetiefe zu gering. Werkzeug muss raus, egal was der Plan sagt."
+   }
+  ]
+ },
+ {
+  "id": "B07",
+  "frage": "Nullpunktverschiebung an AX",
+  "absicht": "Spiel im Kugelgewindetrieb, Positionsabweichung beim Richtungswechsel",
+  "eintraege": [
+   {
+    "kuerzel": "SN-025",
+    "typ": "note",
+    "text": "AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende."
+   },
+   {
+    "kuerzel": "SN-029",
+    "typ": "note",
+    "text": "Abweichung an AX-01 ist wieder da. Nur wenn sie aus der Gegenrichtung kommt, in einer Richtung stimmt es."
+   },
+   {
+    "kuerzel": "SN-050",
+    "typ": "note",
+    "text": "An AX-03 klopft es jedes Mal am Umkehrpunkt, ein einzelner Schlag. Sonst läuft sie sauber durch."
+   },
+   {
+    "kuerzel": "SN-090",
+    "typ": "note",
+    "text": "AX-03 geht seit gestern in Schleppfehler. Gestern wurde das Programm angepasst, Beschleunigung höher. Zusammenhang liegt nahe."
+   },
+   {
+    "kuerzel": "SN-111",
+    "typ": "note",
+    "text": "AX-04 hat heute Nacht zweimal die Position verloren und musste referenziert werden. Nachtschicht hat nichts weiter dazu geschrieben."
+   },
+   {
+    "kuerzel": "SN-118",
+    "typ": "note",
+    "text": "AX-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   },
+   {
+    "kuerzel": "SN-120",
+    "typ": "note",
+    "text": "AX-01 gibt beim Richtungswechsel einen Stoß, den man im Gestell spürt. Kam nicht von jetzt auf gleich, wird langsam mehr."
+   },
+   {
+    "kuerzel": "SN-158",
+    "typ": "note",
+    "text": "AX-01 wirft sprunghaft eine Fehlermeldung und steht. Zweimal in der Nacht, jeweils weggedrückt und weiter."
+   },
+   {
+    "kuerzel": "SN-169",
+    "typ": "note",
+    "text": "AX-01 hatte das seit einer Woche nicht mehr. Vielleicht war es doch die Umrichter-Parametrierung, die letzten Monat geändert wurde."
+   },
+   {
+    "kuerzel": "SN-188",
+    "typ": "note",
+    "text": "AX-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   }
+  ]
+ },
+ {
+  "id": "B08",
+  "frage": "Ruckeln beim Hub",
+  "absicht": "Gleitbahnen des Ram-Antriebs ohne Schmierfilm, Hub läuft ungleichmäßig",
+  "eintraege": [
+   {
+    "kuerzel": "SN-030",
+    "typ": "note",
+    "text": "Wenn RB-01 den Arm ausstreckt, sieht man am Fuß ein leichtes Wackeln. Bei kurzen Wegen fällt es nicht auf."
+   },
+   {
+    "kuerzel": "SN-067",
+    "typ": "note",
+    "text": "PR-03 hakt kurz im Abwärtshub, immer an der gleichen Stelle."
+   },
+   {
+    "kuerzel": "SN-074",
+    "typ": "note",
+    "text": "RB-01 hat beim Richtungswechsel ein Spiel bekommen, das vorher nicht da war. Vielleicht hängt das mit den ruppigen Bremsungen vom Dienstag zusammen."
+   },
+   {
+    "kuerzel": "SN-142",
+    "typ": "note",
+    "text": "Das Dröhnen an RB-02 sitzt im Antrieb der Hauptachse. Mit dem Schraubendreher am Gehäuse gut zu orten."
+   },
+   {
+    "kuerzel": "SN-143",
+    "typ": "note",
+    "text": "Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse."
+   },
+   {
+    "kuerzel": "SN-148",
+    "typ": "note",
+    "text": "RB-02 schwingt am Ende der Bewegung nach, wackelt kurz aus. Vorher war die Bahn sauber, dazwischen lag die Störung im Schutztürkreis."
+   },
+   {
+    "kuerzel": "SN-151",
+    "typ": "note",
+    "text": "RB-02 fährt die Bahn nicht mehr sauber, besonders in der Kurve. Nach jedem harten Stopp wird es einen Tick schlimmer."
+   }
+  ]
+ },
+ {
+  "id": "B09",
+  "frage": "Versatz an PR",
+  "absicht": "Werkzeug sitzt nicht fest in der Aufnahme, Fügemaß wandert",
+  "eintraege": [
+   {
+    "kuerzel": "SN-012",
+    "typ": "note",
+    "text": "PR-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   },
+   {
+    "kuerzel": "SN-047",
+    "typ": "note",
+    "text": "PR-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken."
+   },
+   {
+    "kuerzel": "SN-064",
+    "typ": "note",
+    "text": "PR-02 Auswerfer klemmte einmal, von Hand freigemacht. Wenn das öfter kommt, gehört das angesehen."
+   },
+   {
+    "kuerzel": "SN-082",
+    "typ": "note",
+    "text": "PR-01 nach dem Werkzeugwechsel eingefahren, erste Teile vermessen, alles mittig."
+   },
+   {
+    "kuerzel": "SN-096",
+    "typ": "note",
+    "text": "PR-02 hat mitten in der Nacht den Druck verloren, Teile nicht durchgefügt. Anlage steht."
+   },
+   {
+    "kuerzel": "SN-099",
+    "typ": "note",
+    "text": "FD-02 lässt Lücken, PR-02 steht dann kurz leer. Kommt in Wellen, dazwischen läuft alles."
+   },
+   {
+    "kuerzel": "SN-116",
+    "typ": "note",
+    "text": "PR-01 fügt einseitig, auf einer Seite tiefer als auf der anderen. Teile gehen gerade noch durch."
+   },
+   {
+    "kuerzel": "SN-124",
+    "typ": "note",
+    "text": "Der Versatz an PR-01 ist geblieben. Werkzeug wurde letzte Woche gewechselt, seitdem ist es so."
+   },
+   {
+    "kuerzel": "SN-154",
+    "typ": "note",
+    "text": "PR-02 zieht den Druck unsauber auf, schwankt um ein paar bar. Vermutlich wieder eine Dichtung wie im Juni."
+   },
+   {
+    "kuerzel": "SN-155",
+    "typ": "note",
+    "text": "PR-03 Kraft klettert seit einer Woche. [PERSON] war für letzte Woche geplant, wurde wegen Auftrag geschoben."
+   },
+   {
+    "kuerzel": "SN-181",
+    "typ": "note",
+    "text": "Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch."
+   },
+   {
+    "kuerzel": "SN-186",
+    "typ": "note",
+    "text": "PR-02 sauber durchgelaufen."
+   },
+   {
+    "kuerzel": "SN-187",
+    "typ": "note",
+    "text": "PR-03 seit dem Werkzeugwechsel wieder in der Kraft, wo sie hingehört. Sonst nichts zu vermerken."
+   }
+  ]
+ },
+ {
+  "id": "B10",
+  "frage": "Öl Temperatur an PR",
+  "absicht": "Wärmeabfuhr im Ölkreis gestört, Druck wird unruhig",
+  "eintraege": [
+   {
+    "kuerzel": "SN-008",
+    "typ": "note",
+    "text": "PR-03 stand zwei Stunden, Material war alle. Kein technischer Grund."
+   },
+   {
+    "kuerzel": "SN-021",
+    "typ": "note",
+    "text": "PR-02 setzt sichtbare Druckstellen auf die Teile. Kraft weiter oben."
+   },
+   {
+    "kuerzel": "SN-027",
+    "typ": "note",
+    "text": "PR-03 braucht länger bis der Druck steht. [PERSON] man am Takt, ein bis zwei Zehntel je Hub."
+   },
+   {
+    "kuerzel": "SN-032",
+    "typ": "note",
+    "text": "PR-03 weiter zäh im Druckaufbau. Unter dem Aggregat liegt ein dünner Ölfilm auf dem Blech."
+   },
+   {
+    "kuerzel": "SN-055",
+    "typ": "note",
+    "text": "Der Ausschuss an VS-01 hängt an PR-02, die fügt nicht tief genug. Presse gemeldet."
+   },
+   {
+    "kuerzel": "SN-071",
+    "typ": "note",
+    "text": "An PR-03 sieht man Reibspuren auf der Ram-Führung, blank gelaufen. Öl steht oben im Behälter."
+   },
+   {
+    "kuerzel": "SN-083",
+    "typ": "note",
+    "text": "PR-01 liegt in der Presskraft am oberen Rand. Standmenge ist fast erreicht, passt zeitlich."
+   },
+   {
+    "kuerzel": "SN-150",
+    "typ": "note",
+    "text": "Poltern an AX-01 wird bei Wärme schlimmer, gegen Schichtende am deutlichsten. Taktzeit hält noch."
+   },
+   {
+    "kuerzel": "SN-154",
+    "typ": "note",
+    "text": "PR-02 zieht den Druck unsauber auf, schwankt um ein paar bar. Vermutlich wieder eine Dichtung wie im Juni."
+   },
+   {
+    "kuerzel": "SN-159",
+    "typ": "note",
+    "text": "An PR-02 ist nichts undicht, Ölstand steht seit vier Wochen gleich. Dafür ist der Tank auffällig warm."
+   }
+  ]
+ }
+]

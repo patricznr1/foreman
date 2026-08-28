@@ -2488,12 +2488,22 @@ claims:
     geltung_grund: >-
       ÜBERHOLT am 28.08.2026: BEIDE abgelesenen Werte gelten nicht mehr. Der
       Dienst laeuft auf FOREMAN_EMBED_PRIORITY = st_only mit
-      Snowflake/snowflake-arctic-embed-l-v2.0 aus dem Abbild, und
-      FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE ist als Dienst-Variable entfernt — die
-      Vorgabe aus `config.py` traegt jetzt allein und steht auf 0,75 (C-091).
-      Damit ist auch der Befund zum fehlenden Ausweichpfad hinfaellig: `st_only`
-      laeuft lokal, ein Ausfall der Cloud beruehrt die Einbettung nicht mehr.
-      Neu abzulesen waere das bei Gelegenheit als eigener Eintrag.
+      Snowflake/snowflake-arctic-embed-l-v2.0 aus dem Abbild. Damit ist auch der
+      Befund zum fehlenden Ausweichpfad hinfaellig: `st_only` laeuft lokal, ein
+      Ausfall der Cloud beruehrt die Einbettung nicht mehr.
+      KORREKTUR AM SELBEN TAG, und sie gehoert hierher, weil sie diesen Eintrag
+      betrifft: Dieser Absatz behauptete zunaechst, die Dienst-Variable
+      FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE sei entfernt und die Vorgabe aus
+      `config.py` trage allein. Das war eine Annahme, nicht abgelesen — die
+      Variable stand weiter auf 0,60 und ueberstimmte den am 28.08. erhobenen
+      Wert 0,75 (C-091). Die ausgerollte Suche lief also in genau der
+      Einstellung, bei der sechs von zehn Anfragen des Bewertungssatzes nichts
+      Zutreffendes liefern. Abgelesen und entfernt wurde die Variable erst
+      danach; seither traegt `config.py`.
+      DER UEBERTRAGBARE TEIL: Eine erhobene Kalibrierung im Quelltext greift nur,
+      wenn keine Umgebungsvariable desselben Namens daneben steht. Genau davor
+      warnte dieser Eintrag urspruenglich — und die Warnung wurde beim
+      Ueberholen selbst uebersehen.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -2651,7 +2661,19 @@ claims:
     fundstelle:
       - "docs/messungen/2026-08-28_modellwechsel_mbrc.md"
       - "tools/archiv_guete/modellvergleich_2026-08-28/ (32 Rohdateien mit Pruefsummen)"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      ÜBERHOLT NOCH AM SELBEN TAG durch C-098, und zwar aus dem Grund, den dieser
+      Eintrag selbst benannt hat. Der Bewertungssatz wurde am 28.08.2026 um 81
+      Urteile auf 216 beurteilte Paare erweitert; dieselben Rohdaten, neu
+      gerechnet, ergeben ein anderes Bild:
+      Trefferquote -0,156 (p=0,031) wird +0,001 (p=1,000), Rangguete -0,106
+      (p=0,008) wird +0,024 (p=0,744), verdichtet -0,076 (p=0,148) wird +0,025
+      (p=0,719). Aus "gewoehnlich gerechnet schlechter" wird "in keiner Richtung
+      gezeigt".
+      Der Eintrag bleibt stehen, weil er den Befund traegt, der ihn ueberholt
+      hat: Die Aussage war nicht falsch gemessen, sondern gegen einen
+      unvollstaendigen Massstab. Genau davor hat er gewarnt.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -2789,3 +2811,191 @@ claims:
       waehrend der Arbeits-Thread mit 16 rechnet. Wer die Wirksamkeit an
       `torch.get_num_threads()` im Haupt-Thread pruefen wollte, kaeme zum
       falschen Schluss.
+
+  - id: "C-096"
+    aussage: "Die Archiv-Suche ist erstmals in der ausgelieferten Zusammenstellung gegen einen weitgehend vollstaendigen Bewertungssatz erhoben."
+    status: "gemessen"
+    wert: "drei Quellen: Trefferquote 0,558 Praezision 0,541 Rangguete 0,625 (verdichtet 0,633). Vier Quellen: 0,615 / 0,537 / 0,677 (0,693). Keine Anfrage ohne zutreffenden Treffer."
+    bedingung: >-
+      Erhoben am 28.08.2026 im Betriebsbehaelter gegen goldset_v3.json in der
+      erweiterten Fassung (216 beurteilte Paare, 119 zutreffend). Gemessen wurde
+      die AUSGELIEFERTE Zusammenstellung: Snowflake Arctic v2.0 lokal, Grenzwert
+      0,75 als wirksam geprueft, k=15, Gedaechtnis eingeschaltet mit
+      substrate_k=5, Bestand 205 Notizen. Alle Parameter aus der Konfiguration
+      der laufenden Instanz gelesen, keiner im Messwerkzeug wiederholt.
+      Kein Fehler in 20 Anfragen. `search_archive` unmittelbar gerufen, derselbe
+      Produktcode wie hinter der Schnittstelle; Trefferlisten roh abgelegt und
+      mit `werte_aus.py` gerechnet.
+      DIE VIERTE QUELLE TRAEGT NICHT BELEGBAR: Trefferquote +0,057 (p=0,094),
+      Rangguete +0,052 (p=0,145), verdichtet +0,060 (p=0,086) im gepaarten
+      exakten Permutationstest, n=10. Alle drei zeigen in dieselbe Richtung,
+      keiner erreicht das Niveau. Freigabe-Bedingung 1 bleibt nicht erfuellt:
+      zwei Anfragen (B07, B09) verlieren Treffer, Bedingung 2 steht bei 60
+      Prozent.
+    datum: "2026-08-28"
+    fundstelle:
+      - "docs/messungen/2026-08-28b_ausgeliefertes_system.md"
+      - "tools/archiv_guete/ausgeliefert_2026-08-28/"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      ERSTE ERHEBUNG DIESER ART. Bis heute wurde entweder eine andere
+      Zusammenstellung gemessen (drei Quellen, andere Ausgabelaenge, anderes
+      Modell) oder gegen einen Bewertungssatz, dem mehr als die Haelfte der
+      ausgelieferten Plaetze fehlte. Beides zugleich stimmig ist neu.
+      WAS OFFEN BLEIBT: Ob die vierte Quelle traegt, ist bei zehn Anfragen nicht
+      zu entscheiden. Die Richtung ist einheitlich positiv, die Streuung zu
+      gross. Mehr Anfragen wuerden das klaeren, nicht mehr Urteile.
+
+  - id: "C-097"
+    aussage: "Die vierte Archiv-Quelle kostet das Neunfache an Antwortzeit."
+    status: "gemessen"
+    wert: "Median je Suchaufruf 0,097 s mit drei Quellen gegen 0,853 s mit vier"
+    bedingung: >-
+      Erhoben am 28.08.2026 im Betriebsbehaelter, je zehn Anfragen, der erste
+      Aufruf (Laden des Einbettungsmodells) aus der Verteilung genommen.
+      Gemessen ist der vollstaendige Suchaufruf, nicht ein Teilschritt.
+      URSACHE, nicht gemessen sondern strukturell: Die drei eigenen Quellen
+      liegen in derselben Datenbank; die vierte ist ein Netzaufruf an eine
+      Gegenstelle. Der groesste Einzelwert (5,883 s) ist der erste Aufruf gegen
+      diese Gegenstelle, also der Verbindungsaufbau.
+    datum: "2026-08-28"
+    fundstelle:
+      - "docs/messungen/2026-08-28b_ausgeliefertes_system.md, Abschnitt 3"
+      - "tools/archiv_guete/ausgeliefert_2026-08-28/"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DIE ZAHL GEHOERT NEBEN DEN GEWINN, nicht dahinter. Die vierte Quelle
+      verbessert die Rangguete um 0,052 (nicht gezeigt, p=0,145) und kostet
+      0,756 s je Suche (eindeutig). Ob dieser Tausch richtig ist, entscheidet
+      der Einsatz: An einer Maschine, an der ein Werker wartet, ist eine Sekunde
+      etwas anderes als in einer Auswertung.
+      Bis zu dieser Erhebung war der Preis nirgends beziffert.
+
+  - id: "C-098"
+    aussage: "Zwischen dem alten und dem neuen Einbettungsmodell ist auf dem eigenen Bewertungssatz kein Gueteunterschied nachweisbar — in keiner Richtung."
+    status: "gemessen"
+    wert: "Trefferquote +0,001 (p=1,000), Rangguete +0,024 (p=0,744), verdichtet +0,025 (p=0,719)"
+    bedingung: >-
+      Dieselben Rohdaten wie C-092, neu gerechnet am 28.08.2026 gegen den
+      erweiterten Bewertungssatz (216 statt 135 beurteilte Paare). Jeder Arm an
+      seinem kalibrierten Arbeitspunkt: text-embedding-3-small bei 0,60 gegen
+      Snowflake Arctic v2.0 bei 0,75. Gepaarter exakter Permutationstest,
+      zweiseitig, n=10.
+      Einzelwerte: Arm A Trefferquote 0,557 Praezision 0,520 Rangguete 0,601
+      (verdichtet 0,609). Arm B 0,558 / 0,541 / 0,625 (0,633). Keine Anfrage
+      ohne zutreffenden Treffer, in beiden Armen.
+    datum: "2026-08-28"
+    fundstelle:
+      - "docs/messungen/2026-08-28_modellwechsel_mbrc.md"
+      - "tools/archiv_guete/modellvergleich_2026-08-28/"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      ERSETZT C-092, das aus denselben Rohdaten das Gegenteil las: dort war
+      Arctic gewoehnlich gerechnet SIGNIFIKANT SCHLECHTER (Trefferquote -0,156
+      bei p=0,031, Rangguete -0,106 bei p=0,008). Geaendert hat sich nicht die
+      Messung, sondern der Massstab.
+      WAS DARAUS FOLGT FUER DIE AUSSAGE NACH AUSSEN: Der Satz "die Suche wurde
+      besser" ist weiterhin nicht belegbar — aber auch "sie wurde schlechter"
+      ist es nicht. Belegbar sind die Betriebs- und Rechtsgruende des Wechsels:
+      freie Lizenz statt US-Drittland, Betrieb beim Kunden ohne Cloud-Anbindung,
+      keine Kosten je Abfrage, und nach der Threadbegrenzung (C-095) eine
+      Antwortzeit, die den Cloud-Weg unterbietet.
+
+  - id: "C-099"
+    aussage: "Ein unvollstaendiger Bewertungssatz kehrte das Ergebnis um: Dieselben Rohdaten sagten erst 'signifikant schlechter' und nach 81 zusaetzlichen Urteilen 'kein Unterschied'."
+    status: "gemessen"
+    wert: "Rangguete -0,106 (p=0,008) wird +0,024 (p=0,744); unbeurteilte Plaetze im neuen Arm fallen von 64 von 112 auf 5 von 112"
+    bedingung: >-
+      Am 28.08.2026 wurden 81 offene Paare (Anfrage, Vorgang) beurteilt — jene,
+      die die beiden gemessenen Arme an ihren ausgelieferten Arbeitspunkten
+      zeigten und die im Bewertungssatz fehlten. Derselbe Beurteiler wie fuer
+      die urspruenglichen 135, dieselbe Frage, paarweise und ohne Kenntnis
+      davon, welcher Arm einen Eintrag hochgespuelt hatte.
+      Der Satz waechst damit von 135 auf 216 beurteilte Paare und von 80 auf 119
+      zutreffende Zuordnungen (67 Stufe 2, 52 Stufe 1). Kein bestehendes Urteil
+      wurde geaendert; das Werkzeug bricht ab, wenn ein Eintrag wegfiele.
+      DIE UMKEHRUNG BETRIFFT BEIDE RICHTUNGEN, nicht nur die guenstige: Der
+      Gewinn der vierten Quelle war vorher GEZEIGT (Rangguete +0,092, p=0,023)
+      und ist es jetzt nicht mehr (+0,052, p=0,145) — die drei eigenen Quellen
+      haben durch die neuen Urteile aufgeholt.
+    datum: "2026-08-28"
+    fundstelle:
+      - "tools/archiv_guete/gegenprobe/relevanz_urteile_2026-08-28.txt"
+      - "tools/archiv_guete/baue_goldset_v3.py"
+      - "docs/messungen/2026-08-28_modellwechsel_mbrc.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      DAS IST DIE POOL-VERZERRUNG AN DEN EIGENEN DATEN, nicht aus der Literatur
+      zitiert. Buettcher et al. (SIGIR 2007) beziffern den Effekt auf im Mittel
+      rund zwei Rangplaetze; hier hat er das Vorzeichen des Ergebnisses gedreht.
+      Der Mechanismus: Unbeurteilt zaehlt in der gewoehnlichen Rechnung als
+      nicht zutreffend. Ein System, das ANDERE Eintraege nach oben spuelt als
+      jenes, mit dem der Vorrat gebaut wurde, wird dafuer bestraft — und je
+      besser es Neues findet, desto haerter.
+      EIN ZWEITER BEFUND AUS DENSELBEN URTEILEN: Anfrage B01 galt seit dem
+      27.08.2026 als im Bestand nicht beantwortbar, weil der Beurteiler alle 19
+      damaligen Pool-Eintraege verworfen hatte. Unter den neuen Eintraegen war
+      der passende (note:143, "Unten tropft Schmierstoff aus der Achse", Stufe
+      2). "Nicht beantwortbar" war eine Eigenschaft der Luecke, nicht des
+      Bestands. Seither hat KEINE der zehn Anfragen mehr eine leere Trefferliste.
+
+  - id: "C-100"
+    aussage: "Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen."
+    status: "gemessen"
+    wert: "remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz"
+    bedingung: >-
+      Abgelesen am 28.08.2026 am Quelltext: `substrate/client.py` fuehrt die
+      Pfade in `_paths`; ein Pfad fuer den Kontextaufbau ist weder als Vorgabe
+      noch als Einstellung vorhanden. `archive/search.py::_substrat_treffer`
+      ruft ausschliesslich `recall(query, max_results=k)` und formt die flache
+      Trefferliste zu einer vierten Rangliste fuer die Fusion.
+      AUSGEZAEHLT wurden die Aufrufe im Quelltext, ohne die Client-Datei selbst:
+      remember in ingestion/semantic.py, substrate/backfill.py und
+      substrate/smoke.py; recall in reasoners/event_chain/recall.py,
+      reasoners/failure/recall.py und substrate/smoke.py; forget in
+      substrate/aufraeumen.py und substrate/nachtrag.py. Fuer reason, reflect
+      und drift_status findet sich kein einziger Aufrufer.
+      NICHT BELEGT und deshalb hier nicht behauptet: WARUM das so ist. Eine
+      Entscheidung gegen den Kontextaufbau ist in GROUND_TRUTH, im Register und
+      in den Freigabe-Bedingungen nirgends dokumentiert — daraus folgt aber
+      nicht, dass sie nicht getroffen wurde. Der Quelltext sagt, was gerufen
+      wird, nicht warum.
+    datum: "2026-08-28"
+    fundstelle:
+      - "src/foreman/substrate/client.py, _paths"
+      - "src/foreman/archive/search.py, _substrat_treffer"
+      - "Commit fad4de5"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WARUM DER EINTRAG WICHTIG IST, obwohl er nur eine Bauweise beschreibt:
+      FOREMAN ist nach Aussage des Erbauers dafuer gebaut, die Staerken des
+      Gedaechtnissystems im Industrieumfeld zu nutzen. Genau die Faehigkeiten,
+      die es von einem Vektorspeicher unterscheiden — Wissensnetz,
+      Selbstauskunft, Drifterkennung, Kontextaufbau —, sind angebunden und
+      werden nicht gerufen. Der Abstand zwischen Zweck und Bauzustand ist damit
+      beziffert statt behauptet.
+      WAS TROTZDEM ANKOMMT: Verdichtung und Vergessen formen den Bestand, den
+      der Abruf durchsucht. Sie wirken also, nur eine Ebene tiefer. Was NICHT
+      ankommt, ist die Zusammenstellung — Schichtung, Gespraechspuffer,
+      Zeitrahmen.
+      WAS DAS BEGRENZT: `substrate_k = 5` deckelt den Beitrag unabhaengig von
+      der Bestandsgroesse. Waechst der Bestand, waechst die Konkurrenz der
+      anderen drei Quellen um dieselben 15 Plaetze, der Beitrag der vierten aber
+      nicht. Der Wert steht in GROUND_TRUTH bis heute unter "nie kalibriert" —
+      neben der Ausgabelaenge (inzwischen erhoben, C-087) und dem Vektor-Cutoff
+      (inzwischen erhoben, C-091).
+      OFFEN UND AUSDRUECKLICH NICHT ENTSCHIEDEN: ob ein Kontextaufbau in einer
+      Suche, die vier Ranglisten fusioniert, ueberhaupt verwendbar waere. Er
+      liefert eine Zusammenstellung, keine Kandidaten mit Raengen. Das ist eine
+      Produkt- und Architekturfrage, keine Messfrage.

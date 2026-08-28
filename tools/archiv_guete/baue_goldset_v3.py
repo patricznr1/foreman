@@ -17,8 +17,11 @@
 #  KONTROLLPUNKT: Der Lauf vergleicht das erzeugte Goldset mit dem vorhandenen
 #         und bricht bei Abweichung ab. Ohne diesen Vergleich waere nicht zu
 #         unterscheiden, ob die Rekonstruktion stimmt oder nur plausibel aussieht.
-#  Aufruf: python baue_goldset_v3.py [--schreiben]
+#  Aufruf: python baue_goldset_v3.py [--schreiben] [--erweitern]
 #          Ohne --schreiben nur pruefen (Trockenlauf).
+#          --erweitern erlaubt das Neuschreiben, wenn der Satz WAECHST —
+#          also Eintraege hinzukommen und keiner wegfaellt. Verliert er
+#          etwas, bricht der Lauf unabhaengig vom Schalter ab.
 # ============================================================
 from __future__ import annotations
 
@@ -28,7 +31,12 @@ import sys
 from pathlib import Path
 
 HIER = Path(__file__).resolve().parent
-URTEILE = HIER / "gegenprobe" / "relevanz_urteile_2026-08-27.txt"
+# ALLE Urteilsdateien, nach Namen sortiert. Der Bewertungssatz waechst, wenn eine
+# Aenderung andere Eintraege nach oben spuelt — und dann kommt eine Datei dazu,
+# statt eine bestehende umgeschrieben zu werden. Das erhaelt, WANN welches Urteil
+# entstanden ist; ein nachtraeglich veraenderter Massstab waere nicht mehr
+# nachvollziehbar.
+URTEILSDATEIEN = sorted((HIER / "gegenprobe").glob("relevanz_urteile_*.txt"))
 ZUORDNUNG = HIER / "goldset_v2_zuordnung.json"
 GOLDSET = HIER / "goldset_v3.json"
 BEURTEILT = HIER / "beurteilt_v3.json"
@@ -44,22 +52,30 @@ def lies_urteile() -> dict[str, dict[str, int]]:
     verworfenes Urteil senkt die Zahl der beurteilten Eintraege, ohne dass es
     jemandem auffiele — und genau die Zahl traegt die Verzerrungskorrektur.
     """
-    text = URTEILE.read_text(encoding="utf-8")
+    if not URTEILSDATEIEN:
+        raise SystemExit("❌ Keine Urteilsdatei unter gegenprobe/relevanz_urteile_*.txt.")
     je_anfrage: dict[str, dict[str, int]] = {}
-    for wort in text.split():
-        treffer = _URTEIL.match(wort)
-        if not treffer:
-            raise SystemExit(f"❌ Unverstaendliches Urteil: {wort!r} in {URTEILE.name}")
-        anfrage = treffer["anfrage"]
-        kuerzel = treffer["kuerzel"]
-        stufe = int(treffer["stufe"])
-        bisher = je_anfrage.setdefault(anfrage, {})
-        if kuerzel in bisher and bisher[kuerzel] != stufe:
-            raise SystemExit(
-                f"❌ Widersprechende Urteile zu {anfrage}-{kuerzel}: "
-                f"{bisher[kuerzel]} und {stufe}. Von Hand klaeren, nicht raten."
-            )
-        bisher[kuerzel] = stufe
+    herkunft: dict[tuple[str, str], str] = {}
+    for datei in URTEILSDATEIEN:
+        for wort in datei.read_text(encoding="utf-8").split():
+            treffer = _URTEIL.match(wort)
+            if not treffer:
+                raise SystemExit(f"❌ Unverstaendliches Urteil: {wort!r} in {datei.name}")
+            anfrage = treffer["anfrage"]
+            kuerzel = treffer["kuerzel"]
+            stufe = int(treffer["stufe"])
+            bisher = je_anfrage.setdefault(anfrage, {})
+            if kuerzel in bisher and bisher[kuerzel] != stufe:
+                # Ueber mehrere Dateien hinweg ist das der wichtige Fall: Dasselbe
+                # Paar zweimal verschieden beurteilt. Raten waere hier das
+                # Schlimmste — die Auswahl entschiede der Zufall der Dateinamen.
+                raise SystemExit(
+                    f"❌ Widersprechende Urteile zu {anfrage}-{kuerzel}: "
+                    f"{bisher[kuerzel]} ({herkunft[(anfrage, kuerzel)]}) und "
+                    f"{stufe} ({datei.name}). Von Hand klaeren, nicht raten."
+                )
+            bisher[kuerzel] = stufe
+            herkunft[(anfrage, kuerzel)] = datei.name
     return je_anfrage
 
 
@@ -87,6 +103,7 @@ def loese_auf(
 
 def main() -> None:
     schreiben = "--schreiben" in sys.argv[1:]
+    erweitern = "--erweitern" in sys.argv[1:]
 
     urteile = lies_urteile()
     zuordnung = json.loads(ZUORDNUNG.read_text(encoding="utf-8"))
@@ -109,11 +126,31 @@ def main() -> None:
                 for a in set(vorhanden) | set(goldset)
             }
             abweichend = {a: s for a, s in fehlend.items() if s}
-            raise SystemExit(
-                f"❌ Der erzeugte Bewertungssatz weicht vom vorhandenen ab: {abweichend}\n"
-                "   Erst klaeren, welcher stimmt — NICHT ueberschreiben."
-            )
-        print(f"✅ Deckt sich mit dem vorhandenen {GOLDSET.name}")
+            # ERWEITERN IST DER NORMALFALL, ueberschreiben nie. Eine Aenderung, die
+            # nur HINZUFUEGT, ist der erwartete Ausgang, wenn eine neue
+            # Urteilsdatei dazukommt — sie muss trotzdem angesagt werden. Eine
+            # Aenderung, die etwas WEGNIMMT, bricht dagegen immer ab: Dort ist ein
+            # Urteil verschwunden oder gekippt, und das darf kein Schalter
+            # durchwinken.
+            verloren = {
+                a: sorted(set(vorhanden.get(a, {})) - set(goldset.get(a, {}))) for a in vorhanden
+            }
+            verloren = {a: s for a, s in verloren.items() if s}
+            if verloren:
+                raise SystemExit(
+                    f"❌ Der erzeugte Bewertungssatz VERLIERT Eintraege: {verloren}\n"
+                    "   Ein Urteil ist verschwunden oder gekippt. Von Hand klaeren."
+                )
+            if not erweitern:
+                raise SystemExit(
+                    f"❌ Der erzeugte Bewertungssatz ergaenzt den vorhandenen: {abweichend}\n"
+                    "   Verloren geht nichts. Wenn das gewollt ist, mit --erweitern "
+                    "ausfuehren."
+                )
+            zusatz = sum(len(s) for s in abweichend.values())
+            print(f"📈 {zusatz} Eintraege kommen hinzu, keiner faellt weg")
+        else:
+            print(f"✅ Deckt sich mit dem vorhandenen {GOLDSET.name}")
     else:
         print(f"📋 {GOLDSET.name} existiert noch nicht — kein Vergleich moeglich")
 
@@ -125,7 +162,7 @@ def main() -> None:
     # Kontrollpunkt oben laesst nichts anderes durch), waere ein Ueberschreiben
     # reine Bewegung in der Aenderungsansicht — und in einer Datei, die Urteile
     # traegt, ist eine Aenderung ohne Grund das Letzte, was jemand sehen will.
-    if GOLDSET.exists():
+    if GOLDSET.exists() and not erweitern:
         print(f"↩️  {GOLDSET.name} unveraendert gelassen (deckungsgleich)")
     else:
         GOLDSET.write_text(
