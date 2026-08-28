@@ -53,6 +53,38 @@ RUN uv pip install --system --no-cache .
 #    ~560 MB — bewusst im Image, damit der heiße Pfad ohne Laufzeit-Download startet.
 RUN python -m spacy download de_core_news_lg
 
+# 2a) Einbettungs-Modell (Snowflake Arctic v2.0, ~2,3 GB) — dieselbe Überlegung wie
+#     beim spaCy-Modell darüber: im Image, nicht zur Laufzeit.
+#
+#     Der Grund, warum es hier steht und nicht auf einem Volume liegt: Railway
+#     hängt Volumes so ein, dass ein Abbild mit nicht-privilegiertem Nutzer nicht
+#     hineinschreiben kann (Railway-Doku, „Caveats"). Der dort vorgeschlagene
+#     Ausweg wäre RAILWAY_RUN_UID=0 — also der Dienst als root, und damit genau
+#     die Härtung zurückgenommen, die weiter unten begründet steht.
+#
+#     Was passiert, wenn das Modell FEHLT, ist der eigentliche Anlass: Der
+#     Ladefehler wird zu `ProviderUnavailable`, und `embed_and_search_hybrid`
+#     fängt den ab und sucht still nur noch im Volltext weiter. Kein Fehler beim
+#     Werker, nur eine Warnung im Protokoll — die Suche sieht funktionsfähig aus
+#     und hat ihren semantischen Zweig verloren.
+#
+#     ALLES IN EINER SCHICHT, und das ist kein Schönheitsgrund: Ein nachgelagertes
+#     `chown -R` schriebe alle 2,3 GB ein zweites Mal ins Abbild. Deshalb wird der
+#     Nutzer schon hier angelegt statt erst unten bei USER.
+#
+#     Der Modellname steht hier wörtlich, damit die Schicht zwischenspeicherbar
+#     bleibt. Dass er nicht von `EmbeddingSettings.st_model` abdriften kann, hält
+#     tests/unit/test_modell_im_image.py fest.
+RUN useradd --create-home --uid 10001 foreman \
+    && mkdir -p /opt/hf-cache \
+    && HF_HOME=/opt/hf-cache python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('Snowflake/snowflake-arctic-embed-l-v2.0', device='cpu')" \
+    && chown -R foreman:foreman /opt/hf-cache
+
+# Zur Laufzeit dieselbe Stelle. Eine Dienst-Variable gleichen Namens würde das hier
+# überstimmen — dann läge der Zwischenspeicher woanders und das Modell im Abbild
+# wäre unerreichbar.
+ENV HF_HOME=/opt/hf-cache
+
 # 2b) System-Laufzeitbibliothek: libgomp1 (OpenMP) wird von LightGBM (Ausfallvorhersage-
 #     Reasoner) zur Laufzeit dynamisch geladen — im slim-Image nicht enthalten.
 RUN apt-get update \
@@ -73,7 +105,10 @@ ENV PYTHONPATH=/app/src
 #    Es wird nichts umgeschrieben: Der Code unter /app, die Pakete unter
 #    site-packages und das spaCy-Modell sind welt-lesbar, und geschrieben wird zur
 #    Laufzeit nichts — Protokolle gehen nach stdout, der Zustand in die Datenbank.
-RUN useradd --create-home --uid 10001 foreman
+#    Einzige Ausnahme ist /opt/hf-cache: Der Zwischenspeicher gehört diesem Nutzer,
+#    damit die Einbettungs-Bibliothek dort ihre Sperrdateien anlegen kann.
+#    Der Nutzer selbst entsteht schon weiter oben (Schritt 2a) — siehe die
+#    Begründung dort, warum das nicht erst hier passiert.
 USER foreman
 
 EXPOSE 8000
