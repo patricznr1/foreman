@@ -207,6 +207,57 @@ def observe_mcp_call(*, tool: str, latency_seconds: float, success: bool) -> Non
     MCP_LATENCY.labels(tool=tool).observe(latency_seconds)
 
 
+# --- Archiv-Suche (§15.9) — die Zeit, die der WERKER wartet.
+#
+#     WARUM DIESE KENNZAHL FEHLTE UND WAS SIE GEKOSTET HAT: Es gab bereits
+#     `foreman_embed_latency_seconds` für den Einbettungsschritt, aber keine für
+#     den vollständigen Suchaufruf. Am 28.08.2026 lief die Suche über Wochen mit
+#     5,5 Sekunden statt 0,15 Sekunden, weil die Rechenbibliothek zu viele
+#     Threads startete (C-095). Die Zahl stand die ganze Zeit in der
+#     Einbettungs-Kennzahl — nur sah niemand hin, weil nichts sie mit einer
+#     Erwartung verglich.
+#
+#     Eine langsame Suche wirft nicht. Sie ist nur langsam, und langsam sieht
+#     aus wie „das dauert eben". Deshalb steht die Zeit jetzt an der Stelle, an
+#     der sie jemanden betrifft.
+#
+#     Ohne Label: Die Anfrage selbst darf nicht hinein (Freitext, §8), und die
+#     Quellenauswahl wäre hoch-kardinal. Was die Zahl aussagen soll, ist eine
+#     einzige Frage — wie lange wartet der Werker. ---
+ARCHIVE_SEARCH_LATENCY: Final = Histogram(
+    "foreman_archive_search_latency_seconds",
+    "Latenz des vollständigen Archiv-Suchaufrufs (Sekunden).",
+    registry=REGISTRY,
+)
+
+# --- Der zweite stille Ausfall derselben Suche (§15.8/§15.9).
+#
+#     Fällt das Einbettungs-Backend aus, sucht der Volltext-Zweig allein weiter:
+#     kein Fehler, kein 503, eine Trefferliste, die vollständig aussieht und
+#     ihren bedeutungsbasierten Teil verloren hat. Bisher stand das
+#     ausschliesslich als Warnung im Protokoll — also an einer Stelle, die
+#     niemand regelmässig liest.
+#
+#     Als Zähler ist es abfragbar: Steigt er, ist die Suche stumpf geworden.
+#     Keine Labels — es gibt nur einen Grund, und der Grund gehört ins
+#     Protokoll, nicht in eine Zeitreihe. ---
+ARCHIVE_DEGRADIERT: Final = Counter(
+    "foreman_archive_degraded_total",
+    "Archiv-Suchen, die ohne Vektor-Zweig allein auf dem Volltext liefen.",
+    registry=REGISTRY,
+)
+
+
+def observe_archive_search(*, latency_seconds: float) -> None:
+    """Trägt die Dauer eines vollständigen Archiv-Suchaufrufs ein (§15.9)."""
+    ARCHIVE_SEARCH_LATENCY.observe(latency_seconds)
+
+
+def observe_archive_degradiert() -> None:
+    """Zählt eine Suche, die ohne Einbettungs-Backend auf den Volltext zurückfiel."""
+    ARCHIVE_DEGRADIERT.inc()
+
+
 def observe_failure_prediction(*, data_regime: str, decision: str, probability: float) -> None:
     """Zählt eine Ausfallvorhersage + ihre Wahrscheinlichkeit (F-PRED, §11.2).
 

@@ -32,6 +32,7 @@ from foreman.db.scope_sql import machine_scope_sql
 from foreman.embeddings.errors import EmbeddingError
 from foreman.embeddings.provider import EmbeddingProvider, Vector
 from foreman.logging_setup import RETRY, get_logger
+from foreman.observability.metrics import observe_archive_degradiert
 
 logger = get_logger("foreman.notes.search")
 
@@ -214,6 +215,10 @@ async def embed_and_search_hybrid(
         query_embedding = (await provider.embed([query_text], mode="query"))[0]
     except EmbeddingError as exc:
         # Graceful: kein Vektor-Zweig, Volltext trägt allein. Kein Query-Text/keine PII im Log (§15.7).
+        # ZUSÄTZLICH ALS KENNZAHL: Die Warnung steht an einer Stelle, die niemand
+        # regelmässig liest — der Zähler ist abfragbar und alarmierbar. Ohne ihn
+        # sieht eine stumpf gewordene Suche von aussen aus wie eine gesunde.
+        observe_archive_degradiert()
         logger.warning(
             "%s Archiv-Suche degradiert auf Volltext (Embedding-Backend nicht verfügbar): %s",
             RETRY,
