@@ -174,3 +174,48 @@ def test_ohne_torch_passiert_nichts(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(builtins, "__import__", ohne_torch)
 
     backends._begrenze_threads()  # darf nicht werfen
+
+
+@pytest.mark.asyncio
+async def test_jeder_encode_setzt_die_grenze_neu(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DER FEHLER, DER IN DER ERSTEN FASSUNG DRIN WAR.
+
+    `torch.set_num_threads` ist THREAD-LOKAL. `_encode_sync` läuft über
+    `asyncio.to_thread`, also in einem Thread aus einem Vorrat — welcher es ist,
+    wechselt. Stünde die Begrenzung nur im Ladezweig, gälte sie ausschliesslich
+    für den Thread, der zufällig zuerst da war; jeder weitere rechnete wieder
+    mit der Threadzahl des Wirts.
+
+    Warum das beim Nachsehen nicht auffiel: Sequenzielle Aufrufe bekommen
+    denselben Thread aus dem Vorrat wieder. Der Fehler zeigt sich erst unter
+    mehreren Anfragen zugleich — also im Betrieb und nicht beim Probieren.
+    """
+    aufrufe = 0
+
+    def zaehlen() -> None:
+        nonlocal aufrufe
+        aufrufe += 1
+
+    monkeypatch.setattr(backends, "_begrenze_threads", zaehlen)
+
+    async def kodiere(texte: list[str]) -> list[list[float]]:
+        return [[0.5] * 4 for _ in texte]
+
+    backend = backends.SentenceTransformersBackend(model_name="egal", encode_fn=None)
+    backend._model = _FestesModell()
+
+    for _ in range(3):
+        await backend.embed_batch(["a"], timeout_s=5.0)
+
+    assert aufrufe == 3, (
+        "❌ Die Begrenzung wird nicht bei jedem Encode gesetzt. Da sie thread-lokal "
+        "ist und der Encode-Pfad ueber einen Thread-Vorrat laeuft, gilt sie dann nur "
+        "fuer den Thread, der zuerst da war."
+    )
+
+
+class _FestesModell:
+    """Minimales Ersatzmodell — der Test misst die Begrenzung, nicht das Einbetten."""
+
+    def encode(self, texts: list[str], **k: object) -> list[list[float]]:
+        return [[0.5] * 4 for _ in texts]

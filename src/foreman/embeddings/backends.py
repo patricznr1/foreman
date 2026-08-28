@@ -402,7 +402,21 @@ class SentenceTransformersBackend:
         self, texts: list[str]
     ) -> list[RawVector]:  # pragma: no cover - braucht Modell
         """Blockierender Encode-Pfad (in einen Thread ausgelagert). Lädt Library/Modell lazy."""
-        from sentence_transformers import SentenceTransformer  # lazy: nur bei echter Nutzung
+        # BEI JEDEM AUFRUF, nicht nur beim Laden — `torch.set_num_threads` ist
+        # THREAD-LOKAL. Diese Funktion läuft über `asyncio.to_thread`, also in
+        # einem Thread aus einem Vorrat; welcher es ist, wechselt. Stünde die
+        # Begrenzung nur im Ladezweig, gälte sie ausschliesslich für den Thread,
+        # der zufällig zuerst da war — jeder weitere rechnete wieder mit der
+        # Threadzahl des Wirts und wäre um den Faktor 50 langsamer.
+        #
+        # Gemessen am 28.08.2026 im Betriebsbehälter: derselbe Prozess meldet im
+        # Haupt-Thread weiterhin 48, während der Arbeits-Thread mit 16 rechnet.
+        # Die Anzeige täuscht, die Wirkung nicht — und genau deshalb wäre der
+        # Fehler beim Nachsehen nicht aufgefallen.
+        #
+        # Der Aufruf kostet im Regelfall einen Vergleich: `_begrenze_threads`
+        # setzt nur, wenn der Wert abweicht.
+        _begrenze_threads()
 
         # Doppelte Prüfung: Die erste Abfrage läuft ohne Sperre und kostet im
         # Regelfall (Modell längst geladen) nichts. Nur wer sie leer vorfindet,
@@ -411,7 +425,12 @@ class SentenceTransformersBackend:
         if self._model is None:
             with self._model_lock:
                 if self._model is None:
-                    _begrenze_threads()
+                    # Lazy und HIER: Nur wer wirklich lädt, braucht die schwere
+                    # Bibliothek. Stünde der Import weiter oben, verlangte ihn
+                    # auch jeder Aufruf mit längst geladenem Modell — und jeder
+                    # Pfad, der ein Ersatzmodell einsetzt, scheiterte daran.
+                    from sentence_transformers import SentenceTransformer
+
                     self._model = SentenceTransformer(self._model_name, device=self._device)
         result = self._model.encode(texts, normalize_embeddings=False)
         return [[float(value) for value in row] for row in result]
