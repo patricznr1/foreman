@@ -7,8 +7,23 @@
 #         engines (>=20 <25) gepinnt; reproduzierbar via committetem package-lock.json.
 # ============================================================
 
+# Beide Stufen nennen dasselbe Image in der Form `tag@sha256:...` — dieselbe
+# Festlegung wie im Backend-Dockerfile, wo die Begründung ausführlich steht: Der
+# Tag sagt, WAS gemeint ist und wo eine Aktualisierung ansetzt; der Digest sagt,
+# WELCHE Fassung. Ohne ihn baut derselbe Commit an zwei Tagen zwei Ergebnisse.
+#
+# Dazu ein Betriebsgrund: Eine bewegliche Marke muss bei JEDEM Bau erst bei der
+# Registry aufgelöst werden (Tag → Digest). Ein Digest IST die Identität und kann
+# aus dem Inhaltsspeicher des Builders bedient werden, ohne die Registry zu
+# fragen. Das ist eine Abhängigkeit weniger, kein Freibrief: Liegt das Image
+# nicht vor, braucht auch der Digest die Registry.
+#
+# Aktualisiert wird bewusst, nicht nebenbei; die Wiedervorlage führt
+# security/findings.yaml unter F-009, wie beim Backend-Image.
+# node:22-slim, OCI-Index mit linux/amd64 · arm · arm64 · ppc64le (28.08.2026).
+
 # --- Stage 1: Build (Dev-Deps + Design-Tokens + next build) ---
-FROM node:22-slim AS builder
+FROM node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS builder
 WORKDIR /app
 
 # Reproduzierbare Installation: NUR Manifest + committetes Lockfile zuerst (Layer-Cache).
@@ -31,7 +46,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # --- Stage 2: Runtime (nur Standalone-Server, kein npm/kein dev) ---
-FROM node:22-slim AS runner
+# Derselbe Digest wie die Baustufe — sonst liefe der Server auf einer anderen
+# Fassung als der, gegen die gebaut wurde.
+FROM node:22-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
