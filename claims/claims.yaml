@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-08-27"
+stand: "2026-08-28"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -1151,10 +1151,18 @@ claims:
     fundstelle:
       - "src/foreman/config.py, archive_vector_max_distance"
       - "GROUND_TRUTH.md, Abschnitt 15.8"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      ÜBERHOLT am 28.08.2026 durch C-091. Der lokale Einbettungspfad laeuft seit
+      diesem Tag auf Snowflake Arctic v2.0, und ein Abstand hat nur innerhalb
+      EINES Vektorraums Bedeutung — der hier gemessene Wert 0,60 beschreibt
+      einen anderen Raum. Gegen Arctic gehalten schnitt er so scharf, dass 6 von
+      10 Anfragen des Bewertungssatzes ohne einen einzigen zutreffenden Treffer
+      blieben; neu erhoben wurden 0,75. Die Messung selbst bleibt richtig — sie
+      beschreibt nur nicht mehr das System, das laeuft. Der allgemeine Befund in
+      der Bemerkung gilt unveraendert weiter und hat sich sogar bestaetigt.
     freigabe:
       - "intern"
-      - "fach"
     bemerkung: >-
       Der Befund ist allgemeiner als der eine Zahlenwert: Eine Schwelle, die
       Treffer verwirft, meldet nichts, wenn sie zu streng steht. Der Ausfall sieht
@@ -2211,7 +2219,16 @@ claims:
       - "src/foreman/config.py, archive_vector_max_distance"
       - "src/foreman/embeddings/kalibrierung.py"
       - "GROUND_TRUTH.md, Abschnitte 15.8 und 15.10"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      ÜBERHOLT am 28.08.2026 durch C-091: Die hier beschriebene Luecke ist zu.
+      Gegen welches Einbettungsmodell der Grenzwert erhoben wurde, ist jetzt
+      belegt — `kalibrierung.ARCHIV_VEKTOR_GRENZWERT` fuehrt
+      `modell="Snowflake/snowflake-arctic-embed-l-v2.0"`, und ein Test fordert
+      ein, dass das Feld gefuellt bleibt. Der Eintrag beschreibt damit einen
+      Zustand, den es nicht mehr gibt. Was er BEGRUENDET hat, gilt weiter: Ein
+      Wert ohne bekannte Grundlage laesst sich nicht widerlegen — genau deshalb
+      wurde neu erhoben statt uebernommen.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -2462,7 +2479,16 @@ claims:
       - "Umgebungsvariablen des Backend-Dienstes (Railway, Projekt foreman, Environment production)"
       - "src/foreman/embeddings/backends.py, _CHAINS"
       - "src/foreman/embeddings/kalibrierung.py"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      ÜBERHOLT am 28.08.2026: BEIDE abgelesenen Werte gelten nicht mehr. Der
+      Dienst laeuft auf FOREMAN_EMBED_PRIORITY = st_only mit
+      Snowflake/snowflake-arctic-embed-l-v2.0 aus dem Abbild, und
+      FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE ist als Dienst-Variable entfernt — die
+      Vorgabe aus `config.py` traegt jetzt allein und steht auf 0,75 (C-091).
+      Damit ist auch der Befund zum fehlenden Ausweichpfad hinfaellig: `st_only`
+      laeuft lokal, ein Ausfall der Cloud beruehrt die Einbettung nicht mehr.
+      Neu abzulesen waere das bei Gelegenheit als eigener Eintrag.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -2534,3 +2560,63 @@ claims:
       NEBENBEI, BELEGT AUS DER MODELLKARTE: Auf CLEF (europaeische Sprachen)
       liegt arctic-l-v2.0 bei 52,9 bzw. 54,3 gegen 40,8 bzw. 41,3 fuer bge-m3.
       Fuer deutschsprachige Bestaende ist das kein Detail.
+  - id: "C-091"
+    aussage: "Der Aehnlichkeits-Grenzwert der Archiv-Suche ist erstmals gegen ein BENANNTES Einbettungsmodell erhoben; der uebernommene Wert war fuer Snowflake Arctic zu scharf."
+    status: "gemessen"
+    wert: "Grenzwert 0,60 -> 0,75 gegen Snowflake Arctic v2.0: Trefferquote 0,197 -> 0,409, Rangguete 0,245 -> 0,386, verdichtet 0,268 -> 0,466. Anfragen ohne einen einzigen zutreffenden Treffer: 6 von 10 -> 2 von 10"
+    bedingung: >-
+      Erhoben am 28.08.2026 im Backend-Behaelter der laufenden Instanz gegen den
+      Bewertungssatz goldset_v3.json (10 Anfragen, 80 zutreffende Eintraege),
+      k=15, Quellen note/maintenance/alarm, ohne Maschinen-Einschraenkung.
+      Gemessen wurde NICHT ueber die Schnittstelle: Der Endpunkt liest den
+      Grenzwert aus der Konfiguration, ein Durchlauf ueber mehrere Werte
+      braeuchte je ein Deployment. Gerufen wurde stattdessen `search_archive`
+      unmittelbar — derselbe Produktcode, variiert wurde allein `max_distance`.
+      Acht Werte gefahren (0,50 · 0,55 · 0,60 · 0,65 · 0,70 · 0,75 · 0,85 ·
+      0,95). Die Trefferlisten wurden ROH abgelegt, im Format von `miss.py`, und
+      mit `werte_aus.py` aus dem Repository gerechnet; kein Zwischenwert wurde
+      von Hand uebertragen.
+      DIE WAHL VON 0,75 STUETZT SICH AUF ZWEI BEFUNDE. Erstens traegt der
+      Schritt: gepaarter exakter Permutationstest, zweiseitig, n=9 —
+      Trefferquote +0,213, Rangguete +0,142, verdichtete Rangguete +0,198, je
+      p=0,016; kein einziger verlorener Treffer, 70 Prozent der Anfragen mit
+      Zusatztreffer. Zweitens ist der weitere Schritt auf 0,85 NICHT gezeigt
+      (p=0,250 in allen drei Kennzahlen) und saettigt zudem die Ausgabe: alle
+      150 Plaetze gefuellt, der Grenzwert schneidet dann nichts mehr ab und
+      waere kein Relevanzboden mehr.
+      VORAUSSETZUNG DER MESSUNG: Alle 205 Notizen tragen Arctic-Vektoren. Das
+      ist belegt, nicht angenommen — der Text von fuenf ueber den Bestand
+      verteilten Notizen wurde mit dem laufenden Anbieter neu eingebettet und
+      mit dem gespeicherten Vektor verglichen, Uebereinstimmung 1,000000.
+    datum: "2026-08-28"
+    fundstelle:
+      - "src/foreman/config.py, archive_vector_max_distance"
+      - "src/foreman/embeddings/kalibrierung.py, ARCHIV_VEKTOR_GRENZWERT"
+      - "docs/messungen/2026-08-28_archiv_grenzwert_arctic.md"
+      - "tools/archiv_guete/goldset_v3.json"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      DER UEBERTRAGBARE BEFUND: Ein Abstandsgrenzwert gehoert zum Vektorraum,
+      nicht zum Produkt. Wer das Einbettungsmodell wechselt und den Grenzwert
+      stehen laesst, aendert stillschweigend die Strenge der Suche — in beide
+      Richtungen moeglich, und in keiner faellt es auf. Hier war es die scharfe
+      Richtung: Bei 0,60 lieferten 6 von 10 Anfragen nichts Zutreffendes, die
+      Suche arbeitete faktisch als reine Volltextsuche. Das ist derselbe
+      Ausfall, den C-048 am 24.08.2026 beschrieben hat, nur mit vertauschten
+      Vorzeichen — damals war der Wert nie erhoben, diesmal war er fuer ein
+      anderes Modell erhoben.
+      WAS DIESE MESSUNG NICHT TRAEGT: Die Praezision ist ueber die Schwellen
+      NICHT vergleichbar. Der beurteilte Vorrat waechst mit der Schwelle immer
+      lueckenhafter (17 von 35 Plaetzen unbeurteilt bei 0,60, 64 von 112 bei
+      0,75), und unbeurteilt zaehlt in der gewoehnlichen Rechnung als nicht
+      zutreffend. Die Auswahlregel aus C-048 — "Praezision muss ueber einem
+      Drittel bleiben" — liesse sich hier deshalb nicht unveraendert anwenden;
+      angewandt haette sie 0,60 bestaetigt und damit genau den Ausfall
+      festgeschrieben, gegen den C-048 geschrieben wurde. Getragen wird die
+      Wahl von Trefferquote und Rangguete, die beide gegen diese Verzerrung
+      robust sind, weil ihr Bezugspunkt der Bewertungssatz ist.
+      NICHT MITGEMESSEN: das Gedaechtnis als vierte Quelle. Der Grenzwert wirkt
+      allein im Notiz-Zweig; die vierte Quelle haette den Effekt nur verduennt.

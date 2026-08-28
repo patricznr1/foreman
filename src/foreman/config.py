@@ -101,15 +101,19 @@ class Settings(BaseSettings):
     # unter dieser Schwelle liegt. Bereich der Cosine-Distanz bei L2-normierten
     # Vektoren: 0 (identisch) … 2 (entgegengesetzt); kleiner = strenger.
     #
-    # 0.60 ist der GEMESSENE Wert (C-048, 24.08.2026), nicht mehr der frühere
-    # konservative Start 0.55. Er stand bis hierher ausschliesslich in einer
-    # Umgebungsvariable der laufenden Instanz — eine erhobene Kalibrierung, die
-    # kein Redeploy von einem anderen Rechner überlebt und die kein Prüflauf je
-    # zu sehen bekam. Der Geltungsbereich (gegen welches Einbettungsmodell
-    # erhoben) steht in `embeddings.kalibrierung.ARCHIV_VEKTOR_GRENZWERT`; der
-    # Start meldet, solange er unbelegt ist.
+    # 0.75 ist der GEMESSENE Wert, erhoben gegen Snowflake Arctic v2.0 (C-091,
+    # 28.08.2026). Der Vorgänger 0.60 stammte aus C-048 und war gegen ein anderes,
+    # nicht benanntes Modell erhoben — an Arctic gehalten schnitt er so scharf,
+    # dass 6 von 10 Anfragen des Bewertungssatzes ohne einen einzigen zutreffenden
+    # Treffer blieben.
+    #
+    # DER WERT IST NICHT ÜBERTRAGBAR: Ein Abstand hat nur innerhalb EINES
+    # Vektorraums Bedeutung. Wer das Einbettungsmodell wechselt, muss ihn neu
+    # erheben — der Geltungsbereich steht in
+    # `embeddings.kalibrierung.ARCHIV_VEKTOR_GRENZWERT`, und der Start meldet,
+    # sobald ein anderes Modell läuft als das, gegen das erhoben wurde.
     archive_vector_max_distance: float = Field(
-        default=0.60,
+        default=0.75,
         ge=0.0,
         le=2.0,
         validation_alias="FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE",
