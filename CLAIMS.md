@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-08-27
+Stand: 2026-08-28
 
 ## FOREMAN
 
@@ -52,7 +52,6 @@ Stand: 2026-08-27
 | C-045 | Ein Löschverlangen für eine gespiegelte Erinnerung ist von der Plattform aus erfüllbar. | gemessen | 1 Löschweg, der bei Fehlschlag wirft statt ihn zu verschlucken | 2026-08-24 | gueltig | intern |
 | C-046 | Den Validierungs-Vorbehalt formuliert das System, nicht das Sprachmodell. | gemessen | 2 von 2 heiklen Angaben einer Empfehlung kommen deterministisch: Zahlen und Vorbehalt | 2026-08-24 | gueltig | intern, fach, kunde |
 | C-047 | Für die Archiv-Suche existiert ein Bewertungssatz, dessen Relevanzurteile von drei voneinander unabhängigen Beurteilern getragen werden. | gemessen | 18 Anfragen, 79 Relevanz-Zuordnungen, 86,6 % Übereinstimmung aller drei Beurteiler | 2026-08-24 | gueltig | intern, fach |
-| C-048 | Die Ähnlichkeitsschwelle der Archiv-Suche war nie an echten Daten justiert; nach der Justierung findet die Suche deutlich mehr. | gemessen | Schwelle 0,55 → 0,60: Trefferquote 0,185 → 0,256 (+38 %), Ranggüte 0,306 → 0,372 (+22 %) | 2026-08-24 | gueltig | intern, fach |
 | C-049 | Die Güte der quellenübergreifenden Archiv-Suche ist erstmals beziffert. | gemessen | Trefferquote 0,256 · Genauigkeit 0,415 · Ranggüte 0,372 (k=10, drei Quellen, Schwelle 0,60) | 2026-08-24 | gueltig | intern, fach |
 | C-050 | Das Gedächtnis als vierte Archiv-Quelle erfüllt seine Freigabe-Bedingung im gegenwärtigen Zustand nicht. | gemessen | 0 % der Anfragen mit zusätzlichem zutreffendem Treffer (gefordert: mindestens 30 %); auf 11 von 18 Anfragen verschlechterte Reihenfolge | 2026-08-24 | gueltig | intern, fach |
 | C-051 | Der Rückweg für ein Löschverlangen war über die Betriebskonfiguration nicht erreichbar; er ist es seit dem 25.08.2026. | gemessen | Aufruf schlug im Betrieb fehl, während alle Tests bestanden — 22 von 22 Versuchen | 2026-08-25 | gueltig | intern |
@@ -81,15 +80,14 @@ Stand: 2026-08-27
 | C-078 | Gegen die beurteilte Relevanz misst die Archiv-Suche fast doppelt so gut wie gegen die vom Störungsbild geerbte. | gemessen | Trefferquote 0,300 auf 0,550, Ranggüte 0,246 auf 0,503 — dieselben Läufe, nur ein anderer Maßstab | 2026-08-27 | gueltig | intern |
 | C-080 | Die RRF-Konstante der Archiv-Suche war quellenuebergreifend wirkungslos — sie wurde als offene Kalibrierung gefuehrt, obwohl kein Wert das Ergebnis aenderte. | gemessen | Top-10 identisch fuer k aus {1, 10, 60, 100, 500, 1000}; wirksam war die Konstante nur notiz-intern | 2026-08-27 | gueltig | intern |
 | C-081 | Von den drei eigenen Archiv-Quellen traegt praktisch nur eine — Wartungen und Alarme sind ueber die Suche fast nicht erreichbar. | gemessen | 100 ausgelieferte Plaetze: note 91, maintenance 1, alarm 0. Deutsche Volltextsuche: 4 Treffer ueber 10 Anfragen mal 3 Tabellen | 2026-08-27 | gueltig | intern |
-| C-082 | Der gemessene Aehnlichkeits-Grenzwert stand nirgends im Repository, und gegen welches Einbettungsmodell er erhoben wurde, ist nicht belegt. | gemessen | config.py fuehrte 0.55, Abschnitt 15.10 nannte 0,60; der wirksame Wert lag allein in einer Umgebungsvariable | 2026-08-27 | gueltig | intern |
 | C-083 | Die Ausgabelaenge der Archiv-Suche ist an drei Stellen verschieden belegt — die Verdraengungsmessung gilt deshalb nicht fuer das, was der Werker sieht. | gemessen | Backend-Vorgabe 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
 | C-084 | Der gemessene Vorsprung der vierten Quelle ist bei zehn Anfragen statistisch nicht gezeigt. | gemessen | Trefferquote p = 0,500 · Rangguete p = 0,672 · verdichtete Rangguete p = 0,492 (gepaarter Permutationstest, zweiseitig, exakt, n = 9) | 2026-08-27 | gueltig | intern |
 | C-085 | Der Lauf mit Gedaechtnis wird von der Pool-Verzerrung staerker benachteiligt als der ohne — er bringt mehr unbeurteilte Eintraege mit. | gemessen | unbeurteilte Plaetze: 20 von 92 ohne Gedaechtnis, 29 von 96 mit (21,7 % gegen 30,2 %) | 2026-08-27 | gueltig | intern |
 | C-086 | Freigabe-Bedingung 1 fragt seit dem 27.08.2026, ob die Trefferquote einer Anfrage SINKT — nicht mehr, ob ein einzelner Treffer herausfaellt. | gemessen | Dritte Fassung. Am selben Lauf: 0 von 10 Anfragen nach der geltenden Lesart, 2 von 10 nach der vorigen | 2026-08-27 | gueltig | intern |
 | C-087 | Die Archiv-Suche gibt 15 Treffer aus, und diese Zahl steht an genau einer Stelle. | gemessen | ARCHIV_AUSGABELAENGE = 15; vorher Backend 5, Anzeige 12, Messwerkzeug 10 | 2026-08-27 | gueltig | intern |
 | C-088 | Mit der zusammenfuehrenden Fusion und 15 Plaetzen ist Freigabe-Bedingung 1 erfuellt, und der Gewinn an Rangguete ist statistisch gezeigt. | gemessen | Trefferquote 0,565 auf 0,641 (p=0,062) · Rangguete 0,493 auf 0,585 (p=0,016) · verdichtet 0,542 auf 0,644 (p=0,020) · 0 von 10 Anfragen mit gesunkener Trefferquote, 5 von 10 mit Zusatztreffer | 2026-08-27 | gueltig | intern |
-| C-089 | Produktiv laeuft das Cloud-Einbettungsmodell text-embedding-3-small ohne lokalen Ausweichpfad. | gemessen | FOREMAN_EMBED_PRIORITY = openai_only, FOREMAN_EMBED_OPENAI_MODEL = text-embedding-3-small | 2026-08-27 | gueltig | intern |
 | C-090 | Snowflake Arctic v2.0 verlangt auf der Anfrageseite einen Praefix; FOREMAN bindet ihn ans Modell statt an einen Schalter. | gemessen | query: — belegt an drei Stellen der Modellkarte; hinterlegt in QUERY_PRAEFIX, mit Startmeldung fuer unbekannte Modelle | 2026-08-27 | gueltig | intern |
+| C-091 | Der Aehnlichkeits-Grenzwert der Archiv-Suche ist erstmals gegen ein BENANNTES Einbettungsmodell erhoben; der uebernommene Wert war fuer Snowflake Arctic zu scharf. | gemessen | Grenzwert 0,60 -> 0,75 gegen Snowflake Arctic v2.0: Trefferquote 0,197 -> 0,409, Rangguete 0,245 -> 0,386, verdichtet 0,268 -> 0,466. Anfragen ohne einen einzigen zutreffenden Treffer: 6 von 10 -> 2 von 10 | 2026-08-28 | gueltig | intern, fach |
 
 ## Nicht verwendbar
 
@@ -100,23 +98,26 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 | C-030 | FOREMAN | Die lesenden Listen sind nicht nach Zuständigkeit gefiltert; die Rollensicht ist dort nur eine Anzeigehilfe. | ueberholt | Am 25.08.2026 durch C-057 im Umfang widerlegt: Die Zahl 3 war aus der Beschreibung im Repository abgelesen, nicht an der Anwendung erhoben. Gegen die real gebaute Anwendung sind es 31 von 47 Routen. |
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
+| C-048 | FOREMAN | Die Ähnlichkeitsschwelle der Archiv-Suche war nie an echten Daten justiert; nach der Justierung findet die Suche deutlich mehr. | ueberholt | ÜBERHOLT am 28.08.2026 durch C-091. Der lokale Einbettungspfad laeuft seit diesem Tag auf Snowflake Arctic v2.0, und ein Abstand hat nur innerhalb EINES Vektorraums Bedeutung — der hier gemessene Wert 0,60 beschreibt einen anderen Raum. Gegen Arctic gehalten schnitt er so scharf, dass 6 von 10 Anfragen des Bewertungssatzes ohne einen einzigen zutreffenden Treffer blieben; neu erhoben wurden 0,75. Die Messung selbst bleibt richtig — sie beschreibt nur nicht mehr das System, das laeuft. Der allgemeine Befund in der Bemerkung gilt unveraendert weiter und hat sich sogar bestaetigt. |
 | C-052 | FOREMAN | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | ueberholt | Am 27.08.2026 eingelöst, nicht widerlegt: Die Gegenstelle führt seit dem einen löschenden Weg, und 22 Löschverlangen sind gegen die laufende Instanz durchgelaufen, jedes mit 200 OK und ohne einen Fehlschlag (C-072). Damit ist genau das Kriterium erfüllt, das dieser Eintrag selbst genannt hat — "erst erfüllt, wenn ein Löschverlangen tatsächlich durchläuft". Der Eintrag bleibt stehen, weil er die Lage beschreibt, in der die Plattform ihren Löschweg gebaut hat, bevor es ein Gegenstück gab. |
 | C-054 | FOREMAN | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | ueberholt | Am 27.08.2026 behoben, nicht widerlegt: Alle 22 verwaisten Spiegelungen wurden samt Erinnerung entfernt (C-068), ein zweiter Trockenlauf findet keine mehr. Die Zahl 22 hat sich dabei aus drei unabhängigen Richtungen bestätigt — Spiegelungen gegen Quellzeilen (32 zu 16 und 12 zu 6), die Prüfung des Werkzeugs selbst, und zwei getrennte Anlage-Stapel (0 gegen 22 gespeicherte Rückwege). Der Eintrag bleibt stehen, weil er die Lage beschreibt, gegen die das Werkzeug gebaut wurde. |
 | C-079 | FOREMAN | Die vierte Quelle verdrängt zutreffende Treffer aus der Ergebnisliste. | ueberholt | Der gemessene Pfad wurde geaendert. Die Fusion entdoppelt nicht mehr, sondern fuehrt denselben Vorgang aus mehreren Ranglisten auf einen Schluessel zusammen und summiert die Raenge (archive/search.py::_fusioniere, Commit 362a3a6). Damit gilt der hier beschriebene Mechanismus nicht mehr: Ein Gedaechtnis-Treffer, der auf eine bereits gefundene Zeile zeigt, verdraengt sie nicht, sondern hebt sie. Die ZAHLEN bleiben richtig fuer die damalige Fassung und werden nicht geloescht; sie beschreiben nur nicht mehr das laufende System. Eine Neumessung steht aus — bis dahin ist Freigabe-Bedingung 1 auf dem erweiterten Bestand UNGEMESSEN, nicht erfuellt. |
+| C-082 | FOREMAN | Der gemessene Aehnlichkeits-Grenzwert stand nirgends im Repository, und gegen welches Einbettungsmodell er erhoben wurde, ist nicht belegt. | ueberholt | ÜBERHOLT am 28.08.2026 durch C-091: Die hier beschriebene Luecke ist zu. Gegen welches Einbettungsmodell der Grenzwert erhoben wurde, ist jetzt belegt — `kalibrierung.ARCHIV_VEKTOR_GRENZWERT` fuehrt `modell="Snowflake/snowflake-arctic-embed-l-v2.0"`, und ein Test fordert ein, dass das Feld gefuellt bleibt. Der Eintrag beschreibt damit einen Zustand, den es nicht mehr gibt. Was er BEGRUENDET hat, gilt weiter: Ein Wert ohne bekannte Grundlage laesst sich nicht widerlegen — genau deshalb wurde neu erhoben statt uebernommen. |
+| C-089 | FOREMAN | Produktiv laeuft das Cloud-Einbettungsmodell text-embedding-3-small ohne lokalen Ausweichpfad. | ueberholt | ÜBERHOLT am 28.08.2026: BEIDE abgelesenen Werte gelten nicht mehr. Der Dienst laeuft auf FOREMAN_EMBED_PRIORITY = st_only mit Snowflake/snowflake-arctic-embed-l-v2.0 aus dem Abbild, und FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE ist als Dienst-Variable entfernt — die Vorgabe aus `config.py` traegt jetzt allein und steht auf 0,75 (C-091). Damit ist auch der Befund zum fehlenden Ausweichpfad hinfaellig: `st_only` laeuft lokal, ein Ausfall der Cloud beruehrt die Einbettung nicht mehr. Neu abzulesen waere das bei Gelegenheit als eigener Eintrag. |
 
 ## Zählung
 
-Einträge gesamt: 88
+Einträge gesamt: 89
 
 Nach Status:
 
-- gemessen: 81
+- gemessen: 82
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 82
-- ueberholt: 6
+- gueltig: 80
+- ueberholt: 9
 - ungeprueft: 0

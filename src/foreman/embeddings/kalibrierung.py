@@ -44,18 +44,29 @@ class Kalibrierung:
 
 # Der Relevanz-Grenzwert der hybriden Notiz-Suche (config.archive_vector_max_distance).
 #
-# `modell=None` ist eine bewusste Angabe, kein vergessenes Feld: C-048 misst am
-# 24.08.2026 "gegen die laufende Instanz" und nennt das Einbettungsmodell nicht;
-# die Umgebung jener Instanz liegt nicht im Repository. GROUND_TRUTH §15.10 schreibt
-# den Wert "bge-m3" zu — für diese Zuschreibung gibt es im Repository keine
-# Fundstelle. Bis die Distanzverteilung gegen das tatsächlich laufende Modell
-# erhoben ist, bleibt hier None und der Start meldet es.
+# ERHOBEN GEGEN ARCTIC (C-091, 28.08.2026). Bis hierher stand `modell=None` — nicht
+# als vergessenes Feld, sondern als Aussage: C-048 mass am 24.08.2026 "gegen die
+# laufende Instanz", ohne das Einbettungsmodell zu nennen. Diese Lücke ist zu.
+#
+# WARUM DER WERT SICH VERSCHIEBT: Vektoren verschiedener Modelle liegen in
+# verschiedenen Räumen, und ein Abstand ist nur innerhalb eines Raumes eine Zahl
+# mit Bedeutung. Arctic bildet dieselben Sachverhalte auf grössere Abstände ab als
+# das vorige Modell; derselbe Zahlenwert schneidet damit viel schärfer. Bei 0,60
+# blieben 6 von 10 Anfragen des Bewertungssatzes OHNE einen einzigen zutreffenden
+# Treffer — die Suche arbeitete faktisch als reine Volltextsuche. Genau der
+# Ausfall, den C-048 beschrieben hat, nur mit vertauschten Vorzeichen.
+#
+# WARUM 0,75 UND NICHT MEHR: 0,60 → 0,75 trägt (Trefferquote +0,213, Ranggüte
+# +0,142, verdichtet +0,198, je p=0,016 im exakten Permutationstest; kein einziger
+# verlorener Treffer, 70 % der Anfragen mit Zusatztreffer). Der weitere Schritt auf
+# 0,85 ist NICHT gezeigt (p=0,250) — und dort sättigt die Ausgabe: alle 150 Plätze
+# gefüllt, der Grenzwert schneidet nichts mehr ab und wäre kein Relevanzboden mehr.
 ARCHIV_VEKTOR_GRENZWERT: Final = Kalibrierung(
     name="archive_vector_max_distance",
-    wert=0.60,
-    modell=None,
-    datum="2026-08-24",
-    beleg="C-048",
+    wert=0.75,
+    modell="Snowflake/snowflake-arctic-embed-l-v2.0",
+    datum="2026-08-28",
+    beleg="C-091",
 )
 
 # Alles, was gegen ein Einbettungsmodell erhoben wurde. Eine Liste und nicht je

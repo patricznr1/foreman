@@ -94,13 +94,46 @@ def test_unbelegte_kalibrierung_meldet_sich() -> None:
     Das ist der schlechtere der beiden Fälle: Ein Wert, dessen Grundlage niemand
     kennt, lässt sich nicht einmal widerlegen. Die Meldung muss deshalb sagen,
     WAS läuft und WORAUF sich der Wert beruft.
+
+    GEPRÜFT WIRD AN EINEM EIGENEN EINTRAG, nicht am echten: Seit C-091 ist der
+    Grenzwert gegen Arctic erhoben und nennt sein Modell. Hinge dieser Fall am
+    echten Eintrag, prüfte er ab sofort den ANDEREN Zweig — und der unbelegte
+    Fall wäre unbemerkt ungeprüft. Ein Test soll den Zweig einfordern, nicht den
+    Tagesstand einer Konstanten abbilden.
     """
-    meldung = pruefe(ARCHIV_VEKTOR_GRENZWERT, _einstellungen("openai_only"))
+    unbelegt = Kalibrierung(name="probe", wert=0.6, modell=None, datum="2026-08-24", beleg="C-048")
+
+    meldung = pruefe(unbelegt, _einstellungen("openai_only"))
 
     assert meldung is not None
     assert "nicht belegt" in meldung
     assert "text-embedding-3-small" in meldung
     assert "C-048" in meldung
+
+
+def test_der_echte_grenzwert_nennt_sein_modell() -> None:
+    """Und das ist der Fall, den der Test darüber nicht mehr abdeckt.
+
+    Solange hier `None` stünde, wäre der wirksame Grenzwert ein Wert ohne
+    bekannte Grundlage — nicht widerlegbar, und der Start meldete es bei jedem
+    Hochfahren. Dieser Fall hält fest, dass die Lücke zu ist und zu bleibt.
+    """
+    assert ARCHIV_VEKTOR_GRENZWERT.modell is not None, (
+        "❌ Der Vektor-Grenzwert nennt kein Einbettungsmodell mehr. Ein Abstand hat "
+        "nur innerhalb EINES Vektorraums Bedeutung; ohne Modellangabe ist der Wert "
+        "nicht überprüfbar. Wer das Modell wechselt, erhebt neu — er löscht die "
+        "Angabe nicht."
+    )
+
+
+def test_der_start_schweigt_bei_der_ausgelieferten_einstellung() -> None:
+    """AUFBAU-KONTROLLE zur Beanstandung: Sie darf im Normalfall NICHTS sagen.
+
+    `st_only` ist die Einstellung, unter der die Anwendung läuft. Meldete der
+    Start auch dort, gewöhnte man sich an die Zeile und überläse sie — dann wäre
+    die Prüfung genau dann wirkungslos, wenn sie gebraucht wird.
+    """
+    assert offene_meldungen(_einstellungen("st_only")) == []
 
 
 def test_abweichendes_modell_nennt_beide() -> None:
