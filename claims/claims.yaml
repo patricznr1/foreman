@@ -2776,3 +2776,16 @@ claims:
       beide. C-090 haelt separat fest, dass fuer die Plattform selbst keine
       Antwortzeit-Verteilung erhoben war — das bleibt richtig und betrifft den
       Suchaufruf, nicht das Einbetten.
+      NACHTRAG ZUR BEHEBUNG SELBST, ebenfalls am 28.08.2026 gemessen:
+      `torch.set_num_threads` wirkt THREAD-LOKAL. Der Encode-Pfad laeuft ueber
+      einen Thread-Vorrat (asyncio.to_thread); die Begrenzung muss deshalb bei
+      JEDEM Aufruf gesetzt werden, nicht nur beim Laden des Modells. Die erste
+      Fassung der Behebung setzte sie nur im Ladezweig und wirkte damit
+      ausschliesslich fuer den Thread, der zufaellig zuerst da war. Bei
+      sequenziellen Aufrufen faellt das nicht auf, weil derselbe Thread
+      wiederverwendet wird — erst mehrere Anfragen zugleich verteilen sich.
+      Belegt: sechs gleichzeitige Anfragen, je 0,42 s, Wanduhr 0,45 s.
+      Nebenbefund derselben Messung: Der Haupt-Thread meldet weiterhin 48,
+      waehrend der Arbeits-Thread mit 16 rechnet. Wer die Wirksamkeit an
+      `torch.get_num_threads()` im Haupt-Thread pruefen wollte, kaeme zum
+      falschen Schluss.
