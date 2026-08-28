@@ -197,15 +197,31 @@ def baue_inhalt(event_type: str, payload: Mapping[str, Any]) -> str:
 # ein anderes. Neben CONTENT_BUILDERS und aus demselben Grund: Der Text und die
 # Zeit beschreiben dasselbe Ereignis, und wer den einen Weg ändert, sieht den
 # anderen daneben stehen.
-# NUR die vier Ereignisarten, die einen Zeitpunkt WIRKLICH mitführen. Die
-# Erkenntnis-Arten (Abweichung, Ereigniskette, Ausfalleinschätzung) tragen
-# Kennungen statt Zeiten — für sie bleibt es bei der Eingangszeit, und das ist
-# richtig so: Ihr Zeitpunkt IST der ihrer Entstehung.
+# WELCHE ARTEN HIER STEHEN, entscheidet die NUTZLAST — nicht die Kategorie.
+# Der erste Entwurf schloss alle drei Erkenntnis-Arten aus, mit der Begründung,
+# sie trügen „Kennungen statt Zeiten". Für zwei stimmt das: Ereigniskette und
+# Ausfalleinschätzung führen `anchor_alarm_id` bzw. `prediction_id` und keinen
+# Zeitpunkt — ihre Zeit IST die ihrer Entstehung.
+#
+# FÜR DIE ABWEICHUNG STIMMT ES NICHT. `drift_detected` führt `detected_at`, und
+# das ist `sample.bucket` aus `readings_1m` — der Zeitpunkt in der Halle, an dem
+# die Abweichung auftrat, nicht der des Rechnens. `reasoners/failure/service.py`
+# sagt das seit jeher ausdrücklich („historische Drift-Zeit, korrekt auch bei
+# Backfill") und liest das Feld als Merkmal.
+#
+# WARUM DAS BESONDERS SCHWER WIEGT: Der einzige Einstieg in den Drift-Reasoner
+# ist `drift/runner.py::replay_machine` — ein Wiederholungslauf über einen
+# historischen Zeitraum. Ohne dieses Feld bekämen ALLE Abweichungen eines Laufs
+# denselben Zeitstempel, den des Laufs. Ein Wiederholungslauf über vier Wochen
+# legt damit den gesamten Drift-Bestand auf einen Punkt der Zeitachse — genau
+# das Muster, das beim Nachtrag schon einmal den halben Bestand in dieselbe
+# Stunde gelegt hat, nur an anderer Stelle.
 ZEIT_FELDER: dict[str, str] = {
     "worker_note": "created_at",
     "alarm_raised": "raised_at",
     "production_run": "started_at",
     "maintenance_performed": "performed_at",
+    "drift_detected": "detected_at",
 }
 
 
