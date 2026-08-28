@@ -337,13 +337,38 @@ Trefferform**, ohne Fehler und ohne Meldung.
 | Regel | Zustand | Anmerkung |
 |---|---|---|
 | **R1** Leser fixieren, Gedächtnis variieren | **erfüllt** | Kein Sprachmodell im Pfad. Produktcode, Bewertungssatz, k, Quellen, Fusion, Bestand über beide Arme identisch; variiert allein das Einbettungsmodell. |
-| **R2** Bewerter festnageln und kalibrieren | **kein Gegenstand** | Kein LLM im Bewertungspfad. Die Relevanzurteile liegen als Bewertungssatz vor, die Kennzahlen sind gerechnet. Nach MBRC ist das die stärkere Evidenzform. |
+| **R2** Bewerter festnageln und kalibrieren | **kein Gegenstand** | Kein LLM im Bewertungspfad. Die Kennzahlen sind gerechnet — nach MBRC die stärkere Evidenzform. Zur Herkunft der Urteile siehe unten. |
 | **R3** Abgestuft statt binär | **erfüllt** | Urteile 0/1/2, Ranggüte über abgestufte Relevanz. |
 | **R4** Zehn Läufe, Streuung berichten | **begründete Abweichung** | siehe unten |
 | **R5** Kosten neben der Güte | **teilweise** | Token: kein Gegenstand. Antwortzeit: erhoben, Abschnitt 2. Kontextreduktion: kein Gegenstand. |
 | **R6** Module einzeln messen | **teilweise** | Abruf gemessen. Extraktion, Wegewahl, Pflege: kein Gegenstand für diese Einheit. |
 | **R7** Keine fremden Blogzahlen | **erfüllt** | siehe unten |
 | **R8** Nicht messbar bleibt nicht messbar | **erfüllt** | Güte-Unterschied als *nicht entscheidbar* geführt, Anfrage B01 als *nicht messbar*. |
+
+### Zu R2 — wer beurteilt hat, und was das begrenzt
+
+Im Bewertungspfad sitzt **kein Sprachmodell**. Die 135 Relevanzurteile des
+verwendeten Satzes wurden am 27.08.2026 **von einer Person** gefällt — paarweise
+und verdeckt: Zu jedem Paar (Anfrage, Eintrag) wurde entschieden, ob ein
+Inbetriebnehmer diesen Eintrag zu **dieser** Anfrage sehen wollte. Nicht, ob er
+zum selben Störungstyp gehört; das war der frühere, geerbte Maßstab und maß
+etwas anderes.
+
+Drei Dinge folgen daraus, und alle drei gehören offengelegt:
+
+**Ein Beurteiler, keine Übereinstimmungsquote.** Der vorherige Satz (18
+Anfragen) trug drei unabhängige Urteile mit 86,6 % Übereinstimmung; dieser trägt
+eines. Ein Kappa gibt es deshalb nicht, und es kann keines geben.
+
+**Der Beurteiler ist der Erbauer des Systems.** Das ist ein Eigeninteresse und
+kein Nebenaspekt. Es ist zugleich die einzige verfügbare Fachbeurteilung — der
+Bestand ist eine Simulation, es gibt keinen unbeteiligten Instandhalter, den man
+fragen könnte. Verdeckt beurteilt wurde immerhin paarweise, ohne zu wissen,
+welches System einen Eintrag hochgespült hat.
+
+**Eine Erweiterung muss derselbe Beurteiler vornehmen.** Neue Urteile aus einer
+anderen Hand wären mit den bestehenden nicht vergleichbar — der Maßstab würde
+dadurch nicht erweitert, sondern verdorben.
 
 ### Zu R4 — die Abweichung, und warum
 
@@ -390,9 +415,16 @@ zwischen 10 und 722 Anfragen.
 **Die Präzision ist über die Grenzwerte nicht vergleichbar** — derselbe
 Pool-Effekt wie in Abschnitt 3.3, nur innerhalb eines Arms.
 
-**Anfrage B01** liefert in beiden Armen bis 0,95 keinen zutreffenden Treffer. Ob
-im Bestand nichts Passendes steht oder die Zuordnung im Bewertungssatz nicht
-greift, ist nicht entschieden.
+**Anfrage B01** liefert in beiden Armen bis 0,95 keinen zutreffenden Treffer.
+Das ist **kein offener Punkt, sondern eine Eigenschaft des Bewertungssatzes**:
+Der Beurteiler wertete am 27.08.2026 alle 19 Pool-Einträge zu dieser Anfrage als
+„nein" — die anderen Vorkommen desselben Störungsbildes sind *schwergängig, zäh,
+klebrig*, kein Tropfen. Die Anfrage ist im Bestand nicht beantwortbar und zählt
+seitdem als **nicht messbar** statt als Totalausfall der Suche.
+
+Sie bleibt trotzdem im Satz, und das ist richtig so: Eine Anfrage ohne Antwort
+im Bestand ist der einzige Fall, an dem sich zeigt, ob eine Suche auch schweigen
+kann.
 
 **Die Antwortzeit gilt für den Behälter, wie er läuft** — 24 CPUs Zuteilung,
 Threadzahl 16, Bestand 205 Notizen. Eine andere Zuteilung oder ein grösserer

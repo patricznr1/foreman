@@ -11,7 +11,7 @@
     "benchmark": "FOREMAN-eigener Bewertungssatz (goldset_v3), kein oeffentlicher Benchmark",
     "subset_or_split": "goldset_v2_anfragen.yaml (10 Anfragen) gegen goldset_v3.json (80 zutreffende Zuordnungen: 43 Stufe 2, 37 Stufe 1)",
     "questions": 10,
-    "exclusions_and_why": "Das Vorkommen, aus dem eine Anfrage stammt, ist im Bewertungssatz ausgeschlossen: Es steht fuer den Fall, an dem der Werker gerade steht, und ist noch nicht im Archiv. Anfrage B01 liefert in beiden Armen bis zum groessten geprueften Grenzwert keinen zutreffenden Treffer; ob im Bestand nichts Passendes steht oder die Zuordnung nicht greift, ist nicht entschieden."
+    "exclusions_and_why": "Das Vorkommen, aus dem eine Anfrage stammt, ist im Bewertungssatz ausgeschlossen: Es steht fuer den Fall, an dem der Werker gerade steht, und ist noch nicht im Archiv. Anfrage B01 liefert in beiden Armen nichts Zutreffendes — das ist eine Eigenschaft des Bewertungssatzes, kein offener Punkt: Der Beurteiler wertete am 27.08.2026 alle 19 Pool-Eintraege zu dieser Anfrage als 'nein', die Anfrage ist im Bestand nicht beantwortbar und zaehlt seither als nicht messbar."
   },
   "r1_reader": {
     "reader_model": "kein Sprachmodell im Pfad — der 'Leser' ist der Abrufpfad selbst (search_archive)",
@@ -27,10 +27,10 @@
     "judge_prompt_version": null,
     "adversarial_rejection_rate_pct": null,
     "adversarial_set_size": null,
-    "judge_human_agreement_pct": 86.6,
+    "judge_human_agreement_pct": null,
     "cohens_kappa": null,
-    "kappa_comparison_axis": "nicht erhoben — statt Kappa liegt die Uebereinstimmungsquote dreier unabhaengiger Beurteiler vor",
-    "anmerkung": "Kein LLM im Bewertungspfad. Die Relevanzurteile des VORGAENGER-Satzes (18 Anfragen) stammen von drei voneinander unabhaengigen Beurteilern mit verschiedenem Blickwinkel (Instandhalter, Zuverlaessigkeitsingenieur, strenger Pruefer), Aufnahme ab zwei von drei Stimmen, 86,6 Prozent Uebereinstimmung. FUER DEN HIER VERWENDETEN SATZ goldset_v3 (10 Anfragen, 135 beurteilte Paare) ist die Herkunft der Urteile im Repository NICHT dokumentiert — das ist eine offene Luecke und keine Angabe."
+    "kappa_comparison_axis": "kein Gegenstand — EIN Beurteiler, daher weder Uebereinstimmungsquote noch Kappa",
+    "anmerkung": "Kein Sprachmodell im Bewertungspfad. Die 135 Relevanzurteile des verwendeten Satzes (goldset_v3, 10 Anfragen) wurden am 27.08.2026 von EINER Person gefaellt, paarweise und verdeckt: je Paar (Anfrage, Eintrag) wurde entschieden, ob ein Inbetriebnehmer diesen Eintrag zu DIESER Anfrage sehen wollte — nicht, ob er zum selben Stoerungstyp gehoert. DER BEURTEILER IST DER ERBAUER DES SYSTEMS; siehe competing_interest. Der VORGAENGER-Satz (18 Anfragen) trug drei unabhaengige Urteile mit 86,6 Prozent Uebereinstimmung; dieser traegt eines, ein Kappa gibt es deshalb nicht. Eine Erweiterung muss derselbe Beurteiler vornehmen, sonst sind die neuen Urteile mit den bestehenden nicht vergleichbar."
   },
   "r3_r4_scoring": {
     "scoring_scheme": "Computed from a fixture",
@@ -73,7 +73,7 @@
     "not_measurable": [
       "Ob der Modellwechsel die Suchguete verbessert oder verschlechtert: gewoehnlich gerechnet schlechter (p=0,031 / p=0,008), pool-korrigiert nicht gezeigt (p=0,148 / p=0,570). Der beurteilte Vorrat stammt aus der Zeit des alten Modells und ist gegen das neue verzerrt (41 gegen 57 Prozent unbeurteilte Plaetze).",
       "Die Praezision ueber verschiedene Grenzwerte: derselbe Pool-Effekt innerhalb eines Arms.",
-      "Anfrage B01: liefert in beiden Armen nichts Zutreffendes; Ursache nicht entschieden."
+      "Anfrage B01: im Bestand nicht beantwortbar, seit dem 27.08.2026 ausdruecklich als nicht messbar gefuehrt statt als Totalausfall der Suche."
     ],
     "embedding_model_and_version": "Arm A: text-embedding-3-small (OpenAI, dimensions=1024). Arm B: Snowflake/snowflake-arctic-embed-l-v2.0 (lokal, CPU, 1024 Dim., Anfrage-Praefix 'query: ').",
     "reranker_and_version": "keiner",
@@ -83,8 +83,8 @@
     "raw_data_location": "tools/archiv_guete/modellvergleich_2026-08-28/ — 32 Rohdateien, SHA-256 in PRUEFSUMMEN.txt"
   },
   "disclosure": {
-    "competing_interest": "Selbstmessung am eigenen Produkt. Der Verfasser baut FOREMAN und pflegt zugleich den hier angewandten Berichtsstandard (MBRC). Rohdaten und Pruefsummen liegen offen, damit die Zahlen nachrechenbar sind — Nachpruefbarkeit statt Unabhaengigkeit, wie der Standard es fuer sich selbst beansprucht.",
+    "competing_interest": "Selbstmessung am eigenen Produkt, und die Relevanzurteile stammen vom Erbauer des Systems selbst. Beides ist ein Eigeninteresse. Der Verfasser pflegt zugleich den hier angewandten Berichtsstandard (MBRC). Was dagegen steht: Die Urteile wurden paarweise und verdeckt gefaellt, ohne Kenntnis davon, welches System einen Eintrag hochgespuelt hat. Der Bestand ist eine Simulation — einen unbeteiligten Instandhalter, den man fragen koennte, gibt es nicht. Rohdaten und Pruefsummen liegen offen, damit die Zahlen nachrechenbar sind: Nachpruefbarkeit statt Unabhaengigkeit, wie der Standard es fuer sich selbst beansprucht.",
     "foreign_figures_cited_and_their_status": "Die Begruendung des Modellwechsels im Quelltext nennt CLEF-Werte (arctic-l-v2.0 52,9 bzw. 54,3 gegen 40,8 bzw. 41,3 fuer bge-m3). NICHT VERGLEICHBAR nach R7, und zwar doppelt: fremder Aufbau, und der Vergleich laeuft gegen bge-m3 — ein Modell, das produktiv nie lief. Produktiv lief text-embedding-3-small.",
-    "limitations": "(1) Der Bestand ist Simulationsdaten; FOREMAN fuehrt bislang ausschliesslich den Simulations-Adapter. Uebertragbarkeit auf echte Werkerprotokolle offen. (2) Zehn Anfragen tragen eine Richtungsaussage, keine Kennzahl mit Vertrauensbereich (Dincer 2013: 10 bis 722 Topics je Systempaar). (3) Der beurteilte Vorrat ist gegen das neue Modell verzerrt; die entscheidende Guetefrage bleibt deshalb offen. Aufloesbar durch Erweiterung des Vorrats um rund 119 Urteile. (4) Die Antwortzeit gilt fuer 24 CPUs Zuteilung, Threadzahl 16 und 205 Notizen. (5) Die Herkunft der Relevanzurteile des verwendeten Satzes ist im Repository nicht dokumentiert. (6) Die 5,5-Sekunden-Zahl stand zwischenzeitlich als Befund ueber das Modell im Bericht und war einer ueber die Konfiguration — gefunden erst durch den Widerspruch zu einem zweiten System auf derselben Plattform."
+    "limitations": "(1) Der Bestand ist Simulationsdaten; FOREMAN fuehrt bislang ausschliesslich den Simulations-Adapter. Uebertragbarkeit auf echte Werkerprotokolle offen. (2) Zehn Anfragen tragen eine Richtungsaussage, keine Kennzahl mit Vertrauensbereich (Dincer 2013: 10 bis 722 Topics je Systempaar). (3) Der beurteilte Vorrat ist gegen das neue Modell verzerrt; die entscheidende Guetefrage bleibt deshalb offen. Aufloesbar durch 95 zusaetzliche Urteile (verschiedene Paare an den ausgelieferten Arbeitspunkten beider Arme), die derselbe Beurteiler faellen muss. (4) Die Antwortzeit gilt fuer 24 CPUs Zuteilung, Threadzahl 16 und 205 Notizen. (5) Ein Beurteiler, keine Uebereinstimmungsquote und kein Kappa. (6) Die 5,5-Sekunden-Zahl stand zwischenzeitlich als Befund ueber das Modell im Bericht und war einer ueber die Konfiguration — gefunden erst durch den Widerspruch zu einem zweiten System auf derselben Plattform."
   }
 }
