@@ -198,10 +198,26 @@ Gütezahlen dieses Berichts gelten unverändert.
 
 ### 2.5 Warum das niemandem aufgefallen ist
 
-Im Register steht bis heute: *„Die Antwortzeit der Plattform ist nicht erhoben;
-es liegen ausschliesslich Messpunkte des Gedächtnis-Dienstes vor"* — null
-erhobene Verteilungen. Eine Suche, die fünfeinhalb Sekunden braucht, meldet
-keinen Fehler. Sie ist nur langsam, und langsam sieht aus wie „das dauert eben".
+**Die Zahl war da.** `foreman_embed_latency_seconds{backend="sentence_transformers"}`
+wird seit F-SEM befüllt — `provider.py` ruft `observe_embedding` an vier
+Stellen. Die fünfeinhalb Sekunden standen seit dem Modellwechsel in dieser
+Kennzahl und wären bei jedem Blick auf `/metrics` sichtbar gewesen.
+
+Es fehlte also nicht die Erhebung, sondern **der Anlass hinzusehen**: kein
+Schwellwert, keine Meldung, kein Vergleichspunkt. Eine Suche, die fünfeinhalb
+Sekunden braucht, wirft nicht. Sie ist nur langsam, und langsam sieht aus wie
+„das dauert eben".
+
+Was tatsächlich fehlt, in dieser Reihenfolge:
+
+1. ein **Schwellwert** auf der vorhandenen Einbettungs-Kennzahl,
+2. eine Kennzahl für den **vollen Suchaufruf** — die gibt es bis heute nicht,
+   `archive/search.py` trägt keine,
+3. ein regelmässiger Blick auf beide.
+
+Der Registereintrag, der für die Plattform „keine erhobene
+Antwortzeit-Verteilung" festhält, bleibt davon unberührt: Er betrifft den
+Suchaufruf, nicht das Einbetten.
 
 ---
 
@@ -264,11 +280,27 @@ beiden anderen gedrückt.
 
 ### 3.4 Was den Streit entscheiden würde
 
-Den Vorrat erweitern: die unbeurteilten Plätze **beider** Arme beurteilen
-lassen, dann neu rechnen. Das sind rund 119 zusätzliche Urteile. Genau dieser
-Schritt stand als „E2" in der Recherche vom 27.08.2026, mit der Begründung
-*„sonst sind alle Folgezahlen Pool-Bias"*. Dieser Lauf zeigt, dass das keine
-theoretische Sorge war.
+Den Vorrat erweitern: beurteilen, was **beide** Arme an ihren ausgelieferten
+Arbeitspunkten zeigen, dann neu rechnen.
+
+| Umfang | Paare (Anfrage, Vorgang) | davon unbeurteilt |
+|---|---|---|
+| A @0,60 | 133 | 55 |
+| B @0,75 | 112 | 64 |
+| **Vereinigung beider Arbeitspunkte** | 178 | **95** |
+| Vereinigung über alle acht Grenzwerte | 219 | 135 |
+
+**95 zusätzliche Urteile** decken beides ab, was ausgeliefert wird. Die Zahl ist
+kleiner als die Summe der beiden Spalten, weil ein Vorgang, den beide Arme
+finden, nur einmal beurteilt werden muss — 42 der Paare überschneiden sich.
+
+Zum Verhältnis: Der Bewertungssatz führt heute 135 beurteilte Paare. Die
+Erweiterung um 95 wäre also gut ein Zuwachs von zwei Dritteln, keine
+Verdopplung.
+
+Genau dieser Schritt stand als „E2" in der Recherche vom 27.08.2026, mit der
+Begründung *„sonst sind alle Folgezahlen Pool-Bias"*. Dieser Lauf zeigt, dass
+das keine theoretische Sorge war.
 
 ---
 
