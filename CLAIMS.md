@@ -88,6 +88,10 @@ Stand: 2026-08-28
 | C-088 | Mit der zusammenfuehrenden Fusion und 15 Plaetzen ist Freigabe-Bedingung 1 erfuellt, und der Gewinn an Rangguete ist statistisch gezeigt. | gemessen | Trefferquote 0,565 auf 0,641 (p=0,062) · Rangguete 0,493 auf 0,585 (p=0,016) · verdichtet 0,542 auf 0,644 (p=0,020) · 0 von 10 Anfragen mit gesunkener Trefferquote, 5 von 10 mit Zusatztreffer | 2026-08-27 | gueltig | intern |
 | C-090 | Snowflake Arctic v2.0 verlangt auf der Anfrageseite einen Praefix; FOREMAN bindet ihn ans Modell statt an einen Schalter. | gemessen | query: — belegt an drei Stellen der Modellkarte; hinterlegt in QUERY_PRAEFIX, mit Startmeldung fuer unbekannte Modelle | 2026-08-27 | gueltig | intern |
 | C-091 | Der Aehnlichkeits-Grenzwert der Archiv-Suche ist erstmals gegen ein BENANNTES Einbettungsmodell erhoben; der uebernommene Wert war fuer Snowflake Arctic zu scharf. | gemessen | Grenzwert 0,60 -> 0,75 gegen Snowflake Arctic v2.0: Trefferquote 0,197 -> 0,409, Rangguete 0,245 -> 0,386, verdichtet 0,268 -> 0,466. Anfragen ohne einen einzigen zutreffenden Treffer: 6 von 10 -> 2 von 10 | 2026-08-28 | gueltig | intern, fach |
+| C-092 | Ob der Wechsel des Einbettungsmodells die Archiv-Suche besser oder schlechter macht, ist mit dem heutigen Bewertungssatz nicht entscheidbar. | gemessen | gewoehnlich gerechnet Trefferquote -0,156 (p=0,031) und Rangguete -0,106 (p=0,008); pool-korrigiert -0,076 bei p=0,148 — nicht gezeigt | 2026-08-28 | gueltig | intern |
+| C-093 | Vektoren zweier Einbettungsmodelle stehen praktisch senkrecht zueinander; ein vergessener Nachlauf nach einem Modellwechsel erzeugt kein schlechteres Ergebnis, sondern Rauschen. | gemessen | Kosinus zwischen den Modellen fuer denselben Text: -0,014329 bis +0,044336 (5 Stichproben) | 2026-08-28 | gueltig | intern, fach |
+| C-094 | Der Abrufpfad der Archiv-Suche ist deterministisch — dieselbe Anfrage liefert dasselbe Ergebnis, unabhaengig von Behaelter, Codestand und Threadzahl. | gemessen | 4 vollstaendige Erhebungen desselben Arms ueber 8 Grenzwerte, byteweise identische Trefferlisten | 2026-08-28 | gueltig | intern, fach |
+| C-095 | Die Suche war seit dem Modellwechsel sechsunddreissigmal langsamer als noetig, weil die Rechenbibliothek die Kerne des Wirts statt der Zuteilung des Behaelters zaehlte. | gemessen | Median je Suchaufruf 5,505 s bei 48 Threads gegen 0,154 s bei 16 Threads; der Cloud-Weg lag bei 0,190 s | 2026-08-28 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -107,17 +111,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 89
+Einträge gesamt: 93
 
 Nach Status:
 
-- gemessen: 82
+- gemessen: 86
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 80
+- gueltig: 84
 - ueberholt: 9
 - ungeprueft: 0

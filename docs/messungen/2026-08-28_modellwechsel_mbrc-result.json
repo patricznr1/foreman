@@ -1,0 +1,90 @@
+{
+  "schema": "mbrc/1.0",
+  "system_under_test": {
+    "system_name": "FOREMAN — Archiv-Suche (quellenuebergreifend)",
+    "version_or_build": "main @ b943b04 (28.08.2026)",
+    "commit_or_artifact_id": "b943b04441988ee5c3eca3ee96c5452a92d4b528",
+    "run_date": "2026-08-28",
+    "configuration_affecting_results": "k=15 (Ausgabelaenge), Quellen note/maintenance/alarm, Gedaechtnis (vierte Quelle) ausgeschaltet, kein Maschinen-Ausschnitt, RRF ueber Vorgangsschluessel mit k=60, Notiz-Zweig hybrid (deutscher Volltext + Vektor) mit Relevanz-Grenzwert, Wartung/Alarm reiner Volltext. Bestand 205 Notizen aus dem Simulations-Adapter."
+  },
+  "benchmark": {
+    "benchmark": "FOREMAN-eigener Bewertungssatz (goldset_v3), kein oeffentlicher Benchmark",
+    "subset_or_split": "goldset_v2_anfragen.yaml (10 Anfragen) gegen goldset_v3.json (80 zutreffende Zuordnungen: 43 Stufe 2, 37 Stufe 1)",
+    "questions": 10,
+    "exclusions_and_why": "Das Vorkommen, aus dem eine Anfrage stammt, ist im Bewertungssatz ausgeschlossen: Es steht fuer den Fall, an dem der Werker gerade steht, und ist noch nicht im Archiv. Anfrage B01 liefert in beiden Armen bis zum groessten geprueften Grenzwert keinen zutreffenden Treffer; ob im Bestand nichts Passendes steht oder die Zuordnung nicht greift, ist nicht entschieden."
+  },
+  "r1_reader": {
+    "reader_model": "kein Sprachmodell im Pfad — der 'Leser' ist der Abrufpfad selbst (search_archive)",
+    "reader_version": "b943b04, unveraendert ueber beide Arme",
+    "temperature": "kein Gegenstand",
+    "context_budget_tokens": "kein Gegenstand",
+    "answer_prompt_identical_across_arms": "Identical across all arms",
+    "anmerkung": "Variiert wurde ausschliesslich das Einbettungsmodell, ueber dieselbe Umgebungsvariable, die auch im Betrieb die Kette waehlt. Produktcode, Bewertungssatz, Ausgabelaenge, Quellen, Fusion und Bestand waren identisch."
+  },
+  "r2_judge": {
+    "judge_in_scoring_path": "No, computed metric only",
+    "judge_model_and_version": null,
+    "judge_prompt_version": null,
+    "adversarial_rejection_rate_pct": null,
+    "adversarial_set_size": null,
+    "judge_human_agreement_pct": 86.6,
+    "cohens_kappa": null,
+    "kappa_comparison_axis": "nicht erhoben — statt Kappa liegt die Uebereinstimmungsquote dreier unabhaengiger Beurteiler vor",
+    "anmerkung": "Kein LLM im Bewertungspfad. Die Relevanzurteile des VORGAENGER-Satzes (18 Anfragen) stammen von drei voneinander unabhaengigen Beurteilern mit verschiedenem Blickwinkel (Instandhalter, Zuverlaessigkeitsingenieur, strenger Pruefer), Aufnahme ab zwei von drei Stimmen, 86,6 Prozent Uebereinstimmung. FUER DEN HIER VERWENDETEN SATZ goldset_v3 (10 Anfragen, 135 beurteilte Paare) ist die Herkunft der Urteile im Repository NICHT dokumentiert — das ist eine offene Luecke und keine Angabe."
+  },
+  "r3_r4_scoring": {
+    "scoring_scheme": "Computed from a fixture",
+    "scoring_detail": "Abgestufte Relevanz 0/0,5/1 in der Form 0/1/2 des Bewertungssatzes; Rangguete (nDCG) ueber die abgestufte Skala, zusaetzlich verdichtet nach Sakai 2007 (unbeurteilte Eintraege entfernt statt abgewertet).",
+    "runs_per_cell": 4,
+    "aggregation": "Median",
+    "dispersion_reported": "Streuung ueber Laeufe ist null: vier vollstaendige Erhebungen desselben Arms lieferten byteweise identische Trefferlisten ueber alle acht Grenzwerte. Die Streuung, die getragen wird, ist die ZWISCHEN ANFRAGEN, und die steckt im Permutationstest.",
+    "test_for_arm_comparison": "gepaarter exakter Permutationstest, zweiseitig",
+    "statistical_unit": "die Anfrage (n=9 vergleichbare Paare von 10)",
+    "abweichung_von_r4": "MBRC 1.0 verlangt mindestens zehn Laeufe je Zelle und nennt Wilcoxon fuer den Armvergleich. Der Abrufpfad ist deterministisch — belegt durch vier byteweise identische Erhebungen —, daher haben zehn Laeufe hier keinen Gegenstand. Beim Test wurde bewusst abgewichen: Urbano, Lima und Hanjalic (SIGIR 2019) empfehlen ausdruecklich, Wilcoxon aufzugeben und Permutationstest oder t-Test zu verwenden, weil diese das Signifikanzniveau einhalten."
+  },
+  "r5_cost": {
+    "does_r5_apply": "No object, no language model in the evaluated path",
+    "tokens_input": null,
+    "tokens_cached_input": null,
+    "tokens_output": null,
+    "retrieval_latency_p50_p95": "Arctic v2.0 lokal nach der Threadbegrenzung: 0,154 s / 0,351 s. text-embedding-3-small ueber die Cloud: 0,190 s / 0,265 s. Zustand VOR der Begrenzung: 5,505 s / 6,700 s.",
+    "end_to_end_latency_p50_p95": "identisch mit der Abrufzeit — gemessen ist der vollstaendige Suchaufruf (Anfrage einbetten, drei Quellen abfragen, fusionieren); es folgt kein weiterer Schritt.",
+    "context_reduction_vs_full_text": "kein Gegenstand",
+    "anmerkung": "Token haben keinen Gegenstand, die Antwortzeit sehr wohl — und sie trug den wichtigsten Befund des Laufs. n=79 je Stufe, der erste Aufruf (Modell laden, 12,048 s) verworfen."
+  },
+  "r6_modules": {
+    "retrieval": "gemessen — dieser Bericht",
+    "extraction": "kein Gegenstand fuer diese Einheit",
+    "routing": "kein Gegenstand fuer diese Einheit",
+    "maintenance_and_forgetting": "kein Gegenstand fuer diese Einheit",
+    "full_system_fixed_reader": "Die Archiv-Suche IST hier das volle System; ein nachgelagerter Leser existiert in diesem Pfad nicht."
+  },
+  "r8_and_determinism": {
+    "criteria_passed": [
+      "Determinismus des Abrufpfads: vier Erhebungen byteweise identisch",
+      "Vollstaendigkeit der Rueckstellung des Bestandes: in beide Richtungen geprueft",
+      "Anfrage-Praefix des lokalen Modells wirkt: Kosinus 0,772 zwischen Anfrage- und Dokumentform desselben Textes",
+      "Antwortzeit nach der Threadbegrenzung: 0,154 s Median, unterbietet den Cloud-Weg"
+    ],
+    "criteria_breached": [
+      "Freigabe-Bedingung 1 (GROUND_TRUTH 15.10) im Vergleich der Arme: sechs von zehn Anfragen verlieren Treffer — siehe aber 'not_measurable', die Zahl steht unter Pool-Verzerrung",
+      "Antwortzeit im Zustand VOR der Begrenzung: 5,505 s Median"
+    ],
+    "not_measurable": [
+      "Ob der Modellwechsel die Suchguete verbessert oder verschlechtert: gewoehnlich gerechnet schlechter (p=0,031 / p=0,008), pool-korrigiert nicht gezeigt (p=0,148 / p=0,570). Der beurteilte Vorrat stammt aus der Zeit des alten Modells und ist gegen das neue verzerrt (41 gegen 57 Prozent unbeurteilte Plaetze).",
+      "Die Praezision ueber verschiedene Grenzwerte: derselbe Pool-Effekt innerhalb eines Arms.",
+      "Anfrage B01: liefert in beiden Armen nichts Zutreffendes; Ursache nicht entschieden."
+    ],
+    "embedding_model_and_version": "Arm A: text-embedding-3-small (OpenAI, dimensions=1024). Arm B: Snowflake/snowflake-arctic-embed-l-v2.0 (lokal, CPU, 1024 Dim., Anfrage-Praefix 'query: ').",
+    "reranker_and_version": "keiner",
+    "instance_state_before_the_run": "Betriebsinstanz, Bestand 205 Notizen, alle mit Vektoren des jeweils gemessenen Modells. Vor jedem Arm geprueft, in beide Richtungen: Kosinus 1,000000 gegen das erwartete Modell und rund null gegen das andere.",
+    "warm_up_runs": "je Arm ein Aufruf (das Laden des Modells), aus allen Kennzahlen entfernt",
+    "raw_data_availability": "Published, checksum-verifiable",
+    "raw_data_location": "tools/archiv_guete/modellvergleich_2026-08-28/ — 32 Rohdateien, SHA-256 in PRUEFSUMMEN.txt"
+  },
+  "disclosure": {
+    "competing_interest": "Selbstmessung am eigenen Produkt. Der Verfasser baut FOREMAN und pflegt zugleich den hier angewandten Berichtsstandard (MBRC). Rohdaten und Pruefsummen liegen offen, damit die Zahlen nachrechenbar sind — Nachpruefbarkeit statt Unabhaengigkeit, wie der Standard es fuer sich selbst beansprucht.",
+    "foreign_figures_cited_and_their_status": "Die Begruendung des Modellwechsels im Quelltext nennt CLEF-Werte (arctic-l-v2.0 52,9 bzw. 54,3 gegen 40,8 bzw. 41,3 fuer bge-m3). NICHT VERGLEICHBAR nach R7, und zwar doppelt: fremder Aufbau, und der Vergleich laeuft gegen bge-m3 — ein Modell, das produktiv nie lief. Produktiv lief text-embedding-3-small.",
+    "limitations": "(1) Der Bestand ist Simulationsdaten; FOREMAN fuehrt bislang ausschliesslich den Simulations-Adapter. Uebertragbarkeit auf echte Werkerprotokolle offen. (2) Zehn Anfragen tragen eine Richtungsaussage, keine Kennzahl mit Vertrauensbereich (Dincer 2013: 10 bis 722 Topics je Systempaar). (3) Der beurteilte Vorrat ist gegen das neue Modell verzerrt; die entscheidende Guetefrage bleibt deshalb offen. Aufloesbar durch Erweiterung des Vorrats um rund 119 Urteile. (4) Die Antwortzeit gilt fuer 24 CPUs Zuteilung, Threadzahl 16 und 205 Notizen. (5) Die Herkunft der Relevanzurteile des verwendeten Satzes ist im Repository nicht dokumentiert. (6) Die 5,5-Sekunden-Zahl stand zwischenzeitlich als Befund ueber das Modell im Bericht und war einer ueber die Konfiguration — gefunden erst durch den Widerspruch zu einem zweiten System auf derselben Plattform."
+  }
+}
