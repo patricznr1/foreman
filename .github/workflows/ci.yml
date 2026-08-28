@@ -25,6 +25,16 @@ jobs:
   quality-gates:
     name: mypy · ruff · pytest (real TimescaleDB)
     runs-on: ubuntu-latest
+    # Deckel gegen den hängenden Lauf. Ohne eigene Angabe greift die Voreinstellung
+    # von GitHub, und die liegt bei sechs Stunden: Ein Job, der auf einen nie bereit
+    # werdenden Dienst-Container oder eine blockierte Verbindung wartet, hält so
+    # lange die Nebenläufigkeits-Gruppe besetzt und den Pull Request ohne
+    # Rückmeldung. 30 Minuten sind das Zweieinhalbfache der längsten gemessenen
+    # Dauer (Median 10 min 15 s, längster Lauf 12 min 43 s; erhoben über alle 134
+    # CI-Läufe im August 2026) — weit genug, dass normales Schwanken und ein kalter
+    # uv-Zwischenspeicher nicht anschlagen, eng genug, dass ein Hänger nach einer
+    # halben Stunde auffällt statt nach einem Arbeitstag.
+    timeout-minutes: 30
 
     services:
       timescaledb:
@@ -116,6 +126,11 @@ jobs:
   secret-scan:
     name: secrets · gitleaks
     runs-on: ubuntu-latest
+    # Derselbe Deckel wie oben, auf diesen Job bemessen: Median 11 s, längster Lauf
+    # 20 s über 74 Läufe. Die drei Minuten sind bewusst das Neunfache davon — sie
+    # fangen einen hängenden Abruf des Container-Abbilds ab, nicht einen langsamen
+    # Scan.
+    timeout-minutes: 3
     steps:
       - name: Checkout
         # Volle Historie: Ein Geheimnis, das einmal committet und danach entfernt
@@ -136,6 +151,11 @@ jobs:
   frontend-gates:
     name: frontend · tokens · tsc · eslint · vitest · build
     runs-on: ubuntu-latest
+    # Derselbe Deckel wie beim Backend-Job, auf diesen Job bemessen: Median
+    # 1 min 54 s, längster Lauf 2 min 21 s über 134 Läufe. Sechs Minuten lassen
+    # einem kalten npm-Zwischenspeicher und einem langsamen Runner Luft und
+    # schlagen erst an, wenn ein Schritt wirklich steht.
+    timeout-minutes: 6
     defaults:
       run:
         working-directory: frontend
