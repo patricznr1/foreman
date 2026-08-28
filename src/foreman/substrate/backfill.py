@@ -47,7 +47,7 @@ from foreman.db.models import SemanticEvent
 from foreman.ingestion.semantic import extract_substrate_ref
 from foreman.logging_setup import setup_logging
 from foreman.substrate.client import SubstrateClient, SubstrateError
-from foreman.substrate.content import CONTENT_BUILDERS, baue_inhalt
+from foreman.substrate.content import CONTENT_BUILDERS, baue_inhalt, ereigniszeit
 
 logger = logging.getLogger("foreman.substrate.backfill")
 
@@ -165,7 +165,11 @@ class BackfillStats:
 # ------------------------------------------------------------
 class _SupportsRemember(Protocol):
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]: ...
 
 
@@ -188,6 +192,7 @@ async def _remember_with_retry(
     substrate: _SupportsRemember,
     content: str,
     metadata: dict[str, Any],
+    occurred_at: str | None,
     *,
     max_attempts: int,
     base_delay_s: float,
@@ -200,7 +205,7 @@ async def _remember_with_retry(
     last_detail = ""
     for attempt in range(1, max_attempts + 1):
         try:
-            return await substrate.remember(content, metadata=metadata)
+            return await substrate.remember(content, metadata=metadata, occurred_at=occurred_at)
         except SubstrateError as exc:
             last_detail = str(exc)
             if attempt < max_attempts:
@@ -260,6 +265,10 @@ async def _process_row(
         substrate,
         content,
         herkunft_ergaenzen(row.event_type, row.payload),
+        # Der Nachtrag ist der Grund, aus dem das Feld ueberhaupt gebraucht wird:
+        # Ohne es traegt der gesamte nachgetragene Altbestand die Stunde des
+        # Nachtrags statt die des Ereignisses (Befund 28.08.2026, 248 von 302).
+        ereigniszeit(row.event_type, row.payload),
         max_attempts=max_attempts,
         base_delay_s=base_delay_s,
         sleep=sleep,

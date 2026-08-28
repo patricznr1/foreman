@@ -212,7 +212,9 @@ async def test_die_quellzeile_bleibt_unmaskiert(
 class _KaputtesSubstrat:
     """Gegenstelle, die bei jedem Versuch wirft."""
 
-    async def remember(self, content: str, metadata: dict[str, Any] | None = None) -> dict:
+    async def remember(
+        self, content: str, metadata: dict[str, Any] | None = None, occurred_at: str | None = None
+    ) -> dict:
         raise RuntimeError("❌ Gegenstelle nicht erreichbar (Test)")
 
 

@@ -30,7 +30,11 @@ class _OkSubstrate:
         self.calls: list[tuple[str, dict[str, Any] | None]] = []
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls.append((content, metadata))
         return {"id": f"ref-{len(self.calls)}"}
@@ -40,7 +44,11 @@ class _FailSubstrate:
     """Nicht erreichbares Substrat — wirft bei jedem remember."""
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         raise SubstrateError("Substrat nicht erreichbar (Test)")
 
@@ -49,7 +57,11 @@ class _NoRefSubstrate:
     """Erreichbar, aber Antwort ohne verwertbare Referenz (z. B. {})."""
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         return {"status": "ok"}  # keine id/memory_id/result → ref bleibt None
 

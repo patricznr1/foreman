@@ -26,7 +26,11 @@ class _OkSubstrate:
         self.calls: list[tuple[str, dict[str, Any] | None]] = []
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls.append((content, metadata))
         return {"id": f"ref-{len(self.calls)}"}

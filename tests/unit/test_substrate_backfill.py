@@ -51,7 +51,11 @@ class OkSubstrate:
         self.calls: list[tuple[str, dict[str, Any] | None]] = []
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls.append((content, metadata))
         return {"id": f"ref-{len(self.calls)}"}
@@ -65,7 +69,11 @@ class SelectiveSubstrate:
         self.calls: list[tuple[str, dict[str, Any] | None]] = []
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls.append((content, metadata))
         machine_id = (metadata or {}).get("machine_id")
@@ -78,7 +86,11 @@ class MemoryIdSubstrate:
     """Liefert die Referenz unter dem Schlüssel 'memory_id' (andere ref-Form)."""
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         return {"memory_id": "m-1"}
 
@@ -90,7 +102,11 @@ class EmptyRefSubstrate:
         self.calls = 0
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls += 1
         return {"id": ""}
@@ -103,7 +119,11 @@ class NoRefSubstrate:
         self.calls = 0
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls += 1
         return {"status": "ok"}
@@ -116,7 +136,11 @@ class FailSubstrate:
         self.calls = 0
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls += 1
         raise SubstrateError("Substrat nicht erreichbar (Test)")
@@ -130,7 +154,11 @@ class ColdStartSubstrate:
         self.calls = 0
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
         self.calls += 1
         if self.calls <= self.fail_times:
