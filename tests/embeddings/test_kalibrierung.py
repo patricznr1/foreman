@@ -44,8 +44,11 @@ def _einstellungen(prioritaet: Priority) -> EmbeddingSettings:
     [
         ("ollama_first", "bge-m3"),
         ("ollama_only", "bge-m3"),
-        ("st_first", "BAAI/bge-m3"),
-        ("st_only", "BAAI/bge-m3"),
+        # Der lokale Zweig laeuft seit dem 27.08.2026 auf Snowflake Arctic v2.0
+        # (Deutsch deutlich besser als bge-m3, 1024-dim, Apache-2.0, dasselbe
+        # Modell wie NEXUS). Der Wert steht in `EmbeddingSettings.st_model`.
+        ("st_first", "Snowflake/snowflake-arctic-embed-l-v2.0"),
+        ("st_only", "Snowflake/snowflake-arctic-embed-l-v2.0"),
         ("openai_only", "text-embedding-3-small"),
         ("openai_first", "text-embedding-3-small"),
     ],
