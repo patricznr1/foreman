@@ -191,3 +191,45 @@ def baue_inhalt(event_type: str, payload: Mapping[str, Any]) -> str:
     """
     builder = CONTENT_BUILDERS[event_type]
     return builder(payload)
+
+
+# Welches Feld der Nutzlast den ZEITPUNKT DES EREIGNISSES trägt — je Ereignisart
+# ein anderes. Neben CONTENT_BUILDERS und aus demselben Grund: Der Text und die
+# Zeit beschreiben dasselbe Ereignis, und wer den einen Weg ändert, sieht den
+# anderen daneben stehen.
+# NUR die vier Ereignisarten, die einen Zeitpunkt WIRKLICH mitführen. Die
+# Erkenntnis-Arten (Abweichung, Ereigniskette, Ausfalleinschätzung) tragen
+# Kennungen statt Zeiten — für sie bleibt es bei der Eingangszeit, und das ist
+# richtig so: Ihr Zeitpunkt IST der ihrer Entstehung.
+ZEIT_FELDER: dict[str, str] = {
+    "worker_note": "created_at",
+    "alarm_raised": "raised_at",
+    "production_run": "started_at",
+    "maintenance_performed": "performed_at",
+}
+
+
+def ereigniszeit(event_type: str, payload: Mapping[str, Any]) -> str | None:
+    """Der Zeitpunkt, zu dem das Ereignis STATTFAND — nicht der des Spiegelns.
+
+    WARUM DAS EIN EIGENER WEG IST: Das Gedächtnis führt eine Ereigniszeit
+    (`occurred_at`). Wird sie nicht mitgegeben, setzt es den Zeitpunkt des
+    Eingangs — und dann beschreibt dort jede zeitliche Auswertung den
+    Spiegel-Lauf statt den Betrieb. Ein Nachtrag für Altbestand legt so den
+    halben Bestand in dieselbe Stunde, und ein Zeitfilter über die Ereigniszeit
+    greift ins Leere.
+
+    Die Zeit in der Nutzlast mitzuführen genügt dafür NICHT: Dort ist sie ein
+    Metadatum, und Metadaten wertet die Gegenstelle nicht aus. Sie liest dieses
+    Feld.
+
+    GIBT `None` STATT ZU WERFEN, anders als `baue_inhalt`: Eine fehlende
+    Ereigniszeit macht den Eintrag nicht wertlos — er landet dann mit der
+    Eingangszeit, also so wie bisher. Ein Wurf würde die Spiegelung eines sonst
+    brauchbaren Ereignisses verhindern, und der Schreibpfad ist best-effort.
+    """
+    feld = ZEIT_FELDER.get(event_type)
+    if feld is None:
+        return None
+    wert = payload.get(feld)
+    return wert if isinstance(wert, str) and wert else None

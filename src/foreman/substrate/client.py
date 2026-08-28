@@ -169,12 +169,28 @@ class SubstrateClient:
         return data if isinstance(data, dict) else {"result": data}
 
     async def remember(
-        self, content: str, *, metadata: dict[str, Any] | None = None
+        self,
+        content: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+        occurred_at: str | None = None,
     ) -> dict[str, Any]:
-        """Legt eine Erinnerung im Substrat ab."""
+        """Legt eine Erinnerung im Substrat ab.
+
+        `occurred_at` ist der Zeitpunkt, zu dem das Ereignis STATTFAND. Fehlt er,
+        setzt die Gegenstelle den Zeitpunkt des Eingangs — und dann beschreibt
+        jede zeitliche Auswertung dort den Spiegel-Lauf statt den Betrieb. Ein
+        Nachtrag für Altbestand legt so den halben Bestand in dieselbe Stunde.
+
+        Die Zeit als METADATUM mitzuschicken genügt dafür nicht: Die Gegenstelle
+        wertet Metadaten nicht aus, sie liest dieses Feld. Deshalb geht die
+        Ereigniszeit hier eigenständig mit, zusätzlich zur payload.
+        """
         payload: dict[str, Any] = {"content": content, "namespace": self._namespace}
         if metadata:
             payload["metadata"] = metadata
+        if occurred_at:
+            payload["occurred_at"] = occurred_at
         return await self._post(self._paths["remember"], payload)
 
     async def forget(self, entry_id: str) -> dict[str, Any]:

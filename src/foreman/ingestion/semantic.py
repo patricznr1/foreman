@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from foreman.core.redact import Redactor
 from foreman.db.models import Alarm, MaintenanceEvent, SemanticEvent, WorkerNote
 from foreman.substrate.client import SubstrateClient
-from foreman.substrate.content import baue_inhalt
+from foreman.substrate.content import baue_inhalt, ereigniszeit
 
 logger = logging.getLogger("foreman.ingestion.semantic")
 
@@ -164,7 +164,12 @@ async def record_semantic_event(
             # scheitert sein Bau, ist das derselbe Fall wie ein nicht erreichbares
             # Substrat.
             content = baue_inhalt(event_type, payload)
-            response = await substrate.remember(content, metadata=payload)
+            # Die Ereigniszeit geht als EIGENES Feld mit, nicht nur als Metadatum:
+            # Die Gegenstelle fuehrt `occurred_at` und wertet Metadaten nicht aus.
+            # Ohne sie traegt dort jeder Eintrag den Zeitpunkt des Spiegelns.
+            response = await substrate.remember(
+                content, metadata=payload, occurred_at=ereigniszeit(event_type, payload)
+            )
             substrate_ref = extract_substrate_ref(response)
             if substrate_ref is None:
                 logger.warning(
