@@ -1,5 +1,30 @@
 # Der Wechsel des Einbettungsmodells, gemessen
 
+> **NACHTRAG VOM SELBEN TAG — dieser Bericht ist in seiner Kernaussage überholt.**
+>
+> Am Abend des 28.08.2026 wurde der Bewertungssatz um **81 Urteile** auf 216
+> beurteilte Paare erweitert. Dieselben Rohdaten, neu gerechnet, kehren das
+> Ergebnis um:
+>
+> | | dieser Bericht | nach der Erweiterung |
+> |---|---|---|
+> | Trefferquote | −0,156 · p=0,031 | **+0,001 · p=1,000** |
+> | Ranggüte | −0,106 · p=0,008 | **+0,024 · p=0,744** |
+> | verdichtet | −0,076 · p=0,148 | **+0,025 · p=0,719** |
+>
+> Aus „gewöhnlich gerechnet schlechter" wird **„in keiner Richtung gezeigt"**.
+> Bei Arctic @0,75 fielen die unbeurteilten Plätze von 64 von 112 auf 5 von 112.
+>
+> Ebenfalls überholt: **Anfrage B01** galt hier als im Bestand nicht
+> beantwortbar. Unter den neu beurteilten Einträgen war der passende
+> (`note:143` — *„Unten tropft Schmierstoff aus der Achse"*, Stufe 2). Seither
+> hat keine der zehn Anfragen mehr eine leere Trefferliste.
+>
+> Der Bericht bleibt unverändert stehen, weil er den Befund trägt, der ihn
+> überholt hat: Die Zahlen waren nicht falsch gemessen, sondern gegen einen
+> unvollständigen Massstab — und genau davor warnt er in Abschnitt 3.3.
+> Register: **C-098** ersetzt C-092, **C-099** führt die Verzerrung selbst.
+
 **Datum:** 28.08.2026 · **Register:** C-092 bis C-095 · **Freigabe:** intern
 **Berichtsform:** MBRC 1.0 (Memory Benchmark Reporting Checklist)
 **Rohdaten:** `tools/archiv_guete/modellvergleich_2026-08-28/`, 24 Dateien mit
