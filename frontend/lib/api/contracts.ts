@@ -447,20 +447,25 @@ export interface ArchiveHit {
  * Serverseitig: `text` wird VOR dem Insert NER-maskiert; der Verfasser (`author`)
  * wird aus dem Token abgeleitet und als HMAC-Token abgelegt (§8/§19) — er ist KEIN
  * Eingabefeld: ein mitgesendetes `author` lehnt der Endpoint mit 422 ab.
- * `created_at` setzt der Server (tz-aware, nicht vom Client anpassbar).
+ * `created_at` setzt der Server (tz-aware) — ES SEI DENN, der Client schickt
+ * `occurred_at`: den Zeitpunkt der SCHICHT, für den Nachtrag einer Notiz, die auf
+ * Papier stand. Eine naive Zeitangabe ohne Zone lehnt der Endpoint mit 422 ab,
+ * statt sie zu deuten. Diese Erfassungsmaske nutzt das Feld NICHT (aus der Halle
+ * kommt die Notiz jetzt); es steht hier, weil diese Datei den realen Vertrag
+ * spiegelt — ein fehlendes Feld liest sich sonst als „gibt es nicht".
  *
- * `classification`: ADDITIV mitgesendet (Werker-Kategorie). Das heutige
- * POST-Schema nimmt das Feld NOCH NICHT an und verwirft es still — markierter
- * Backend-Anschlusspunkt (DB-Spalte `worker_notes.classification` existiert,
- * §5/§14.3). Sobald `WorkerNoteCreate` serverseitig das Feld aufnimmt, wirkt es
- * ohne Frontend-Änderung. Kein erfundenes Verhalten: das Frontend erfasst und
- * sendet die Einschätzung vollständig korrekt.
+ * `classification`: die Werker-Kategorie, ADDITIV mitgesendet und seit dem
+ * 28.08.2026 vom Backend ANGENOMMEN (DB-Spalte `worker_notes.classification`,
+ * §5/§14.3/§21.16). Der markierte Anschlusspunkt hat gehalten, was er versprach:
+ * Das Backend zog nach, und das Frontend musste dafür nicht angefasst werden.
  */
 export interface WorkerNoteCreate {
   text: string;
   machine_id?: number | null;
   shift?: string | null;
   classification?: string | null;
+  /** ISO-8601 MIT Zeitzone. Ohne Zone antwortet der Endpoint mit 422. */
+  occurred_at?: string | null;
 }
 
 // — Ereignisketten (Sektion D, F-REC) — gegen den REALEN Code typisiert.
