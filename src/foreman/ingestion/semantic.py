@@ -53,10 +53,17 @@ def notiz_payload(note: WorkerNote, masked_text: str) -> dict[str, object]:
     `text` ist der NER-maskierte Text. Beide Schreibwege maskieren vor dem
     Insert; diese Funktion bekommt ihn übergeben statt ihn aus dem Objekt zu
     lesen, damit die Herkunft an der Aufrufstelle sichtbar bleibt.
+
+    Die `classification` geht MIT, obwohl der gespiegelte Satz sie nicht nennt:
+    Sie ist die einzige Angabe der Notiz, die eine Verteilung über die Zeit
+    bildet — Anteil `kritisch` je Fenster —, und darauf setzt die
+    Drift-Überwachung des Gedächtnisses auf. Über den Adapter-Weg eingelesene
+    Notizen tragen sie nicht; dort steht `None`, wie bei `shift`.
     """
     return {
         "machine_id": note.machine_id,
         "shift": note.shift,
+        "classification": note.classification,
         "text": masked_text,
         "created_at": note.created_at.isoformat(),
         "source_type": "note",

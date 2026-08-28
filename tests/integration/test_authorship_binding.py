@@ -56,19 +56,27 @@ async def test_note_rejects_client_supplied_author(
     assert response.status_code == 422
 
 
-async def test_note_still_accepts_the_documented_extra_field(
+async def test_note_still_accepts_an_unknown_extra_field(
     client: AsyncClient, auth_headers_for: AuthHeaders
 ) -> None:
     """Gegenprobe zum Autor-Verbot: der übrige Vertrag bleibt unverändert.
 
-    Das Frontend sendet `classification` als markierten Anschlusspunkt mit (§21.16);
-    das Feld wird wie bisher nicht übernommen, darf den Insert aber nicht brechen.
-    Deshalb ein gezieltes Verbot für `author` statt `extra="forbid"`."""
+    Das Verbot gilt gezielt für `author`, nicht pauschal (`extra="forbid"`) —
+    ein Frontend darf ein Feld senden, bevor das Backend es annimmt. Genau so
+    ist `classification` angeschlossen worden, ohne dass beide Seiten zugleich
+    ausgerollt werden mussten (§21.16).
+
+    DAS FELD HIER MUSS UNBEKANNT BLEIBEN: Vorher stand an dieser Stelle
+    `classification`, und als das Schema es annahm, prüfte dieser Fall die
+    Toleranz nicht mehr — er wäre grün geblieben, während `extra="forbid"`
+    unbemerkt hätte eingeführt werden können. Ein Vertragstest, dessen
+    Beispielwert in den Vertrag aufgenommen wird, hört still auf zu messen.
+    """
     headers = await auth_headers_for("bind-extra@foreman.de", "worker")
 
     response = await client.post(
         "/api/v1/worker_notes",
-        json={"text": "Lager heiß", "classification": "auffaellig"},
+        json={"text": "Lager heiß", "geraeuschpegel_db": 82},
         headers=headers,
     )
 

@@ -197,6 +197,18 @@ class WorkerNoteCreate(BaseModel):
     text: str = Field(min_length=1, max_length=WORKER_NOTE_TEXT_MAX)
     machine_id: int | None = None
     shift: str | None = Field(default=None, max_length=16)
+    # Die Werker-Kategorie (routine | auffaellig | kritisch, ordinal nach
+    # Dringlichkeit). Das Frontend erfasst sie mehrkanalig und sendet sie seit
+    # jeher mit; bis hierher nahm das Schema sie nicht an, und unbekannte Felder
+    # verfallen still — die Spalte blieb dadurch leer, obwohl in der Halle
+    # klassifiziert wurde.
+    #
+    # FREIER STRING MIT LÄNGENGRENZE, kein Enum — dieselbe Bauform wie `shift`,
+    # das denselben Fall löst (drei Werte, im Frontend definiert). Der Grund ist
+    # derselbe: Die Kategorien gehören der Halle, nicht dem Schema. Eine vierte
+    # käme sonst erst mit einem Backend-Rollout an, und genau diese Kopplung
+    # sollte der Anschlusspunkt vermeiden. Die Grenze ist die Spaltenbreite.
+    classification: str | None = Field(default=None, max_length=32)
     # Zeitpunkt der SCHICHT, nicht des Eintragens. Weggelassen = jetzt, der
     # Regelfall aus der Halle. Ein gesetzter Wert ist der Nachtrag: eine Notiz,
     # die auf Papier stand oder aus einem Altbestand kommt.
@@ -236,9 +248,11 @@ class WorkerNoteCreate(BaseModel):
         dem Client eine Wirkung vorspiegeln, die die Eingabe nicht hatte.
 
         Bewusst ein gezieltes Verbot statt `extra="forbid"`: die übrigen unbekannten
-        Felder verhalten sich unverändert (Pydantic-Default `ignore`). Das Frontend
-        sendet `classification` als markierten Anschlusspunkt mit (§21.16) — dieser
-        Vertrag bleibt so, wie er dokumentiert ist.
+        Felder verhalten sich unverändert (Pydantic-Default `ignore`). Ein Frontend
+        darf ein Feld senden, bevor das Backend es annimmt — so ist `classification`
+        angeschlossen worden, ohne dass beide Seiten zugleich ausgerollt werden
+        mussten (§21.16). `author` ist die Ausnahme, weil ein stilles Verwerfen dort
+        die Zuschreibung falsch aussehen liesse, nicht bloss unvollständig.
         """
         if isinstance(data, dict) and "author" in data:
             raise ValueError(
