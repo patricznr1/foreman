@@ -5,8 +5,9 @@
 //         status) sind ohne Netz testbar; submitNote() komponiert sie mit fetch
 //         (injizierbar). Der Pfad geht über den BFF-Proxy (JWT serverseitig).
 //         Der Verfasser wird nicht mitgesendet — das Backend leitet ihn aus dem
-//         Token ab (§8/§19). classification wird mitgesendet (Werker-Kategorie);
-//         das Backend nimmt das Feld heute noch nicht an (Anschlusspunkt).
+//         Token ab (§8/§19). `classification` wird mitgesendet (Werker-Kategorie)
+//         und seit dem 28.08.2026 vom Backend ANGENOMMEN — der Anschlusspunkt
+//         ist eingelöst, und zwar ohne eine Änderung an dieser Datei.
 //  Architektur-Einordnung: Transport-Komposition (Schicht 1). Reine + IO-Funktion.
 // ============================================================
 import type { WorkerNoteCreate, WorkerNoteRead } from "@/lib/api/contracts";
