@@ -62,10 +62,25 @@ _RELEVANCE_KEYS = ("relevance", "score", "similarity", "relevance_score")
 # im Text der Juni. Eine Trefferkarte, die das anzeigt, macht eine falsche
 # Aussage über die eigene Datenlage; genau davor schützt der Schalter der
 # vierten Quelle nicht, weil es kein Absturz ist, sondern eine stille Unwahrheit.
-_EREIGNISZEIT_KEYS = ("performed_at", "raised_at", "started_at", "created_at")
-# Rückfallposition: die Gültigkeitszeit der Fassade. Sie trägt für ABLEITUNGEN
-# (Drift, Ereigniskette) — die haben keinen eigenen Vorgangszeitpunkt in der
-# Nutzlast, und wann sie abgeleitet wurden, IST ihre Zeit.
+_EREIGNISZEIT_KEYS = (
+    "performed_at",
+    "raised_at",
+    "started_at",
+    "created_at",
+    # `detected_at` gehört HIERHER, obwohl eine Abweichung eine Ableitung ist:
+    # Es ist `sample.bucket` aus `readings_1m`, also der Zeitpunkt in der Halle,
+    # an dem die Abweichung auftrat — nicht der des Rechnens. Der Drift-Reasoner
+    # läuft ausschliesslich als Wiederholungslauf über historische Zeiträume
+    # (`drift/runner.py::replay_machine`); die Zeit des Rechnens wäre für JEDEN
+    # Befund eines Laufs dieselbe. Bis zum 28.08.2026 stand das Feld hier nicht,
+    # und der Kommentar darunter behauptete, es gebe keins.
+    "detected_at",
+)
+# Rückfallposition: die Gültigkeitszeit der Fassade. Sie trägt für die beiden
+# Ableitungen OHNE eigenen Vorgangszeitpunkt — Ereigniskette und
+# Ausfalleinschätzung führen `anchor_alarm_id` bzw. `prediction_id` und keine
+# Zeit; wann sie abgeleitet wurden, IST ihre Zeit. Für die Abweichung gilt das
+# NICHT (siehe `detected_at` oben).
 _OCCURRED_AT_KEYS = ("occurred_at", "occurredAt", "timestamp", "createdAt")
 
 
