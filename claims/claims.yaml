@@ -2660,10 +2660,16 @@ claims:
       Belegbar sind Betriebs- und Rechtsgruende: freie Lizenz statt US-Drittland,
       Betrieb beim Kunden ohne Cloud-Anbindung, keine Kosten je Abfrage,
       derselbe Vektorraum wie das Gedaechtnis-System.
-      WAS DEN STREIT ENTSCHEIDEN WUERDE: den Vorrat erweitern, also die
-      unbeurteilten Plaetze BEIDER Arme beurteilen lassen (rund 119 Urteile) und
-      neu rechnen. Der Schritt stand als "E2" schon in der Recherche vom
-      27.08.2026, mit der Begruendung "sonst sind alle Folgezahlen Pool-Bias".
+      WAS DEN STREIT ENTSCHEIDEN WUERDE: den Vorrat erweitern und neu rechnen.
+      Ausgezaehlt an den Rohdaten, VERSCHIEDENE Paare (Anfrage, Vorgang), nicht
+      Plaetze: An den ausgelieferten Arbeitspunkten zeigen beide Arme zusammen
+      178 Paare, davon 95 unbeurteilt (A@0,60: 133/55, B@0,75: 112/64; 42 Paare
+      ueberschneiden sich und sind nur einmal zu beurteilen). Ueber alle acht
+      Grenzwerte waeren es 219 Paare mit 135 unbeurteilten. Gemessen am heutigen
+      Satz von 135 beurteilten Paaren waere die Erweiterung um 95 ein Zuwachs
+      von gut zwei Dritteln.
+      Der Schritt stand als "E2" schon in der Recherche vom 27.08.2026, mit der
+      Begruendung "sonst sind alle Folgezahlen Pool-Bias".
       Zehn Anfragen tragen eine Richtungsaussage, keine Kennzahl mit
       Vertrauensbereich (Dincer 2013: 10 bis 722 Topics je Systempaar).
 
@@ -2751,15 +2757,22 @@ claims:
     freigabe:
       - "intern"
     bemerkung: >-
-      DER UEBERTRAGBARE BEFUND betrifft nicht die Bibliothek, sondern das Messen
-      selbst. Der Fehler lag seit dem Modellwechsel im Betrieb und haette dort
-      bleiben koennen: Eine Suche, die fuenfeinhalb Sekunden braucht, wirft
-      nicht und meldet nichts — sie ist nur langsam, und langsam sieht aus wie
-      "das dauert eben". Kein Test und keine Ueberwachung haben ihn gefunden.
-      Gefunden hat ihn der Widerspruch zu einem zweiten System, das dieselbe
-      Aufgabe auf derselben Plattform im Millisekundenbereich loest. Eine Zahl,
-      die zu einem anderen Messpunkt nicht passt, ist ein Anlass zum Nachsehen
-      und kein Ergebnis.
-      Bis zu diesem Tag fuehrte das Register ausdruecklich "die Antwortzeit der
-      Plattform ist nicht erhoben". Antwortzeiten, die niemand erhebt,
-      verschlechtern sich lautlos.
+      DER UEBERTRAGBARE BEFUND betrifft nicht die Bibliothek, sondern das
+      Messen selbst — und er ist schaerfer, als er zuerst aussah.
+      DIE ZAHL WAR DA. `foreman_embed_latency_seconds{backend=
+      "sentence_transformers"}` wird seit F-SEM befuellt (provider.py ruft
+      observe_embedding an vier Stellen). Die fuenfeinhalb Sekunden standen seit
+      dem Modellwechsel in dieser Kennzahl. Es fehlte nicht die Erhebung,
+      sondern der Anlass hinzusehen: kein Schwellwert, keine Meldung, kein
+      Vergleichspunkt. Eine Suche, die fuenfeinhalb Sekunden braucht, wirft
+      nicht — sie ist nur langsam, und langsam sieht aus wie "das dauert eben".
+      Gefunden hat den Fehler der Widerspruch zu einem zweiten System, das
+      dieselbe Aufgabe auf derselben Plattform im Millisekundenbereich loest.
+      Eine Zahl, die zu einem anderen Messpunkt nicht passt, ist ein Anlass zum
+      Nachsehen und kein Ergebnis.
+      WAS TATSAECHLICH FEHLT, in dieser Reihenfolge: ein Schwellwert auf der
+      vorhandenen Einbettungs-Kennzahl; eine Kennzahl fuer den VOLLEN
+      Suchaufruf, die es bis heute nicht gibt; und ein regelmaessiger Blick auf
+      beide. C-090 haelt separat fest, dass fuer die Plattform selbst keine
+      Antwortzeit-Verteilung erhoben war — das bleibt richtig und betrifft den
+      Suchaufruf, nicht das Einbetten.

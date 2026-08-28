@@ -27,6 +27,7 @@
 # ============================================================
 from __future__ import annotations
 
+import time
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
@@ -40,6 +41,7 @@ from foreman.db.models import Alarm, MaintenanceEvent, WorkerNote
 from foreman.db.scope_sql import machine_scope_sql
 from foreman.embeddings.provider import EmbeddingProvider
 from foreman.notes.search import DEFAULT_SEARCH_K, RRF_K, embed_and_search_hybrid
+from foreman.observability.metrics import observe_archive_search
 from foreman.reasoners.event_chain.recall import (
     RecallItem,
     nur_sichtbare_treffer,
@@ -398,6 +400,45 @@ async def search_archive(
     globale RRF-Fusion (k=60) interleavt sie fair nach quelleninternem Rang und schneidet
     auf `k`. KEIN Score-Feld nach außen.
     """
+    # Die Zeit, die der Werker wartet — gemessen um den GANZEN Aufruf, nicht um
+    # einen Teil davon. Bis zum 28.08.2026 gab es nur eine Kennzahl für den
+    # Einbettungsschritt; eine Suche, die fünfeinhalb Sekunden brauchte, fiel
+    # deshalb wochenlang niemandem auf (C-095). Der Wert wird auch bei einer
+    # Ausnahme eingetragen: Eine Suche, die nach zehn Sekunden scheitert, ist
+    # ein Betriebsbefund und darf nicht aus der Verteilung fallen.
+    begonnen = time.monotonic()
+    try:
+        return await _suche_archiv(
+            provider,
+            session,
+            q,
+            machine_id=machine_id,
+            scope=scope,
+            sources=sources,
+            k=k,
+            max_distance=max_distance,
+            substrate=substrate,
+            substrate_k=substrate_k,
+        )
+    finally:
+        observe_archive_search(latency_seconds=time.monotonic() - begonnen)
+
+
+async def _suche_archiv(
+    provider: EmbeddingProvider,
+    session: AsyncSession,
+    q: str,
+    *,
+    machine_id: int | None = None,
+    scope: Sequence[int] | None = None,
+    sources: Sequence[SourceType] | None = None,
+    k: int = DEFAULT_SEARCH_K,
+    max_distance: float,
+    substrate: SubstrateClient | None = None,
+    substrate_k: int = 0,
+) -> list[ArchiveHit]:
+    """Der eigentliche Ablauf. Getrennt von `search_archive`, damit die Zeitnahme
+    dort den vollständigen Aufruf umschliesst und nicht in den Ablauf eingreift."""
     selected = tuple(sources) if sources is not None else ALL_SOURCES
     # Je Quelle EINE Rangliste, in fester Reihenfolge. Die Reihenfolge ist nicht
     # gleichgültig: Bei gleichem Punktestand und gleichem Zeitstempel entscheidet
