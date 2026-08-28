@@ -2949,22 +2949,26 @@ claims:
       Bestands. Seither hat KEINE der zehn Anfragen mehr eine leere Trefferliste.
 
   - id: "C-100"
-    aussage: "Die vierte Archiv-Quelle nutzt den einfachen Abruf des Gedaechtnissystems, nicht dessen Kontextaufbau — und diese Wahl wurde nie getroffen."
+    aussage: "Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen."
     status: "gemessen"
-    wert: "Ein Aufruf `recall` je Suche mit max_results=5; der Client kennt fuenf Pfade (remember, recall, reason, forget, reflect) und keinen Kontextaufbau"
+    wert: "remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz"
     bedingung: >-
       Abgelesen am 28.08.2026 am Quelltext: `substrate/client.py` fuehrt die
       Pfade in `_paths`; ein Pfad fuer den Kontextaufbau ist weder als Vorgabe
       noch als Einstellung vorhanden. `archive/search.py::_substrat_treffer`
       ruft ausschliesslich `recall(query, max_results=k)` und formt die flache
       Trefferliste zu einer vierten Rangliste fuer die Fusion.
-      DASS ES KEINE ABWAEGUNG GAB, ist am Verlauf ablesbar: Der Commit, der die
-      Anbindung brachte, heisst "Gedaechtnis als vierte Quelle der Fusion —
-      hinter einem Schalter" (fad4de5, 22.08.2026). Die Reduktion steckt in der
-      Benennung: Wer eine vierte Quelle fuer eine Rangliste baut, baut einen
-      Abruf. Eine Entscheidung gegen den Kontextaufbau ist weder in
-      GROUND_TRUTH noch im Register noch in den Freigabe-Bedingungen
-      dokumentiert — sie ist durch die Formulierung gerutscht.
+      AUSGEZAEHLT wurden die Aufrufe im Quelltext, ohne die Client-Datei selbst:
+      remember in ingestion/semantic.py, substrate/backfill.py und
+      substrate/smoke.py; recall in reasoners/event_chain/recall.py,
+      reasoners/failure/recall.py und substrate/smoke.py; forget in
+      substrate/aufraeumen.py und substrate/nachtrag.py. Fuer reason, reflect
+      und drift_status findet sich kein einziger Aufrufer.
+      NICHT BELEGT und deshalb hier nicht behauptet: WARUM das so ist. Eine
+      Entscheidung gegen den Kontextaufbau ist in GROUND_TRUTH, im Register und
+      in den Freigabe-Bedingungen nirgends dokumentiert — daraus folgt aber
+      nicht, dass sie nicht getroffen wurde. Der Quelltext sagt, was gerufen
+      wird, nicht warum.
     datum: "2026-08-28"
     fundstelle:
       - "src/foreman/substrate/client.py, _paths"
@@ -2974,10 +2978,13 @@ claims:
     freigabe:
       - "intern"
     bemerkung: >-
-      WARUM DER EINTRAG WICHTIG IST, obwohl er nur eine Bauweise beschreibt: Die
-      Quelle heisst nach aussen "Gedaechtnis" und liefert eine Trefferliste. Wer
-      die Bezeichnung liest, erwartet mehr als einen semantischen Abruf mit fuenf
-      Ergebnissen — und genau diese Erwartung ist nirgends widerlegt worden.
+      WARUM DER EINTRAG WICHTIG IST, obwohl er nur eine Bauweise beschreibt:
+      FOREMAN ist nach Aussage des Erbauers dafuer gebaut, die Staerken des
+      Gedaechtnissystems im Industrieumfeld zu nutzen. Genau die Faehigkeiten,
+      die es von einem Vektorspeicher unterscheiden — Wissensnetz,
+      Selbstauskunft, Drifterkennung, Kontextaufbau —, sind angebunden und
+      werden nicht gerufen. Der Abstand zwischen Zweck und Bauzustand ist damit
+      beziffert statt behauptet.
       WAS TROTZDEM ANKOMMT: Verdichtung und Vergessen formen den Bestand, den
       der Abruf durchsucht. Sie wirken also, nur eine Ebene tiefer. Was NICHT
       ankommt, ist die Zusammenstellung — Schichtung, Gespraechspuffer,

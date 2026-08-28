@@ -95,7 +95,7 @@ Stand: 2026-08-28
 | C-097 | Die vierte Archiv-Quelle kostet das Neunfache an Antwortzeit. | gemessen | Median je Suchaufruf 0,097 s mit drei Quellen gegen 0,853 s mit vier | 2026-08-28 | gueltig | intern |
 | C-098 | Zwischen dem alten und dem neuen Einbettungsmodell ist auf dem eigenen Bewertungssatz kein Gueteunterschied nachweisbar — in keiner Richtung. | gemessen | Trefferquote +0,001 (p=1,000), Rangguete +0,024 (p=0,744), verdichtet +0,025 (p=0,719) | 2026-08-28 | gueltig | intern |
 | C-099 | Ein unvollstaendiger Bewertungssatz kehrte das Ergebnis um: Dieselben Rohdaten sagten erst 'signifikant schlechter' und nach 81 zusaetzlichen Urteilen 'kein Unterschied'. | gemessen | Rangguete -0,106 (p=0,008) wird +0,024 (p=0,744); unbeurteilte Plaetze im neuen Arm fallen von 64 von 112 auf 5 von 112 | 2026-08-28 | gueltig | intern, fach |
-| C-100 | Die vierte Archiv-Quelle nutzt den einfachen Abruf des Gedaechtnissystems, nicht dessen Kontextaufbau — und diese Wahl wurde nie getroffen. | gemessen | Ein Aufruf `recall` je Suche mit max_results=5; der Client kennt fuenf Pfade (remember, recall, reason, forget, reflect) und keinen Kontextaufbau | 2026-08-28 | gueltig | intern |
+| C-100 | Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen. | gemessen | remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz | 2026-08-28 | gueltig | intern |
 
 ## Nicht verwendbar
 
