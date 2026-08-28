@@ -16,14 +16,19 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import threading
 from collections.abc import Sequence
-from typing import Any, Protocol, runtime_checkable
+from pathlib import Path
+from typing import Any, Final, Protocol, runtime_checkable
 
 import httpx
 
 from foreman.embeddings.config import OLLAMA_BACKEND, OPENAI_BACKEND, ST_BACKEND, Priority
 from foreman.embeddings.errors import EmbeddingError, EmbeddingTimeout, ProviderUnavailable
+from foreman.logging_setup import OK, get_logger
+
+logger = get_logger("foreman.embeddings.backends")
 
 # Rohe (un-normalisierte) Vektoren, wie ein Backend sie liefert — vor Dim-Check/
 # L2-Normalisierung im Provider.
@@ -269,6 +274,88 @@ class OpenAIBackend:
         )
 
 
+# Obergrenze der Rechen-Threads des lokalen Einbettungsmodells.
+#
+# WARUM ES DIESE GRENZE ÜBERHAUPT BRAUCHT: torch bemisst seine Threadzahl an
+# `os.cpu_count()` — und das meldet im Behälter die Kerne des WIRTS, nicht die
+# Zuteilung. Auf der Betriebsmaschine sind das 48 gegen eine Quote von 24.
+#
+# Der Schaden ist nicht Überlastung, sondern Absprache: Eine einzelne kurze
+# Anfrage ist eine winzige Rechnung. Je mehr Threads sich darüber abstimmen,
+# desto mehr Zeit geht für die Abstimmung drauf. Gemessen am 28.08.2026 im
+# Betriebsbehälter, Median je Anfrage:
+#
+#     48 Threads → 5,340 s     16 Threads → 0,082 s
+#     24 Threads → 0,193 s      8 Threads → 0,087 s
+#      4 Threads → 0,113 s      1 Thread  → 0,322 s
+#
+# Faktor 65 zwischen Vorgabe und Bestwert. Der Wert 16 ist der gemessene
+# Umschlagpunkt: Darunter fehlt Rechenkraft, darüber frisst die Abstimmung sie
+# wieder auf. Er wird zusätzlich an der Zuteilung gedeckelt — auf einem kleinen
+# Behälter sind 16 Threads nicht vorhanden.
+#
+# ERGEBNISSE ÄNDERT DIE ZAHL NICHT über Gleitkomma-Rauschen hinaus: gemessen
+# 2·10⁻⁷ Unterschied je Komponente, Kosinus 1,000000000 zwischen 48 und 16
+# Threads. Sie ist eine Geschwindigkeits-, keine Genauigkeitsfrage.
+_THREAD_OBERGRENZE: Final = 16
+
+
+def _zugeteilte_kerne() -> int:
+    """Kerne, die dem Prozess wirklich zustehen — nicht die des Wirts.
+
+    Reihenfolge nach Verlässlichkeit: cgroup-Quote (der Behälter), dann die
+    Prozess-Affinität, dann `os.cpu_count()` als letzter Ausweg. Ist nichts
+    davon lesbar, bleibt 1 — lieber zu wenig als die 48 des Wirts.
+    """
+    for pfad, teiler in (
+        ("/sys/fs/cgroup/cpu.max", None),
+        ("/sys/fs/cgroup/cpu/cpu.cfs_quota_us", "/sys/fs/cgroup/cpu/cpu.cfs_period_us"),
+    ):
+        try:
+            roh = Path(pfad).read_text().split()
+            quote = roh[0]
+            if quote in ("max", "-1"):
+                break
+            periode = float(roh[1]) if teiler is None else float(Path(teiler).read_text())
+            return max(1, int(float(quote) / periode))
+        except (OSError, ValueError, IndexError):
+            continue
+    # `sched_getaffinity` gibt es nur auf Linux — über `getattr` geholt, damit die
+    # Prüfung auch für Windows durchgeht, wo entwickelt wird.
+    affinitaet = getattr(os, "sched_getaffinity", None)
+    if affinitaet is not None:
+        return max(1, len(affinitaet(0)))
+    return max(1, os.cpu_count() or 1)
+
+
+def _ziel_threadzahl() -> int:
+    """Die Zahl, auf die begrenzt wird — getrennt von `_begrenze_threads`, damit sie
+    ohne installiertes torch prüfbar ist."""
+    return max(1, min(_THREAD_OBERGRENZE, _zugeteilte_kerne()))
+
+
+def _begrenze_threads() -> None:
+    """Setzt die Threadzahl vor dem ersten Laden. Wirkt prozessweit — deshalb hier
+    und nicht beim Import: Wer das Backend nie benutzt, soll auch nichts umstellen.
+
+    OHNE torch passiert nichts, und das ist Absicht: Die Begrenzung ist eine
+    Geschwindigkeitsfrage, keine Voraussetzung. Sie darf den Einbettungspfad
+    nicht zum Scheitern bringen — etwa dort, wo ein Ersatzmodell eingespielt
+    wird und die schwere Bibliothek gar nicht gebraucht wird. Fehlt sie
+    wirklich, scheitert das Laden des Modells unmittelbar danach von selbst,
+    laut und an der richtigen Stelle.
+    """
+    try:
+        import torch
+    except ImportError:
+        return
+
+    ziel = _ziel_threadzahl()
+    if torch.get_num_threads() != ziel:
+        torch.set_num_threads(ziel)
+        logger.info("%s Einbettungs-Threads auf %d begrenzt (Zuteilung).", OK, ziel)
+
+
 class SentenceTransformersBackend:
     """Embedding-Backend über sentence-transformers (Alternative zu Ollama).
 
@@ -324,6 +411,7 @@ class SentenceTransformersBackend:
         if self._model is None:
             with self._model_lock:
                 if self._model is None:
+                    _begrenze_threads()
                     self._model = SentenceTransformer(self._model_name, device=self._device)
         result = self._model.encode(texts, normalize_embeddings=False)
         return [[float(value) for value in row] for row in result]

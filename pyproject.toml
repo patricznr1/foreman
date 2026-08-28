@@ -168,6 +168,11 @@ module = [
     # `strict` greift über FOREMANs eigenen Embedding-Code voll.
     "sentence_transformers",
     "sentence_transformers.*",
+    # torch: nur fuer die Threadbegrenzung des lokalen Einbettungspfads angefasst
+    # (backends.py, `_begrenze_threads`) und dort lazy importiert. Kommt ueber
+    # sentence-transformers herein und wird sonst nirgends benutzt.
+    "torch",
+    "torch.*",
     # F-PRED: lightgbm/sklearn bringen teils py.typed, shap gar nicht — Imports
     # nachsichtig, `strict` greift über FOREMANs eigenen Reasoner-/Feature-Code voll.
     "lightgbm",

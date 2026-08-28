@@ -21,7 +21,11 @@ claims:
     datum: "2026-07-31"
     fundstelle:
       - "GROUND_TRUTH.md, Abschnitt 2 (Die vier Reasoner, Bau-Status)"
-      - "CLEANUP_REPORT.md, Teil 2 (Konsistenz-Audit gegen den Code)"
+      # Der Aufraeum-Bericht lag bis zum 28.08.2026 als CLEANUP_REPORT.md im
+      # Wurzelverzeichnis und ist seither nur noch im Verlauf abrufbar:
+      # `git show 07fc97b:CLEANUP_REPORT.md`. Der Verweis zeigt deshalb auf den
+      # Commit, nicht auf einen Pfad, den es nicht mehr gibt.
+      - "Aufraeum-Bericht Teil 2 (Konsistenz-Audit gegen den Code), Commit 07fc97b"
       - "Commit 5f90439"
     geltung: "gueltig"
     freigabe:
@@ -31,7 +35,8 @@ claims:
       Bis Juni 2026 sprachen mehrere Dokumente von fünf Bausteinen. Der fünfte
       (Belastungs-Simulation) wurde nie gebaut und ist bewusst gestrichen: die
       dafür nötigen Grössen liegen ausserhalb dessen, was die Plattform
-      beobachtet. Die Korrektur ist in CLEANUP_REPORT.md Teil 1 dokumentiert.
+      beobachtet. Die Korrektur ist im Aufraeum-Bericht Teil 1 dokumentiert
+      (Commit 07fc97b; die Datei lag bis zum 28.08.2026 im Wurzelverzeichnis).
 
   - id: "C-002"
     aussage: "Die Plattform stellt Drittsystemen elf nur lesende Abfragen über eine offene Schnittstelle bereit."
@@ -2620,3 +2625,141 @@ claims:
       robust sind, weil ihr Bezugspunkt der Bewertungssatz ist.
       NICHT MITGEMESSEN: das Gedaechtnis als vierte Quelle. Der Grenzwert wirkt
       allein im Notiz-Zweig; die vierte Quelle haette den Effekt nur verduennt.
+
+  - id: "C-092"
+    aussage: "Ob der Wechsel des Einbettungsmodells die Archiv-Suche besser oder schlechter macht, ist mit dem heutigen Bewertungssatz nicht entscheidbar."
+    status: "gemessen"
+    wert: "gewoehnlich gerechnet Trefferquote -0,156 (p=0,031) und Rangguete -0,106 (p=0,008); pool-korrigiert -0,076 bei p=0,148 — nicht gezeigt"
+    bedingung: >-
+      Erhoben am 28.08.2026 im Betriebsbehaelter gegen goldset_v3.json (10
+      Anfragen), k=15, Quellen note/maintenance/alarm, ohne
+      Maschinen-Einschraenkung. Zwei Arme, jeder an SEINEM kalibrierten
+      Arbeitspunkt: text-embedding-3-small bei 0,60 (C-048) gegen
+      Snowflake Arctic v2.0 bei 0,75 (C-091). Fuer den ersten Arm wurde der
+      Bestand mit OpenAI neu eingebettet und danach auf Arctic zurueckgesetzt;
+      der Zustand wurde vor, zwischen und nach den Armen in BEIDE Richtungen
+      geprueft. Gepaarter exakter Permutationstest, zweiseitig, n=9.
+      WARUM NICHT ENTSCHEIDBAR: Der beurteilte Vorrat stammt aus der Zeit, in
+      der text-embedding-3-small lief, und ist gegen das neue Modell verzerrt —
+      unbeurteilte Plaetze 41 Prozent im alten Arm gegen 57 Prozent im neuen.
+      Unbeurteilt zaehlt in der gewoehnlichen Rechnung als nicht zutreffend.
+      Verdichtet gerechnet (Sakai 2007) ist der Unterschied nicht gezeigt.
+      AUSGESCHLOSSEN wurde der naheliegende Einwand, Arctic laufe ohne seinen
+      Anfrage-Praefix: Derselbe Text als Anfrage und als Dokument eingebettet
+      ergibt Kosinus 0,772 — der Praefix wirkt.
+    datum: "2026-08-28"
+    fundstelle:
+      - "docs/messungen/2026-08-28_modellwechsel_mbrc.md"
+      - "tools/archiv_guete/modellvergleich_2026-08-28/ (32 Rohdateien mit Pruefsummen)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DIESER EINTRAG IST EIN NICHT-ERGEBNIS, und das ist seine Aussage. Der Satz
+      "wir sind gewechselt, weil die Suche besser wird" ist nicht belegbar.
+      Belegbar sind Betriebs- und Rechtsgruende: freie Lizenz statt US-Drittland,
+      Betrieb beim Kunden ohne Cloud-Anbindung, keine Kosten je Abfrage,
+      derselbe Vektorraum wie das Gedaechtnis-System.
+      WAS DEN STREIT ENTSCHEIDEN WUERDE: den Vorrat erweitern, also die
+      unbeurteilten Plaetze BEIDER Arme beurteilen lassen (rund 119 Urteile) und
+      neu rechnen. Der Schritt stand als "E2" schon in der Recherche vom
+      27.08.2026, mit der Begruendung "sonst sind alle Folgezahlen Pool-Bias".
+      Zehn Anfragen tragen eine Richtungsaussage, keine Kennzahl mit
+      Vertrauensbereich (Dincer 2013: 10 bis 722 Topics je Systempaar).
+
+  - id: "C-093"
+    aussage: "Vektoren zweier Einbettungsmodelle stehen praktisch senkrecht zueinander; ein vergessener Nachlauf nach einem Modellwechsel erzeugt kein schlechteres Ergebnis, sondern Rauschen."
+    status: "gemessen"
+    wert: "Kosinus zwischen den Modellen fuer denselben Text: -0,014329 bis +0,044336 (5 Stichproben)"
+    bedingung: >-
+      Erhoben am 28.08.2026 an fuenf ueber den Bestand verteilten Notizen
+      (1, 42, 83, 124, 165). Derselbe Text einmal mit
+      Snowflake/snowflake-arctic-embed-l-v2.0 und einmal mit
+      text-embedding-3-small eingebettet, beide L2-normiert, 1024 Dimensionen.
+      Gegenprobe im selben Lauf: gegen das JEWEILS AKTIVE Modell gehalten liegt
+      derselbe Vergleich bei 1,000000.
+    datum: "2026-08-28"
+    fundstelle:
+      - "docs/messungen/2026-08-28_modellwechsel_mbrc.md, Abschnitt 4.2"
+      - "src/foreman/embeddings/backfill.py, Parameter nur_fehlende"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Beziffert, was der Quelltext bis dahin nur behauptet hat. Der praktische
+      Wert liegt in der Fehlerart: Ein Bestand aus dem falschen Modell wirft
+      nicht, meldet nichts und liefert weiterhin Trefferlisten — nur ohne
+      Bezug zur Anfrage. Deshalb ist der Zwangsmodus des Nachlaufs beim
+      Modellwechsel keine Kuer, und deshalb hat der zugehoerige Test eine
+      Zeitschranke.
+
+  - id: "C-094"
+    aussage: "Der Abrufpfad der Archiv-Suche ist deterministisch — dieselbe Anfrage liefert dasselbe Ergebnis, unabhaengig von Behaelter, Codestand und Threadzahl."
+    status: "gemessen"
+    wert: "4 vollstaendige Erhebungen desselben Arms ueber 8 Grenzwerte, byteweise identische Trefferlisten"
+    bedingung: >-
+      Erhoben am 28.08.2026. Vier Laeufe mit identischer Anfrage- und
+      Bestandslage: vor dem Ausrollen von PR #136, danach auf neu gebautem
+      Abbild, nach einer vollstaendigen Umstellung des Bestandes auf ein anderes
+      Modell und zurueck, und schliesslich mit auf 16 begrenzter Threadzahl.
+      Verglichen wurden die Trefferschluessel in Reihenfolge, je Anfrage, ueber
+      alle acht Grenzwerte.
+    datum: "2026-08-28"
+    fundstelle:
+      - "docs/messungen/2026-08-28_modellwechsel_mbrc.md, Abschnitte 1.7 und 2.4"
+      - "tools/archiv_guete/modellvergleich_2026-08-28/"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Traegt zwei Aussagen zugleich. Erstens die Wiederholbarkeit der Messung —
+      ohne sie waere jeder Vergleich in diesem Register eine Momentaufnahme.
+      Zweitens den Beleg, dass die Rueckstellung des Bestandes vollstaendig war,
+      und zwar durch den Suchpfad hindurch statt nur auf Vektorebene.
+      MBRC 1.0 verlangt unter R4 zehn Laeufe und eine Streuung. Fuer einen
+      deterministischen Abrufpfad hat das keinen Gegenstand; die statistische
+      Einheit ist stattdessen die Anfrage, und verglichen wird mit einem
+      gepaarten exakten Permutationstest (Urbano et al. SIGIR 2019 empfehlen
+      ihn ausdruecklich anstelle von Wilcoxon).
+
+  - id: "C-095"
+    aussage: "Die Suche war seit dem Modellwechsel sechsunddreissigmal langsamer als noetig, weil die Rechenbibliothek die Kerne des Wirts statt der Zuteilung des Behaelters zaehlte."
+    status: "gemessen"
+    wert: "Median je Suchaufruf 5,505 s bei 48 Threads gegen 0,154 s bei 16 Threads; der Cloud-Weg lag bei 0,190 s"
+    bedingung: >-
+      Erhoben am 28.08.2026 im Betriebsbehaelter, 79 Aufrufe je Stufe, der
+      erste Aufruf (Modell laden, 12,048 s) verworfen. Gemessen ist der
+      vollstaendige Suchaufruf, nicht das Einbetten allein.
+      URSACHE: torch bemisst seine Threadzahl an os.cpu_count(); das meldet im
+      Behaelter die 48 Kerne des Wirts, waehrend /sys/fs/cgroup/cpu.max eine
+      Quote von 24 ausweist. Bei einer einzelnen kurzen Anfrage ist die Rechnung
+      winzig, und der Aufwand fuer die Abstimmung zwischen den Threads
+      uebersteigt sie. Einbettungszeit gegen Threadzahl, Median: 48 -> 5,340 s,
+      24 -> 0,193 s, 16 -> 0,082 s, 8 -> 0,087 s, 4 -> 0,113 s, 1 -> 0,322 s.
+      DIE EINSTELLUNG AENDERT KEINE ERGEBNISSE: Vektoren weichen um 2e-07 je
+      Komponente ab (Kosinus 1,000000000), und ein vollstaendiger Armlauf ueber
+      acht Grenzwerte liefert bei 16 wie bei 48 Threads byteweise identische
+      Trefferlisten.
+    datum: "2026-08-28"
+    fundstelle:
+      - "src/foreman/embeddings/backends.py, _begrenze_threads"
+      - "tests/embeddings/test_thread_begrenzung.py"
+      - "docs/messungen/2026-08-28_modellwechsel_mbrc.md, Abschnitt 2"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      DER UEBERTRAGBARE BEFUND betrifft nicht die Bibliothek, sondern das Messen
+      selbst. Der Fehler lag seit dem Modellwechsel im Betrieb und haette dort
+      bleiben koennen: Eine Suche, die fuenfeinhalb Sekunden braucht, wirft
+      nicht und meldet nichts — sie ist nur langsam, und langsam sieht aus wie
+      "das dauert eben". Kein Test und keine Ueberwachung haben ihn gefunden.
+      Gefunden hat ihn der Widerspruch zu einem zweiten System, das dieselbe
+      Aufgabe auf derselben Plattform im Millisekundenbereich loest. Eine Zahl,
+      die zu einem anderen Messpunkt nicht passt, ist ein Anlass zum Nachsehen
+      und kein Ergebnis.
+      Bis zu diesem Tag fuehrte das Register ausdruecklich "die Antwortzeit der
+      Plattform ist nicht erhoben". Antwortzeiten, die niemand erhebt,
+      verschlechtern sich lautlos.
