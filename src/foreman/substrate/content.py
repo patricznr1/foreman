@@ -214,13 +214,14 @@ def ereigniszeit(event_type: str, payload: Mapping[str, Any]) -> str | None:
 
     WARUM DAS EIN EIGENER WEG IST: Das Gedächtnis führt eine Ereigniszeit
     (`occurred_at`). Wird sie nicht mitgegeben, setzt es den Zeitpunkt des
-    Eingangs. Am 28.08.2026 trugen dadurch 248 von 302 gespiegelten Einträgen
-    dieselbe Stunde — die des Nachtrags. Jede zeitliche Auswertung auf der
-    Gegenseite hätte den Stapellauf beschrieben statt den Betrieb, und ein
-    Zeitfilter über die Ereigniszeit wäre wirkungslos gewesen.
+    Eingangs — und dann beschreibt dort jede zeitliche Auswertung den
+    Spiegel-Lauf statt den Betrieb. Ein Nachtrag für Altbestand legt so den
+    halben Bestand in dieselbe Stunde, und ein Zeitfilter über die Ereigniszeit
+    greift ins Leere.
 
-    Der Fehler war nicht, dass die Zeit fehlte: Sie steht in jeder Nutzlast, nur
-    als Metadatum. Metadaten wertet die Gegenstelle nicht aus.
+    Die Zeit in der Nutzlast mitzuführen genügt dafür NICHT: Dort ist sie ein
+    Metadatum, und Metadaten wertet die Gegenstelle nicht aus. Sie liest dieses
+    Feld.
 
     GIBT `None` STATT ZU WERFEN, anders als `baue_inhalt`: Eine fehlende
     Ereigniszeit macht den Eintrag nicht wertlos — er landet dann mit der
