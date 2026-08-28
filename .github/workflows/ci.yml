@@ -66,6 +66,21 @@ jobs:
       - name: Set up Python 3.12
         run: uv python install 3.12
 
+      - name: Sperrdatei deckt pyproject.toml
+        # Der Schritt darunter löst NEU auf, wenn die Sperrdatei nicht passt —
+        # still, und nur im Runner. Der Lauf ist dann grün, während die Datei im
+        # Verzeichnis eine andere Auflösung beschreibt als die getestete. Wer
+        # danach `uv sync --frozen` fährt (reproduzierbare Installation, die
+        # dokumentierte Reparatur einer beschädigten Umgebung), bekommt eine
+        # Auswahl, die niemand geprüft hat.
+        #
+        # Auch der Bildbau verdeckt es: Das Dockerfile installiert über
+        # `uv pip install .` aus pyproject.toml, nicht aus der Sperrdatei.
+        # Zwischen beiden Wegen fiel eine Abweichung deshalb nirgends auf.
+        #
+        # Dieser Schritt macht die Sperrdatei zu einer geprüften Aussage.
+        run: uv lock --check
+
       - name: Sync dependencies (incl. dev)
         run: uv sync --extra dev
 
