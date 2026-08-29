@@ -1218,10 +1218,30 @@ claims:
     fundstelle:
       - "src/foreman/substrate/content.py, CONTENT_BUILDERS"
       - "GROUND_TRUTH.md, Abschnitt 15.10"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      UEBERHOLT AM 29.08.2026, nicht wegen eines Rechenfehlers, sondern weil ein
+      Pfad geaendert wurde, der dieser Messung zugrunde lag. Die Gegenstelle hat
+      am 29.08. offengelegt, dass ihr Lesepfad bis zum 27.08.2026 JEDE Anfrage
+      OHNE das vom Einbettungsmodell verlangte Anfrage-Prefix eingebettet hat.
+      Diese Messung lief am 24.08. — also drei Tage davor, mitten im Fehler.
+      Bei der Gegenstelle selbst hob die Korrektur gepaart 42 auf 52 Treffer
+      unter den ersten fuenf (McNemar p = 0,00635); fuer unseren Namensraum
+      wurde sie nie nachgemessen.
+      WAS DAMIT FAELLT, ist nicht die Zahl, sondern die ZUSCHREIBUNG. Der
+      Eintrag sagt "Ursache ist der Inhalt der Erinnerungen, nicht das
+      Verfahren". Genau das ist jetzt unbelegt: Ein Teil des schwachen Beitrags
+      der vierten Quelle kann der Prefix-Fehler gewesen sein. Beides zugleich
+      ist ebenfalls moeglich, und keines der beiden ist gemessen.
+      WAS STEHEN BLEIBT: Die Aenderung, die dieser Eintrag ausgeloest hat —
+      Alarm-Meldung und Wartungsbeschreibung in den gespiegelten Satz — war
+      unabhaengig davon richtig; der Freitext traegt den Grund eines
+      Degradationsverlaufs, und ohne ihn kann das Gedaechtnis ihn nicht kennen.
+      Was fehlt, ist der BELEG dafuer, dass sie geholfen hat. Eine Neumessung
+      ist ohnehin faellig: Der Neuspiegel-Lauf aendert jeden Satz, und Messungen
+      davor und danach sind nicht vergleichbar.
     freigabe:
       - "intern"
-      - "fach"
     bemerkung: >-
       Der Schalter blieb nach der Messung ausgeschaltet. Die Messung belegt genau
       das, wogegen der Schalter gebaut wurde: Eine zusätzliche Quelle ohne Inhalt
