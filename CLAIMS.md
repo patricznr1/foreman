@@ -96,6 +96,8 @@ Stand: 2026-08-28
 | C-098 | Zwischen dem alten und dem neuen Einbettungsmodell ist auf dem eigenen Bewertungssatz kein Gueteunterschied nachweisbar — in keiner Richtung. | gemessen | Trefferquote +0,001 (p=1,000), Rangguete +0,024 (p=0,744), verdichtet +0,025 (p=0,719) | 2026-08-28 | gueltig | intern |
 | C-099 | Ein unvollstaendiger Bewertungssatz kehrte das Ergebnis um: Dieselben Rohdaten sagten erst 'signifikant schlechter' und nach 81 zusaetzlichen Urteilen 'kein Unterschied'. | gemessen | Rangguete -0,106 (p=0,008) wird +0,024 (p=0,744); unbeurteilte Plaetze im neuen Arm fallen von 64 von 112 auf 5 von 112 | 2026-08-28 | gueltig | intern, fach |
 | C-100 | Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen. | gemessen | remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz | 2026-08-28 | gueltig | intern |
+| C-101 | Die Archiv-Suche liefert unter gleichen Bedingungen gleiche Ergebnisse — auch mit dem Gedaechtnis als vierter Quelle. | gemessen | Zwei Laeufe unmittelbar nacheinander: 10 von 10 Anfragen mit identischer Rangfolge; der Gedaechtnis-Anteil ebenfalls 10 von 10 identisch. | 2026-08-28 | gueltig | intern |
+| C-102 | Das Gedaechtnis schoepft sein Abrufbudget voll aus; mehr als die Haelfte der Erinnerungen entfaellt in der Zusammenfuehrung, weil sie einen Treffer der eigenen Quellen doppelt. | gemessen | Nur-Gedaechtnis-Lauf: 5 von 5 Treffern bei 10 von 10 Anfragen, also 50. In der Zusammenfuehrung verbleiben 22; 28 entfallen. Bei 2 von 10 Anfragen (B05, B08) traegt das Gedaechtnis nichts bei, bei 1 von 10 (B06) alle fuenf. | 2026-08-28 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -116,17 +118,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 98
+Einträge gesamt: 100
 
 Nach Status:
 
-- gemessen: 91
+- gemessen: 93
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 88
+- gueltig: 90
 - ueberholt: 10
 - ungeprueft: 0

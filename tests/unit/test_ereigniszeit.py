@@ -19,6 +19,11 @@ import pytest
 
 from foreman.substrate.content import CONTENT_BUILDERS, ZEIT_FELDER, ereigniszeit
 
+# Die beiden Ableitungen OHNE eigenen Vorgangszeitpunkt. Bewusst hier als
+# Literale und nicht aus ZEIT_FELDER abgeleitet: Der Test soll anschlagen, wenn
+# jemand die Menge aendert, statt mit ihr mitzuwandern.
+OHNE_EIGENE_ZEIT = ("event_chain_reconstructed", "failure_recommendation")
+
 # ──────────────────────────────────────────────────────────────────────
 #  Die Abbildung — sie darf keine Felder nennen, die es nicht gibt
 # ──────────────────────────────────────────────────────────────────────
@@ -60,6 +65,13 @@ def test_jede_zeitangabe_gehoert_zu_einer_bekannten_ereignisart() -> None:
             {"started_at": "2026-06-03T06:00:00+00:00", "line_id": 1},
             "2026-06-03T06:00:00+00:00",
         ),
+        # Die ABWEICHUNG ist eine Ableitung und traegt trotzdem eine echte
+        # Hallenzeit: `detected_at` ist `sample.bucket` aus `readings_1m`.
+        (
+            "drift_detected",
+            {"detected_at": "2026-06-04T09:00:00+00:00", "machine_id": 3, "data_point_id": 42},
+            "2026-06-04T09:00:00+00:00",
+        ),
     ],
 )
 def test_die_zeit_kommt_aus_dem_richtigen_feld(art: str, nutzlast: dict, erwartet: str) -> None:
@@ -77,16 +89,50 @@ def test_die_zeit_kommt_aus_dem_richtigen_feld(art: str, nutzlast: dict, erwarte
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_erkenntnis_arten_liefern_keine_zeit() -> None:
-    """AUFBAU-KONTROLLE: Abweichung, Ereigniskette und Ausfalleinschaetzung
-    tragen Kennungen statt Zeiten.
+def test_erkenntnis_arten_ohne_eigene_zeit_liefern_keine() -> None:
+    """AUFBAU-KONTROLLE: Ereigniskette und Ausfalleinschaetzung tragen Kennungen
+    statt Zeiten — `anchor_alarm_id` bzw. `prediction_id`, sonst nichts.
 
-    Fuer sie ist die Eingangszeit die richtige — ihr Zeitpunkt IST der ihrer
-    Entstehung. Ohne diesen Fall koennte jemand ein Feld erfinden, das nie
+    Fuer diese beiden ist die Eingangszeit die richtige: ihr Zeitpunkt IST der
+    ihrer Entstehung. Ohne diesen Fall koennte jemand ein Feld erfinden, das nie
     gefuellt ist, und die Abbildung saehe vollstaendig aus.
+
+    DIE ABWEICHUNG STAND HIER FRUEHER MIT DRIN, und das war falsch. Sie fuehrt
+    `detected_at` — die Hallenzeit aus `readings_1m`, nicht die des Rechnens.
+    Der Fall oben fordert das jetzt ein. Lehrstueck dazu: Dieser Test hat den
+    Irrtum GEHALTEN, nicht aufgedeckt. Eine Aufbau-Kontrolle, die eine falsche
+    Annahme festschreibt, ist so wirksam wie ein falscher Kommentar — und beides
+    stand hier nebeneinander.
     """
-    for art in ("drift_detected", "event_chain_reconstructed", "failure_recommendation"):
+    for art in OHNE_EIGENE_ZEIT:
+        assert art not in ZEIT_FELDER, art
         assert ereigniszeit(art, {"machine_id": 1, "prediction_id": 7}) is None, art
+
+
+def test_die_abweichung_traegt_die_hallenzeit_nicht_die_laufzeit() -> None:
+    """Der Fall, an dem es haengt.
+
+    Der einzige Einstieg in den Drift-Reasoner ist ein Wiederholungslauf ueber
+    einen historischen Zeitraum (`drift/runner.py::replay_machine`). Ohne
+    `detected_at` bekaemen ALLE Befunde eines Laufs denselben Zeitstempel — den
+    des Laufs — und der gesamte Drift-Bestand laege auf einem Punkt der
+    Zeitachse. Genau dieses Muster hat beim Nachtrag schon einmal den halben
+    Bestand in dieselbe Stunde gelegt.
+    """
+    assert ZEIT_FELDER["drift_detected"] == "detected_at"
+    nutzlast = {
+        "reasoner": "drift",
+        "source_type": "drift",
+        "source_id": None,
+        "machine_id": 3,
+        "data_point_id": 42,
+        "detected_at": "2026-06-04T09:00:00+00:00",
+        "effect_size": 1.83,
+    }
+    assert ereigniszeit("drift_detected", nutzlast) == "2026-06-04T09:00:00+00:00", (
+        "❌ Die Abweichung traegt die Zeit des Rechnens statt der Halle. Bei einem "
+        "Wiederholungslauf liegt damit jeder Drift-Befund auf demselben Zeitpunkt."
+    )
 
 
 def test_fehlendes_feld_wirft_nicht() -> None:

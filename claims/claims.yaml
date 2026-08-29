@@ -2999,3 +2999,85 @@ claims:
       Suche, die vier Ranglisten fusioniert, ueberhaupt verwendbar waere. Er
       liefert eine Zusammenstellung, keine Kandidaten mit Raengen. Das ist eine
       Produkt- und Architekturfrage, keine Messfrage.
+  - id: "C-101"
+    aussage: >-
+      Die Archiv-Suche liefert unter gleichen Bedingungen gleiche Ergebnisse —
+      auch mit dem Gedaechtnis als vierter Quelle.
+    status: "gemessen"
+    wert: >-
+      Zwei Laeufe unmittelbar nacheinander: 10 von 10 Anfragen mit identischer
+      Rangfolge; der Gedaechtnis-Anteil ebenfalls 10 von 10 identisch.
+    bedingung: >-
+      Erhoben am 28.08.2026 gegen die oeffentliche Demo-Instanz ueber
+      `tools/archiv_guete/miss.py`, Anfragen aus `goldset_v2_anfragen.yaml`
+      (10 Anfragen), k=15, Quellen note/maintenance/alarm/memory, ohne
+      Maschinen-Einschraenkung. Verglichen wurden Trefferschluessel in
+      Reihenfolge UND als Menge. WARUM DER LAUF NOETIG WAR: Ein
+      Wiederholungslauf lag bereits vor (`armB` gegen `armBwdh` im
+      Modellvergleich, 70 von 70 identisch ueber sieben Schwellenwerte) — er
+      enthielt jedoch KEIN Gedaechtnis (`quellen` ohne `memory`, null
+      Gedaechtnis-Treffer). Die Streuung der vierten Quelle war damit
+      ungemessen, und genau sie haengt an einem fremden Dienst.
+      Rohdateien: `tools/archiv_guete/messung_k_wdh1.json` und `_k_wdh2.json`.
+    datum: "2026-08-28"
+    fundstelle:
+      - "tools/archiv_guete/messung_k_wdh1.json"
+      - "tools/archiv_guete/messung_k_wdh2.json"
+      - "tools/archiv_guete/modellvergleich_2026-08-28/messung_armBwdh_s075.json"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      FOLGE FUER DIE METHODIK: Ein Lauf je Messpunkt genuegt. Wiederholungen
+      messen hier keine Streuung, weil keine da ist — die Pflicht aus dem
+      Messmassstab, Streuung auszuweisen, ist damit erfuellt und nicht
+      umgangen.
+      NICHT BELEGT und deshalb nicht behauptet: Reproduzierbarkeit ueber
+      laengere Zeitraeume oder ueber einen Konsolidierungslauf der Gegenstelle
+      hinweg. Beide Laeufe lagen Minuten auseinander.
+
+  - id: "C-102"
+    aussage: >-
+      Das Gedaechtnis schoepft sein Abrufbudget voll aus; mehr als die Haelfte
+      der Erinnerungen entfaellt in der Zusammenfuehrung, weil sie einen
+      Treffer der eigenen Quellen doppelt.
+    status: "gemessen"
+    wert: >-
+      Nur-Gedaechtnis-Lauf: 5 von 5 Treffern bei 10 von 10 Anfragen, also 50.
+      In der Zusammenfuehrung verbleiben 22; 28 entfallen. Bei 2 von 10
+      Anfragen (B05, B08) traegt das Gedaechtnis nichts bei, bei 1 von 10
+      (B06) alle fuenf.
+    bedingung: >-
+      Erhoben am 28.08.2026 gegen die oeffentliche Demo-Instanz, gleiche
+      Anfragen und gleiches k wie C-101. Zwei Laeufe: einer mit
+      `sources=memory` allein, einer mit allen vier Quellen; verglichen wurde
+      je Anfrage die Zahl der Gedaechtnis-Treffer.
+      WAS DER LAUF WIDERLEGT: die Vermutung, der Rollen-Ausschnitt verwerfe
+      Erinnerungen ohne bekannten Maschinenbezug. Der Nur-Gedaechtnis-Lauf
+      liefert bei jeder Anfrage volle fuenf — der Ausschnitt verwirft nichts,
+      und der Wunsch-Filter feuert nie, weil alle zehn Anfragen ohne
+      `machine_id` laufen.
+      NICHT GEMESSEN: ob ein hoeheres `archive_substrate_k` zusaetzliche,
+      NICHT redundante Erinnerungen brachte. Der Wert kommt ausschliesslich aus
+      der Konfiguration (`archive/router.py`), ist ueber die Route nicht
+      steuerbar, und ein Durchlauf ueber mehrere Werte braeuchte je eine
+      Auslieferung oder einen Lauf im Behaelter.
+    datum: "2026-08-28"
+    fundstelle:
+      - "tools/archiv_guete/messung_k_nurmem.json"
+      - "tools/archiv_guete/messung_k_wdh1.json"
+      - "src/foreman/archive/search.py, _substrat_treffer"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DIESER EINTRAG NICHT SAGT, und das ist wichtiger als die Zahl selbst:
+      Er bewertet das Gedaechtnis als vierte TREFFERQUELLE der Archiv-Suche.
+      Das ist die Rolle, die der Eigentuemer fuer NEXUS ausdruecklich
+      ausschliesst ("kein zweites Archiv"). Die Kennzahl ist ein Parameter der
+      Archiv-Ansicht und taugt NICHT als Aussage darueber, was NEXUS in FOREMAN
+      beitraegt — dafuer waeren Zusammenhang, Zeitachse und Uebertragung
+      zwischen Anlagen zu messen, und keine dieser Faehigkeiten wird heute
+      abgerufen (C-100).
+      Die 28 Entfallenen sind zudem kein Verlust: Der Vorgang steht in der
+      Trefferliste, nur eben aus eigener Quelle.
