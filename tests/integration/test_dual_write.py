@@ -107,11 +107,26 @@ async def test_dual_write_setzt_substrate_ref_bei_erreichbarem_substrat(
     # STRUKTUR die Information, ihr Freitext bleibt draussen. Bei der Notiz IST
     # der Text die Information — steht er nicht im Inhalt, hat das Gedaechtnis
     # einen leeren Merkzettel bekommen.
+    # Der Satzanfang lautet seit dem 29.08.2026 „Notiz <nr> zu …" statt
+    # „Schichtnotiz zu …" — die Datensatznummer und die Anlagenkennung stehen
+    # jetzt vorn, damit nicht alle Notizen auf der Gegenseite auf EINEN Knoten
+    # fallen und ihre Einbettungen zusammenrücken.
     notiz_aufrufe = [
         aufruf for aufruf in substrate.calls if aufruf[1].get("event_type") == "worker_note"
-    ] or [aufruf for aufruf in substrate.calls if "Schichtnotiz" in aufruf[0]]
+    ] or [aufruf for aufruf in substrate.calls if aufruf[0].startswith("Notiz ")]
     assert notiz_aufrufe, "keine Notiz an das Gedaechtnis gegangen"
-    assert all("Schichtnotiz" in aufruf[0] for aufruf in notiz_aufrufe)
+
+    # GEPRUEFT WIRD DIE SACHE, NICHT DAS ETIKETT: Dass der Satz mit einem
+    # bestimmten Wort beginnt, ist Formsache und aendert sich wieder. Worauf es
+    # ankommt, ist dass der TEXT der Notiz im Inhalt steht — steht er nicht
+    # drin, hat das Gedaechtnis einen leeren Merkzettel bekommen, und genau das
+    # faellt sonst niemandem auf.
+    for aufruf in notiz_aufrufe:
+        inhalt = aufruf[0]
+        assert inhalt.startswith("Notiz "), inhalt
+        # Nach dem Doppelpunkt steht der Freitext — und er darf nicht leer sein.
+        assert ": " in inhalt, inhalt
+        assert inhalt.split(": ", 1)[1].strip(), f"Notiz ohne Freitext gespiegelt: {inhalt}"
 
 
 async def test_substrat_ausfall_blockiert_datenaufnahme_nicht(

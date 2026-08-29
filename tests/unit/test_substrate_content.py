@@ -52,14 +52,14 @@ def test_alarm_ohne_meldung_ergibt_den_bisherigen_satz_wortgleich() -> None:
     für dasselbe Ereignis anlegt.
     """
     assert baue_inhalt("alarm_raised", ALT_ALARM) == (
-        "Alarm TOOL_LOAD_HIGH (warning/hardware) an Maschine 8 ausgelöst "
+        "Alarm 5 TOOL_LOAD_HIGH (warning/hardware) an Maschine 8 ausgelöst "
         "(2026-06-19T14:00:00+00:00)."
     )
 
 
 def test_wartung_ohne_beschreibung_ergibt_den_bisherigen_satz_wortgleich() -> None:
     assert baue_inhalt("maintenance_performed", ALT_WARTUNG) == (
-        "Wartung (tool_change) an Maschine 8 durchgeführt (2026-06-04T09:00:00+00:00)."
+        "Wartung 11 (tool_change) an Maschine 8 durchgeführt (2026-06-04T09:00:00+00:00)."
     )
 
 
@@ -113,7 +113,7 @@ def test_wartung_traegt_die_beschreibung() -> None:
         "faktisch 90 Tage statt der vorgesehenen 30 — bewusst gestreckt."
     )
     assert baue_inhalt("maintenance_performed", {**ALT_WARTUNG, "description": beschreibung}) == (
-        "Wartung (tool_change) an Maschine 8 durchgeführt (2026-06-04T09:00:00+00:00). "
+        "Wartung 11 (tool_change) an Maschine 8 durchgeführt (2026-06-04T09:00:00+00:00). "
         f"{beschreibung}"
     )
 
@@ -121,7 +121,7 @@ def test_wartung_traegt_die_beschreibung() -> None:
 def test_alarm_traegt_die_meldung() -> None:
     meldung = "PR-02 Fügekraft über Erwartung — Werkzeugverschleiss vermutet"
     assert baue_inhalt("alarm_raised", {**ALT_ALARM, "message": meldung}) == (
-        "Alarm TOOL_LOAD_HIGH (warning/hardware) an Maschine 8 ausgelöst "
+        "Alarm 5 TOOL_LOAD_HIGH (warning/hardware) an Maschine 8 ausgelöst "
         f"(2026-06-19T14:00:00+00:00). {meldung}"
     )
 
@@ -163,7 +163,7 @@ def test_pflichtfelder_werfen_weiterhin() -> None:
 def test_code_darf_none_sein_und_wird_zum_fragezeichen() -> None:
     """Dokumentierte Ausnahme: `code` ist regulär nullbar, anders als die übrigen."""
     satz = baue_inhalt("alarm_raised", {**ALT_ALARM, "code": None})
-    assert satz.startswith("Alarm ? (warning/hardware)")
+    assert satz.startswith("Alarm 5 ? (warning/hardware)")
 
 
 def test_nur_alarm_und_wartung_wurden_um_freitext_erweitert() -> None:
@@ -182,7 +182,10 @@ def test_nur_alarm_und_wartung_wurden_um_freitext_erweitert() -> None:
             "line_id": 1,
             "started_at": "2026-06-01T00:00:00+00:00",
         },
-        "drift_detected": {"data_point_id": 4, "effect_size": 1.5},
+        # `machine_id` gehoert dazu: Die Abweichung liest sie seit dem
+        # 29.08.2026 HART, weil `drift/service.py` sie immer schreibt und eine
+        # Nutzlast ohne sie defekt waere.
+        "drift_detected": {"data_point_id": 4, "effect_size": 1.5, "machine_id": 3},
     }
     for event_type, payload in unveraendert.items():
         satz = baue_inhalt(event_type, payload)

@@ -306,7 +306,8 @@ def test_reconstruct_drift_detected() -> None:
     }
     assert (
         reconstruct_content("drift_detected", payload)
-        == "Verhaltens-Drift an Datenpunkt 99 erkannt (Effektgröße 3.14)."
+        == "Verhaltens-Drift an Maschine 4, Datenpunkt 99 erkannt "
+        "(Effektgröße 3.14, 2026-06-03T12:00:00+00:00)."
     )
 
 
@@ -356,7 +357,7 @@ def test_reconstruct_unbekannter_typ_ist_none() -> None:
         ("alarm_raised", {"code": "E1", "category": "p", "machine_id": 1}),  # ohne severity
         ("production_run", {"product_code": "P"}),  # ohne line_id/started_at
         ("maintenance_performed", {"type": "x"}),  # ohne machine_id/performed_at
-        ("drift_detected", {"data_point_id": 1}),  # ohne effect_size
+        ("drift_detected", {"data_point_id": 1, "machine_id": 1}),  # ohne effect_size
         ("event_chain_reconstructed", {"anchor_alarm_id": 1, "machine_id": 1}),  # ohne is_hyp
         ("failure_recommendation", {"prediction_id": 1, "machine_id": 1}),  # ohne decision
     ],

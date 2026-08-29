@@ -24,7 +24,12 @@ from foreman.api.deps import (
     SubstrateClientDep,
 )
 from foreman.db.models import Alarm
-from foreman.ingestion.semantic import alarm_payload, maskiere, record_semantic_event
+from foreman.ingestion.semantic import (
+    alarm_payload,
+    lade_anlagenbezug,
+    maskiere,
+    record_semantic_event,
+)
 from foreman.schemas.resources import AlarmCreate, AlarmRead
 
 router = APIRouter(prefix="/alarms", tags=["alarms"])
@@ -60,7 +65,13 @@ async def create_alarm(
         session,
         machine_id=obj.machine_id,
         event_type="alarm_raised",
-        payload=alarm_payload(obj, maskiere(redactor, obj.message)),
+        payload=alarm_payload(
+            obj,
+            maskiere(redactor, obj.message),
+            await lade_anlagenbezug(
+                session, machine_id=obj.machine_id, component_id=obj.component_id
+            ),
+        ),
         substrate=substrate,
     )
     await session.refresh(obj)

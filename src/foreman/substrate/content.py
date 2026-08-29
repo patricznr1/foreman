@@ -27,6 +27,80 @@ __all__ = [
 ]
 
 
+def _datensatz(payload: Mapping[str, Any]) -> str:
+    """Die eigene Nummer des Quelldatensatzes, als Vorsatz für den Satz.
+
+    DAS IST DIE BILLIGSTE POSITION MIT DER GRÖSSTEN WIRKUNG (Befund der
+    Gegenstelle, 28.08.2026): Ihre Knotenidentität entsteht aus dem Namen, und
+    weil bisher JEDER gespiegelte Satz einer Art mit derselben Wortfolge begann,
+    fielen alle Einträge dieser Art auf EINEN Knoten zusammen — 168 Notizen auf
+    einen einzigen „Schichtnotiz"-Knoten. Über den lief anschliessend die
+    Vererbung, und daraus entstanden rund 1.684 falsche Aussagen.
+
+    Der zweite Grund wiegt schwerer und trifft uns unabhängig von ihrem Graphen:
+    DER SATZ IST AUCH DIE GRUNDLAGE DER EINBETTUNG. Einträge, die alle mit
+    derselben Wortfolge beginnen, teilen einen Anteil ihres Vektors, der nichts
+    mit ihrem Inhalt zu tun hat — sie rücken zusammen, und zwar alle. Das trifft
+    jeden Abruf.
+
+    Leerer Rückgabewert, wenn die Nummer fehlt — Altbestand aus der Zeit vor dem
+    Rückweg trägt sie nicht. Der Satz bleibt dann lesbar; wortgleich zum
+    bisherigen ist er NICHT, denn die Notiz beginnt seit dem 29.08.2026 mit
+    „Notiz" statt „Schichtnotiz". Das ist gewollt: Der Neuspiegel-Lauf schreibt
+    ohnehin jeden Eintrag neu, und zwei Formulierungen nebeneinander wären
+    schlimmer als eine geänderte.
+    """
+    nummer = payload.get("source_id")
+    return f"{nummer} " if isinstance(nummer, int) and nummer > 0 else ""
+
+
+def _gegenstand(
+    payload: Mapping[str, Any], *, zusatz: str | None = None, maschine_optional: bool = False
+) -> str:
+    """Benennt den Gegenstand: die Anlagenkennung, sonst die Maschinennummer.
+
+    `maschine_optional` entscheidet über die HÄRTE des Zugriffs auf
+    `machine_id`, und das ist keine Geschmacksfrage: Bei Alarm und Wartung ist
+    die Spalte in der Datenbank `NOT NULL` — eine Nutzlast ohne sie ist defekt,
+    und der Nachtrag soll sie ÜBERSPRINGEN statt „ohne Maschinenbezug" zu
+    schreiben. Nur die Schichtnotiz darf regulär ohne Maschine bestehen.
+
+    Der erste Entwurf las immer weich und hat damit den harten Zugriff der
+    Alarm-Formulierung stillschweigend aufgehoben; `test_pflichtfelder_werfen_
+    weiterhin` hat es gefangen.
+
+    `zusatz` wandert in dieselbe Klammer wie die Maschinennummer. Das braucht
+    genau ein Bauer — die Notiz, deren Satz den Zeitpunkt unmittelbar hinter dem
+    Gegenstand führt. Ohne die gemeinsame Klammer stünden dort zwei Klammern
+    hintereinander.
+
+    WARUM DIE KENNUNG UND NICHT DIE NUMMER (Anforderung der Gegenstelle,
+    29.08.2026): „Maschine 9" ist eine Zeilennummer unserer Datenbank. Der
+    Werker nennt die Anlage „PR-03", der Freitext daneben auch, und das
+    Gedächtnis bildet seine Knoten aus dem SATZ. Steht dort nur die Nummer,
+    entsteht kein Knoten für die Anlage, den ein anderer Eintrag treffen könnte.
+
+    Die Nummer bleibt trotzdem im Satz — sie ist der Rückweg in unsere eigene
+    Datenbank, und ohne sie müsste ein Leser sie nachschlagen.
+
+    WEICHER ZUGRIFF: Altbestand trägt `machine_external_id` nicht. Ohne sie
+    entsteht wortgleich die bisherige Formulierung. Das ist Absicht: Der
+    Nachtrag reichert die Nutzlast erst an; bis dahin darf der Satz nicht
+    zerfallen.
+    """
+    maschine = payload.get("machine_id") if maschine_optional else payload["machine_id"]
+    kennung = _freitext(payload.get("machine_external_id"))
+    if maschine is None:
+        kopf, klammer = "ohne Maschinenbezug", []
+    elif kennung:
+        kopf, klammer = kennung, [f"Maschine {maschine}"]
+    else:
+        kopf, klammer = f"Maschine {maschine}", []
+    if zusatz:
+        klammer.append(zusatz)
+    return f"{kopf} ({', '.join(klammer)})" if klammer else kopf
+
+
 def _freitext(wert: Any) -> str | None:
     """Normalisiert ein optionales Freitext-Feld für die Anhängung an einen Satz.
 
@@ -42,6 +116,18 @@ def _freitext(wert: Any) -> str | None:
         return None
     geputzt = wert.strip()
     return geputzt or None
+
+
+def _zeitanhang(payload: Mapping[str, Any]) -> str:
+    """Der Erkennungszeitpunkt einer Abweichung, als Anhang in der Klammer.
+
+    WEICH, obwohl `drift/service.py` das Feld immer schreibt: Ein harter Zugriff
+    liesse `baue_inhalt` werfen, und der Nachtrag überspränge die Zeile — der
+    Befund verschwände aus dem Gedächtnis, um einen Zeitstempel zu gewinnen, den
+    er nicht hat. Dieselbe Abwägung wie bei der Alarm-Meldung.
+    """
+    wert = _freitext(payload.get("detected_at"))
+    return f", {wert}" if wert else ""
 
 
 def _alarm_raised(payload: Mapping[str, Any]) -> str:
@@ -75,8 +161,9 @@ def _alarm_raised(payload: Mapping[str, Any]) -> str:
     ohnehin nicht hat. Ohne Meldung entsteht wortgleich der bisherige Satz.
     """
     kopf = (
-        f"Alarm {payload['code'] or '?'} ({payload['severity']}/{payload['category']}) "
-        f"an Maschine {payload['machine_id']} ausgelöst ({payload['raised_at']})."
+        f"Alarm {_datensatz(payload)}{payload['code'] or '?'} "
+        f"({payload['severity']}/{payload['category']}) "
+        f"an {_gegenstand(payload)} ausgelöst ({payload['raised_at']})."
     )
     meldung = _freitext(payload.get("message"))
     return f"{kopf} {meldung}" if meldung else kopf
@@ -106,8 +193,11 @@ def _maintenance_performed(payload: Mapping[str, Any]) -> str:
 
     WEICHER ZUGRIFF wie bei `_alarm_raised` — Begründung dort.
     """
+    bauteil = _freitext(payload.get("component_label"))
+    am_bauteil = f", {bauteil}" if bauteil else ""
     kopf = (
-        f"Wartung ({payload['type']}) an Maschine {payload['machine_id']} "
+        f"Wartung {_datensatz(payload)}({payload['type']}) "
+        f"an {_gegenstand(payload)}{am_bauteil} "
         f"durchgeführt ({payload['performed_at']})."
     )
     beschreibung = _freitext(payload.get("description"))
@@ -118,8 +208,9 @@ def _drift_detected(payload: Mapping[str, Any]) -> str:
     # Der Reasoner speichert bereits round(effect_size, 4); die Anzeige mit
     # zwei Nachkommastellen trifft ihn damit exakt.
     return (
-        f"Verhaltens-Drift an Datenpunkt {payload['data_point_id']} erkannt "
-        f"(Effektgröße {float(payload['effect_size']):.2f})."
+        f"Verhaltens-Drift an {_gegenstand(payload)}, Datenpunkt "
+        f"{payload['data_point_id']} erkannt "
+        f"(Effektgröße {float(payload['effect_size']):.2f}{_zeitanhang(payload)})."
     )
 
 
@@ -165,9 +256,11 @@ def _worker_note(payload: Mapping[str, Any]) -> str:
     `machine_id` ist bei Notizen nullable — ohne Bezug wird das benannt statt
     "Maschine None" zu schreiben.
     """
-    maschine = payload["machine_id"]
-    bezug = f"zu Maschine {maschine}" if maschine is not None else "ohne Maschinenbezug"
-    return f"Schichtnotiz {bezug} ({payload['created_at']}): {payload['text']}"
+    return (
+        f"Notiz {_datensatz(payload)}zu "
+        f"{_gegenstand(payload, zusatz=payload['created_at'], maschine_optional=True)}: "
+        f"{payload['text']}"
+    )
 
 
 CONTENT_BUILDERS: dict[str, Callable[[Mapping[str, Any]], str]] = {

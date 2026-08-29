@@ -39,7 +39,11 @@ from foreman.api.deps import (
 )
 from foreman.db.models import WorkerNote
 from foreman.embeddings import embed_best_effort
-from foreman.ingestion.semantic import notiz_payload, record_semantic_event
+from foreman.ingestion.semantic import (
+    lade_anlagenbezug,
+    notiz_payload,
+    record_semantic_event,
+)
 from foreman.schemas.resources import WorkerNoteCreate, WorkerNoteRead
 
 router = APIRouter(prefix="/worker_notes", tags=["worker_notes"])
@@ -97,7 +101,15 @@ async def create_worker_note(
         session,
         machine_id=obj.machine_id,
         event_type="worker_note",
-        payload=notiz_payload(obj, masked_text),
+        # Eine Notiz führt kein Bauteil (`worker_notes` hat die Spalte nicht) —
+        # der Bezug trägt hier nur die Maschine. Das ist keine Lücke, sondern
+        # der Stand: Welches Bauteil eine Notiz betrifft, steht im Freitext oder
+        # nirgends, und aus Freitext zu raten wäre schlechter als nichts.
+        payload=notiz_payload(
+            obj,
+            masked_text,
+            await lade_anlagenbezug(session, machine_id=obj.machine_id, component_id=None),
+        ),
         substrate=substrate,
     )
     return obj

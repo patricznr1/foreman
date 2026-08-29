@@ -191,14 +191,21 @@ async def test_fehlende_quellzeile_erfindet_keinen_text(db_session: AsyncSession
     assert danach.substrate_ref == "alt-x"
 
 
-async def test_leere_beschreibung_zaehlt_getrennt_und_bleibt_unangetastet(
+async def test_leere_beschreibung_zaehlt_getrennt_wird_aber_angefasst(
     db_session: AsyncSession,
 ) -> None:
     """Aufbau-Kontrolle: `ohne_freitext` und `quelle_fehlt` sind NICHT dasselbe.
 
-    Beide führen zum Überspringen, haben aber verschiedene Ursachen. Ein
-    gemeinsamer Zähler verwischte, ob Quellen fehlen (ein Datenproblem) oder ob
-    Vorgänge schlicht unkommentiert sind (normal).
+    Beide werden gezählt, haben aber verschiedene Ursachen. Ein gemeinsamer
+    Zähler verwischte, ob Quellen fehlen (ein Datenproblem) oder ob Vorgänge
+    schlicht unkommentiert sind (normal).
+
+    GEÄNDERT AM 29.08.2026: Ein fehlender Freitext lässt die Zeile nicht mehr
+    UNANGETASTET. Vorher war der Freitext das Einzige, das der Nachtrag zog —
+    ohne ihn gab es nichts zu tun. Jetzt hängen die Stammdaten mit dran, und
+    eine Wartung ohne Beschreibung braucht ihre Anlagenkennung genauso. Sie
+    fortzulassen hiesse, genau die Zeilen ohne Gegenstand zu lassen, für die
+    dieser Lauf gebaut ist.
     """
     machine_id = await _maschine(db_session)
     await _altzeile_wartung(db_session, machine_id, beschreibung="   ", ref="alt-leer")
@@ -208,6 +215,42 @@ async def test_leere_beschreibung_zaehlt_getrennt_und_bleibt_unangetastet(
 
     assert stats.ohne_freitext == 1
     assert stats.quelle_fehlt == 0
+    # Die Zeile wird trotzdem angefasst — wegen der Stammdaten.
+    assert substrat.geloescht == ["alt-leer"]
+
+
+async def test_vollstaendige_zeile_bleibt_unangetastet(db_session: AsyncSession) -> None:
+    """DIE ANDERE HÄLFTE: Was schon alles hat, wird NICHT erneut gelöscht.
+
+    Das ist die eigentliche „bleibt unangetastet"-Zusicherung, und sie sitzt
+    jetzt hier statt am fehlenden Freitext. Ohne sie liefe jeder weitere
+    Nachtrag über den gesamten Bestand, löschte jede Erinnerung und schriebe sie
+    neu — bei jedem Lauf, dauerhaft.
+
+    Die Prüfung muss GENAU SO VIEL prüfen, wie der Lauf schreibt. Kennte sie die
+    vier Stammdatenfelder nicht, gälte eine Zeile mit Freitext und Rückweg als
+    erledigt, obwohl ihr der Gegenstand fehlt — derselbe Fehler wie am
+    25.08.2026, als die Prüfung den Rückweg nicht kannte und 22 Zeilen dauerhaft
+    aussparte.
+    """
+    machine_id = await _maschine(db_session)
+    zeile = await _altzeile_wartung(db_session, machine_id, beschreibung="Ein Grund.", ref="alt-v")
+    # Von Hand auf den Stand bringen, den ein Lauf hinterlässt.
+    zeile.payload = {
+        **zeile.payload,
+        "description": "Ein Grund.",
+        "machine_external_id": "AX-01",
+        "machine_class": "servo_axis",
+        "component_type": None,
+        "component_label": None,
+    }
+    await db_session.flush()
+    substrat = _Substrat()
+
+    stats = await nachtragen(db_session, substrat, _Redactor())
+
+    assert stats.bereits_vollstaendig == 1
+    assert stats.angereichert == 0
     assert substrat.geloescht == []
 
 
@@ -668,3 +711,75 @@ async def test_toter_rueckweg_faellt_auf_die_merkmalssuche_durch(
     assert stats.angereichert == 1
     danach = await _lade(db_session, zeile.id)
     assert "Über die Merkmale auffindbar." in danach.payload["description"]
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Was der Nachtrag seit dem 29.08.2026 zusätzlich zieht
+# ──────────────────────────────────────────────────────────────────────
+
+
+async def test_nachtrag_zieht_die_stammdaten_aus_der_quelle(db_session: AsyncSession) -> None:
+    """DER TRAGENDE FALL des Umbaus.
+
+    Der Neuspiegel-Lauf baut seinen Satz aus der GESPEICHERTEN Nutzlast. Stehen
+    die Stammdaten dort nicht, schreibt er 168 Notizen und 65 Ereignisse ohne
+    Gegenstand — und der ganze Lauf wäre umsonst gefahren, unumkehrbar.
+
+    Geprüft werden die WERTE, nicht die Anwesenheit der Schlüssel: Ein Feld, das
+    da ist und `None` trägt, obwohl die Maschine eine Kennung hat, wäre der
+    stillste denkbare Fehlschlag.
+    """
+    machine_id = await _maschine(db_session)
+    zeile = await _altzeile_wartung(db_session, machine_id, beschreibung="Ein Grund.", ref="alt-s")
+
+    await nachtragen(db_session, _Substrat(), _Redactor())
+
+    danach = await _lade(db_session, zeile.id)
+    assert danach.payload["machine_external_id"] == "NACHTRAG-1"
+    assert danach.payload["machine_class"] == "servo_axis"
+    # Die Wartung im Aufbau führt kein Bauteil — dann steht dort None, nicht
+    # etwa gar nichts. Der Unterschied ist für die Gegenstelle einer.
+    assert danach.payload["component_type"] is None
+    assert danach.payload["component_label"] is None
+
+
+async def test_die_notiz_wird_jetzt_mit_nachgetragen(db_session: AsyncSession) -> None:
+    """Die Schichtnotiz stand bis zum 29.08.2026 NICHT in `ANREICHERUNG`.
+
+    Sie brauchte den Nachtrag nie: Ihr Freitext ging seit jeher mit, ihr Rückweg
+    auch. Mit den Stammdaten ändert sich das — fehlten sie ihr, wäre ausgerechnet
+    die Ereignisart ohne Gegenstand geblieben, die den grössten Teil des
+    Bestands ausmacht.
+    """
+    from foreman.db.models import WorkerNote
+    from foreman.substrate.nachtrag import ANREICHERUNG
+
+    assert "worker_note" in ANREICHERUNG, "Die Notiz fehlt in der Anreicherungs-Tabelle"
+
+    machine_id = await _maschine(db_session)
+    notiz = WorkerNote(machine_id=machine_id, shift="frueh", text="Lager läuft unruhig.")
+    db_session.add(notiz)
+    await db_session.flush()
+    zeile = SemanticEvent(
+        machine_id=machine_id,
+        event_type="worker_note",
+        payload={
+            "source_type": "note",
+            "source_id": notiz.id,
+            "machine_id": machine_id,
+            "shift": "frueh",
+            "text": "Lager läuft unruhig.",
+            "created_at": notiz.created_at.isoformat(),
+        },
+        substrate_ref="alt-n",
+    )
+    db_session.add(zeile)
+    await db_session.flush()
+
+    substrat = _Substrat()
+    await nachtragen(db_session, substrat, _Redactor())
+
+    danach = await _lade(db_session, zeile.id)
+    assert danach.payload["machine_external_id"] == "NACHTRAG-1"
+    assert danach.substrate_ref is None, "Der Backfill holt sie nur bei aufgehobener Referenz"
+    assert substrat.geloescht == ["alt-n"]
