@@ -28,7 +28,12 @@ from foreman.api.deps import (
 )
 from foreman.core.roles import Role
 from foreman.db.models import MaintenanceEvent
-from foreman.ingestion.semantic import maskiere, record_semantic_event, wartung_payload
+from foreman.ingestion.semantic import (
+    lade_anlagenbezug,
+    maskiere,
+    record_semantic_event,
+    wartung_payload,
+)
 from foreman.schemas.resources import MaintenanceEventCreate, MaintenanceEventRead
 
 router = APIRouter(prefix="/maintenance_events", tags=["maintenance_events"])
@@ -84,7 +89,13 @@ async def create_maintenance_event(
         session,
         machine_id=obj.machine_id,
         event_type="maintenance_performed",
-        payload=wartung_payload(obj, maskiere(redactor, obj.description)),
+        payload=wartung_payload(
+            obj,
+            maskiere(redactor, obj.description),
+            await lade_anlagenbezug(
+                session, machine_id=obj.machine_id, component_id=obj.component_id
+            ),
+        ),
         substrate=substrate,
     )
     await session.refresh(obj)

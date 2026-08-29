@@ -41,6 +41,7 @@ from foreman.ingestion.normalized import (
 )
 from foreman.ingestion.semantic import (
     alarm_payload,
+    lade_anlagenbezug,
     maskiere,
     notiz_payload,
     record_semantic_event,
@@ -271,7 +272,13 @@ class IngestionService:
             # Was das System verlässt, wird behandelt wie der Notiz-Freitext — der
             # Spiegel darf nicht die schwächere Grenze sein. Die Nutzlast baut
             # `semantic.alarm_payload`, dieselbe Quelle wie für den HTTP-Weg.
-            payload=alarm_payload(alarm, self._maskiert(event.message)),
+            payload=alarm_payload(
+                alarm,
+                self._maskiert(event.message),
+                await lade_anlagenbezug(
+                    self.session, machine_id=alarm.machine_id, component_id=alarm.component_id
+                ),
+            ),
         )
 
     async def _write_production_run(self, event: ProductionRunRecord) -> None:
@@ -327,7 +334,15 @@ class IngestionService:
             # Siehe Begründung bei `alarm_raised`. Hier wiegt sie schwerer: Der
             # Grund eines Degradationsverlaufs steht ausschliesslich in dieser
             # Beschreibung (§12.5, Beobachtungsgrenze).
-            payload=wartung_payload(wartung, self._maskiert(event.description)),
+            payload=wartung_payload(
+                wartung,
+                self._maskiert(event.description),
+                await lade_anlagenbezug(
+                    self.session,
+                    machine_id=wartung.machine_id,
+                    component_id=wartung.component_id,
+                ),
+            ),
         )
 
     async def _write_worker_note(self, event: WorkerNoteRecord) -> None:
@@ -361,7 +376,13 @@ class IngestionService:
         await self._mirror(
             machine_id=note.machine_id,
             event_type="worker_note",
-            payload=notiz_payload(note, masked_text),
+            payload=notiz_payload(
+                note,
+                masked_text,
+                await lade_anlagenbezug(
+                    self.session, machine_id=note.machine_id, component_id=None
+                ),
+            ),
         )
 
     def _maskiert(self, text: str | None) -> str | None:

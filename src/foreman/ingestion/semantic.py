@@ -14,16 +14,81 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.core.redact import Redactor
-from foreman.db.models import Alarm, MaintenanceEvent, SemanticEvent, WorkerNote
+from foreman.db.models import Alarm, Component, Machine, MaintenanceEvent, SemanticEvent, WorkerNote
 from foreman.substrate.client import SubstrateClient
 from foreman.substrate.content import baue_inhalt, ereigniszeit
 
 logger = logging.getLogger("foreman.ingestion.semantic")
+
+
+@dataclass(frozen=True)
+class Anlagenbezug:
+    """Die Stammdaten-Angaben, die eine Spiegelung über ihren Gegenstand mitführt.
+
+    WOZU (Anforderung der Gegenstelle, 29.08.2026): Das Gedächtnis kann zwei
+    Vorgänge nur dann über den GEGENSTAND verbinden, wenn der Gegenstand
+    benennbar ist. Die Maschinennummer allein leistet das nicht — sie ist eine
+    Zeilennummer unserer Datenbank und trägt für einen Vergleich über Anlagen
+    hinweg nichts bei.
+
+    ZWEI VERSCHIEDENE DINGE, die auseinandergehalten werden müssen:
+
+    * `machine_external_id` und `component_label` benennen einen EINZELNEN
+      Gegenstand — „PR-03", „Achslager". Sie gehören in den SATZ: Der Satz ist
+      dort die Grundlage der Einbettung, und ein benannter Gegenstand macht
+      einen Eintrag von anderen unterscheidbar.
+    * `machine_class` und `component_type` benennen eine KLASSE — `servo_axis`,
+      `bearing`. Sie gehören ausdrücklich NICHT in den Satz, sondern in die
+      Metadaten: Ein Klassenwort im Satz erzeugt auf der Gegenseite nur eine
+      weitere unbenannte Nabe, an der alles zusammenläuft. Als Metadatum ist es
+      die Achse, über die ein Feldvergleich zwei Anlagen verbindet.
+
+    Alle vier Felder sind optional. `machine_class` und `component_type` sind in
+    der Datenbank frei belegbar und dürfen leer sein; geraten wird nichts.
+    """
+
+    machine_external_id: str | None = None
+    machine_class: str | None = None
+    component_type: str | None = None
+    component_label: str | None = None
+
+
+async def lade_anlagenbezug(
+    session: AsyncSession, *, machine_id: int | None, component_id: int | None
+) -> Anlagenbezug:
+    """Löst Maschine und Bauteil zu ihren Stammdaten auf — EINE Stelle für alle Wege.
+
+    Getrennt gepflegte Auflösungen wären die Stelle, an der ein Schreibweg
+    zurückbleibt: Der Adapter-Weg und die HTTP-Schicht schreiben dieselben
+    Ereignisse, und ein Unterschied zwischen ihnen fällt erst im Gedächtnis auf,
+    wo ihn niemand mehr einer Ursache zuordnen kann. Dieselbe Begründung wie bei
+    `nur_sichtbare_treffer` und `baue_inhalt`.
+
+    BEST-EFFORT: Fehlt die Maschine oder das Bauteil, bleiben die Felder leer.
+    Der Bezug ist eine Anreicherung, kein Pflichtfeld — er darf einen Insert nie
+    verhindern.
+    """
+    maschine: Machine | None = None
+    if machine_id is not None:
+        maschine = await session.get(Machine, machine_id)
+
+    bauteil: Component | None = None
+    if component_id is not None:
+        bauteil = await session.get(Component, component_id)
+
+    return Anlagenbezug(
+        machine_external_id=maschine.external_id if maschine is not None else None,
+        machine_class=maschine.machine_class if maschine is not None else None,
+        component_type=bauteil.component_type if bauteil is not None else None,
+        component_label=bauteil.label if bauteil is not None else None,
+    )
+
 
 # Schlüssel, unter denen das Substrat eine Referenz/ID zurückgeben kann.
 _REF_KEYS = ("id", "memory_id", "entry_id", "uuid", "ref", "result")
@@ -41,7 +106,24 @@ def extract_substrate_ref(data: dict[str, Any]) -> str | None:
     return None
 
 
-def notiz_payload(note: WorkerNote, masked_text: str) -> dict[str, object]:
+def _bezugsfelder(bezug: Anlagenbezug) -> dict[str, object]:
+    """Die vier Stammdaten-Felder als Nutzlast-Anteil — für alle drei Bauer gleich.
+
+    IMMER ALLE VIER, auch wenn sie leer sind. Ein Feld, das mal da ist und mal
+    nicht, zwingt jeden Leser zu einer Fallunterscheidung und lässt „nicht
+    erhoben" wie „nicht vorhanden" aussehen. Die Gegenstelle filtert über diese
+    Felder; ein fehlender Schlüssel und ein leerer Wert sind dort verschiedene
+    Dinge, und nur der leere Wert ist die Wahrheit.
+    """
+    return {
+        "machine_external_id": bezug.machine_external_id,
+        "machine_class": bezug.machine_class,
+        "component_type": bezug.component_type,
+        "component_label": bezug.component_label,
+    }
+
+
+def notiz_payload(note: WorkerNote, masked_text: str, bezug: Anlagenbezug) -> dict[str, object]:
     """Baut die Spiegel-Nutzlast einer Schichtnotiz — für BEIDE Schreibwege.
 
     Der `author` bleibt bewusst DRAUSSEN, obwohl die Wartung ihr `performed_by`
@@ -68,6 +150,7 @@ def notiz_payload(note: WorkerNote, masked_text: str) -> dict[str, object]:
         "created_at": note.created_at.isoformat(),
         "source_type": "note",
         "source_id": note.id,
+        **_bezugsfelder(bezug),
     }
 
 
@@ -94,7 +177,9 @@ def maskiere(redactor: Redactor, text: str | None) -> str | None:
     return redactor.redact_person_names(text)
 
 
-def wartung_payload(wartung: MaintenanceEvent, masked_description: str | None) -> dict[str, object]:
+def wartung_payload(
+    wartung: MaintenanceEvent, masked_description: str | None, bezug: Anlagenbezug
+) -> dict[str, object]:
     """Baut die Spiegel-Nutzlast eines Wartungsnachweises — für BEIDE Schreibwege.
 
     `performed_by` bleibt DRIN, anders als der Verfasser einer Schichtnotiz: Bei
@@ -114,10 +199,13 @@ def wartung_payload(wartung: MaintenanceEvent, masked_description: str | None) -
         "performed_at": wartung.performed_at.isoformat(),
         "performed_by": wartung.performed_by,
         "description": masked_description,
+        **_bezugsfelder(bezug),
     }
 
 
-def alarm_payload(alarm: Alarm, masked_message: str | None) -> dict[str, object]:
+def alarm_payload(
+    alarm: Alarm, masked_message: str | None, bezug: Anlagenbezug
+) -> dict[str, object]:
     """Baut die Spiegel-Nutzlast eines Alarms — für BEIDE Schreibwege.
 
     Der Auslösezeitpunkt gehört zwingend hinein: Ohne ihn ist ein Alarm desselben
@@ -133,8 +221,15 @@ def alarm_payload(alarm: Alarm, masked_message: str | None) -> dict[str, object]
         "severity": alarm.severity,
         "category": alarm.category,
         "machine_id": alarm.machine_id,
+        # DAS BAUTEIL GEHÖRT HINEIN (29.08.2026): `Alarm.component_id` gibt es
+        # seit jeher, und die Wartung führt es auch — beim Alarm fiel es beim
+        # Spiegeln stillschweigend heraus. Es ist die Brücke, auf die es
+        # ankommt: Zwei Maschinen ganz verschiedener Bauart teilen ein Bauteil,
+        # und ein Versagensmuster gehört dem Bauteil, nicht der Maschine.
+        "component_id": alarm.component_id,
         "raised_at": alarm.raised_at.isoformat(),
         "message": masked_message,
+        **_bezugsfelder(bezug),
     }
 
 
