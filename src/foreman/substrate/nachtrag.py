@@ -45,7 +45,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from foreman.config import get_settings
 from foreman.core.redact import PresidioRedactor, Redactor
-from foreman.db.models import Alarm, MaintenanceEvent, SemanticEvent
+from foreman.db.models import Alarm, MaintenanceEvent, SemanticEvent, WorkerNote
+from foreman.ingestion.semantic import bezugsfelder, lade_anlagenbezug
 from foreman.substrate.client import SubstrateClient, SubstrateNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,20 @@ ANREICHERUNG: dict[str, Quelle] = {
         "maintenance",
     ),
     "alarm_raised": Quelle(Alarm, "message", "raised_at", "raised_at", "code", "code", "alarm"),
+    # DIE NOTIZ KAM AM 29.08.2026 DAZU. Bis dahin war sie hier nicht nötig: Ihr
+    # Freitext ging seit jeher mit, und ihr Rückweg auch. Mit den Stammdaten
+    # (Anlagenkennung, Klasse) ändert sich das — die fehlen dem Altbestand
+    # genauso wie Wartung und Alarm, und ohne diesen Eintrag hätte der
+    # Neuspiegel-Lauf 168 Notizen ohne Gegenstand geschrieben.
+    "worker_note": Quelle(WorkerNote, "text", "created_at", "created_at", "shift", "shift", "note"),
 }
+
+# Die Stammdaten-Felder, die der Nachtrag aus Maschine und Bauteil nachzieht.
+# EINE Quelle für Namen und Reihenfolge: `ingestion/semantic.py::bezugsfelder`
+# schreibt dieselben vier im Live-Pfad. Wären es zwei Listen, schriebe der
+# Nachtrag ein Feld, das der Live-Pfad nicht kennt (oder umgekehrt), und der
+# Unterschied fiele erst im Gedächtnis auf.
+BEZUGSFELDER = ("machine_external_id", "machine_class", "component_type", "component_label")
 
 
 class NachtragStats:
@@ -221,25 +235,47 @@ async def nachtragen(
         # 25.08.2026: 22 Zeilen). Eine Vollständigkeits-Prüfung, die weniger
         # prüft als der Lauf schreibt, schliesst genau die Zeilen aus, für die
         # der nächste Lauf gebaut wurde.
-        fehlt = [f for f in (schluessel, "source_type", "source_id") if payload.get(f) is None]
-        if not fehlt:
+        # SEIT DEM 29.08.2026 GEHOEREN DIE VIER STAMMDATENFELDER DAZU. Ohne sie
+        # in dieser Liste galte jede Zeile als erledigt, die Freitext und
+        # Rückweg schon hat — also genau der Bestand, für den dieser Lauf
+        # gebaut wurde. Das ist derselbe Fehler wie am 25.08.2026, als die
+        # Prüfung den Rückweg nicht kannte und 22 Zeilen dauerhaft aussparte.
+        # `is None` und nicht `not`: Ein leerer Wert ist eine Auskunft (die
+        # Anlage führt keine Kennung), ein fehlender Schlüssel ist eine Lücke.
+        pflicht = (schluessel, "source_type", "source_id", *BEZUGSFELDER)
+        fehlt = [f for f in pflicht if f not in payload]
+        if not fehlt and payload.get(schluessel) is not None:
             stats.bereits_vollstaendig += 1
             continue
 
         quellzeile = await _quellzeile(session, quelle, payload)
-        roh = getattr(quellzeile, quelle.freitext, None) if quellzeile is not None else None
-        if not isinstance(roh, str):
-            # Quellzeile weg oder Feld leer: KEIN erfundener Text. Die Zeile
-            # behält ihre bisherige, gültige Spiegelung — sie zu löschen wäre
-            # ein Verlust ohne Gewinn.
+        if quellzeile is None:
+            # Quellzeile weg: KEIN erfundener Inhalt. Die Zeile behält ihre
+            # bisherige, gültige Spiegelung — sie zu löschen wäre ein Verlust
+            # ohne Gewinn.
             stats.quelle_fehlt += 1
             continue
-        if not roh.strip():
-            stats.ohne_freitext += 1
-            continue
 
-        if payload.get(schluessel) is None:
+        roh = getattr(quellzeile, quelle.freitext, None)
+        # DER FREITEXT IST NICHT MEHR DIE BEDINGUNG FÜR DEN GANZEN NACHTRAG.
+        # Vorher übersprang die Schleife eine Zeile ohne Freitext vollständig —
+        # was richtig war, solange der Freitext das Einzige war, das nachgezogen
+        # wurde. Jetzt hängen die Stammdaten mit dran, und eine Wartung ohne
+        # Beschreibung soll ihre Anlagenkennung trotzdem bekommen. Gezählt wird
+        # der fehlende Freitext weiterhin.
+        if not isinstance(roh, str) or not roh.strip():
+            stats.ohne_freitext += 1
+        elif payload.get(schluessel) is None:
             payload[schluessel] = redactor.redact_person_names(roh)
+
+        # Die Stammdaten aus Maschine und Bauteil — dieselbe Auflösung wie im
+        # Live-Pfad, damit beide Wege dieselben Werte schreiben.
+        bezug = await lade_anlagenbezug(
+            session,
+            machine_id=getattr(quellzeile, "machine_id", None),
+            component_id=getattr(quellzeile, "component_id", None),
+        )
+        payload.update(bezugsfelder(bezug))
         # DEN RUECKWEG MITGEBEN, wenn er fehlt: `source_type`/`source_id` kamen
         # erst mit der Notiz-Spiegelung; Altzeilen tragen sie nicht. Ohne sie ist
         # die entstehende Erinnerung spaeter keiner Quellzeile zuzuordnen — genau

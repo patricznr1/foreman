@@ -106,7 +106,7 @@ def extract_substrate_ref(data: dict[str, Any]) -> str | None:
     return None
 
 
-def _bezugsfelder(bezug: Anlagenbezug) -> dict[str, object]:
+def bezugsfelder(bezug: Anlagenbezug) -> dict[str, object]:
     """Die vier Stammdaten-Felder als Nutzlast-Anteil — für alle drei Bauer gleich.
 
     IMMER ALLE VIER, auch wenn sie leer sind. Ein Feld, das mal da ist und mal
@@ -150,7 +150,7 @@ def notiz_payload(note: WorkerNote, masked_text: str, bezug: Anlagenbezug) -> di
         "created_at": note.created_at.isoformat(),
         "source_type": "note",
         "source_id": note.id,
-        **_bezugsfelder(bezug),
+        **bezugsfelder(bezug),
     }
 
 
@@ -199,7 +199,7 @@ def wartung_payload(
         "performed_at": wartung.performed_at.isoformat(),
         "performed_by": wartung.performed_by,
         "description": masked_description,
-        **_bezugsfelder(bezug),
+        **bezugsfelder(bezug),
     }
 
 
@@ -229,7 +229,7 @@ def alarm_payload(
         "component_id": alarm.component_id,
         "raised_at": alarm.raised_at.isoformat(),
         "message": masked_message,
-        **_bezugsfelder(bezug),
+        **bezugsfelder(bezug),
     }
 
 
