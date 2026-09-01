@@ -45,6 +45,12 @@ export function failureText(status: number | null): string {
     // Bekannter Betriebszustand, kein Defekt: die übrigen Sichten tragen weiter.
     return "Rekonstruktion vorübergehend nicht verfügbar — Alarme und Trends laufen weiter";
   }
+  if (status === 504) {
+    // Die Antwort kam zu spät, die Rekonstruktion läuft aber zu Ende und wird
+    // abgelegt (belegt am 01.09.2026: zwei Ketten entstanden trotz Abbruch).
+    // Deshalb NICHT als Fehlschlag melden, sondern auf die Ablage verweisen.
+    return "Rekonstruktion dauert ungewöhnlich lange — sie läuft weiter und erscheint bei den gespeicherten Ketten";
+  }
   return "Kette nicht rekonstruierbar (Netz oder Backend)";
 }
 

@@ -14,6 +14,30 @@ import { backendUrl, getSessionToken } from "@/lib/auth/session";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+/** Frist für gewöhnliche Abrufe — Listen, Karten, Trends, Notizen. */
+export const STANDARD_TIMEOUT_MS = 10_000;
+
+/**
+ * Frist für die auslösenden Aufrufe der Sprachmodell-Bausteine.
+ * Das Backend gibt dem Modellaufruf allein schon 60 s (src/foreman/llm/config.py,
+ * `request_timeout_s`); dazu kommen Quellenaufbau, Ablage und Substrat-Spiegelung.
+ * Gemessen am 01.09.2026 an der Demo-Instanz (`foreman.llm.gateway`-Protokoll):
+ * 18,7 s / 26,6 s / 36,9 s reine Modell-Latenz. Mit der früheren pauschalen
+ * 10-s-Frist endete deshalb JEDER Auslöser mit 502, während das Backend seine
+ * Arbeit erfolgreich zu Ende brachte und ablegte.
+ */
+export const REASONER_TIMEOUT_MS = 90_000;
+
+/**
+ * Welche Frist ein Pfad bekommt. Mit dem Modell rechnen nur die AUSLÖSENDEN
+ * Aufrufe unter `reasoners/`; die GETs dort lesen bereits Abgelegtes und sollen
+ * weiterhin schnell scheitern.
+ */
+export function timeoutFor(method: string, path: string[]): number {
+  const loestAus = method !== "GET" && method !== "HEAD" && path[0] === "reasoners";
+  return loestAus ? REASONER_TIMEOUT_MS : STANDARD_TIMEOUT_MS;
+}
+
 async function proxy(request: Request, path: string[]): Promise<Response> {
   const token = await getSessionToken();
   if (token === null) {
@@ -39,7 +63,7 @@ async function proxy(request: Request, path: string[]): Promise<Response> {
     method: request.method,
     headers,
     cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(timeoutFor(request.method, path)),
   };
   if (request.method !== "GET" && request.method !== "HEAD") {
     init.body = await request.text();
@@ -48,8 +72,14 @@ async function proxy(request: Request, path: string[]): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(target, init);
-  } catch {
-    // Backend nicht erreichbar/Timeout → kontrollierter 502 statt opaker 500.
+  } catch (caught) {
+    // Eine Zeitüberschreitung ist KEIN „Backend nicht erreichbar": Am 01.09.2026
+    // hat genau diese Zusammenfassung die Ursachensuche zu den Zugangsschlüsseln
+    // geschickt, während das Backend rechnete und ablegte. Getrennt melden.
+    if (caught instanceof DOMException && caught.name === "TimeoutError") {
+      return NextResponse.json({ detail: "Zeitüberschreitung beim Backend" }, { status: 504 });
+    }
+    // Backend nicht erreichbar → kontrollierter 502 statt opaker 500.
     return NextResponse.json({ detail: "Backend nicht erreichbar" }, { status: 502 });
   }
   const payload = await response.text();
