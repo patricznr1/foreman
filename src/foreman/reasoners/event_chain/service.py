@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.db.models import (
     Alarm,
+    Component,
     Machine,
     MaintenanceEvent,
     ReasonerExplanationRecord,
@@ -240,10 +241,18 @@ class EventChainService:
         # Grounding-Quellen ins Sprachmodell. Ein Filter weiter unten käme für den
         # zweiten Weg zu spät, weil die Erzählung dann bereits geschrieben wäre und
         # fremde Inhalte paraphrasiert haben könnte.
+        # Das Bauteil des Ankers ist die Brücke zu Anlagen ANDERER Bauart (siehe
+        # recall.build_recall_query). Ohne `component_id` bleibt es None und die
+        # Anfrage ist unverändert — der Regelfall.
+        component = (
+            await self.session.get(Component, anchor.component_id)
+            if anchor.component_id is not None
+            else None
+        )
         recall_items = nur_sichtbare_treffer(
             await recall_similar_incidents(
                 self.substrate,
-                build_recall_query(anchor, machine),
+                build_recall_query(anchor, machine, component),
                 max_results=self.recall_max_results,
             ),
             self.sichtbare_maschinen,
@@ -253,7 +262,9 @@ class EventChainService:
         # Ehrliche Schwester-Referenzen NUR aus den realen Recall-Treffern (§21-D):
         # geteilte Ähnlichkeits-Basis (Anker-Signatur) + DB-aufgelöste Ziele
         # (Maschinenklasse, jüngste Schwester-Erklärung). Leerer Recall → leere Liste.
-        siblings = await self._build_siblings(recall_items, anchor=anchor, machine=machine)
+        siblings = await self._build_siblings(
+            recall_items, anchor=anchor, machine=machine, component=component
+        )
 
         # Grounding-Quellen (worker_notes/recall untrusted) → Gateway-Synthese.
         sources = build_grounding_sources(chain, recall_items)
@@ -390,12 +401,21 @@ class EventChainService:
         return record
 
     async def _build_siblings(
-        self, recall_items: Sequence[RecallItem], *, anchor: Alarm, machine: Machine | None
+        self,
+        recall_items: Sequence[RecallItem],
+        *,
+        anchor: Alarm,
+        machine: Machine | None,
+        component: Component | None = None,
     ) -> list[SiblingReference]:
         """Formt die realen Recall-Treffer zu ehrlichen, strukturierten
         Schwester-Referenzen (§21-D). Reine Form-Logik liegt in `recall.py`; hier nur
-        die DB-Auflösung der Ziele. Keine Recall-Treffer → leere Liste (kein Fake)."""
-        basis = sibling_similarity_basis(anchor, machine)
+        die DB-Auflösung der Ziele. Keine Recall-Treffer → leere Liste (kein Fake).
+
+        `component` geht mit, damit die angezeigte Ähnlichkeits-Basis dieselben
+        Merkmale nennt wie die gestellte Anfrage.
+        """
+        basis = sibling_similarity_basis(anchor, machine, component)
         class_by_machine, explanation_by_machine = await self._resolve_sibling_targets(
             recall_items, anchor_alarm_id=anchor.id
         )
