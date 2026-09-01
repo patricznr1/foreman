@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-09-01
+Stand: 2026-09-02
 
 ## FOREMAN
 
@@ -99,6 +99,10 @@ Stand: 2026-09-01
 | C-102 | Das Gedaechtnis schoepft sein Abrufbudget voll aus; mehr als die Haelfte der Erinnerungen entfaellt in der Zusammenfuehrung, weil sie einen Treffer der eigenen Quellen doppelt. | gemessen | Nur-Gedaechtnis-Lauf: 5 von 5 Treffern bei 10 von 10 Anfragen, also 50. In der Zusammenfuehrung verbleiben 22; 28 entfallen. Bei 2 von 10 Anfragen (B05, B08) traegt das Gedaechtnis nichts bei, bei 1 von 10 (B06) alle fuenf. | 2026-08-28 | gueltig | intern |
 | C-103 | Jede fuenfte Kennung, unter der FOREMAN eine gespiegelte Erinnerung fuehrte, zeigte ins Leere. | gemessen | Von 348 angereicherten Zeilen liessen sich 271 im Gedaechtnis loeschen; bei 77 (22,1 %) lag unter der gefuehrten Kennung nichts mehr. Null Loeschungen schlugen fehl. | 2026-09-01 | gueltig | intern |
 | C-104 | Nach dem Neuspiegel-Lauf benennt jeder gespiegelte Satz seinen Gegenstand und traegt eine eigene Datensatznummer. | gemessen | 50 von 50 Erinnerungs-Treffern in der neuen Form (Datensatznummer am Satzanfang), 50 von 50 mit Anlagenkennung im Satz. Vorher: 0 von 50. | 2026-09-01 | gueltig | intern |
+| C-105 | Die vierte Quelle steuert knapp ein Fuenftel der ausgelieferten Plaetze allein bei. | gemessen | 22 von 125 Plaetzen (18 %) tragen das Gedaechtnis als einzige Quelle; 50 von 125 (40 %) werden auch von ihm gefunden | 2026-09-02 | gueltig | intern, fach |
+| C-106 | Die vierte Quelle gewinnt auf der Haelfte der Anfragen einen zutreffenden Treffer hinzu und verliert auf zwei von zehn einen. | gemessen | Zusatztreffer auf 5 von 10 Anfragen (50 %); Verlust auf 2 von 10 (B07, B09) — Freigabe-Bedingung 1 damit weiterhin verfehlt | 2026-09-02 | gueltig | intern |
+| C-107 | Auch nach dem Neuspiegel-Lauf ist der Vorsprung der vierten Quelle bei zehn Anfragen statistisch nicht gezeigt. | gemessen | Trefferquote +0,051 (p = 0,172) · Rangguete +0,053 (p = 0,180) · verdichtete Rangguete +0,059 (p = 0,109); gepaarter Permutationstest, zweiseitig, exakt, n = 10 | 2026-09-02 | gueltig | intern, fach |
+| C-108 | Die vierte Quelle verschiebt das Ergebnis von Schichtnotizen zu Wartungsvorgaengen. | gemessen | Alle 3 verlorenen Treffer sind Schichtnotizen (note:185, note:71, note:108); 5 der 6 gewonnenen sind Wartungsvorgaenge (maintenance:107, :43, :92, :44, :71, dazu note:145) | 2026-09-02 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -120,17 +124,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 102
+Einträge gesamt: 106
 
 Nach Status:
 
-- gemessen: 95
+- gemessen: 99
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 91
+- gueltig: 95
 - ueberholt: 11
 - ungeprueft: 0

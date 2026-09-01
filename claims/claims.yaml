@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-09-01"
+stand: "2026-09-02"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -3176,3 +3176,98 @@ claims:
       und danach sind nicht vergleichbar, weil sich jeder Satz geaendert hat.
       Damit sind C-078, C-079 und C-084 zu pruefen; sie stuetzen sich auf den
       alten Bestand.
+
+  - id: "C-105"
+    aussage: "Die vierte Quelle steuert knapp ein Fuenftel der ausgelieferten Plaetze allein bei."
+    status: "gemessen"
+    wert: "22 von 125 Plaetzen (18 %) tragen das Gedaechtnis als einzige Quelle; 50 von 125 (40 %) werden auch von ihm gefunden"
+    bedingung: >-
+      Erhoben am 02.09.2026 gegen die laufende Instanz (Stand 3a11968) mit
+      tools/archiv_guete/miss.py, zehn Anfragen des Bewertungssatzes
+      goldset_v2_anfragen.yaml, k = 15. Ausgezaehlt wurde das Feld
+      "gefunden_von" der Rohdaten, nicht geschaetzt.
+      Zahlengleich zur Vormessung vom 28.08.2026 — die Zusammensetzung der
+      ausgelieferten Liste hat sich durch den Neuspiegel-Lauf nicht veraendert.
+      WAS DIESER EINTRAG NICHT BELEGT: dass diese 22 Plaetze zutreffend sind.
+      Er zaehlt Herkunft, nicht Guete. Zur Guete siehe C-106 und C-107.
+    datum: "2026-09-02"
+    fundstelle:
+      - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
+      - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-106"
+    aussage: "Die vierte Quelle gewinnt auf der Haelfte der Anfragen einen zutreffenden Treffer hinzu und verliert auf zwei von zehn einen."
+    status: "gemessen"
+    wert: "Zusatztreffer auf 5 von 10 Anfragen (50 %); Verlust auf 2 von 10 (B07, B09) — Freigabe-Bedingung 1 damit weiterhin verfehlt"
+    bedingung: >-
+      Erhoben am 02.09.2026, Auswertung mit tools/archiv_guete/werte_aus.py
+      gegen goldset_v3.json. Die Schwellen stammen aus GROUND_TRUTH §15.10
+      (Fassung 27.08.2026): (1) auf keiner Anfrage geht ein zutreffender Treffer
+      verloren, (2) auf mindestens 30 Prozent kommt einer hinzu. Bedingung 2 ist
+      erfuellt, Bedingung 1 nicht.
+      LOEST C-079 AB, das auf "ueberholt" steht und 4 von 10 Verlusten nannte.
+      Es sind dieselben zwei Anfragen wie bei der Vormessung vom 28.08.2026
+      (B07 verliert note:185, B09 verliert note:71 und note:108) — die
+      Verdraengung ist stabil und nicht zufaellig.
+      Der Gedaechtnis-Arm wurde zweimal erhoben; beide Auswertungen sind
+      zeilengleich.
+    datum: "2026-09-02"
+    fundstelle:
+      - "tools/archiv_guete/messung_nexus_2026-09-02_basis.json"
+      - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
+      - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis_wdh.json"
+      - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-107"
+    aussage: "Auch nach dem Neuspiegel-Lauf ist der Vorsprung der vierten Quelle bei zehn Anfragen statistisch nicht gezeigt."
+    status: "gemessen"
+    wert: "Trefferquote +0,051 (p = 0,172) · Rangguete +0,053 (p = 0,180) · verdichtete Rangguete +0,059 (p = 0,109); gepaarter Permutationstest, zweiseitig, exakt, n = 10"
+    bedingung: >-
+      Erhoben am 02.09.2026. Anlass war die Annahme, die Anbindung des
+      Gedaechtnisses sei zur Vormessung nicht sauber gewesen und der
+      Neuspiegel-Lauf (C-103, C-104) koenne das Bild aendern.
+      ER AENDERT ES NICHT: Die Werte liegen innerhalb weniger Tausendstel bei
+      denen vom 28.08.2026 (+0,057 / +0,052 / +0,060). Alle drei Kennzahlen
+      zeigen in dieselbe Richtung, keine erreicht das Niveau.
+      C-104 haelt fest, Messungen vor und nach dem Neuspiegel-Lauf seien nicht
+      vergleichbar, weil sich jeder gespiegelte Satz geaendert hat. Das ist
+      beruecksichtigt: Der Vergleich der Trefferlisten zeigt Bewegung — nur 2
+      von 10 Listen sind identisch, 6 tragen eine andere Reihenfolge. Die
+      Kennzahlen bleiben trotz dieser Bewegung stehen; genau das ist der Befund.
+      BESTAETIGT C-084 mit neuen Werten.
+    datum: "2026-09-02"
+    fundstelle:
+      - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
+      - "docs/messungen/2026-09-02_rohauswertung.txt"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-108"
+    aussage: "Die vierte Quelle verschiebt das Ergebnis von Schichtnotizen zu Wartungsvorgaengen."
+    status: "gemessen"
+    wert: "Alle 3 verlorenen Treffer sind Schichtnotizen (note:185, note:71, note:108); 5 der 6 gewonnenen sind Wartungsvorgaenge (maintenance:107, :43, :92, :44, :71, dazu note:145)"
+    bedingung: >-
+      Ausgezaehlt am 02.09.2026 aus der Vergleichstabelle der Auswertung, nicht
+      aus einer Zusammenfassung. Der Befund war bisher nicht im Register: Die
+      Verdraengung ist nicht gleichverteilt, sondern trifft eine Vorgangsart.
+      WAS DIESER EINTRAG NICHT BELEGT: die Ursache. Ob die gespiegelten
+      Wartungsberichte laenger sind, dichter formuliert oder schlicht zahlreicher,
+      ist nicht erhoben. Bei sechs gewonnenen und drei verlorenen Treffern ist
+      das eine Beobachtung an kleiner Zahl — sie taugt als Ansatzpunkt fuer die
+      Untersuchung der Verdraengung, nicht als Erklaerung.
+    datum: "2026-09-02"
+    fundstelle:
+      - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
+      - "docs/messungen/2026-09-02_rohauswertung.txt"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
