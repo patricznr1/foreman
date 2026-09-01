@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-08-28
+Stand: 2026-09-01
 
 ## FOREMAN
 
@@ -97,6 +97,8 @@ Stand: 2026-08-28
 | C-100 | Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen. | gemessen | remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz | 2026-08-28 | gueltig | intern |
 | C-101 | Die Archiv-Suche liefert unter gleichen Bedingungen gleiche Ergebnisse — auch mit dem Gedaechtnis als vierter Quelle. | gemessen | Zwei Laeufe unmittelbar nacheinander: 10 von 10 Anfragen mit identischer Rangfolge; der Gedaechtnis-Anteil ebenfalls 10 von 10 identisch. | 2026-08-28 | gueltig | intern |
 | C-102 | Das Gedaechtnis schoepft sein Abrufbudget voll aus; mehr als die Haelfte der Erinnerungen entfaellt in der Zusammenfuehrung, weil sie einen Treffer der eigenen Quellen doppelt. | gemessen | Nur-Gedaechtnis-Lauf: 5 von 5 Treffern bei 10 von 10 Anfragen, also 50. In der Zusammenfuehrung verbleiben 22; 28 entfallen. Bei 2 von 10 Anfragen (B05, B08) traegt das Gedaechtnis nichts bei, bei 1 von 10 (B06) alle fuenf. | 2026-08-28 | gueltig | intern |
+| C-103 | Jede fuenfte Kennung, unter der FOREMAN eine gespiegelte Erinnerung fuehrte, zeigte ins Leere. | gemessen | Von 348 angereicherten Zeilen liessen sich 271 im Gedaechtnis loeschen; bei 77 (22,1 %) lag unter der gefuehrten Kennung nichts mehr. Null Loeschungen schlugen fehl. | 2026-09-01 | gueltig | intern |
+| C-104 | Nach dem Neuspiegel-Lauf benennt jeder gespiegelte Satz seinen Gegenstand und traegt eine eigene Datensatznummer. | gemessen | 50 von 50 Erinnerungs-Treffern in der neuen Form (Datensatznummer am Satzanfang), 50 von 50 mit Anlagenkennung im Satz. Vorher: 0 von 50. | 2026-09-01 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -118,17 +120,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 100
+Einträge gesamt: 102
 
 Nach Status:
 
-- gemessen: 93
+- gemessen: 95
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 89
+- gueltig: 91
 - ueberholt: 11
 - ungeprueft: 0
