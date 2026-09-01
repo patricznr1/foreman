@@ -19,7 +19,7 @@ from html import unescape
 from typing import Any
 
 from foreman.core.sanitize import clean_excerpt
-from foreman.db.models import Alarm, Machine
+from foreman.db.models import Alarm, Component, Machine
 from foreman.ingestion.semantic import extract_substrate_ref
 from foreman.logging_setup import REASON, get_logger
 from foreman.observability.metrics import (
@@ -167,14 +167,45 @@ def nur_sichtbare_treffer(
     return [item for item in items if item.machine_id in erlaubt]
 
 
-def build_recall_query(anchor: Alarm, machine: Machine | None) -> str:
+def _bauteil_merkmale(component: Component | None) -> list[str]:
+    """Die Bauteil-Merkmale für Anfrage und Ähnlichkeits-Basis — eine Quelle.
+
+    Getrennte Listen wären die Stelle, an der Anfrage und angezeigte Begründung
+    auseinanderlaufen: Die Oberfläche behauptete dann eine andere Ähnlichkeit als
+    die tatsächlich gestellte Anfrage.
+    """
+    if component is None:
+        return []
+    merkmale: list[str] = []
+    if component.component_type:
+        merkmale.append(f"Bauteil {component.component_type}")
+    if component.label:
+        merkmale.append(component.label)
+    return merkmale
+
+
+def build_recall_query(
+    anchor: Alarm, machine: Machine | None, component: Component | None = None
+) -> str:
     """Baut die Recall-Query aus dem Anker-Muster (PII-frei).
 
-    Nutzt Maschinenklasse + Alarm-Code + Kategorie — keine Werker-Freitexte,
-    keine Personen-/IDs mit Personenbezug. Fällt auf eine generische Formulierung
-    zurück, wenn keine Merkmale vorliegen.
+    Nutzt Bauteil + Maschinenklasse + Alarm-Code + Kategorie — keine
+    Werker-Freitexte, keine Personen-/IDs mit Personenbezug. Fällt auf eine
+    generische Formulierung zurück, wenn keine Merkmale vorliegen.
+
+    DAS BAUTEIL STEHT VORN, und zwar aus dem Grund, der oben bei
+    `_COMPONENT_TYPE_KEYS` steht: Ein Versagensmuster gehört dem Bauteil, nicht
+    der Maschine. Ein Lagerschaden am Roboter und einer an der Achse sind
+    derselbe Fall, obwohl Maschinenklasse und Alarmcode nichts gemein haben.
+    Bis zum 02.09.2026 las die AUSWERTUNG der Antwort `component_type` und
+    `component_label`, die ANFRAGE nannte sie aber nicht — die Brücke war auf
+    einer Seite gebaut und wurde nie gespannt.
+
+    Ohne Bauteil bleibt die Anfrage unverändert; ein Alarm ohne `component_id`
+    ist der Regelfall und darf keine leere Angabe einschleppen.
     """
     parts: list[str] = ["ähnlicher Vorfall"]
+    parts.extend(_bauteil_merkmale(component))
     if machine is not None and machine.machine_class:
         parts.append(f"Maschinenklasse {machine.machine_class}")
     if anchor.code:
@@ -400,13 +431,20 @@ def to_grounding_inputs(items: Sequence[RecallItem]) -> list[str]:
     return [item.content for item in items]
 
 
-def sibling_similarity_basis(anchor: Alarm, machine: Machine | None) -> str:
+def sibling_similarity_basis(
+    anchor: Alarm, machine: Machine | None, component: Component | None = None
+) -> str:
     """Baut die ehrliche, PII-freie Ähnlichkeits-Basis (woran liegt die Ähnlichkeit).
 
     Es ist exakt die geteilte Anker-Signatur, auf die der Recall gematcht hat —
-    Maschinenklasse + Alarm-Code + Kategorie (System-/SPS-Text, kein Werker-Freitext).
+    Bauteil + Maschinenklasse + Alarm-Code + Kategorie (System-/SPS-Text, kein
+    Werker-Freitext). Die Merkmale kommen aus DERSELBEN Funktion wie die der
+    Anfrage (`_bauteil_merkmale`): Stünde das Bauteil in der Anfrage, aber nicht
+    in dieser Basis, behauptete die Oberfläche eine andere Ähnlichkeit als die
+    tatsächlich gestellte.
     """
     parts: list[str] = []
+    parts.extend(_bauteil_merkmale(component))
     if machine is not None and machine.machine_class:
         parts.append(f"Maschinenklasse {machine.machine_class}")
     if anchor.code:

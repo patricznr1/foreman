@@ -12,11 +12,12 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from foreman.db.models import Alarm, Machine
+from foreman.db.models import Alarm, Component, Machine
 from foreman.reasoners.event_chain.recall import (
     build_recall_query,
     map_recall_response,
     recall_similar_incidents,
+    sibling_similarity_basis,
 )
 from foreman.substrate.client import SubstrateClient
 
@@ -44,6 +45,58 @@ def test_build_recall_query_enthaelt_anker_merkmale() -> None:
     assert "cnc" in query
     assert "DRIFT" in query
     assert "process" in query
+
+
+def test_build_recall_query_nennt_das_bauteil() -> None:
+    """Das Bauteil ist die Brücke zwischen Anlagen verschiedener Bauart.
+
+    Ein Lagerschaden am Roboter und einer an der Achse sind derselbe Fall, obwohl
+    Maschinenklasse und Alarmcode nichts gemein haben. Die Auswertung der Antwort
+    liest `component_type`/`component_label` seit dem Neuspiegel-Lauf — bis zum
+    02.09.2026 stand das Bauteil aber in der ANFRAGE nicht, und die Brücke wurde
+    deshalb nie gespannt.
+    """
+    machine = Machine(id=1, label="Handling-Achse Y", machine_class="servo_axis")
+    component = Component(id=7, machine_id=1, label="Achslager", component_type="bearing")
+    query = build_recall_query(_anchor(), machine, component)
+    assert "bearing" in query
+    assert "Achslager" in query
+
+
+def test_build_recall_query_ohne_bauteil_bleibt_unveraendert() -> None:
+    """KONTROLL-ZWILLING: Ohne Bauteil darf sich nichts ändern.
+
+    Ein Alarm ohne `component_id` ist der Regelfall; er darf keine leere
+    Bauteil-Angabe in die Anfrage schreiben, sonst verschiebt sich die
+    Ähnlichkeit für alle bestehenden Fälle.
+    """
+    machine = Machine(id=1, label="CNC-1", machine_class="cnc")
+    mit_none = build_recall_query(_anchor(), machine, None)
+    ohne_angabe = build_recall_query(_anchor(), machine)
+    assert mit_none == ohne_angabe
+    assert "Bauteil" not in mit_none
+
+
+def test_build_recall_query_bauteil_ohne_typ_nennt_nur_die_benennung() -> None:
+    """Ein Bauteil ohne Klasse trägt nur seine Benennung — nichts wird erfunden."""
+    machine = Machine(id=1, label="CNC-1", machine_class="cnc")
+    component = Component(id=8, machine_id=1, label="Hydraulikaggregat", component_type=None)
+    query = build_recall_query(_anchor(), machine, component)
+    assert "Hydraulikaggregat" in query
+    assert "Bauteil None" not in query
+
+
+def test_sibling_similarity_basis_nennt_das_bauteil_mit() -> None:
+    """Die angezeigte Begründung muss die tatsächliche Anfrage widerspiegeln.
+
+    Stünde das Bauteil in der Anfrage, aber nicht in der Basis, behauptete die
+    Oberfläche eine andere Ähnlichkeit als die gemessene.
+    """
+    machine = Machine(id=1, label="Handling-Achse Y", machine_class="servo_axis")
+    component = Component(id=7, machine_id=1, label="Achslager", component_type="bearing")
+    basis = sibling_similarity_basis(_anchor(), machine, component)
+    assert "bearing" in basis
+    assert "Ähnlich anhand:" in basis
 
 
 def test_build_recall_query_ohne_merkmale_ist_generisch() -> None:
