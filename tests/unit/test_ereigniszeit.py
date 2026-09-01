@@ -206,3 +206,37 @@ async def test_die_ereigniszeit_erreicht_das_substrat(monkeypatch: pytest.Monkey
         "Eintrag den Zeitpunkt des Spiegelns, und jede zeitliche Auswertung "
         "beschreibt den Spiegel-Lauf statt den Betrieb."
     )
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Ohne Zeitzone wird nichts gesendet
+# ──────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("wert", "erwartet"),
+    [
+        ("2026-06-04T09:00:00+00:00", "2026-06-04T09:00:00+00:00"),
+        ("2026-06-04T09:00:00+02:00", "2026-06-04T09:00:00+02:00"),
+        # `Z` ist eine gueltige Zonenangabe. Ein Muster haette sie leicht
+        # uebersehen — und dann verloere der Eintrag still seine Zeit.
+        ("2026-06-04T09:00:00Z", "2026-06-04T09:00:00Z"),
+        ("2026-06-04T09:00:00", None),
+        ("vorgestern", None),
+        ("", None),
+    ],
+)
+def test_nur_zeiten_mit_zone_gehen_hinaus(wert: str, erwartet: str | None) -> None:
+    """Die Gegenstelle weist eine Zeitangabe ohne Zone mit 422 ab.
+
+    WAS DAS KOSTET, und es ist mehr als die Zeit: `_post` wirft,
+    `record_semantic_event` faengt, und die Zeile bekommt `substrate_ref=NULL`.
+    Das Ereignis fehlt dann im Gedaechtnis VOLLSTAENDIG — wegen eines fehlenden
+    Zonen-Anhaengsels. Lieber ohne Zeitangabe gespiegelt als gar nicht.
+
+    Heute ist der Fall theoretisch: Alle Quellspalten sind
+    `DateTime(timezone=True)`. Die Pruefung steht da, weil die Nutzlast auch aus
+    dem Altbestand kommt und niemand nachsehen wird, bevor er ein neues Zeitfeld
+    eintraegt.
+    """
+    assert ereigniszeit("drift_detected", {"detected_at": wert}) == erwartet
