@@ -56,6 +56,14 @@ export function failureText(
       ? "Vorhersage vorübergehend nicht abrufbar"
       : "Empfehlung vorübergehend nicht verfügbar — die Vorhersage bleibt gültig";
   }
+  if (status === 504) {
+    // Die Antwort kam zu spät, die Auswertung läuft aber zu Ende und wird abgelegt
+    // (belegt am 01.09.2026: die Empfehlung entstand trotz Abbruch). Deshalb auf
+    // das Nachladen verweisen statt einen Fehlschlag zu melden.
+    return what === "prediction"
+      ? "Vorhersage dauert ungewöhnlich lange — bitte gleich noch einmal nachsehen"
+      : "Empfehlung dauert ungewöhnlich lange — sie wird abgelegt und erscheint beim nächsten Aufruf";
+  }
   return what === "prediction" ? "Vorhersage nicht abrufbar" : "Empfehlung nicht abrufbar";
 }
 

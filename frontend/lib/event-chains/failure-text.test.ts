@@ -20,6 +20,20 @@ describe("failureText — Ketten-Rekonstruktion", () => {
     expect(failureText(429)).toContain("warten");
   });
 
+  it("benennt 504 als Verzögerung, NICHT als Fehlschlag", () => {
+    // Anlass 01.09.2026: Der Proxy brach nach 10 s ab, während das Backend die
+    // Kette fertig rechnete und ablegte. Der Text darf die Arbeit nicht für
+    // verloren erklären — sonst löst der Bediener sie ein zweites Mal aus.
+    const text = failureText(504);
+    expect(text).toContain("dauert");
+    expect(text).toContain("gespeicherten Ketten");
+    expect(text).not.toContain("nicht rekonstruierbar");
+  });
+
+  it("unterscheidet 504 von 503 — verschiedene Lagen, verschiedene Sätze", () => {
+    expect(failureText(504)).not.toBe(failureText(503));
+  });
+
   it("hält die bestehenden Fälle unverändert", () => {
     expect(failureText(401)).toContain("Sitzung");
     expect(failureText(403)).toContain("Kein Zugriff");
@@ -33,7 +47,7 @@ describe("failureText — Ketten-Rekonstruktion", () => {
   });
 
   it("nutzt durchgehend Hallensprache ohne internes Vokabular", () => {
-    for (const status of [401, 403, 404, 422, 429, 503, 500, null]) {
+    for (const status of [401, 403, 404, 422, 429, 503, 504, 500, null]) {
       const text = failureText(status).toLowerCase();
       for (const term of ["gateway", "backend-unavailable", "llm", "token-bucket", "500"]) {
         expect(text).not.toContain(term);
