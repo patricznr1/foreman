@@ -85,3 +85,8 @@ desktop.ini
 
 # --- Interne Arbeitsanweisungen: gehören nicht ins öffentliche Repo ---
 PROMPT_*.md
+
+# CodeGraph — maschinenlokaler Code-Index (28 MB SQLite je Klon).
+# Gehoert keinem Klon gemeinsam: Er wird aus dem Bestand gebaut und ist
+# nach jedem `codegraph sync` ein anderer.
+.codegraph/

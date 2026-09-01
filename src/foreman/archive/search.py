@@ -345,6 +345,16 @@ def _memory_hit(item: RecallItem) -> ArchiveHit:
         detail["erinnerung"] = item.ref
     if item.machine_class:
         detail["maschinenklasse"] = item.machine_class
+    # DAS BAUTEIL, wenn die Erinnerung es kennt (seit 29.08.2026). Es ist die
+    # Verbindung, die die Maschine nicht herstellt: Ein Lagerschaden am Roboter
+    # und einer an der Achse sind derselbe Fall — verschiedene Maschinenklassen,
+    # verschiedene Alarmcodes, dasselbe Bauteil.
+    # Deutsche Schluessel wie `maschinenklasse`: Das `detail` geht in die
+    # Trefferkarte, und dort steht Hallensprache.
+    if item.component_type:
+        detail["bauteilart"] = item.component_type
+    if item.component_label:
+        detail["bauteil"] = item.component_label
     # DER RUECKWEG AUF DIE QUELLZEILE, falls die Erinnerung ihn kennt (§12.4).
     # Er steht im `detail` und NICHT in `source_type`/`id` des Treffers: Die
     # Herkunft bleibt sichtbar `memory` — als `maintenance` ausgegeben waere die

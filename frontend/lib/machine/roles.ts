@@ -4,8 +4,10 @@
 //         = worker reduced / shift_lead full / technician full / manager full;
 //         Studie §4B). Werker: lesen + Notiz, reduzierte Sensoren (mobil/Handschuh).
 //         Schichtleiter: voll, fordert Vorhersage an, quittiert. Techniker: Diagnose-
-//         Tiefe + Offline-Cache. Manager: volles Sensor-Lagebild (Desktop), aber nur
-//         Aggregat/keine Einzelaktion. Sichtbarkeit bleibt ≤ Server-Autorisierung
+//         Tiefe + Offline-Cache. Manager: Vorfuehrprofil — volles Sensor-Lagebild
+//         (Desktop) UND alle Einzelaktionen, die der Server ihm ohnehin erlaubt
+//         (seit 01.09.2026; vorher verbarg diese Ansicht drei Knoepfe, die die
+//         Autorisierung bedient haette). Sichtbarkeit bleibt ≤ Server-Autorisierung
 //         (Guard requireSection("B")).
 //  Architektur-Einordnung: View-State (Schicht 2, rein).
 // ============================================================
@@ -14,7 +16,8 @@ import type { Role } from "@/lib/api/contracts";
 export interface MachineRoleView {
   /** Notiz erfassen (→ J). */
   canCaptureNote: boolean;
-  /** Vorhersage anfordern (→ E, On-Demand-Trigger) — nur Schichtleiter. */
+  /** Vorhersage anfordern (→ E, On-Demand-Trigger) — Schichtleiter und Manager.
+   *  Genau die zwei Rollen, die auch der Server zulässt. */
   canRequestPrediction: boolean;
   /** Maschinen-Alarme quittieren (HITL, über die C-Wiederverwendung). */
   canAcknowledge: boolean;
@@ -22,7 +25,10 @@ export interface MachineRoleView {
   sensorDetail: "reduced" | "full";
   /** Faktor-/Diagnose-Bezug (Techniker-Tiefe). */
   factorContext: boolean;
-  /** Nur verdichtetes Bild, keine Einzelaktion (Manager). */
+  /** Verdichtetes Bild statt Einzelwerten (Manager) — eine Frage der
+   *  DARSTELLUNG, nicht der Berechtigung. Bis zum 01.09.2026 hiess es hier
+   *  zusätzlich "keine Einzelaktion"; das galt für den Manager und gilt nicht
+   *  mehr, seit er erfasst, anfordert und quittiert. */
   aggregateOnly: boolean;
   /** Offline lesbar mit Stand-Stempel (Techniker, mobil). */
   offlineCache: boolean;
@@ -57,14 +63,33 @@ const ROLE_VIEW: Record<Role, MachineRoleView> = {
     offlineCache: true,
   },
   manager: {
-    canCaptureNote: false,
-    canRequestPrediction: false,
-    canAcknowledge: false,
+    // DAS VORFÜHRPROFIL — seit dem 01.09.2026 mit allen drei Einzelaktionen.
+    //
+    // Jede davon erlaubt der SERVER dem Manager seit jeher, nachgezählt am
+    // 01.09.2026: Notiz erfassen (`POST /worker_notes` ohne `require_roles`),
+    // Vorhersage anfordern (`require_roles(SHIFT_LEAD, MANAGER)`), Alarm
+    // quittieren (`require_roles(SHIFT_LEAD, TECHNICIAN, MANAGER)`). Die
+    // Ansicht war enger als die Autorisierung — sie verbarg drei Knöpfe, die
+    // der Server bedient hätte.
+    //
+    // GROUND_TRUTH §21 beschreibt das Profil ohnehin so: es „fragt (Reasoner-
+    // Trigger: rekonstruieren/vorhersagen/suchen) und entscheidet (HITL
+    // quittieren/verwerfen)". Der Kopfkommentar dieser Datei sagte das Gegenteil
+    // („keine Einzelaktion") und stand zugleich mit `manager full` in derselben
+    // Matrix-Zeile. Beides konnte nicht stimmen.
+    canCaptureNote: true,
+    canRequestPrediction: true,
+    canAcknowledge: true,
     // Volles Sensor-Lagebild am Desktop — die reduzierte Variante ist für mobile Werker
-    // gedacht (Studie §4B), nicht für den Manager. aggregateOnly bleibt: er sieht das
-    // volle Bild, greift aber nicht ein.
+    // gedacht (Studie §4B), nicht für den Manager.
     sensorDetail: "full",
-    factorContext: false,
+    // Der Faktor-Zusammenhang gehört dazu, sobald er selbst eine Vorhersage
+    // anfordern kann: Eine Zahl ohne ihre Faktoren ist für den, der sie
+    // ausgelöst hat, nicht bewertbar.
+    factorContext: true,
+    // `aggregateOnly` bleibt: Es ist eine Frage der DARSTELLUNG (Flottenblick
+    // statt Einzelwert), nicht der Berechtigung. Die frühere Begründung
+    // („greift nicht ein") trägt nicht mehr, die Darstellung schon.
     aggregateOnly: true,
     offlineCache: false,
   },

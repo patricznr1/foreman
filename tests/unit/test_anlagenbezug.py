@@ -154,3 +154,71 @@ def test_ohne_bezug_bleibt_der_satz_lesbar() -> None:
     satz = baue_inhalt("worker_note", notiz_payload(_notiz(4711, "x"), "x", LEER))
     assert satz.startswith("Notiz 4711 zu Maschine 2 (")
     assert "None" not in satz
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Der Rueckweg: das Bauteil muss ZURUECKKOMMEN, nicht nur hingehen
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_das_bauteil_ueberlebt_den_rueckweg() -> None:
+    """DIE BRUECKE IST ERST GESCHLAGEN, WENN SIE IN BEIDE RICHTUNGEN TRAEGT.
+
+    Gemessen am 01.09.2026 nach dem Neuspiegel-Lauf: Die Stammdaten lagen im
+    Gedaechtnis, kamen aber nicht zurueck — `RecallItem` fuehrte die Felder gar
+    nicht, und `_memory_hit` liess sie fallen. In 0 von 50 Treffern war ein
+    Bauteil zu sehen, obwohl es in jeder Nutzlast stand.
+
+    Das ist die stillste Form des Fehlschlags: Der Schreibweg meldet Erfolg, das
+    Gedaechtnis fuehrt die Angabe, und trotzdem kann niemand damit arbeiten.
+    """
+    from foreman.archive.search import _memory_hit
+    from foreman.reasoners.event_chain.recall import map_recall_response
+
+    antwort = {
+        "results": [
+            {
+                "id": "mem-1",
+                "content": "Alarm 93 AXIS_VIB_WARN an RB-01 (Maschine 10) ausgelöst.",
+                "metadata": {
+                    "machine_id": 10,
+                    "machine_class": "robot",
+                    "component_type": "bearing",
+                    "component_label": "Gelenklager Achse 3",
+                    "source_type": "alarm",
+                    "source_id": 93,
+                },
+            }
+        ]
+    }
+
+    treffer = map_recall_response(antwort, max_results=5)
+    assert len(treffer) == 1
+    item = treffer[0]
+    assert item.component_type == "bearing", "Der Bauteiltyp geht beim Auswerten verloren"
+    assert item.component_label == "Gelenklager Achse 3"
+
+    hit = _memory_hit(item)
+    assert hit.detail["bauteilart"] == "bearing", (
+        "❌ Das Bauteil erreicht die Trefferkarte nicht. Damit ist der Fall "
+        "'gleiches Bauteil an anderer Maschine' nicht adressierbar, obwohl die "
+        "Angabe im Gedaechtnis steht."
+    )
+    assert hit.detail["bauteil"] == "Gelenklager Achse 3"
+    # Und die Maschinenklasse bleibt, wo sie war — keine Verdraengung.
+    assert hit.detail["maschinenklasse"] == "robot"
+
+
+def test_ohne_bauteil_entsteht_kein_leerer_schluessel() -> None:
+    """AUFBAU-KONTROLLE: Eine Notiz fuehrt kein Bauteil.
+
+    Ein Schluessel mit leerem Wert in der Trefferkarte behauptete, die Angabe sei
+    erhoben und leer — sie ist aber gar nicht vorgesehen. Der Unterschied zaehlt
+    fuer den Leser der Karte.
+    """
+    from foreman.archive.search import _memory_hit
+    from foreman.reasoners.event_chain.recall import RecallItem
+
+    hit = _memory_hit(RecallItem(content="Notiz 4711 zu AX-02 (Maschine 2).", machine_id=2))
+    assert "bauteilart" not in hit.detail
+    assert "bauteil" not in hit.detail

@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-08-28"
+stand: "2026-09-01"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -1218,10 +1218,30 @@ claims:
     fundstelle:
       - "src/foreman/substrate/content.py, CONTENT_BUILDERS"
       - "GROUND_TRUTH.md, Abschnitt 15.10"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      UEBERHOLT AM 29.08.2026, nicht wegen eines Rechenfehlers, sondern weil ein
+      Pfad geaendert wurde, der dieser Messung zugrunde lag. Die Gegenstelle hat
+      am 29.08. offengelegt, dass ihr Lesepfad bis zum 27.08.2026 JEDE Anfrage
+      OHNE das vom Einbettungsmodell verlangte Anfrage-Prefix eingebettet hat.
+      Diese Messung lief am 24.08. — also drei Tage davor, mitten im Fehler.
+      Bei der Gegenstelle selbst hob die Korrektur gepaart 42 auf 52 Treffer
+      unter den ersten fuenf (McNemar p = 0,00635); fuer unseren Namensraum
+      wurde sie nie nachgemessen.
+      WAS DAMIT FAELLT, ist nicht die Zahl, sondern die ZUSCHREIBUNG. Der
+      Eintrag sagt "Ursache ist der Inhalt der Erinnerungen, nicht das
+      Verfahren". Genau das ist jetzt unbelegt: Ein Teil des schwachen Beitrags
+      der vierten Quelle kann der Prefix-Fehler gewesen sein. Beides zugleich
+      ist ebenfalls moeglich, und keines der beiden ist gemessen.
+      WAS STEHEN BLEIBT: Die Aenderung, die dieser Eintrag ausgeloest hat —
+      Alarm-Meldung und Wartungsbeschreibung in den gespiegelten Satz — war
+      unabhaengig davon richtig; der Freitext traegt den Grund eines
+      Degradationsverlaufs, und ohne ihn kann das Gedaechtnis ihn nicht kennen.
+      Was fehlt, ist der BELEG dafuer, dass sie geholfen hat. Eine Neumessung
+      ist ohnehin faellig: Der Neuspiegel-Lauf aendert jeden Satz, und Messungen
+      davor und danach sind nicht vergleichbar.
     freigabe:
       - "intern"
-      - "fach"
     bemerkung: >-
       Der Schalter blieb nach der Messung ausgeschaltet. Die Messung belegt genau
       das, wogegen der Schalter gebaut wurde: Eine zusätzliche Quelle ohne Inhalt
@@ -3081,3 +3101,78 @@ claims:
       abgerufen (C-100).
       Die 28 Entfallenen sind zudem kein Verlust: Der Vorgang steht in der
       Trefferliste, nur eben aus eigener Quelle.
+  - id: "C-103"
+    aussage: >-
+      Jede fuenfte Kennung, unter der FOREMAN eine gespiegelte Erinnerung
+      fuehrte, zeigte ins Leere.
+    status: "gemessen"
+    wert: >-
+      Von 348 angereicherten Zeilen liessen sich 271 im Gedaechtnis loeschen; bei
+      77 (22,1 %) lag unter der gefuehrten Kennung nichts mehr. Null Loeschungen
+      schlugen fehl.
+    bedingung: >-
+      Erhoben am 01.09.2026 im Behaelter der laufenden Instanz beim
+      Neuspiegel-Lauf (`python -m foreman.substrate.nachtrag`), ueber alle 351
+      `semantic_events`-Zeilen der drei anreicherbaren Ereignisarten. Die Zahl
+      faellt als Nebenprodukt an: Das Werkzeug zaehlt einen 404 beim Loeschen
+      GETRENNT von einem Fehlschlag, weil ein leerer Treffer das erreichte Ziel
+      ist und keine Stoerung des Weges.
+      Ein Kontrollpunkt mit drei Zeilen lief vorweg — dort zeigte bereits eine
+      von dreien ins Leere.
+    datum: "2026-09-01"
+    fundstelle:
+      - "src/foreman/substrate/nachtrag.py, NachtragStats.schon_geloescht"
+      - "Lauf vom 01.09.2026, 10:52 Uhr"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WAS DIE ZAHL NICHT SAGT: warum. Die Gegenstelle hat am 29.08.2026 zwei
+      Wege benannt, auf denen eine Kennung ungueltig wird — das Verwerfen einer
+      zu aehnlichen Notiz beim Haldenuebergang, und eine Hash-Suche, die nur
+      lebende Zeilen der mittleren Ebene sieht und deshalb bei einer erneuten
+      Spiegelung eine NEUE Kennung vergibt. Welcher Anteil auf welchen Weg
+      entfaellt, ist nicht erhoben und aus unseren Daten auch nicht erhebbar.
+      WARUM ES UNS BETRIFFT: Eine tote Kennung ist keine Kosmetik. Der Loeschweg
+      nach Art. 17 DSGVO laeuft darueber, und ein 404 ist dort vierdeutig — die
+      Gegenstelle fuehrt das selbst als offenen Punkt.
+      Seit dem 01.09.2026 sind alle 351 Kennungen neu vergeben; die Quote gilt
+      fuer den Bestand DAVOR und ist nicht fortzuschreiben.
+
+  - id: "C-104"
+    aussage: >-
+      Nach dem Neuspiegel-Lauf benennt jeder gespiegelte Satz seinen Gegenstand
+      und traegt eine eigene Datensatznummer.
+    status: "gemessen"
+    wert: >-
+      50 von 50 Erinnerungs-Treffern in der neuen Form (Datensatznummer am
+      Satzanfang), 50 von 50 mit Anlagenkennung im Satz. Vorher: 0 von 50.
+    bedingung: >-
+      Erhoben am 01.09.2026 gegen die oeffentliche Demo-Instanz ueber
+      `tools/archiv_guete/miss.py`, `sources=memory`, 10 Anfragen aus
+      `goldset_v2_anfragen.yaml`, k=15. Gezaehlt wurde auf den AUSZUEGEN der
+      Treffer: Satzanfang gegen `(Notiz|Alarm|Wartung) <Zahl> ` und Vorkommen
+      einer Anlagenkennung `(AX|PR|FD|RB|VS)-\d{2}`.
+      Der Lauf davor (`messung_stand_heute.json`, gleiche Anfragen, gleicher
+      Tag) diente als Vergleich und zeigt die alte Form.
+    datum: "2026-09-01"
+    fundstelle:
+      - "tools/archiv_guete/messung_stand_heute.json"
+      - "tools/archiv_guete/messung_nach_neuspiegel.json"
+      - "src/foreman/substrate/content.py, _datensatz und _gegenstand"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      WOZU DAS GUT IST, und die Begruendung stammt von der Gegenstelle: Sie
+      bildet ihre Knoten aus dem SATZ. Weil bisher jeder Satz einer Art mit
+      derselben Wortfolge begann, fielen alle Eintraege dieser Art auf einen
+      Knoten zusammen. Der zweite Grund gilt unabhaengig von ihrem Graphen — der
+      Satz ist die Grundlage der EINBETTUNG, und gleiche Satzanfaenge ziehen
+      Vektoren zusammen, ohne dass der Inhalt etwas damit zu tun hat.
+      WAS DIESER EINTRAG NICHT BELEGT: dass die Abrufguete dadurch besser wird.
+      Gemessen ist die FORM der Saetze, nicht ihre Wirkung. Die Guete-Messung
+      steht aus und kann erst nach diesem Lauf erhoben werden — Messungen davor
+      und danach sind nicht vergleichbar, weil sich jeder Satz geaendert hat.
+      Damit sind C-078, C-079 und C-084 zu pruefen; sie stuetzen sich auf den
+      alten Bestand.

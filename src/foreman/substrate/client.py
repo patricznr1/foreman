@@ -218,12 +218,37 @@ class SubstrateClient:
             raise ValueError("Kennung der Erinnerung fehlt — Löschen ohne Ziel ist nicht zulässig")
         return await self._delete(f"{self._paths['forget']}/{kennung}")
 
-    async def recall(self, query: str, *, max_results: int = 5) -> dict[str, Any]:
-        """Sucht Erinnerungen im Substrat."""
-        return await self._post(
-            self._paths["recall"],
-            {"query": query, "namespace": self._namespace, "max_results": max_results},
-        )
+    async def recall(
+        self, query: str, *, max_results: int = 5, correlation_id: str | None = None
+    ) -> dict[str, Any]:
+        """Sucht Erinnerungen im Substrat.
+
+        `correlation_id` ist eine Vorgangskennung, die die Gegenstelle in ihrem
+        Abruf-Protokoll ablegt (Schnittstellenvertrag, höchstens 128 Zeichen).
+        Sie ist der Weg, einen Aufruf von hier mit dem zu verbinden, was DORT
+        geschah — Dauer, Kandidatenzahl je Ebene, ob der Nachsortierer lief.
+        Alles Angaben, die wir aus der Antwort nicht sehen können.
+
+        WARUM NICHT ÜBER DEN ZEITSTEMPEL zuordnen: Das ist die Krücke, die bei
+        mehreren gleichzeitigen Anfragen still das falsche Paar bildet und dabei
+        plausibel aussieht. Ein Messwert, der aus einer Verwechslung stammt, ist
+        nicht unbrauchbar — er ist irreführend.
+
+        WIRD NUR GESENDET, WENN GESETZT: Die Gegenstelle weist unbekannte Felder
+        mit 422 ab, und ein leeres Feld ist kein Wert. Wer sie nicht braucht,
+        schickt sie nicht.
+        """
+        nutzlast: dict[str, Any] = {
+            "query": query,
+            "namespace": self._namespace,
+            "max_results": max_results,
+        }
+        if correlation_id:
+            # Kürzen statt Abweisen: Die Kennung ist ein Hilfsmittel der Messung.
+            # Eine zu lange Kennung darf keinen Abruf kosten — die Gegenstelle
+            # antwortete darauf mit 422, und der Reasoner stünde ohne Erinnerungen da.
+            nutzlast["correlation_id"] = correlation_id[:128]
+        return await self._post(self._paths["recall"], nutzlast)
 
     async def reason(self, query: str, **kwargs: Any) -> dict[str, Any]:
         """Stößt eine Reasoning-Operation des Substrats an."""

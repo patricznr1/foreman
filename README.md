@@ -50,8 +50,9 @@ deliberately shared so anyone can look around.
 | **E-mail** | `chef@foreman.de` |
 | **Password** | `ForemanDemo2026!` |
 
-The login is the *plant manager* profile: it sees the whole fleet and may trigger the reasoners,
-so every capability is reachable from a single account.
+The login is the *plant manager* profile: it sees the whole fleet, writes shift notes, triggers
+the reasoners and acknowledges alarms — every capability is reachable from this one account, with
+no role switching.
 
 **Where to start:** the fleet cockpit gives you the overall picture; a machine card shows live
 sensor values with an honest status per data point; the archive searches notes, maintenance

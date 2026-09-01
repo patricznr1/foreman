@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from datetime import datetime
 from typing import Any
 
 __all__ = [
@@ -318,6 +319,24 @@ ZEIT_FELDER: dict[str, str] = {
 }
 
 
+def _traegt_zeitzone(wert: str) -> bool:
+    """Ob eine ISO-Zeitangabe eine Zeitzone führt.
+
+    Über `fromisoformat` statt über ein Muster: Ein Muster müsste `Z`, `+02:00`,
+    `+0200` und `-05` gleichzeitig treffen und wäre die Stelle, an der eine
+    gültige Schreibweise durchfällt und der Eintrag stillschweigend seine Zeit
+    verliert. Die Auswertung der Standardbibliothek kennt alle Formen.
+
+    Eine unlesbare Zeichenkette gilt als OHNE Zone: Was wir nicht auswerten
+    können, kann die Gegenstelle auch nicht — und dann ist Weglassen die
+    freundlichere Antwort als ein 422, der den ganzen Eintrag kostet.
+    """
+    try:
+        return datetime.fromisoformat(wert).tzinfo is not None
+    except ValueError:
+        return False
+
+
 def ereigniszeit(event_type: str, payload: Mapping[str, Any]) -> str | None:
     """Der Zeitpunkt, zu dem das Ereignis STATTFAND — nicht der des Spiegelns.
 
@@ -336,9 +355,25 @@ def ereigniszeit(event_type: str, payload: Mapping[str, Any]) -> str | None:
     Ereigniszeit macht den Eintrag nicht wertlos — er landet dann mit der
     Eingangszeit, also so wie bisher. Ein Wurf würde die Spiegelung eines sonst
     brauchbaren Ereignisses verhindern, und der Schreibpfad ist best-effort.
+
+    OHNE ZEITZONE WIRD NICHTS GESENDET (29.08.2026, aus dem Schnittstellenvertrag
+    der Gegenstelle): Sie weist eine Zeitangabe ohne Zone mit 422 ab — bewusst an
+    der Grenze statt tief im Dienst. Für uns wiegt das schwerer, als es klingt:
+    Der Fehler kostet nicht die ZEIT, sondern den GANZEN EINTRAG. `_post` wirft,
+    `record_semantic_event` fängt und schreibt `substrate_ref=NULL`, und das
+    Ereignis fehlt im Gedächtnis vollständig — wegen eines fehlenden Zeitzonen-
+    Anhängsels.
+
+    Lieber ohne Zeitangabe gespiegelt als gar nicht. Heute ist der Fall
+    theoretisch: Alle fünf Quellspalten sind `DateTime(timezone=True)`, und
+    `readings_1m.bucket` erbt die Zone von `readings.time`. Die Prüfung steht
+    hier, weil die Nutzlast auch aus dem ALTBESTAND kommt und niemand nachsehen
+    wird, bevor er ein neues Zeitfeld einträgt.
     """
     feld = ZEIT_FELDER.get(event_type)
     if feld is None:
         return None
     wert = payload.get(feld)
-    return wert if isinstance(wert, str) and wert else None
+    if not isinstance(wert, str) or not wert:
+        return None
+    return wert if _traegt_zeitzone(wert) else None

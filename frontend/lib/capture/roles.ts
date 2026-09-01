@@ -28,8 +28,24 @@ const ROLE_VIEW: Record<Role, CaptureRoleView> = {
   shift_lead: { canCapture: true, voiceFirst: false, showSuggestions: true, readOnly: false },
   // Techniker: mobil/einhändig erfassen, technische Notiz mit Detail.
   technician: { canCapture: true, voiceFirst: false, showSuggestions: true, readOnly: false },
-  // Manager: liest, erfasst nicht (reduziert).
-  manager: { canCapture: false, voiceFirst: false, showSuggestions: false, readOnly: true },
+  // Manager: das VORFÜHRPROFIL. Er erfasst wie die übrigen Rollen.
+  //
+  // WARUM ER ES SEIT DEM 01.09.2026 DARF: GROUND_TRUTH §21 beschreibt das
+  // `manager`-Login als „Werksleiter-/Vorführprofil … damit lassen sich FOREMANs
+  // Fähigkeiten in EINEM Profil vorführen, ohne Login-Wechsel". Die Erfassung war
+  // davon ausgenommen, ohne dass das Dokument es erwähnte — und die öffentliche
+  // Instanz führt genau dieses eine Konto.
+  //
+  // KEINE AUFWEICHUNG EINER GRENZE: Der Schreibpfad `POST /worker_notes` kennt
+  // KEIN `require_roles`; der Server nimmt die Notiz von jedem angemeldeten
+  // Nutzer entgegen und leitet den Verfasser aus dem Token ab. Die Sperre lag
+  // allein in dieser Ansicht. Die Regel „Sichtbarkeit ≤ Server-Autorisierung"
+  // war nicht verletzt — sie war enger als nötig.
+  //
+  // `voiceFirst` bleibt false: Die Spracheingabe ist für den mobilen Werker
+  // gedacht (Studie §4J), nicht für den Desktop. Das ist eine Frage der
+  // Darstellung, keine der Berechtigung.
+  manager: { canCapture: true, voiceFirst: false, showSuggestions: true, readOnly: false },
 };
 
 /** Restriktivster Default für unbekannte Backend-Rollen (default-deny → nur lesen). */

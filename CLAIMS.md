@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-08-28
+Stand: 2026-09-01
 
 ## FOREMAN
 
@@ -53,7 +53,6 @@ Stand: 2026-08-28
 | C-046 | Den Validierungs-Vorbehalt formuliert das System, nicht das Sprachmodell. | gemessen | 2 von 2 heiklen Angaben einer Empfehlung kommen deterministisch: Zahlen und Vorbehalt | 2026-08-24 | gueltig | intern, fach, kunde |
 | C-047 | Für die Archiv-Suche existiert ein Bewertungssatz, dessen Relevanzurteile von drei voneinander unabhängigen Beurteilern getragen werden. | gemessen | 18 Anfragen, 79 Relevanz-Zuordnungen, 86,6 % Übereinstimmung aller drei Beurteiler | 2026-08-24 | gueltig | intern, fach |
 | C-049 | Die Güte der quellenübergreifenden Archiv-Suche ist erstmals beziffert. | gemessen | Trefferquote 0,256 · Genauigkeit 0,415 · Ranggüte 0,372 (k=10, drei Quellen, Schwelle 0,60) | 2026-08-24 | gueltig | intern, fach |
-| C-050 | Das Gedächtnis als vierte Archiv-Quelle erfüllt seine Freigabe-Bedingung im gegenwärtigen Zustand nicht. | gemessen | 0 % der Anfragen mit zusätzlichem zutreffendem Treffer (gefordert: mindestens 30 %); auf 11 von 18 Anfragen verschlechterte Reihenfolge | 2026-08-24 | gueltig | intern, fach |
 | C-051 | Der Rückweg für ein Löschverlangen war über die Betriebskonfiguration nicht erreichbar; er ist es seit dem 25.08.2026. | gemessen | Aufruf schlug im Betrieb fehl, während alle Tests bestanden — 22 von 22 Versuchen | 2026-08-25 | gueltig | intern |
 | C-053 | Die Verdichtung des Gedächtnisses wird von der Plattform nicht angestossen. | gemessen | 62 von 63 Erinnerungen auf der mittleren Ebene, 1 auf der gefestigten; 1 von 63 im Wissensnetz verarbeitet | 2026-08-25 | gueltig | intern |
 | C-055 | Die Plattform kann das Entfernen einer einzelnen gespiegelten Erinnerung bei der Gegenstelle anfordern. | gemessen | Anforderung nach dem vereinbarten Muster, mit unterscheidbarer Antwort auf einen nicht vorhandenen Eintrag | 2026-08-25 | gueltig | intern |
@@ -98,6 +97,8 @@ Stand: 2026-08-28
 | C-100 | Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen. | gemessen | remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz | 2026-08-28 | gueltig | intern |
 | C-101 | Die Archiv-Suche liefert unter gleichen Bedingungen gleiche Ergebnisse — auch mit dem Gedaechtnis als vierter Quelle. | gemessen | Zwei Laeufe unmittelbar nacheinander: 10 von 10 Anfragen mit identischer Rangfolge; der Gedaechtnis-Anteil ebenfalls 10 von 10 identisch. | 2026-08-28 | gueltig | intern |
 | C-102 | Das Gedaechtnis schoepft sein Abrufbudget voll aus; mehr als die Haelfte der Erinnerungen entfaellt in der Zusammenfuehrung, weil sie einen Treffer der eigenen Quellen doppelt. | gemessen | Nur-Gedaechtnis-Lauf: 5 von 5 Treffern bei 10 von 10 Anfragen, also 50. In der Zusammenfuehrung verbleiben 22; 28 entfallen. Bei 2 von 10 Anfragen (B05, B08) traegt das Gedaechtnis nichts bei, bei 1 von 10 (B06) alle fuenf. | 2026-08-28 | gueltig | intern |
+| C-103 | Jede fuenfte Kennung, unter der FOREMAN eine gespiegelte Erinnerung fuehrte, zeigte ins Leere. | gemessen | Von 348 angereicherten Zeilen liessen sich 271 im Gedaechtnis loeschen; bei 77 (22,1 %) lag unter der gefuehrten Kennung nichts mehr. Null Loeschungen schlugen fehl. | 2026-09-01 | gueltig | intern |
+| C-104 | Nach dem Neuspiegel-Lauf benennt jeder gespiegelte Satz seinen Gegenstand und traegt eine eigene Datensatznummer. | gemessen | 50 von 50 Erinnerungs-Treffern in der neuen Form (Datensatznummer am Satzanfang), 50 von 50 mit Anlagenkennung im Satz. Vorher: 0 von 50. | 2026-09-01 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -109,6 +110,7 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 | C-040 | FOREMAN | Die öffentlich ausgelieferte Projektseite trägt einen eingefrorenen, überholten Spezifikationsstand. | ueberholt | BEHOBEN AM 10.08.2026, Commit 59af0aa auf dem Auslieferungszweig. Die Kopien von Spezifikation, Projekttext und Konfigurationsvorlage sind entfernt statt aktualisiert — die Projektseite braucht keine davon, belegt: ihre Startdatei referenziert ausschliesslich eingebettete Inhalte und externe Adressen, keine einzige lokale Datei. Eine zweite Kopie zu pflegen war genau der Mechanismus, der den Auseinanderlauf erzeugt hat. Nachgeprüft nach dem Seitenaufbau: Startseite liefert weiterhin 200, die vier entfernten Adressen liefern 404. |
 | C-041 | FOREMAN | Fünfundsechzig gespiegelte Ereignisse trugen eine Kennung, unter der im Gedächtnis nichts lag. | ueberholt | Am selben Tag behoben: Die betroffenen Kennungen wurden zurückgesetzt und der Nachtrag ist gelaufen — sein Ergebnis steht als C-042. Der Eintrag bleibt stehen, weil er erklärt, warum eine Zeile mit gesetzter Kennung nicht ohne Weiteres als gespiegelt gelten darf. |
 | C-048 | FOREMAN | Die Ähnlichkeitsschwelle der Archiv-Suche war nie an echten Daten justiert; nach der Justierung findet die Suche deutlich mehr. | ueberholt | ÜBERHOLT am 28.08.2026 durch C-091. Der lokale Einbettungspfad laeuft seit diesem Tag auf Snowflake Arctic v2.0, und ein Abstand hat nur innerhalb EINES Vektorraums Bedeutung — der hier gemessene Wert 0,60 beschreibt einen anderen Raum. Gegen Arctic gehalten schnitt er so scharf, dass 6 von 10 Anfragen des Bewertungssatzes ohne einen einzigen zutreffenden Treffer blieben; neu erhoben wurden 0,75. Die Messung selbst bleibt richtig — sie beschreibt nur nicht mehr das System, das laeuft. Der allgemeine Befund in der Bemerkung gilt unveraendert weiter und hat sich sogar bestaetigt. |
+| C-050 | FOREMAN | Das Gedächtnis als vierte Archiv-Quelle erfüllt seine Freigabe-Bedingung im gegenwärtigen Zustand nicht. | ueberholt | UEBERHOLT AM 29.08.2026, nicht wegen eines Rechenfehlers, sondern weil ein Pfad geaendert wurde, der dieser Messung zugrunde lag. Die Gegenstelle hat am 29.08. offengelegt, dass ihr Lesepfad bis zum 27.08.2026 JEDE Anfrage OHNE das vom Einbettungsmodell verlangte Anfrage-Prefix eingebettet hat. Diese Messung lief am 24.08. — also drei Tage davor, mitten im Fehler. Bei der Gegenstelle selbst hob die Korrektur gepaart 42 auf 52 Treffer unter den ersten fuenf (McNemar p = 0,00635); fuer unseren Namensraum wurde sie nie nachgemessen. WAS DAMIT FAELLT, ist nicht die Zahl, sondern die ZUSCHREIBUNG. Der Eintrag sagt "Ursache ist der Inhalt der Erinnerungen, nicht das Verfahren". Genau das ist jetzt unbelegt: Ein Teil des schwachen Beitrags der vierten Quelle kann der Prefix-Fehler gewesen sein. Beides zugleich ist ebenfalls moeglich, und keines der beiden ist gemessen. WAS STEHEN BLEIBT: Die Aenderung, die dieser Eintrag ausgeloest hat — Alarm-Meldung und Wartungsbeschreibung in den gespiegelten Satz — war unabhaengig davon richtig; der Freitext traegt den Grund eines Degradationsverlaufs, und ohne ihn kann das Gedaechtnis ihn nicht kennen. Was fehlt, ist der BELEG dafuer, dass sie geholfen hat. Eine Neumessung ist ohnehin faellig: Der Neuspiegel-Lauf aendert jeden Satz, und Messungen davor und danach sind nicht vergleichbar. |
 | C-052 | FOREMAN | Ein Löschverlangen für die ins Gedächtnis gespiegelten Inhalte ist derzeit nicht erfüllbar. | ueberholt | Am 27.08.2026 eingelöst, nicht widerlegt: Die Gegenstelle führt seit dem einen löschenden Weg, und 22 Löschverlangen sind gegen die laufende Instanz durchgelaufen, jedes mit 200 OK und ohne einen Fehlschlag (C-072). Damit ist genau das Kriterium erfüllt, das dieser Eintrag selbst genannt hat — "erst erfüllt, wenn ein Löschverlangen tatsächlich durchläuft". Der Eintrag bleibt stehen, weil er die Lage beschreibt, in der die Plattform ihren Löschweg gebaut hat, bevor es ein Gegenstück gab. |
 | C-054 | FOREMAN | Im Gedächtnis liegen Erinnerungen zu Vorgängen, die es in der Datenbank nicht mehr gibt. | ueberholt | Am 27.08.2026 behoben, nicht widerlegt: Alle 22 verwaisten Spiegelungen wurden samt Erinnerung entfernt (C-068), ein zweiter Trockenlauf findet keine mehr. Die Zahl 22 hat sich dabei aus drei unabhängigen Richtungen bestätigt — Spiegelungen gegen Quellzeilen (32 zu 16 und 12 zu 6), die Prüfung des Werkzeugs selbst, und zwei getrennte Anlage-Stapel (0 gegen 22 gespeicherte Rückwege). Der Eintrag bleibt stehen, weil er die Lage beschreibt, gegen die das Werkzeug gebaut wurde. |
 | C-079 | FOREMAN | Die vierte Quelle verdrängt zutreffende Treffer aus der Ergebnisliste. | ueberholt | Der gemessene Pfad wurde geaendert. Die Fusion entdoppelt nicht mehr, sondern fuehrt denselben Vorgang aus mehreren Ranglisten auf einen Schluessel zusammen und summiert die Raenge (archive/search.py::_fusioniere, Commit 362a3a6). Damit gilt der hier beschriebene Mechanismus nicht mehr: Ein Gedaechtnis-Treffer, der auf eine bereits gefundene Zeile zeigt, verdraengt sie nicht, sondern hebt sie. Die ZAHLEN bleiben richtig fuer die damalige Fassung und werden nicht geloescht; sie beschreiben nur nicht mehr das laufende System. Eine Neumessung steht aus — bis dahin ist Freigabe-Bedingung 1 auf dem erweiterten Bestand UNGEMESSEN, nicht erfuellt. |
@@ -118,17 +120,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 100
+Einträge gesamt: 102
 
 Nach Status:
 
-- gemessen: 93
+- gemessen: 95
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 90
-- ueberholt: 10
+- gueltig: 91
+- ueberholt: 11
 - ungeprueft: 0

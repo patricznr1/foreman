@@ -45,6 +45,15 @@ _META_KEYS = ("metadata", "payload", "meta")
 # Schlüssel für die strukturierten Schwester-Bezüge (falls der Treffer sie trägt).
 _MACHINE_ID_KEYS = ("machine_id", "machineId")
 _MACHINE_CLASS_KEYS = ("machine_class", "machineClass")
+# Das BAUTEIL — die Brücke, die die Maschine nicht schlägt (29.08.2026).
+# Zwei Anlagen ganz verschiedener Bauart teilen ein Bauteil, und ein
+# Versagensmuster gehört dem Bauteil, nicht der Maschine: Ein Lagerschaden am
+# Roboter und einer an der Achse sind derselbe Fall, obwohl Maschinenklasse und
+# Alarmcode nichts gemein haben. Die Spiegelung führt beide Felder seit dem
+# Neuspiegel-Lauf in der Nutzlast; ohne diese Schlüssel fielen sie auf dem
+# Rückweg heraus, und die Brücke bliebe unbenutzbar, obwohl die Daten da sind.
+_COMPONENT_TYPE_KEYS = ("component_type", "componentType")
+_COMPONENT_LABEL_KEYS = ("component_label", "componentLabel")
 _EXPLANATION_ID_KEYS = ("explanation_id", "explanationId")
 _SOURCE_TYPE_KEYS = ("source_type", "sourceType")
 _SOURCE_ID_KEYS = ("source_id", "sourceId")
@@ -98,6 +107,13 @@ class RecallItem:
     ref: str | None = None
     machine_id: int | None = None
     machine_class: str | None = None
+    # Der GEGENSTAND unterhalb der Maschine. `component_label` benennt ihn
+    # („Achslager"), `component_type` ordnet ihn einer Klasse zu („bearing") —
+    # und nur die Klasse verbindet zwei Anlagen, die sonst nichts gemein haben.
+    # Beide bleiben `None`, wenn der Treffer sie nicht trägt: Eine Notiz führt
+    # kein Bauteil, und der Altbestand vor dem Neuspiegel-Lauf auch nicht.
+    component_type: str | None = None
+    component_label: str | None = None
     explanation_id: int | None = None
     # Rangierbarkeit gegen einen ArchiveHit (Freigabe-Bedingung 4): ohne Zeit und
     # Ähnlichkeitsmaß lässt sich ein Substrat-Treffer nicht neben einen Treffer aus
@@ -308,6 +324,8 @@ def _coerce_item(entry: Any) -> RecallItem | None:
             ref=ref,
             machine_id=_first_int(scopes, _MACHINE_ID_KEYS),
             machine_class=_first_str(scopes, _MACHINE_CLASS_KEYS),
+            component_type=_first_str(scopes, _COMPONENT_TYPE_KEYS),
+            component_label=_first_str(scopes, _COMPONENT_LABEL_KEYS),
             explanation_id=_first_int(scopes, _EXPLANATION_ID_KEYS),
             occurred_at=(
                 _first_datetime(scopes, _EREIGNISZEIT_KEYS)
