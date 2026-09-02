@@ -30,7 +30,14 @@ function renderHeader(role: Parameters<typeof machineRoleView>[0]) {
   const store = new RealtimeStore(transport);
   const utils = render(
     <RealtimeProvider store={store}>
-      <MachineHeader machine={machine} roleView={machineRoleView(role)} />
+      <MachineHeader
+        machine={machine}
+        roleView={machineRoleView(role)}
+        offen={null}
+        onToggle={() => {}}
+        vorhersageId="v"
+        kettenId="k"
+      />
     </RealtimeProvider>,
   );
   return { transport, ...utils };
@@ -40,12 +47,14 @@ describe("MachineHeader", () => {
   it("zeigt die Identität und für den Schichtleiter die Vorhersage-Anforderung", () => {
     renderHeader("shift_lead");
     expect(screen.getByRole("heading", { name: /CNC-Fräse 7/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Vorhersage/ })).toBeInTheDocument();
+    // Seit dem 02.09.2026 ein SCHALTER, kein Verweis: Die Vorhersage wird in
+    // der Maschinensicht eingeblendet statt weggeführt.
+    expect(screen.getByRole("button", { name: /Vorhersage/ })).toBeInTheDocument();
   });
 
   it("Werker: kein Vorhersage-Trigger im Kopf", () => {
     renderHeader("worker");
-    expect(screen.queryByRole("link", { name: /Vorhersage/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Vorhersage/ })).toBeNull();
   });
 
   it("zeigt den FCSM-Status groß, sobald das Live-Aggregat eintrifft", async () => {
