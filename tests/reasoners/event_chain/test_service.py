@@ -5,6 +5,7 @@
 # ============================================================
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
@@ -421,3 +422,55 @@ async def test_eigene_erinnerungen_bleiben_erhalten(
         f"richtig zu trennen. Schnappschuss: {record.siblings_snapshot}"
     )
     assert record.recall_used is True
+
+
+@pytest.mark.integration
+async def test_die_kette_schickt_eine_vorgangskennung_mit_dem_anker(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """Der Ketten-Abruf traegt die Nummer des ANKER-ALARMS.
+
+    Warum gegen den echten Dienst und nicht gegen die Abruf-Funktion: Zwischen
+    Aufrufstelle und Leitung liegen mehrere Stationen, und die Kennung wird an
+    der Aufrufstelle GEBAUT. Ein Test eine Ebene tiefer belegte nur, dass eine
+    mitgegebene Kennung durchgereicht wird — nicht, dass hier ueberhaupt eine
+    entsteht.
+
+    Der Anker ist der richtige Bezug: Er ist das, worauf sich der Abruf bezieht,
+    seine Nummer ist nicht personenbezogen, und die Anfrage selbst geht bewusst
+    NICHT hinein — sie kann Werker-Freitext enthalten.
+    """
+    machine, anchor, _ = await _seed(db_session)
+    # Der Lauf spricht das Substrat ZWEIMAL an: einmal fragend (recall) und am
+    # Ende spiegelnd (remember, Dual-Write der fertigen Kette). Nur der Abruf
+    # traegt eine Vorgangskennung — ohne die Trennung nach Pfad pruefte der Fall
+    # die falsche Anfrage und waere zufaellig rot oder gruen.
+    gesendet: list[tuple[str, dict[str, object]]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesendet.append((request.url.path, json.loads(request.content)))
+        return httpx.Response(200, json={"results": []})
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://substrate")
+    service = EventChainService(
+        sichtbare_maschinen=[machine.id],
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply="Kette rekonstruiert.")]),
+        substrate=SubstrateClient(base_url="http://substrate", client=http),
+    )
+    await service.reconstruct(anchor.id)
+
+    abrufe = [n for pfad, n in gesendet if "recall" in pfad]
+    assert len(abrufe) == 1, (
+        f"❌ Der Ketten-Lauf hat das Gedaechtnis nicht genau einmal befragt: "
+        f"{[p for p, _ in gesendet]}"
+    )
+    kennung = abrufe[0].get("correlation_id")
+    assert isinstance(kennung, str) and kennung.startswith(f"kette-{anchor.id}-"), (
+        f"❌ Die Kennung nennt den Anker-Alarm {anchor.id} nicht: {kennung!r}"
+    )
+    # Und die Anfrage selbst darf NICHT in der Kennung stehen — sie ist der Weg,
+    # auf dem Freitext versehentlich nach draussen ginge.
+    assert str(abrufe[0].get("query", "")) not in kennung

@@ -7,6 +7,7 @@
 # ============================================================
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 import httpx
@@ -441,3 +442,44 @@ def test_ohne_ereigniszeit_traegt_die_fassadenzeit() -> None:
     assert len(items) == 1
     assert items[0].occurred_at is not None
     assert items[0].occurred_at.date().isoformat() == "2026-08-25"
+
+
+# ------------------------------------------------------------
+#  Die Vorgangskennung wird durchgereicht, nicht hier gebaut
+# ------------------------------------------------------------
+async def test_recall_reicht_die_vorgangskennung_an_die_leitung_durch() -> None:
+    """Die Kennung gehoert dem Vorgang; diese Funktion reicht sie nur weiter.
+
+    Geprueft wird die gesendete Nutzlast: Zwischen Aufrufstelle und Klient liegt
+    genau diese Funktion, und ein hier verlorenes Schluesselwort faellt sonst
+    nirgends auf — der Abruf laeuft weiter, nur ohne Zuordnung.
+    """
+    gesendet: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesendet.append(json.loads(request.content))
+        return httpx.Response(200, json={"results": []})
+
+    substrate = _substrate(httpx.MockTransport(handler))
+    await recall_similar_incidents(substrate, "query", correlation_id="kette-93-abc")
+
+    assert gesendet[0]["correlation_id"] == "kette-93-abc"
+
+
+async def test_ohne_kennung_geht_das_feld_gar_nicht_hinaus() -> None:
+    """AUFBAU-KONTROLLE zum Fall darueber.
+
+    Die Gegenstelle weist unbekannte Felder mit 422 ab, und ein leeres Feld ist
+    kein Wert. Ohne diesen Fall waere nicht zu unterscheiden, ob die Kennung
+    durchgereicht wird oder ob immer irgendetwas mitgeht.
+    """
+    gesendet: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesendet.append(json.loads(request.content))
+        return httpx.Response(200, json={"results": []})
+
+    substrate = _substrate(httpx.MockTransport(handler))
+    await recall_similar_incidents(substrate, "query")
+
+    assert "correlation_id" not in gesendet[0]

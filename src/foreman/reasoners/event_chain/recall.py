@@ -400,25 +400,41 @@ async def recall_similar_incidents(
     query: str,
     *,
     max_results: int = 5,
+    correlation_id: str | None = None,
 ) -> list[RecallItem]:
     """Ruft ähnliche Vergangenheits-Vorfälle ab — STRIKT best-effort.
 
     Kein Substrat konfiguriert → leere Liste. Jeder Substrat-Fehler wird gefangen
     und führt zur leeren Liste (der Reasoner erzählt die Kette dann ohne
     Recall-Anteil). Es wird NIE eine Exception nach oben gereicht.
+
+    `correlation_id` reicht die Vorgangskennung an die Gegenstelle durch, die sie
+    in ihrem Abruf-Protokoll ablegt (siehe `substrate.vorgang`). Sie wird hier
+    NICHT gebaut: Die Kennung gehört dem Vorgang, und den kennt nur der Aufrufer —
+    diese Funktion sieht nur eine Zeichenkette und wüsste nicht, worauf sie sich
+    bezieht. Fehlt sie, bleibt der Abruf unverändert; der Vertrag der Gegenstelle
+    sieht sie als freiwillig vor.
     """
     if substrate is None:
         record_event_chain_recall(RECALL_NICHT_KONFIGURIERT)
         return []
     try:
-        data = await substrate.recall(query, max_results=max_results)
+        data = await substrate.recall(query, max_results=max_results, correlation_id=correlation_id)
         # Mapping INNERHALB des try: ein unerwartetes Recall-Format (z. B. kein dict)
         # darf den best-effort-Vertrag nicht brechen → wird hier mitgefangen.
         treffer = map_recall_response(data, max_results=max_results)
     except Exception as exc:
         # Bewusst breit (best-effort): JEDER Recall-Fehler → kein Recall, nie Abbruch.
         record_event_chain_recall(RECALL_FEHLER)
-        logger.warning("%s NEXUS-Recall fehlgeschlagen (best-effort, ohne Recall): %s", REASON, exc)
+        # Die Kennung gehört in die Meldung: Sie ist der einzige Weg, diesen
+        # Fehlschlag mit der Zeile im fremden Abruf-Protokoll zu verbinden. Eine
+        # Störmeldung ohne sie zeigt, DASS etwas ausfiel, nicht WELCHER Abruf.
+        logger.warning(
+            "%s NEXUS-Recall fehlgeschlagen (best-effort, ohne Recall) vorgang=%s: %s",
+            REASON,
+            correlation_id or "ohne",
+            exc,
+        )
         return []
     # Erst NACH dem try zählen: ein Fehler im Zähler selbst würde sonst als
     # Recall-Fehler verbucht und die Quote verfälschen.
