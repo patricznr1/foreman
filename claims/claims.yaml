@@ -3405,6 +3405,12 @@ claims:
     freigabe:
       - "intern"
       - "fach"
+    bemerkung: >-
+      UNTER WELCHEN BEDINGUNGEN die Zahl entstand, sagt C-117: Der Wissensgraph
+      der Gegenstelle fuehrt dieselbe Maschine mehrfach, und ihre Nachbarsuche
+      ist in der Produktion eingeschaltet — der Abruf lief also gegen einen
+      zersplitterten Graphen. Die Messung bleibt gueltig, sie misst das
+      ausgelieferte System. Nach der Behebung drueben ist sie zu wiederholen.
 
   - id: "C-113"
     aussage: "Die vierte Quelle erfuellt die zweite Freigabe-Bedingung deutlich und verfehlt die erste auf einer einzigen Anfrage."
@@ -3472,3 +3478,91 @@ claims:
       Trennung von "nicht gefunden" und "abgewiesen" — benannt, nicht gebaut.
       Die Kennung C-114 laesst bewusst eine Luecke: C-109 bis C-113 sind auf
       einem noch offenen Zweig vergeben.
+
+  - id: "C-115"
+    aussage: "Die Anlagenbezug-Metadaten jeder Spiegelung werden von der Gegenstelle abgelegt und unveraendert zurueckgegeben, aber von keinem ihrer Pfade gelesen."
+    status: "gemessen"
+    wert: "0 Treffer fuer die vier Anlagenbezug-Schluessel im gesamten NEXUS-Quellbaum; entry_metadata wird weder von der Suche noch vom Ranking noch vom Graphaufbau gelesen"
+    bedingung: >-
+      FREMDERHEBUNG. Gemessen hat die Gegenstelle, am NEXUS-Quellbaum
+      (Substrat-Befund FOREMAN, 02.09.2026, 8 Erheber / 6 Gegenpruefungen). WIR
+      HABEN DAS NICHT NACHGEPRUEFT und koennen es nicht — auf den NEXUS-Quellbaum
+      haben wir keinen Lesezugriff. Was wir SELBST geprueft haben, ist die
+      FOREMAN-Seite: `ingestion/semantic.py::bezugsfelder` sendet die vier Felder
+      bei jeder Spiegelung, immer alle, auch leer.
+      WAS DARAUS FOLGT: Die aufwendigste Sorgfalt auf unserer Seite zahlt sich
+      heute an keiner Stelle aus. Der SATZ ist der einzige Kanal in den Graphen —
+      was die Gestaltungsregel aus C-104 bestaetigt (konkrete Kennungen in den
+      Satz, Klassenwoerter in die Metadaten).
+      WAS NICHT FOLGT: dass die Felder nutzlos waeren. Sie sind die Vorbedingung
+      fuer den von der Gegenstelle vorgeschlagenen Schritt, entry_metadata
+      wirksam zu machen (JSONB + Index + Filterfeld im Abruf-Vertrag). Wir senden
+      sie deshalb weiter — sie kosten nichts —, bauen aber nichts Neues darauf,
+      solange sie unwirksam sind.
+    datum: "2026-09-02"
+    fundstelle:
+      - "Substrat-Befund FOREMAN (Artifact d36944c5), Abschnitt Vorweg, Befund 1"
+      - "src/foreman/ingestion/semantic.py::bezugsfelder (eigene Seite, selbst geprueft)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-116"
+    aussage: "Der Wissensgraph der Gegenstelle ist fuer den FOREMAN-Namensraum vollstaendig gebaut, und die Kausalkette darin stammt ausschliesslich aus unseren gespiegelten Saetzen."
+    status: "gemessen"
+    wert: "388 von 388 Eintraegen verarbeitet; 675 Knoten, 3.987 Fakten ueber 23 Praedikate, davon 2.767 abgeleitet. `verursacht`: 251 Fakten, davon 0 abgeleitet. `istTeilVon` + `enthaelt`: 74 % aller Fakten"
+    bedingung: >-
+      FREMDERHEBUNG gegen die LAUFENDE Anlage (Datenbankabfragen, nicht
+      Codelektuere), Nachtrag zum Substrat-Befund vom 02.09.2026. Von uns nicht
+      nachpruefbar. Anlass war unsere Frage, ob der Graph fuer unseren
+      Namensraum je gebaut wurde — die Sorge einer leeren Menge ist damit
+      ausgeraeumt: `NEXUS_KG_BACKEND` steht in der Produktion auf `cloud`, nicht
+      auf der Code-Vorgabe `local`.
+      DER TRAGENDE TEIL: `verursacht` traegt 251 Fakten und KEINEN einzigen
+      abgeleiteten. Die Kausalkette im Graphen kommt also vollstaendig aus dem,
+      was FOREMAN als SATZ hinueberschickt — nicht aus einem Schluss der
+      Gegenstelle. Das ist der direkte Beleg fuer den Neuspiegel-Lauf (C-104)
+      und dafuer, dass der Satz der einzige Kanal ist (C-115).
+      WAS ES NICHT BELEGT: dass die Fakten RICHTIG sind. Gezaehlt ist ihre
+      Herkunft, nicht ihre Guete.
+    datum: "2026-09-02"
+    fundstelle:
+      - "Substrat-Befund FOREMAN (Artifact d36944c5), Nachtrag zu Frage 2"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-117"
+    aussage: "Dieselbe Maschine liegt im Wissensgraphen mehrfach, und das wirkt bereits heute auf unsere Abruf-Ergebnisse."
+    status: "gemessen"
+    wert: "PR-01 siebenfach (Concept, Person, Infrastructure, Product, Tool, Activity, Project); 47 von 595 Dingen mehrfach gefuehrt (7,9 %) — betroffen sind ausgerechnet die Maschinen. Eine Graph-Anfrage sieht je nach Einstiegsknoten 3 % bis 65 % des ueber PR-01 Bekannten"
+    bedingung: >-
+      FREMDERHEBUNG gegen die laufende Anlage (02.09.2026). URSACHE liegt
+      vollstaendig bei der Gegenstelle: Der Typ steckt in der Knoten-Kennung
+      (`/inst/<nutzer>/<typ>/<name>`), weshalb ihr Upsert den bestehenden Knoten
+      gar nicht findet und einen neuen anlegt. Dort als C-184 eingetragen.
+      DASS ES UNS TRIFFT, haengt an einem zweiten Produktionswert:
+      `NEXUS_GRAPH_EXPANSION_ENABLED` steht auf `true`, abweichend von der
+      Code-Vorgabe `false`. Abgeleitete Fakten erscheinen zwar nie als eigener
+      Treffer, wirken aber als Bruecke in der rekursiven Suche — die Zersplitterung
+      veraendert damit die Treffermenge, die wir bekommen.
+      FOLGE FUER UNSERE MESSUNGEN: C-105 bis C-113 sind unter GENAU DIESEN
+      Bedingungen erhoben. Sie bleiben gueltig — sie messen das ausgelieferte
+      System, und das ist die Frage, die sie stellen. Aber sie sind VOR der
+      Behebung erhoben. Nach ihr ist neu zu messen, und in welche Richtung sich
+      die Zahlen bewegen, ist offen: Ein zusammengefuehrter Knoten kann mehr
+      Bruecken bieten oder weniger Streuung.
+    datum: "2026-09-02"
+    fundstelle:
+      - "Substrat-Befund FOREMAN (Artifact d36944c5), Nachtrag zu Frage 3"
+      - "claims/claims.yaml, C-105 bis C-113"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      NEBENBEFUND OHNE VORFALL, aber pruefenswert: Neun Knoten sind als `Person`
+      typisiert — `person/pr-01`, `person/rb-01`, `person/fd-02`, `person/vs-01`
+      und drei Varianten von "Kollege". Es sind Maschinenkennungen, kein
+      Klarname, und alle neun tragen null Fakten. Die Maskierung auf unserer
+      Seite hat also gehalten; die Fehltypisierung ist dieselbe Ursache wie oben.
