@@ -38,7 +38,8 @@ export function RelationView({ relations }: RelationViewProps) {
         </ul>
       )}
       <p className="border-t border-line-subtle pt-2 text-caption text-fg-muted">
-        Verknüpfung über Maschinenklasse (Schwestermaschinen) und gemeinsame Ursache folgt.
+        Verknüpfung über Schwestermaschinen und gemeinsame Ursache folgt — ein
+        Auflösungsfeld führt das Gedächtnis nicht.
       </p>
     </aside>
   );

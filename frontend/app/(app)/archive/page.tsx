@@ -13,11 +13,18 @@ import { requireSection } from "@/lib/auth/guard";
 export default async function ArchivePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[] }>;
+  searchParams: Promise<{ q?: string | string[]; quelle?: string | string[] }>;
 }) {
   const user = await requireSection("H");
   const params = await searchParams;
   const raw = params.q;
   const query = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
-  return <MemoryView user={user} initialQuery={query} />;
+  // ?quelle=gedaechtnis — der Navigationseintrag "Hatten wir das schon mal" fragt
+  // dieselbe Sektion, aber nur die vierte Quelle. Ein unbekannter Wert faellt still
+  // auf die Vollsuche zurueck; die Seite darf an einem Adressparameter nicht scheitern.
+  const rohQuelle = params.quelle;
+  const quelle = typeof rohQuelle === "string" ? rohQuelle : rohQuelle?.[0];
+  return (
+    <MemoryView user={user} initialQuery={query} focusMemory={quelle === "gedaechtnis"} />
+  );
 }

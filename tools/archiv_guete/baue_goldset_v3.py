@@ -57,25 +57,34 @@ def lies_urteile() -> dict[str, dict[str, int]]:
     je_anfrage: dict[str, dict[str, int]] = {}
     herkunft: dict[tuple[str, str], str] = {}
     for datei in URTEILSDATEIEN:
-        for wort in datei.read_text(encoding="utf-8").split():
-            treffer = _URTEIL.match(wort)
-            if not treffer:
-                raise SystemExit(f"❌ Unverstaendliches Urteil: {wort!r} in {datei.name}")
-            anfrage = treffer["anfrage"]
-            kuerzel = treffer["kuerzel"]
-            stufe = int(treffer["stufe"])
-            bisher = je_anfrage.setdefault(anfrage, {})
-            if kuerzel in bisher and bisher[kuerzel] != stufe:
-                # Ueber mehrere Dateien hinweg ist das der wichtige Fall: Dasselbe
-                # Paar zweimal verschieden beurteilt. Raten waere hier das
-                # Schlimmste — die Auswahl entschiede der Zufall der Dateinamen.
-                raise SystemExit(
-                    f"❌ Widersprechende Urteile zu {anfrage}-{kuerzel}: "
-                    f"{bisher[kuerzel]} ({herkunft[(anfrage, kuerzel)]}) und "
-                    f"{stufe} ({datei.name}). Von Hand klaeren, nicht raten."
-                )
-            bisher[kuerzel] = stufe
-            herkunft[(anfrage, kuerzel)] = datei.name
+        for zeile in datei.read_text(encoding="utf-8").splitlines():
+            # Kommentarzeilen ueberspringen. DER BOGEN VERSPRICHT DAS: Er traegt
+            # zu jedem Paar den Auszug als '#'-Zeile und sagt dem Beurteiler, sie
+            # bleibe stehen. Ohne diese Zeile bricht der Einlesevorgang am ersten
+            # Auszug ab — und der ausgefuellte Bogen muesste von Hand gesaeubert
+            # werden, was die Auszuege verloere. Genau sie machen ein Urteil aber
+            # nachtraeglich pruefbar: Sie zeigen, WAS dem Beurteiler vorlag.
+            if zeile.lstrip().startswith("#"):
+                continue
+            for wort in zeile.split():
+                treffer = _URTEIL.match(wort)
+                if not treffer:
+                    raise SystemExit(f"❌ Unverstaendliches Urteil: {wort!r} in {datei.name}")
+                anfrage = treffer["anfrage"]
+                kuerzel = treffer["kuerzel"]
+                stufe = int(treffer["stufe"])
+                bisher = je_anfrage.setdefault(anfrage, {})
+                if kuerzel in bisher and bisher[kuerzel] != stufe:
+                    # Ueber mehrere Dateien hinweg ist das der wichtige Fall: Dasselbe
+                    # Paar zweimal verschieden beurteilt. Raten waere hier das
+                    # Schlimmste — die Auswahl entschiede der Zufall der Dateinamen.
+                    raise SystemExit(
+                        f"❌ Widersprechende Urteile zu {anfrage}-{kuerzel}: "
+                        f"{bisher[kuerzel]} ({herkunft[(anfrage, kuerzel)]}) und "
+                        f"{stufe} ({datei.name}). Von Hand klaeren, nicht raten."
+                    )
+                bisher[kuerzel] = stufe
+                herkunft[(anfrage, kuerzel)] = datei.name
     return je_anfrage
 
 

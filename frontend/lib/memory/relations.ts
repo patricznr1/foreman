@@ -3,11 +3,15 @@
 //  Zweck: Die VERKNÜPFUNG zwischen Treffern (Studie §4H Verknüpfungslogik) —
 //         kompakt, kein Graph. Es werden NUR Beziehungen abgeleitet, die aus
 //         realen Feldern faktisch folgen: gleiche Maschine, gleiche Schicht,
-//         zeitliche Nähe (Treffer dicht beieinander auf der Zeitachse). Die
-//         klassen-/wurzelursachen-basierte Verknüpfung der Studie ist reserviert
-//         (das Gedächtnis liefert weder Maschinenklasse noch Auflösung) — sie wird
-//         NICHT erfunden, sondern im UI als folgt markiert. Jede Begründung ist
-//         faktisch, kein erfundener Ähnlichkeitssatz.
+//         zeitliche Nähe (Treffer dicht beieinander auf der Zeitachse) und seit dem
+//         02.09.2026 GLEICHES BAUTEIL. Letztere ist die tragende Verknüpfung des
+//         Gedächtnisses: Sie verbindet Maschinen verschiedener Bauart über ein
+//         geteiltes Bauteil — ein Zusammenhang, den keine der drei anderen
+//         Beziehungen findet. Möglich wurde sie, weil die Spiegelung seit dem
+//         28.08.2026 `bauteilart`/`bauteil` mitschickt.
+//         Die WURZELURSACHEN-basierte Verknüpfung bleibt reserviert (es gibt kein
+//         Auflösungsfeld) — sie wird NICHT erfunden. Jede Begründung ist faktisch,
+//         kein erfundener Ähnlichkeitssatz.
 //  Architektur-Einordnung: View-State (Schicht 2). Reine Funktion.
 // ============================================================
 import type { MemoryHit, MemoryRelation, RelationType } from "./types";
@@ -100,6 +104,26 @@ export function deriveRelations(hits: MemoryHit[]): MemoryRelation[] {
     }
   }
 
+  // GLEICHES BAUTEIL an VERSCHIEDENEN Maschinen. Die zweite Bedingung ist tragend:
+  // Liegen alle Treffer an derselben Maschine, sagt diese Beziehung nichts, was
+  // `same_machine` nicht schon sagt — sie stuende nur doppelt da und liesse die
+  // Verknuepfungs-Ansicht reicher aussehen, als sie ist. Der Erkenntniswert liegt
+  // GERADE im Sprung ueber die Maschinengrenze.
+  for (const group of groupBy(hits, (h) =>
+    h.componentType?.trim() ? `c:${h.componentType.trim()}` : null,
+  ).values()) {
+    const first = group[0];
+    const maschinen = new Set(group.map((h) => h.machineId).filter((id) => id !== null));
+    if (group.length >= 2 && first !== undefined && maschinen.size >= 2) {
+      const bezeichnung = first.componentLabel?.trim() || first.componentType?.trim();
+      relations.push({
+        type: "same_component",
+        hitIds: ids(group),
+        reason: `${group.length} Hinweise am selben Bauteil (${bezeichnung}) an ${maschinen.size} Maschinen`,
+      });
+    }
+  }
+
   for (const group of temporalGroups(hits)) {
     if (group.length >= 2) {
       relations.push({
@@ -115,6 +139,7 @@ export function deriveRelations(hits: MemoryHit[]): MemoryRelation[] {
 
 /** UI-Label je Beziehungstyp (Hallensprache, farbunabhängig durch Wort + Anordnung). */
 export const RELATION_LABEL: Record<RelationType, string> = {
+  same_component: "Gleiches Bauteil",
   same_machine: "Gleiche Maschine",
   same_shift: "Gleiche Schicht",
   temporal: "Zeitliche Nähe",
