@@ -388,3 +388,65 @@ async def test_halber_rueckweg_wird_nicht_ausgeliefert(unvollstaendig: dict[str,
 # es keine Frage der Substrat-Veredelung mehr, sondern der Fusion ueber alle
 # vier Quellen — jede frueher hier stehende Zusicherung steht dort in ihrer
 # neuen Form, eine davon mit geaendertem Ergebnis.
+
+
+# ------------------------------------------------------------
+#  Die Vorgangskennung auf der Leitung
+# ------------------------------------------------------------
+async def test_die_archiv_suche_schickt_eine_vorgangskennung_mit() -> None:
+    """DER TRAGENDE FALL: Sie muss WIRKLICH ueber die Leitung gehen.
+
+    Geprueft wird die gesendete Nutzlast, nicht ein Aufruf: Die Kennung koennte
+    an jeder Station zwischen Aufrufstelle und Klient verloren gehen, und nichts
+    davon wuerde auffallen — der Abruf laeuft weiter, nur die Zuordnung im
+    fremden Protokoll fehlt.
+    """
+    gesendet: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesendet.append(json.loads(request.content))
+        return httpx.Response(200, json={"results": []})
+
+    await _nur_gedaechtnis(_client(handler), machine_id=3)
+
+    assert len(gesendet) == 1
+    kennung = gesendet[0].get("correlation_id")
+    assert isinstance(kennung, str) and kennung, (
+        "❌ Der Archiv-Abruf schickt keine Vorgangskennung — die Gegenstelle kann "
+        "ihren Protokolleintrag dann keinem FOREMAN-Vorgang zuordnen."
+    )
+    assert kennung.startswith("archiv-3-"), (
+        f"❌ Die Kennung nennt weder den Vorgang noch die Maschine: {kennung!r}"
+    )
+
+
+async def test_zwei_suchen_tragen_verschiedene_kennungen() -> None:
+    """Sonst faenden beide Abrufe dieselbe Zeile im fremden Protokoll."""
+    gesendet: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesendet.append(json.loads(request.content))
+        return httpx.Response(200, json={"results": []})
+
+    await _nur_gedaechtnis(_client(handler))
+    await _nur_gedaechtnis(_client(handler))
+
+    assert len(gesendet) == 2
+    assert gesendet[0]["correlation_id"] != gesendet[1]["correlation_id"]
+
+
+async def test_ohne_maschinenfilter_steht_alle_in_der_kennung() -> None:
+    """AUFBAU-KONTROLLE: Der Bezug faellt nicht einfach weg.
+
+    Ohne diesen Fall bliebe der Test darueber auch dann gruen, wenn die Kennung
+    den Bezug NUR bei gesetztem Filter traegt — und die Suche ueber alle
+    Maschinen ist der haeufigere Fall.
+    """
+    gesendet: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesendet.append(json.loads(request.content))
+        return httpx.Response(200, json={"results": []})
+
+    await _nur_gedaechtnis(_client(handler))
+    assert gesendet[0]["correlation_id"].startswith("archiv-alle-")

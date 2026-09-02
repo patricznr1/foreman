@@ -68,6 +68,7 @@ from foreman.reasoners.event_chain.schema import (
     SiblingReference,
 )
 from foreman.substrate.client import SubstrateClient
+from foreman.substrate.vorgang import vorgangskennung
 
 logger = get_logger("foreman.reasoners.event_chain")
 
@@ -249,11 +250,15 @@ class EventChainService:
             if anchor.component_id is not None
             else None
         )
+        # Die Vorgangskennung traegt den ANKER-ALARM: Er ist das, worauf sich
+        # dieser Abruf bezieht, und die Nummer ist nicht personenbezogen. Die
+        # Anfrage selbst geht NICHT hinein — sie kann Werker-Freitext enthalten.
         recall_items = nur_sichtbare_treffer(
             await recall_similar_incidents(
                 self.substrate,
                 build_recall_query(anchor, machine, component),
                 max_results=self.recall_max_results,
+                correlation_id=vorgangskennung("kette", bezug=anchor.id),
             ),
             self.sichtbare_maschinen,
         )

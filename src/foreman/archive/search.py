@@ -48,6 +48,7 @@ from foreman.reasoners.event_chain.recall import (
     recall_similar_incidents,
 )
 from foreman.substrate.client import SubstrateClient
+from foreman.substrate.vorgang import vorgangskennung
 
 # Alle Archiv-Quellen — Default-Suchraum, wenn `sources` nicht gesetzt ist.
 ALL_SOURCES: tuple[SourceType, ...] = ("note", "maintenance", "alarm", "memory")
@@ -314,7 +315,12 @@ async def _substrat_treffer(
     """
     if substrate is None or k <= 0:
         return []
-    items = await recall_similar_incidents(substrate, q, max_results=k)
+    # Die Vorgangskennung traegt die MASCHINE, wenn eine gefiltert wird, sonst
+    # "alle". Die Suchanfrage geht NICHT hinein: Sie ist Werker-Eingabe und kann
+    # alles enthalten — die Kennung landet im Protokoll eines fremden Dienstes.
+    items = await recall_similar_incidents(
+        substrate, q, max_results=k, correlation_id=vorgangskennung("archiv", bezug=machine_id)
+    )
 
     # Der Rollen-Ausschnitt liegt in `nur_sichtbare_treffer` — EINE Quelle fuer alle
     # drei Stellen, die das Gedaechtnis befragen. Die Begruendung fuer die strenge
