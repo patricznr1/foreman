@@ -67,10 +67,20 @@ export function PredictionPanel({
   machineId,
   roleView,
   label,
+  heading,
 }: {
   machineId: number;
   roleView: PredictionRoleView;
   label: string;
+  /**
+   * Sichtbare Überschrift. Vorgabe: `label` (die Maschine) — in Sektion E ist das
+   * richtig, dort IST die Maschine der Gegenstand. Eingebettet in die
+   * Maschinensicht ist sie es nicht mehr: Dort stünde der Maschinenname zweimal
+   * untereinander, und der Leser sucht den Unterschied. Das `aria-label` bleibt
+   * unberührt bei `label` — es muss die Sicht eindeutig benennen, auch wenn
+   * mehrere davon auf einer Seite stehen.
+   */
+  heading?: string;
 }) {
   const online = useOnline();
   const { phase, trigger, busy, versuch } = usePrediction({ machineId, autoload: true });
@@ -148,7 +158,7 @@ export function PredictionPanel({
   return (
     <section className="flex flex-col gap-4" aria-label={`Ausfallvorhersage — ${label}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-h2 text-fg-primary">{label}</h2>
+        <h2 className="text-h2 text-fg-primary">{heading ?? label}</h2>
         {roleView.canTrigger ? (
           <TriggerButton
             label="Vorhersage anfordern"

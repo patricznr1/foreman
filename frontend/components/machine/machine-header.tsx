@@ -18,14 +18,31 @@ import { useTopicState } from "@/lib/state/use-topic";
 import { FiveState } from "@/lib/ui/five-states";
 import { MACHINE_STATUS_LABEL, MACHINE_STATUS_TO_FCSM } from "@/lib/ui/wording";
 
-import { MachineCrossLinks } from "./machine-cross-links";
+import { type MachineEinblendung, MachineCrossLinks } from "./machine-cross-links";
 
 export interface MachineHeaderProps {
   machine: MachineRead;
   roleView: MachineRoleView;
+  /**
+   * Die eingeblendete Sicht und ihr Schalter — DURCHGEREICHT, nicht hier
+   * gehalten: Die eingeblendeten Bereiche stehen unterhalb des Kopfes, also
+   * gehört ihr Zustand dorthin, wo beide sichtbar sind. Läge er hier, müsste
+   * die Sicht ihn aus dem Kopf herausreichen — dieselbe Kopplung, nur rückwärts.
+   */
+  offen: MachineEinblendung;
+  onToggle: (was: Exclude<MachineEinblendung, null>) => void;
+  vorhersageId: string;
+  kettenId: string;
 }
 
-export function MachineHeader({ machine, roleView }: MachineHeaderProps) {
+export function MachineHeader({
+  machine,
+  roleView,
+  offen,
+  onToggle,
+  vorhersageId,
+  kettenId,
+}: MachineHeaderProps) {
   const store = useRealtimeStore();
   // Das machine:{id}-Thema trägt die ganze lebende Karte (MachineCardOut); der Kopf
   // liest daraus nur den Status-/Alarm-Teil (Superset des früheren MachineStatusOut).
@@ -69,6 +86,10 @@ export function MachineHeader({ machine, roleView }: MachineHeaderProps) {
         machineId={machine.id}
         canCaptureNote={roleView.canCaptureNote}
         canRequestPrediction={roleView.canRequestPrediction}
+        offen={offen}
+        onToggle={onToggle}
+        vorhersageId={vorhersageId}
+        kettenId={kettenId}
       />
     </header>
   );

@@ -10,16 +10,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ResultWithProvenance } from "@/components/ondemand";
 import type { CurrentUser } from "@/lib/api/contracts";
 import { type ChainRoleView, chainRoleView } from "@/lib/event-chains/roles";
-import { useChainDetail } from "@/lib/event-chains/use-saved-chains";
-import { ASSEMBLE_FAILURE_TEXT, assembleChainCard } from "@/lib/event-chains/view-model";
-import { FiveState } from "@/lib/ui/five-states";
 import { ChainTriggerPanel } from "./chain-trigger-panel";
 import { ChainsAggregate } from "./chains-aggregate";
-import { SavedChainsList } from "./saved-chains-list";
-import { TimelineNarrative } from "./timeline-narrative";
+import { SavedChainsBrowser } from "./saved-chains-browser";
 
 export interface ChainsViewProps {
   user: CurrentUser;
@@ -69,7 +64,6 @@ function ChainsSingle({
   useEffect(() => {
     setSelectedId(initialExplanationId);
   }, [initialExplanationId]);
-  const detail = useChainDetail(selectedId);
 
   return (
     <section className="flex flex-col gap-5" aria-label="Ereignisketten">
@@ -94,49 +88,12 @@ function ChainsSingle({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,20rem)_1fr]">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-h2 text-fg-primary">Gespeicherte Ketten</h2>
-          <SavedChainsList machineId={machineId} selectedId={selectedId} onOpen={setSelectedId} />
-        </div>
-        <div className="min-w-0">
-          <FiveState
-            state={detail}
-            label="Kette"
-            empty={
-              <div role="status" className="rounded-lg border border-line-subtle bg-surface-raised p-4 text-body text-fg-muted">
-                Wähle links eine gespeicherte Kette, um sie zu öffnen.
-              </div>
-            }
-          >
-            {(data, freshness) => {
-              const result = assembleChainCard(data);
-              if (!result.ok) {
-                return (
-                  <div role="alert" className="rounded-lg border border-line-subtle bg-surface-raised p-4 text-body text-note-caveat">
-                    {ASSEMBLE_FAILURE_TEXT[result.reason]}
-                  </div>
-                );
-              }
-              const { card } = result;
-              const basis = card.recallUsed
-                ? "Datenbasis: belegte Ereignisse + ähnliche Vergangenheitsfälle"
-                : "Datenbasis: belegte Ereignisse";
-              return (
-                <ResultWithProvenance
-                  freshness={freshness}
-                  stampedAt={card.stampedAt}
-                  aiGenerated
-                  caveat={card.isHypothesis}
-                  basis={basis}
-                >
-                  <TimelineNarrative card={card} canPin={roleView.canPin} onOpenSibling={setSelectedId} />
-                </ResultWithProvenance>
-              );
-            }}
-          </FiveState>
-        </div>
-      </div>
+      <SavedChainsBrowser
+        machineId={machineId}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        canPin={roleView.canPin}
+      />
     </section>
   );
 }
