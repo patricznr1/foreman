@@ -30,6 +30,7 @@ Quelle dadurch ändert.
 2. **Freigabe-Bedingung 1 bleibt verfehlt.** Zwei Anfragen verlieren zutreffende Treffer:
    B07 (`note:185`) und B09 (`note:71`, `note:108`) — **dieselben zwei wie am 28.08.**
    Die zweite Bedingung ist mit 50 % erfüllt (Schwelle 30 %; am 28.08. waren es 60 %).
+   **Nachtrag (siehe Abschnitt 6): Alle drei verdrängenden Treffer sind unbeurteilt.**
 3. **Das Gedächtnis liefert 18 % der Plätze exklusiv.** Von 125 ausgelieferten Plätzen
    werden 50 (40 %) auch vom Gedächtnis gefunden, **22 (18 %) ausschließlich** von ihm.
    Zahlengleich zur Vormessung.
@@ -170,3 +171,54 @@ die Güte **nicht** bewegt.
   ausgelieferten Plätze exklusiv bei und liefert auf der Hälfte der Anfragen einen
   zusätzlichen zutreffenden Treffer." Beides ist ausgezählt und reproduziert.
   **Nicht** taugt: „Sie verbessert die Suche" — das ist bei n = 10 nicht gezeigt.
+
+---
+
+## 6. Nachtrag vom 02.09.2026 — woran die verfehlte Bedingung gemessen ist
+
+Der Bericht nennt in Abschnitt 5 die Verdrängung als Ansatzpunkt. Eine Nachprüfung der
+Rohdaten zeigt, dass sie **so noch nicht beurteilbar ist** — und warum Bedingung 1 auf
+dem heutigen Bewertungssatz durch keine Verbesserung erfüllt werden kann.
+
+**Die drei Verdränger hat nie jemand angesehen** (C-110). Sie stehen weder in
+`goldset_v3.json` noch in `beurteilt_v3.json` — auch nicht mit der Stufe 0:
+
+| Anfrage | verliert | Rang (Basis) | an | Rang (mit Gedächtnis) | Urteil |
+|---|---|---|---|---|---|
+| B07 | `note:185` (Stufe 1) | 15 | `maintenance:37` | 6 | **nie beurteilt** |
+| B09 | `note:71` (Stufe 2) | 14 | `maintenance:137` | 4 | **nie beurteilt** |
+| B09 | `note:108` (Stufe 1) | 15 | `note:195` | 5 | **nie beurteilt** |
+
+Alle drei Verdränger tragen einen intakten Rückweg und landen weit **vor** den Plätzen, die
+sie verdrängen. Es ist der Schnitt bei k = 15, der die Notizen herausnimmt — keine
+Fehlfunktion der Fusion. Ob dabei etwas verloren geht, hängt allein daran, ob die drei
+neuen Treffer zutreffen. Der Maßstab wertet sie als nicht zutreffend, **weil sie fehlen**,
+nicht weil jemand sie geprüft und verworfen hätte.
+
+**Das ist kein Einzelfall, sondern die Bauart des Maßstabs** (C-109):
+
+| Herkunft eines ausgelieferten Platzes | beurteilt | davon zutreffend |
+|---|---|---|
+| nur vom Gedächtnis gefunden | **8 von 22 (36 %)** | 7 von 8 |
+| von einer eigenen Quelle gefunden | 100 von 103 (97 %) | 60 von 100 |
+
+61 Prozentpunkte Abstand. Das ist die Pool-Verzerrung, die `baue_goldset_v3.py` im Kopf
+zitiert (Buettcher et al., SIGIR 2007) — hier ausgezählt statt vermutet, mit
+`tools/archiv_guete/pool_verzerrung.py`. Die Zahl der unbeurteilten Plätze stimmt mit
+Grenze 2 dieses Berichts überein (17 im Gedächtnis-Arm, 5 in der Basis); die beiden
+Rechnungen sind unabhängig entstanden.
+
+**Der Kreisschluss:** Jeder Treffer, den nur die vierte Quelle findet, ist per Bauart
+nicht im Pool — also unbeurteilt — also gewertet wie ein Fehltreffer, und er verdrängt
+einen beurteilten. Je besser die vierte Quelle wird, desto sicherer verfehlt sie
+Bedingung 1.
+
+**Was daraus folgt — statt Abschnitt 5, Punkt 1:** Nicht die Verdrängung angehen, sondern
+zuerst den Pool schließen. Der Bogen dafür ist erzeugt und enthält **13 Paare über sieben
+Anfragen**: `tools/archiv_guete/gegenprobe/urteilsbogen_offen.txt`. Erst danach ist die
+Frage entscheidbar, ob die vierte Quelle etwas verdrängt oder etwas Besseres einsetzt.
+
+**Was dieser Nachtrag NICHT belegt:** dass die 14 unbeurteilten Treffer zutreffend wären.
+Dass 7 der 8 bereits beurteilten es sind, ist ein Hinweis und keine Schätzung für die
+übrigen. Die Kennzahlen des Berichts bleiben, wie sie stehen — der Nachtrag sagt nur, was
+sie messen.

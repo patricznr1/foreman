@@ -9,201 +9,56 @@
 # AUSFUELLEN: das ? hinter dem = durch 0, 1 oder 2 ersetzen.
 # Die Zeilen mit '#' bleiben stehen, sie werden beim Einlesen ignoriert.
 #
-# 81 Paare ueber 10 Anfragen.
+# 13 Paare ueber 7 Anfragen.
 #
-# NICHT IM BOGEN: 14 Paare ueber 9 Eintraege
+# NICHT IM BOGEN: 6 Paare ueber 6 Eintraege
 # ohne Vorgangskuerzel in goldset_v2_zuordnung.json. Die Zuordnung beginnt erst
 # bei note:16 (SN-001); diese Eintraege fuehrt das Bewertungsmaterial
 # gar nicht, sie sind damit nicht beurteilbar:
+#   maintenance:10
 #   note:1
 #   note:10
-#   note:12
-#   note:3
 #   note:5
 #   note:6
 #   note:7
-#   note:8
-#   note:9
 
 
 ## B01 — "Undichtigkeit an Achse"
-#   [note] AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende.
-B01-SN-025=?
-#   [note] AX-04 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B01-SN-061=?
-#   [note] AX-01 macht beim Verfahren ein Geräusch, klingt erst mal nach Führung. Beim genauen Hinsehen schleift die Energiekette am Blech.
-B01-SN-066=?
-#   [note] AX-04 verschleppt die Position beim Richtungswechsel. Wenn sie durchfährt ohne Halt, passt es.
-B01-SN-101=?
-#   [note] Es riecht an AX-01 nach heißem Belag, wenn man an den Motor rangeht. Achse blockiert nicht, aber gut ist das nicht.
-B01-SN-110=?
-#   [note] PR-01 fügt einseitig, auf einer Seite tiefer als auf der anderen. Teile gehen gerade noch durch.
-B01-SN-116=?
-#   [note] AX-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B01-SN-118=?
-#   [note] Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse.
-B01-SN-143=?
-#   [note] AX-01 wirft sprunghaft eine Fehlermeldung und steht. Zweimal in der Nacht, jeweils weggedrückt und weiter.
-B01-SN-158=?
-#   [note] An PR-02 ist nichts undicht, Ölstand steht seit vier Wochen gleich. Dafür ist der Tank auffällig warm.
-B01-SN-159=?
-#   [note] AX-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B01-SN-188=?
-
-## B02 — "Fleck auf Bild"
-#   [note] VS-01 hat auf dem Bild einen dunklen Fleck, immer an derselben Stelle, egal welches Teil. Teile werden deswegen abgewiesen.
-B02-SN-004=?
-#   [note] RB-02 greift daneben, zwei Fehlgriffe in der Schicht. Läuft ja selten, deshalb ist das lange keinem aufgefallen.
-B02-SN-103=?
+#   [memory] Wartung 115 (inspection) an AX-03 (Maschine 3), Linearfuehrungslager durchgeführt (2026-07-27T07:30:00+02:00). Prüfung Vertikalachse AX-03. Fließfett hält an der senkrechten Führung nicht, Schmierfil…
+B01-WA-099=?
+#   [memory] Wartung 116 (inspection) an PR-01 (Maschine 7), Hydraulikaggregat durchgeführt (2026-07-28T07:00:00+02:00). Prüfung Aggregat PR-01 nach Warnmeldung. Rückschlagventil im Speicherkreis undicht, Speiche…
+B01-WA-100=?
+#   [memory] Wartung 119 (inspection) an AX-01 (Maschine 1), Linearfuehrungslager durchgeführt (2026-08-04T07:15:00+02:00). Prüfung Führung AX-01 nach anhaltendem Laufgeräusch. Ein Führungswagen schwergängig, bei…
+B01-WA-103=?
+#   [memory] Wartung 124 (inspection) an AX-02 (Maschine 2), Kugelgewindetrieb durchgeführt (2026-08-12T06:30:00+02:00). Prüfung Antriebsspindel AX-02. Kugelrückführung beschädigt, Kugeln teilweise fehlend, Vorsp…
+B01-WA-108=?
 
 ## B03 — "Lagerschaden am Lagerbock"
-#   [note] Das Klopfen an AX-03 ist lauter geworden. Wenn man die Hand an den Lagerbock legt, spürt man den Schlag deutlich.
-B03-SN-053=?
-#   [note] RB-01 greift daneben an Station 3. Der Werkstückträger rastet dort nicht sauber ein, der Roboter kann nichts dafür.
-B03-SN-084=?
-#   [note] RB-01 streut wieder in der Wiederholgenauigkeit, wie im Frühjahr. Lager war damals angemeldet, getauscht wurde es nie.
-B03-SN-165=?
+#   [memory] Wartung 96 (inspection) an RB-02 (Maschine 11), Gelenklager Achse 1 durchgeführt (2026-06-19T07:40:00+02:00). Prüfung Gelenklager RB-02. Spiel in Achse 1 messbar, Fett verbraucht und mit Abrieb dunke…
+B03-WA-080=?
+#   [memory] Wartung 139 (lubrication) an RB-01 (Maschine 10), Gelenklager Achse 1 durchgeführt (2026-08-27T07:30:00+02:00). Nachschmierung Gelenklager Achse 1 RB-01 mit Lithiumkomplexfett NLGI 2. Regelintervall…
+B03-WA-123=?
 
 ## B04 — "Dosierunregelmäßigkeiten"
-#   [note] PR-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B04-SN-012=?
-#   [note] RB-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B04-SN-039=?
-#   [note] FD-01 in der Nacht zweimal leergelaufen, jeweils nachgefüllt. Ist Organisation, nicht Technik.
-B04-SN-152=?
-#   [note] Dosierung an FD-01 schwankt, mal zu viel mal gar nichts. Über die Schicht gemittelt passt die Menge.
-B04-SN-157=?
-
-## B05 — "Schleppfehler an AX"
-#   [note] AX-04 zäh im Kaltlauf, Strom beim Anfahren höher. Das Fett an der Führung sieht komisch aus, klebrig.
-B05-SN-022=?
-#   [note] AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende.
-B05-SN-025=?
-#   [note] AX-02 ist heute zweimal in Störung gegangen, Schleppfehler. [PERSON] und weitergelaufen, ohne dass wir was gemacht haben.
-B05-SN-036=?
-#   [note] Wieder eine Störung an AX-02, immer beim schnellen Verfahren. Steckverbindungen sichtgeprüft, alles fest.
-B05-SN-037=?
-#   [note] An AX-03 klopft es jedes Mal am Umkehrpunkt, ein einzelner Schlag. Sonst läuft sie sauber durch.
-B05-SN-050=?
-#   [note] AX-02 setzt daneben. Bevor jemand die Spindel aufmacht: die Greiferbacke ist lose, die hat Spiel und nicht die Achse.
-B05-SN-063=?
-#   [note] AX-01 macht beim Verfahren ein Geräusch, klingt erst mal nach Führung. Beim genauen Hinsehen schleift die Energiekette am Blech.
-B05-SN-066=?
-#   [note] AX-04 legt die Teile mal so mal so ab, Streuung ist größer geworden. Noch innerhalb, aber früher war das stabiler.
-B05-SN-087=?
-#   [note] AX-02 stockt bei langsamer Fahrt, ganz feines Ruckeln. Bei voller Geschwindigkeit merkt man nichts.
-B05-SN-089=?
-#   [note] An AX-04 muss ich zum zweiten Mal in vier Wochen nachkorrigieren. Kommt nach ein paar Stunden wieder.
-B05-SN-094=?
-#   [note] AX-02 klemmt montags in den ersten Fahrten, danach gibt sich das. Steht ja über das Wochenende kalt.
-B05-SN-095=?
-#   [note] AX-01 geht schwer, obwohl vorgestern geschmiert wurde. Ich tippe auf falsches Fett wie bei AX-04 im Winter.
-B05-SN-100=?
+#   [memory] Wartung 131 (inspection) an FD-02 (Maschine 6), Dosiertrichter mit Klemmzylinder durchgeführt (2026-08-17T07:00:00+02:00). Prüfung Klemmzylinder FD-02. Kolbendichtung verschlissen, innere Leckage mes…
+B04-WA-115=?
 
 ## B06 — "Durckabfall Hydraulik"
-#   [note] FD-01 fördert zwischendurch nichts, Trichter ist aber voll. Einmal mit der Hand angeklopft, dann läuft es wieder.
-B06-SN-031=?
-#   [note] FD-01 hakelig beim Klemmen, seit ein paar Tagen. Wenn wir die Anlage warmfahren lassen wird es besser.
-B06-SN-073=?
-#   [note] VS-01 Auswurfschacht war verstopft, zwei Teile verkantet. Freigemacht, läuft.
-B06-SN-093=?
-#   [note] FD-02 hat den ganzen Abend sauber dosiert. Nach dem Umbau am Auslauf ist Ruhe.
-B06-SN-117=?
-#   [note] PR-01 hält den Druck in der Pause nicht, das Aggregat schaltet öfter nach als früher.
-B06-SN-132=?
-#   [note] An PR-01 fällt der Haltedruck über Nacht komplett ab. Morgens erstmal aufbauen lassen.
-B06-SN-141=?
-#   [note] FD-02 macht den Klemmer doppelt so langsam zu wie FD-01. Ventil getauscht, keine Änderung.
-B06-SN-163=?
-#   [note] An FD-02 ist die Schaltzeit immer noch lang. [PERSON] war es nicht, Schlauch ist frei. Bleibt die Mechanik.
-B06-SN-168=?
-#   [note] PR-03 macht jetzt Ausschuss, Fügetiefe zu gering. Werkzeug muss raus, egal was der Plan sagt.
-B06-SN-173=?
+#   [memory] Wartung 32 (inspection) an PR-01 (Maschine 7), Hydraulikaggregat durchgeführt (2026-02-27T13:30:00+01:00). Regelprüfung Hydraulik PR-01. Ölstand, Leckölmenge und Filterdifferenzdruck im Sollbereich.…
+B06-WA-016=?
+#   [memory] Wartung 140 (inspection) an PR-03 (Maschine 9), Hydraulikaggregat durchgeführt (2026-08-28T13:30:00+02:00). Regelprüfung Hydraulik PR-03. Ölprobe entnommen, Reinheitsklasse eingehalten, Speicher-Vors…
+B06-WA-124=?
 
 ## B07 — "Nullpunktverschiebung an AX"
-#   [note] AX-01 setzt die Teile nicht mehr mittig ab, immer in dieselbe Richtung daneben. Nullpunkt neu gesetzt, hält bis Schichtende.
-B07-SN-025=?
-#   [note] Abweichung an AX-01 ist wieder da. Nur wenn sie aus der Gegenrichtung kommt, in einer Richtung stimmt es.
-B07-SN-029=?
-#   [note] An AX-03 klopft es jedes Mal am Umkehrpunkt, ein einzelner Schlag. Sonst läuft sie sauber durch.
-B07-SN-050=?
-#   [note] AX-03 geht seit gestern in Schleppfehler. Gestern wurde das Programm angepasst, Beschleunigung höher. Zusammenhang liegt nahe.
-B07-SN-090=?
-#   [note] AX-04 hat heute Nacht zweimal die Position verloren und musste referenziert werden. Nachtschicht hat nichts weiter dazu geschrieben.
-B07-SN-111=?
-#   [note] AX-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B07-SN-118=?
-#   [note] AX-01 gibt beim Richtungswechsel einen Stoß, den man im Gestell spürt. Kam nicht von jetzt auf gleich, wird langsam mehr.
-B07-SN-120=?
-#   [note] AX-01 wirft sprunghaft eine Fehlermeldung und steht. Zweimal in der Nacht, jeweils weggedrückt und weiter.
-B07-SN-158=?
-#   [note] AX-01 hatte das seit einer Woche nicht mehr. Vielleicht war es doch die Umrichter-Parametrierung, die letzten Monat geändert wurde.
-B07-SN-169=?
-#   [note] AX-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B07-SN-188=?
-
-## B08 — "Ruckeln beim Hub"
-#   [note] Wenn RB-01 den Arm ausstreckt, sieht man am Fuß ein leichtes Wackeln. Bei kurzen Wegen fällt es nicht auf.
-B08-SN-030=?
-#   [note] PR-03 hakt kurz im Abwärtshub, immer an der gleichen Stelle.
-B08-SN-067=?
-#   [note] RB-01 hat beim Richtungswechsel ein Spiel bekommen, das vorher nicht da war. Vielleicht hängt das mit den ruppigen Bremsungen vom Dienstag zusammen.
-B08-SN-074=?
-#   [note] Das Dröhnen an RB-02 sitzt im Antrieb der Hauptachse. Mit dem Schraubendreher am Gehäuse gut zu orten.
-B08-SN-142=?
-#   [note] Lager an AX-03 geprüft, sind in Ordnung. Das Problem liegt woanders. Unten tropft Schmierstoff aus der Achse.
-B08-SN-143=?
-#   [note] RB-02 schwingt am Ende der Bewegung nach, wackelt kurz aus. Vorher war die Bahn sauber, dazwischen lag die Störung im Schutztürkreis.
-B08-SN-148=?
-#   [note] RB-02 fährt die Bahn nicht mehr sauber, besonders in der Kurve. Nach jedem harten Stopp wird es einen Tick schlimmer.
-B08-SN-151=?
+#   [memory] Wartung 37 (inspection) an AX-01 (Maschine 1), Kugelgewindetrieb durchgeführt (2026-03-10T06:45:00+01:00). Prüfung Kugelgewindetrieb AX-01. Umkehrspiel an drei Messpunkten 0,08 bis 0,11 mm gegen 0,02…
+B07-WA-021=?
 
 ## B09 — "Versatz an PR"
-#   [note] PR-02 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B09-SN-012=?
-#   [note] PR-03 über die Schicht ohne Auffälligkeiten, nichts zu vermerken.
-B09-SN-047=?
-#   [note] PR-02 Auswerfer klemmte einmal, von Hand freigemacht. Wenn das öfter kommt, gehört das angesehen.
-B09-SN-064=?
-#   [note] PR-01 nach dem Werkzeugwechsel eingefahren, erste Teile vermessen, alles mittig.
-B09-SN-082=?
-#   [note] PR-02 hat mitten in der Nacht den Druck verloren, Teile nicht durchgefügt. Anlage steht.
-B09-SN-096=?
-#   [note] FD-02 lässt Lücken, PR-02 steht dann kurz leer. Kommt in Wellen, dazwischen läuft alles.
-B09-SN-099=?
-#   [note] PR-01 fügt einseitig, auf einer Seite tiefer als auf der anderen. Teile gehen gerade noch durch.
-B09-SN-116=?
-#   [note] Der Versatz an PR-01 ist geblieben. Werkzeug wurde letzte Woche gewechselt, seitdem ist es so.
-B09-SN-124=?
-#   [note] PR-02 zieht den Druck unsauber auf, schwankt um ein paar bar. Vermutlich wieder eine Dichtung wie im Juni.
-B09-SN-154=?
-#   [note] PR-03 Kraft klettert seit einer Woche. [PERSON] war für letzte Woche geplant, wurde wegen Auftrag geschoben.
-B09-SN-155=?
-#   [note] Der Versatz kommt von AX-03, die legt schon schief ein. An der Endkontrolle ist nichts falsch.
-B09-SN-181=?
-#   [note] PR-02 sauber durchgelaufen.
-B09-SN-186=?
-#   [note] PR-03 seit dem Werkzeugwechsel wieder in der Kraft, wo sie hingehört. Sonst nichts zu vermerken.
-B09-SN-187=?
+#   [memory] Notiz 195 zu VS-01 (Maschine 12, 2026-08-20T07:40:00+00:00): VS-01 wirft Teile mit Versatz raus, immer in dieselbe Richtung verschoben. Prüfprogramm ist unverändert.
+B09-SN-179=?
+#   [memory] Wartung 137 (tool_change) an PR-01 (Maschine 7), Fuegewerkzeug durchgeführt (2026-08-24T06:40:00+02:00). Werkzeugwechsel PR-01 nach Standmenge. Verschleißmaß 0,08 mm. Neuer Satz eingebaut, erste zwan…
+B09-WA-121=?
 
 ## B10 — "Öl Temperatur an PR"
-#   [note] PR-03 stand zwei Stunden, Material war alle. Kein technischer Grund.
-B10-SN-008=?
-#   [note] PR-02 setzt sichtbare Druckstellen auf die Teile. Kraft weiter oben.
-B10-SN-021=?
-#   [note] PR-03 braucht länger bis der Druck steht. [PERSON] man am Takt, ein bis zwei Zehntel je Hub.
-B10-SN-027=?
-#   [note] PR-03 weiter zäh im Druckaufbau. Unter dem Aggregat liegt ein dünner Ölfilm auf dem Blech.
-B10-SN-032=?
-#   [note] Der Ausschuss an VS-01 hängt an PR-02, die fügt nicht tief genug. Presse gemeldet.
-B10-SN-055=?
-#   [note] An PR-03 sieht man Reibspuren auf der Ram-Führung, blank gelaufen. Öl steht oben im Behälter.
-B10-SN-071=?
-#   [note] PR-01 liegt in der Presskraft am oberen Rand. Standmenge ist fast erreicht, passt zeitlich.
-B10-SN-083=?
-#   [note] Poltern an AX-01 wird bei Wärme schlimmer, gegen Schichtende am deutlichsten. Taktzeit hält noch.
-B10-SN-150=?
-#   [note] PR-02 zieht den Druck unsauber auf, schwankt um ein paar bar. Vermutlich wieder eine Dichtung wie im Juni.
-B10-SN-154=?
-#   [note] An PR-02 ist nichts undicht, Ölstand steht seit vier Wochen gleich. Dafür ist der Tank auffällig warm.
-B10-SN-159=?
+#   [memory] Wartung 126 (inspection) an PR-02 (Maschine 8), Hydraulikaggregat durchgeführt (2026-08-12T07:10:00+02:00). Prüfung Hydrauliktank PR-02. Lüfter des Ölkühlers läuft nur auf halber Drehzahl, Kondensato…
+B10-WA-110=?

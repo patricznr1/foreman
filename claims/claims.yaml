@@ -3271,3 +3271,61 @@ claims:
     geltung: "gueltig"
     freigabe:
       - "intern"
+
+  - id: "C-109"
+    aussage: "Der Bewertungssatz beurteilt die exklusiven Treffer der vierten Quelle weit seltener als die der eigenen Quellen."
+    status: "gemessen"
+    wert: "8 von 22 exklusiven Plaetzen beurteilt (36 %) gegen 100 von 103 der uebrigen (97 %) — 61 Prozentpunkte Abstand; von den 8 beurteilten sind 7 zutreffend"
+    bedingung: >-
+      Ausgezaehlt am 02.09.2026 mit tools/archiv_guete/pool_verzerrung.py gegen
+      die Rohdaten des Laufs messung_nexus_2026-09-02_gedaechtnis.json, also
+      gegen die Messung selbst und nicht gegen ein Dokument. Der Vorgangs-
+      schluessel wird aus werte_aus._schluessel importiert, damit hier nicht
+      eine zweite Fassung derselben Regel entsteht. WARUM DAS ZAEHLT: Ein
+      Platz, den niemand beurteilt hat, zaehlt in Trefferquote und einfacher
+      Rangguete als NICHT zutreffend (werte_aus.lade_beurteilte). Die vierte
+      Quelle wird damit an einem Massstab gemessen, der ueberwiegend ohne sie
+      gebildet wurde — die bekannte Pool-Verzerrung, die baue_goldset_v3.py im
+      Kopf zitiert (Buettcher et al., SIGIR 2007). Gegenprobe zur Rechnung: Die
+      Zahl der unbeurteilten Plaetze (17 im Gedaechtnis-Arm, 5 in der Basis)
+      stimmt mit der unabhaengig erhobenen Angabe des Messberichts ueberein.
+      WAS DER EINTRAG NICHT BELEGT: dass die 14 unbeurteilten Treffer
+      zutreffend WAEREN. Das entscheidet nur ein Urteil; der Bogen dafuer ist
+      erzeugt und liegt vor. Die hohe Trefferquote unter den bereits
+      beurteilten (7 von 8) ist ein Hinweis, kein Beleg — 8 Faelle tragen keine
+      Schaetzung fuer die restlichen 14.
+    datum: "2026-09-02"
+    fundstelle:
+      - "tools/archiv_guete/pool_verzerrung.py"
+      - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
+      - "docs/messungen/2026-09-02_vierte_quelle_nexus.md, Abschnitt 4 Grenze 2"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-110"
+    aussage: "Die verfehlte Freigabe-Bedingung stuetzt sich auf drei Treffer, die niemand je beurteilt hat."
+    status: "gemessen"
+    wert: "B07 verliert note:185 an maintenance:37; B09 verliert note:71 und note:108 an maintenance:137 und note:195. Keiner der drei Verdraenger steht in goldset_v3.json oder beurteilt_v3.json — auch nicht mit der Stufe 0"
+    bedingung: >-
+      Ausgezaehlt am 02.09.2026 aus den Rohdaten beider Arme des Laufs. Die
+      Verdraenger tragen einen INTAKTEN Rueckweg (maintenance:37, maintenance:137,
+      note:195) und landen auf den Raengen 6, 4 und 5, waehrend die verdraengten
+      Notizen in der Basis auf den Raengen 15, 14 und 15 standen. Es ist also der
+      Schnitt bei k = 15, der sie herausnimmt, nicht eine Fehlfunktion der Fusion.
+      WAS DARAUS FOLGT: Ob hier wirklich etwas verloren geht, ist derzeit nicht
+      entscheidbar. Der Massstab wertet die drei Verdraenger als nicht
+      zutreffend, weil sie fehlen — nicht, weil jemand sie geprueft und
+      verworfen haette. Solange das so bleibt, kann Freigabe-Bedingung 1 durch
+      keine Verbesserung der vierten Quelle erfuellt werden: Jeder neue Treffer,
+      den nur sie findet, ist per Bauart unbeurteilt und verdraengt einen
+      beurteilten. PRAEZISIERT C-106, das die Bedingung zu Recht als verfehlt
+      fuehrt — der vorliegende Eintrag sagt, woran das gemessen ist.
+    datum: "2026-09-02"
+    fundstelle:
+      - "tools/archiv_guete/gegenprobe/urteilsbogen_offen.txt"
+      - "tools/archiv_guete/pool_verzerrung.py"
+      - "claims/claims.yaml, C-106 und C-108"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
