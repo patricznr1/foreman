@@ -27,10 +27,19 @@ export type RelevanceStrength = "stark" | "mittel" | "entfernt";
 
 /**
  * Beziehungstyp zwischen Treffern (Studie §4H Verknuepfungslogik). Aktiv sind NUR
- * die aus realen Feldern ableitbaren Typen; die klassen-/wurzelursachen-basierte
- * Verknuepfung ist reserviert (das Gedaechtnis liefert weder Klasse noch Aufloesung).
+ * die aus realen Feldern ableitbaren Typen.
+ *
+ * `same_component` kam am 02.09.2026 dazu. Der Satz "das Gedaechtnis liefert weder
+ * Klasse noch Aufloesung" stand hier zu Recht, solange die Spiegelung das Bauteil
+ * nicht mitschickte; seit dem 28.08.2026 tut sie es (`bauteilart`/`bauteil` im
+ * Detail). Das ist die tragende Verknuepfung des Gedaechtnisses: Zwei Maschinen
+ * verschiedener Bauart teilen ein Bauteil, und ein Versagensmuster gehoert dem
+ * Bauteil. Ueber die Maschine allein ist dieser Zusammenhang NICHT zu finden.
+ *
+ * Weiter reserviert bleibt die wurzelursachen-basierte Verknuepfung — ein
+ * Aufloesungsfeld gibt es nach wie vor nicht.
  */
-export type RelationType = "same_machine" | "same_shift" | "temporal";
+export type RelationType = "same_machine" | "same_shift" | "temporal" | "same_component";
 
 /** Ein einzelner Treffer der Bedeutungssuche. */
 export interface MemoryHit {
@@ -51,9 +60,16 @@ export interface MemoryHit {
   strength: RelevanceStrength;
   /**
    * Aufloesung (geloest durch …) — derzeit NIE bekannt: das Gedaechtnis fuehrt kein
-   * Aufloesungs-/Klassifikationsfeld. Reserviert, graceful null (nicht erfunden).
+   * Aufloesungsfeld. Reserviert, graceful null (nicht erfunden).
    */
   resolution: string | null;
+  /**
+   * Bauteil des Vorgangs, sofern die Quelle es fuehrt. IMMER gesetzt (ggf. null) —
+   * ein mal vorhandenes, mal fehlendes Feld liesse "nicht erhoben" wie "nicht
+   * vorhanden" aussehen und zwaenge jeden Leser zu einer Fallunterscheidung.
+   */
+  componentType: string | null;
+  componentLabel: string | null;
 }
 
 /** Eine Beziehung zwischen mehreren Treffern (kompakt, kein Graph). */

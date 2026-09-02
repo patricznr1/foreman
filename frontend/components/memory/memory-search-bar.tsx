@@ -45,6 +45,12 @@ export interface MemorySearchBarProps {
   machines: number[];
   /** Gesetzt = Absenden gesperrt mit sichtbarem Grund (offline). */
   disabledReason?: string | null;
+  /**
+   * Vorgewaehlte Quellen. Muss eine STABILE Referenz sein (Modul-Konstante beim
+   * Aufrufer) — sie haengt am Zuruecksetz-Effekt unten, und ein bei jedem Rendern
+   * neu gebautes Feld setzte die Auswahl des Benutzers endlos zurueck.
+   */
+  initialSources?: readonly SourceType[];
 }
 
 export function MemorySearchBar({
@@ -54,11 +60,12 @@ export function MemorySearchBar({
   canFilter,
   machines,
   disabledReason = null,
+  initialSources = VERFUEGBARE_QUELLEN,
 }: MemorySearchBarProps) {
   const [query, setQuery] = useState(defaultQuery);
   const [machineId, setMachineId] = useState<number | null>(null);
   const [active, setActive] = useState<Set<SourceType>>(
-    () => new Set<SourceType>(VERFUEGBARE_QUELLEN),
+    () => new Set<SourceType>(initialSources),
   );
   const reasonId = useId();
   const noSources = active.size === 0;
@@ -71,8 +78,8 @@ export function MemorySearchBar({
   useEffect(() => {
     setQuery(defaultQuery);
     setMachineId(null);
-    setActive(new Set<SourceType>(VERFUEGBARE_QUELLEN));
-  }, [defaultQuery]);
+    setActive(new Set<SourceType>(initialSources));
+  }, [defaultQuery, initialSources]);
 
   function toggleSource(value: SourceType): void {
     setActive((prev) => {

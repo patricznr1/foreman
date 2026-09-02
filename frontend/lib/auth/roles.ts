@@ -81,14 +81,16 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { id: "insights", label: "Erkenntnisse", href: "/insights", sections: ["D", "E", "F", "G"] },
   // Die WÖRTLICHE Suche (Sektion H, Paket 1c) — ehrlich „Archiv".
   { id: "archive", label: "Archiv", href: "/archive", sections: ["H"] },
-  // Sichtbar, aber DEAKTIVIERT: die intelligente Verknüpfung folgt mit echter Substanz
-  // (Paket 3). Kein href/Routing-Ziel, keine Aktion — kein leeres Versprechen.
+  // Die intelligente Verknüpfung — dieselbe Sektion H wie das Archiv, aber gezielt
+  // NUR das Gedächtnis als Quelle (?quelle=gedaechtnis). Bis zum 02.09.2026 stand
+  // der Eintrag dauerhaft ausgegraut da, weil die Substanz fehlte; sie ist seit dem
+  // 27.08.2026 angebunden und im Archiv ohnehin vorgewählt. Ein grauer Eintrag, der
+  // ankündigt, was nebenan längst läuft, ist irreführender als gar keiner.
   {
     id: "recall",
     label: "Hatten wir das schon mal",
-    href: null,
+    href: "/archive?quelle=gedaechtnis",
     sections: ["H"],
-    disabled: true,
   },
   { id: "capture", label: "Erfassung", href: "/capture", sections: ["J"] },
   { id: "platform", label: "Plattform", href: "/platform", sections: ["I"] },

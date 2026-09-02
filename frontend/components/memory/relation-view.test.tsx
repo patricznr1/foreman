@@ -21,6 +21,12 @@ describe("RelationView", () => {
   it("markiert reservierte Verknüpfungstypen ehrlich als folgt", () => {
     render(<RelationView relations={[]} />);
     expect(screen.getByText(/Keine gemeinsamen Bezüge/)).toBeInTheDocument();
-    expect(screen.getByText(/Maschinenklasse.*gemeinsame Ursache folgt/)).toBeInTheDocument();
+    // Was NOCH reserviert ist: Schwestermaschinen und gemeinsame Ursache. Die
+    // BAUTEIL-Verknüpfung stand hier bis zum 02.09.2026 mit drin und ist seither
+    // gebaut — sie als "folgt" zu führen wäre jetzt die Unehrlichkeit.
+    expect(
+      screen.getByText(/Schwestermaschinen und gemeinsame Ursache folgt/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Bauteil.*folgt/)).not.toBeInTheDocument();
   });
 });

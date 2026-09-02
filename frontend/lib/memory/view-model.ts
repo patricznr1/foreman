@@ -35,8 +35,13 @@ export function assembleSearchResult(notes: WorkerNoteRead[], query: string): Me
     createdAt: note.created_at,
     rank: index,
     strength: strengthFromRank(index, total),
-    // Das Gedächtnis führt kein Auflösungs-/Klassifikationsfeld — graceful null.
+    // Das Gedächtnis führt kein Auflösungsfeld — graceful null.
     resolution: null,
+    // Eine Schichtnotiz ist keiner Anlagenkomponente zugeordnet; das Bauteil
+    // kommt über Alarm und Wartung. Immer gesetzt, damit „nicht erhoben" und
+    // „nicht vorhanden" nicht gleich aussehen.
+    componentType: null,
+    componentLabel: null,
   }));
 
   return {

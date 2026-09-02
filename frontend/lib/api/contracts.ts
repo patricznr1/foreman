@@ -411,6 +411,13 @@ export interface ArchiveHitDetail {
   erinnerung?: string;
   /** Nur bei "memory", falls bekannt. */
   maschinenklasse?: string;
+  /**
+   * Nur bei "memory", falls die Erinnerung ein Bauteil führt. Die Brücke, auf die
+   * es ankommt: Zwei Maschinen ganz verschiedener Bauart teilen ein Bauteil, und
+   * ein Versagensmuster gehört dem Bauteil, nicht der Maschine.
+   */
+  bauteilart?: string;
+  bauteil?: string;
 }
 
 /**

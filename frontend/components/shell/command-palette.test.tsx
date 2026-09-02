@@ -35,7 +35,7 @@ describe("CommandPalette — H von überall", () => {
     expect(push).toHaveBeenCalledWith("/archive?q=Lager%20hei%C3%9F");
   });
 
-  it("der deaktivierte Eintrag 'Hatten wir das schon mal' erzeugt keinen Sprung-Befehl", async () => {
+  it("'Hatten wir das schon mal' ist als Sprung-Befehl erreichbar", async () => {
     render(
       <SessionProvider user={USER}>
         <CommandPalette />
@@ -43,11 +43,13 @@ describe("CommandPalette — H von überall", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: /Suchen/ }));
     await userEvent.type(screen.getByLabelText("Befehl oder Suche"), "Hatten wir das schon mal");
-    // Die Such-Aktion ("Im Archiv suchen: …") ist da — aber KEIN ausführbarer Sprung
-    // zum deaktivierten Eintrag (kein Routing-Ziel).
+    // Die Such-Aktion ("Im Archiv suchen: …") ist da — UND seit dem 02.09.2026 der
+    // Sprung selbst: Der Eintrag hat ein Routing-Ziel, also gehört er in die
+    // Befehlsleiste. Vorher war er hier bewusst ausgespart, weil ein Befehl ohne
+    // Wirkung schlimmer ist als kein Befehl.
     expect(screen.getByRole("button", { name: /Im Archiv suchen/ })).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Hatten wir das schon mal" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "Hatten wir das schon mal" }),
+    ).toBeInTheDocument();
   });
 });

@@ -68,7 +68,13 @@ export function AlarmRow({
       aria-label={ariaLabel}
       className={cx(
         "relative flex h-full gap-3 bg-surface-raised pr-2 pl-3",
-        fullMessage ? "items-start py-2" : "items-center",
+        // `flex-wrap` NUR hier: In der Maschinensicht steht der Volltext, und die
+        // rechten Bedienelemente tragen feste Breiten (Querlinks, erwartete Aktion
+        // max-w-40, Quittier-Hinweis max-w-44, Zeitblock). Ohne Umbruch nehmen sie
+        // der Textspalte den Platz bis auf null — und `break-words` bricht dann
+        // JEDES Wort einzeln, der Text laeuft buchstabenweise senkrecht.
+        // In der virtualisierten C-Liste (feste Slot-Hoehe) bleibt es einzeilig.
+        fullMessage ? "flex-wrap items-start py-2" : "items-center",
         railWidth(vm.priority),
         PRIORITY_BORDER[vm.priority],
         nested && "ml-6 border-l-2",
@@ -102,7 +108,11 @@ export function AlarmRow({
       {/* Zweiter, gelernter Kanal: NE-107-Zustandsklasse. */}
       <StatusIndicator status={vm.fcsm} size="s" showLabel={false} />
 
-      <div className="min-w-0 flex-1">
+      {/* `min-w-0` erlaubt das Schrumpfen bis null — noetig fuer `truncate` in der
+          C-Liste, aber genau die Ursache des senkrechten Textes in der
+          Maschinensicht. Dort steht deshalb eine Untergrenze statt der Null; der
+          Umbruch der Zeile faengt den Rest ab. */}
+      <div className={cx("flex-1", fullMessage ? "min-w-[16rem]" : "min-w-0")}>
         <div className="flex items-center gap-2">
           <span className="truncate text-body font-medium text-fg-primary">{vm.machineLabel}</span>
           {vm.isDrift ? (
