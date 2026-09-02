@@ -310,12 +310,34 @@ def baue_inhalt(event_type: str, payload: Mapping[str, Any]) -> str:
 # legt damit den gesamten Drift-Bestand auf einen Punkt der Zeitachse — genau
 # das Muster, das beim Nachtrag schon einmal den halben Bestand in dieselbe
 # Stunde gelegt hat, nur an anderer Stelle.
+#
+# UND FÜR DIE BEIDEN ERKENNTNIS-ARTEN STIMMT ES AUCH NICHT (02.09.2026).
+# „Ihre Zeit IST die ihrer Entstehung" gilt nur, solange Entstehung und
+# Spiegelung ZUSAMMENFALLEN — also auf dem Live-Weg. Auf dem NACHLAUF-Weg fallen
+# sie auseinander: Scheitert der Dual-Write (Netz, Neustart der Gegenstelle,
+# abgelaufener Zugang), bleibt die Zeile auf `substrate_ref=NULL` liegen und wird
+# Stunden oder Tage später gespiegelt. Ohne eigenes Zeitfeld trägt sie dann die
+# Zeit des NACHLAUFS — derselbe Fehler, vor dem der Absatz darüber warnt, nur
+# eine Ereignisart weiter.
+#
+# WAS DAS BEI DER GEGENSTELLE ANRICHTET, und darum wiegt es schwerer als eine
+# falsche Anzeige: Dort wird die mitgeschickte Zeit zur GÜLTIGKEITSZEIT jedes
+# Fakts, der aus dem Eintrag gewonnen wird. Eine nachgetragene Ereigniskette
+# verrückt damit nicht nur sich selbst, sondern die Reihenfolge der Ursachen im
+# Wissensgraphen — auf genau der Achse, auf der die nächste Rekonstruktion
+# aufsetzt. Aus einem Zeitfehler wird eine falsche Kausalkette.
+#
+# Beide Arten tragen deshalb `created_at` IHRER EIGENEN ZEILE: den Zeitpunkt, den
+# die Datenbank beim Anlegen gesetzt hat. Nicht `now()` beim Spiegeln — das wäre
+# eine zweite Wahrheit und liefe im Nachlauf wieder genau auseinander.
 ZEIT_FELDER: dict[str, str] = {
     "worker_note": "created_at",
     "alarm_raised": "raised_at",
     "production_run": "started_at",
     "maintenance_performed": "performed_at",
     "drift_detected": "detected_at",
+    "event_chain_reconstructed": "created_at",
+    "failure_recommendation": "created_at",
 }
 
 

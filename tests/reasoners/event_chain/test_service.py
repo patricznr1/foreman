@@ -32,6 +32,7 @@ from foreman.reasoners.event_chain.service import (
     sanitize_narrative,
 )
 from foreman.substrate.client import SubstrateClient
+from foreman.substrate.content import ereigniszeit
 
 _ANCHOR_TIME = datetime(2026, 6, 14, 12, 0, tzinfo=UTC)
 
@@ -474,3 +475,75 @@ async def test_die_kette_schickt_eine_vorgangskennung_mit_dem_anker(
     # Und die Anfrage selbst darf NICHT in der Kennung stehen — sie ist der Weg,
     # auf dem Freitext versehentlich nach draussen ginge.
     assert str(abrufe[0].get("query", "")) not in kennung
+
+
+@pytest.mark.integration
+async def test_die_gespiegelte_kette_traegt_entstehungszeit_und_recall_merkmal(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """DIE NAHT zwischen Spiegel-Nutzlast und `ZEIT_FELDER`.
+
+    Beide Haelften sind einzeln richtig und trotzdem wirkungslos, wenn der
+    Schluessel nicht derselbe ist: `ereigniszeit` schlaegt ueber `.get` nach und
+    liefert bei einem anderen Namen einfach `None`. Nichts wuerde rot, und der
+    Eintrag traege beim Nachlauf wieder die Laufzeit — genau der Fehler, gegen
+    den das hier gebaut ist.
+    """
+    _, anchor, _ = await _seed(db_session)
+    service = EventChainService(
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=f"Siehe [alarm:{anchor.id}].")]),
+    )
+    record = await service.reconstruct(anchor.id)
+
+    events = list(
+        await db_session.scalars(
+            select(SemanticEvent).where(SemanticEvent.event_type == EVENT_CHAIN_EVENT_TYPE)
+        )
+    )
+    assert len(events) == 1
+    payload = events[0].payload
+
+    # GELESEN, nicht erzeugt: derselbe Zeitpunkt, den die Datenbank der Zeile gab.
+    assert payload["created_at"] == record.created_at.isoformat()
+    # Ohne Zone weist die Gegenstelle mit 422 ab — und das kostet nicht die Zeit,
+    # sondern den GANZEN Eintrag.
+    assert datetime.fromisoformat(payload["created_at"]).tzinfo is not None
+    # Die Naht selbst.
+    assert ereigniszeit(EVENT_CHAIN_EVENT_TYPE, payload) == payload["created_at"]
+    # Ohne Substrat wurde blind erzaehlt, und die Nutzlast sagt es.
+    assert payload["recall_used"] is False
+
+
+@pytest.mark.integration
+async def test_das_recall_merkmal_folgt_der_lage(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """AUFBAU-KONTROLLE zum Fall darueber.
+
+    Dort steht `recall_used is False` — und das bliebe auch dann gruen, wenn das
+    Feld fest verdrahtet waere. Erst dieser Zwilling belegt, dass es der Lage
+    folgt. Er ist der Grund, warum das Merkmal drueben ueberhaupt etwas
+    unterscheidet.
+    """
+    _, anchor, _ = await _seed(db_session)
+    service = EventChainService(
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=f"Siehe [alarm:{anchor.id}].")]),
+        substrate=_substrat_mit_treffern(anchor.machine_id),
+    )
+    record = await service.reconstruct(anchor.id)
+
+    events = list(
+        await db_session.scalars(
+            select(SemanticEvent).where(SemanticEvent.event_type == EVENT_CHAIN_EVENT_TYPE)
+        )
+    )
+    assert record.recall_used is True
+    assert events[0].payload["recall_used"] is True

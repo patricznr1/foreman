@@ -19,10 +19,10 @@ import pytest
 
 from foreman.substrate.content import CONTENT_BUILDERS, ZEIT_FELDER, ereigniszeit
 
-# Die beiden Ableitungen OHNE eigenen Vorgangszeitpunkt. Bewusst hier als
-# Literale und nicht aus ZEIT_FELDER abgeleitet: Der Test soll anschlagen, wenn
-# jemand die Menge aendert, statt mit ihr mitzuwandern.
-OHNE_EIGENE_ZEIT = ("event_chain_reconstructed", "failure_recommendation")
+# Die beiden Erkenntnis-Arten. Bewusst als Literale und nicht aus ZEIT_FELDER
+# abgeleitet: Der Test soll anschlagen, wenn jemand die Menge aendert, statt mit
+# ihr mitzuwandern.
+ERKENNTNIS_ARTEN = ("event_chain_reconstructed", "failure_recommendation")
 
 # ──────────────────────────────────────────────────────────────────────
 #  Die Abbildung — sie darf keine Felder nennen, die es nicht gibt
@@ -40,6 +40,54 @@ def test_jede_zeitangabe_gehoert_zu_einer_bekannten_ereignisart() -> None:
         f"❌ ZEIT_FELDER nennt Ereignisarten, die es nicht gibt: {sorted(unbekannt)}. "
         "Der Eintrag waere wirkungslos, ohne dass etwas rot wird."
     )
+
+
+def test_jede_ereignisart_hat_ein_zeitfeld() -> None:
+    """DIE ANDERE RICHTUNG — und an ihr lag es (02.09.2026).
+
+    Der Fall darueber prueft `ZEIT_FELDER - CONTENT_BUILDERS`: keine Zeitangabe
+    fuer eine Art, die es nicht gibt. Die Gegenrichtung stand hier NICHT, und
+    genau dort sass der Mangel — zwei von sieben Arten fuehrten kein Zeitfeld,
+    und nichts wurde rot. Ein Deckungstest, der nur eine Richtung prueft, deckt
+    nicht ab; er deckt zu.
+    """
+    ohne = set(CONTENT_BUILDERS) - set(ZEIT_FELDER)
+    assert not ohne, (
+        f"❌ Diese Ereignisarten tragen kein Zeitfeld: {sorted(ohne)}. Sie werden mit "
+        "der Zeit des SPIEGELNS abgelegt. Solange der Dual-Write glueckt, faellt das "
+        "nicht auf — scheitert er, spiegelt der Nachlauf Stunden spaeter, und der "
+        "Eintrag traegt fuer immer die Laufzeit statt seiner Entstehungszeit."
+    )
+
+
+def test_erkenntnis_arten_tragen_die_zeit_ihrer_eigenen_zeile() -> None:
+    """DER TRAGENDE FALL: Ereigniskette und Empfehlung fuehren `created_at`.
+
+    Frueher stand hier das GEGENTEIL — eine Aufbau-Kontrolle, die einforderte,
+    dass diese beiden Arten kein Zeitfeld haben, weil ihr Zeitpunkt der ihrer
+    Entstehung SEI. Das stimmt nur, solange Entstehung und Spiegelung
+    zusammenfallen, also auf dem Live-Weg. Auf dem Nachlauf-Weg fallen sie
+    auseinander.
+
+    ZUM ZWEITEN MAL AN DERSELBEN STELLE. Der geloeschte Fall trug im Docstring
+    bereits die Lehre aus dem ersten Mal: „Dieser Test hat den Irrtum GEHALTEN,
+    nicht aufgedeckt. Eine Aufbau-Kontrolle, die eine falsche Annahme
+    festschreibt, ist so wirksam wie ein falscher Kommentar." Damals ging es um
+    `drift_detected`, das faelschlich mit in der Ausnahmeliste stand. Die Lehre
+    stand da — und die Liste behielt zwei weitere Eintraege, die aus demselben
+    Grund falsch waren. Eine niedergeschriebene Lehre traegt nichts; der Fall
+    darueber tut es.
+
+    Warum `created_at` der eigenen Zeile statt der Zeit des Spiegelns: Bei der
+    Gegenstelle wird die mitgeschickte Zeit zur Gueltigkeitszeit jedes Fakts, der
+    aus dem Eintrag gewonnen wird. Ein Nachlauf-Zeitstempel verrueckt damit die
+    Reihenfolge der Ursachen im Wissensgraphen — auf genau der Achse, auf der die
+    naechste Ereignisketten-Rekonstruktion aufsetzt.
+    """
+    for art in ERKENNTNIS_ARTEN:
+        assert ZEIT_FELDER[art] == "created_at", art
+        nutzlast = {"machine_id": 1, "created_at": "2026-09-02T11:30:00+00:00"}
+        assert ereigniszeit(art, nutzlast) == "2026-09-02T11:30:00+00:00", art
 
 
 @pytest.mark.parametrize(
@@ -89,23 +137,15 @@ def test_die_zeit_kommt_aus_dem_richtigen_feld(art: str, nutzlast: dict, erwarte
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_erkenntnis_arten_ohne_eigene_zeit_liefern_keine() -> None:
-    """AUFBAU-KONTROLLE: Ereigniskette und Ausfalleinschaetzung tragen Kennungen
-    statt Zeiten — `anchor_alarm_id` bzw. `prediction_id`, sonst nichts.
+def test_erkenntnis_arten_erfinden_keine_zeit() -> None:
+    """AUFBAU-KONTROLLE zum Fall oben: Fehlt `created_at`, wird nichts erfunden.
 
-    Fuer diese beiden ist die Eingangszeit die richtige: ihr Zeitpunkt IST der
-    ihrer Entstehung. Ohne diesen Fall koennte jemand ein Feld erfinden, das nie
-    gefuellt ist, und die Abbildung saehe vollstaendig aus.
-
-    DIE ABWEICHUNG STAND HIER FRUEHER MIT DRIN, und das war falsch. Sie fuehrt
-    `detected_at` — die Hallenzeit aus `readings_1m`, nicht die des Rechnens.
-    Der Fall oben fordert das jetzt ein. Lehrstueck dazu: Dieser Test hat den
-    Irrtum GEHALTEN, nicht aufgedeckt. Eine Aufbau-Kontrolle, die eine falsche
-    Annahme festschreibt, ist so wirksam wie ein falscher Kommentar — und beides
-    stand hier nebeneinander.
+    Ohne diesen Fall bliebe der tragende Fall auch dann gruen, wenn
+    `ereigniszeit` fuer diese Arten irgendeinen Wert lieferte. Und die Spiegelung
+    darf an einer unvollstaendigen Nutzlast nicht scheitern: Sie laeuft dann mit
+    der Eingangszeit weiter, so wie bisher.
     """
-    for art in OHNE_EIGENE_ZEIT:
-        assert art not in ZEIT_FELDER, art
+    for art in ERKENNTNIS_ARTEN:
         assert ereigniszeit(art, {"machine_id": 1, "prediction_id": 7}) is None, art
 
 
