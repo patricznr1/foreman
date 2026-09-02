@@ -11,7 +11,15 @@ import { TIME_WINDOWS, type TimeWindowId } from "@/lib/machine/time-window";
 import { cx } from "@/lib/ui/cx";
 
 export interface TimeWindowPickerProps {
-  value: TimeWindowId;
+  /**
+   * Das gedrückte Fenster — oder `null`, wenn der Ausschnitt keinem entspricht.
+   *
+   * Seit der Ausschnitt frei zoom- und schiebbar ist, gibt es einen Zustand, den
+   * keine der drei Schnellwahlen beschreibt. Ihn auf die nächstliegende zu runden
+   * wäre eine Falschaussage: Der Knopf behauptete „Tag", während 3 Stunden im
+   * Bild stehen. `null` heißt genau das — freier Ausschnitt, keiner gedrückt.
+   */
+  value: TimeWindowId | null;
   onChange: (id: TimeWindowId) => void;
 }
 
