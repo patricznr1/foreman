@@ -115,7 +115,7 @@ class AufraeumStats:
         self.mehrdeutig = 0
         self.verwaist = 0
         self.geloescht = 0
-        self.schon_fort = 0
+        self.nicht_auffindbar = 0
         self.loeschen_fehlgeschlagen = 0
 
     def __str__(self) -> str:
@@ -123,7 +123,8 @@ class AufraeumStats:
             f"geprüft={self.geprueft} mit_quelle={self.mit_quelle} "
             f"mehrdeutig={self.mehrdeutig} "
             f"verwaist={self.verwaist} gelöscht={self.geloescht} "
-            f"schon_fort={self.schon_fort} löschen_fehlgeschlagen={self.loeschen_fehlgeschlagen}"
+            f"nicht_auffindbar={self.nicht_auffindbar} "
+            f"löschen_fehlgeschlagen={self.loeschen_fehlgeschlagen}"
         )
 
 
@@ -190,10 +191,20 @@ async def aufraeumen(
                 await substrate.forget(alte_ref)
                 stats.geloescht += 1
             except SubstrateNotFoundError:
-                # Schon fort — das Ziel ist erreicht, die Zeile darf weg.
-                stats.schon_fort += 1
+                # NICHT AUFFINDBAR — und das ist NICHT dasselbe wie „fort". Die
+                # Gegenstelle meldet 404 auch für eine abgewiesene Löschung.
+                # Die Zeile geht trotzdem weg: Sie ist verwaist, ihre Quellzeile
+                # existiert nicht mehr, und sie stehen zu lassen hiesse, sie in
+                # JEDEM künftigen Lauf erneut zu prüfen — dauerhaft, weil die
+                # Kennung nie wieder auftaucht.
+                # WAS DAS KOSTET, offen benannt: Lebt der Eintrag drüben weiter,
+                # ist er danach über FOREMAN nicht mehr auffindbar. Deshalb steht
+                # der Rückweg in der Meldung — sie ist die einzige Spur, die
+                # bleibt.
+                stats.nicht_auffindbar += 1
                 logger.warning(
-                    "⚠️ Erinnerung zu semantic_event=%s ref=%s war bereits fort.",
+                    "⚠️ semantic_event=%s ref=%s: Gegenstelle meldet nicht auffindbar. "
+                    "KEIN Beleg der Löschung — Rückweg wird hier verworfen.",
                     zeile.id,
                     alte_ref,
                 )

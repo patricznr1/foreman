@@ -27,14 +27,24 @@ class SubstrateError(RuntimeError):
 
 
 class SubstrateNotFoundError(SubstrateError):
-    """Unter dieser Kennung liegt im angefragten Bereich nichts.
+    """Die Gegenstelle findet unter dieser Kennung nichts — MEHRDEUTIG.
 
     Eine UNTERART von `SubstrateError`, damit bestehende Aufrufer, die nur die
     Oberklasse fangen, unverändert weiterlaufen. Wer den Unterschied braucht,
-    fängt sie gezielt — beim Löschen etwa trennt sie „ist schon weg" von „der
-    Weg ist gestört". Das eine ist das erreichte Ziel, das andere ein noch
-    ausstehender Versuch; sie gleich zu behandeln hiesse, eine Zeile entweder
-    dauerhaft im Kreis zu drehen oder vorschnell abzuhaken.
+    fängt sie gezielt: Sie trennt „die Gegenstelle meldet nichts" von „der Weg
+    ist gestört".
+
+    WAS SIE NICHT BELEGT, und das ist der Punkt: dass der Eintrag fort IST.
+    Der Löschweg der Gegenstelle liefert 404 auch dann, wenn eine Löschung
+    ABGEWIESEN wurde — beide Fälle enden dort in derselben leeren Ebenenliste
+    (Substrat-Befund vom 02.09.2026). Am Statuscode ist das nicht zu trennen,
+    und der Antwortkörper gibt nichts her.
+
+    FÜR EIN LÖSCHVERLANGEN NACH ART. 17 DSGVO heisst das: Diese Ausnahme darf
+    NICHT als Erfüllung gebucht werden. Sie sagt „nicht auffindbar", nicht
+    „gelöscht". Wer sie als Erfolg wertet, verwirft womöglich den einzigen
+    Zeiger auf einen Eintrag, der weiterlebt — und dann findet ihn kein
+    späteres Verlangen mehr wieder.
     """
 
 
@@ -142,14 +152,19 @@ class SubstrateClient:
     async def _delete(self, path: str) -> dict[str, Any]:
         """Wie `_post`, aber löschend — eigener Weg, weil DELETE keinen Rumpf trägt.
 
-        EIN 404 IST EINE EIGENE AUSNAHME, kein Erfolg: Er bedeutet, dass es unter
-        dieser Kennung in diesem Bereich nichts (mehr) gibt. Für einen Aufrufer
-        ist das etwas grundlegend anderes als eine Störung des Weges — im einen
-        Fall ist das Ziel erreicht, im anderen steht der Versuch noch aus. Ohne
-        die Unterscheidung ginge der Statuscode in `SubstrateError` verloren und
-        beide Fälle sähen gleich aus.
+        EIN 404 IST EINE EIGENE AUSNAHME, kein Erfolg: Die Gegenstelle meldet,
+        dass sie unter dieser Kennung nichts hat. Für einen Aufrufer ist das
+        etwas anderes als eine Störung des Weges — ohne die Unterscheidung ginge
+        der Statuscode in `SubstrateError` verloren und beide Fälle sähen gleich
+        aus.
 
-        Umgedeutet wird trotzdem nichts: Auch der 404 WIRFT. Nur die ART wird
+        WAS DER 404 NICHT SAGT: dass der Eintrag fort ist. Auf dem Löschweg
+        liefert die Gegenstelle ihn auch für eine ABGEWIESENE Löschung — siehe
+        `SubstrateNotFoundError`. Der Antwortkörper geht deshalb in die Meldung
+        mit ein: Er ist das Einzige, was einem Menschen später noch etwas sagen
+        könnte, und er ist mit der Ausnahme sonst verloren.
+
+        Umgedeutet wird nichts: Auch der 404 WIRFT. Nur die ART wird
         unterscheidbar; was daraus folgt, entscheidet der Aufrufer.
         """
         try:
@@ -157,8 +172,16 @@ class SubstrateClient:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == httpx.codes.NOT_FOUND:
+                # Der Rumpf wird gekürzt mitgegeben, nicht ausgewertet: Er trennt
+                # die beiden Fälle nicht (beide enden in derselben leeren
+                # Ebenenliste). Ihn zu DEUTEN wäre eine erfundene Unterscheidung
+                # und schlimmer als gar keine — mitzugeben kostet nichts und kann
+                # einem Menschen später helfen.
+                rumpf = exc.response.text[:200].strip()
                 raise SubstrateNotFoundError(
-                    f"Substrat-Aufruf {path}: unter dieser Kennung liegt nichts."
+                    f"Substrat-Aufruf {path}: nicht auffindbar. Die Gegenstelle "
+                    f"meldet 404 auch für eine ABGEWIESENE Löschung — das ist KEIN "
+                    f"Beleg, dass der Eintrag fort ist. Antwort: {rumpf or '(leer)'}"
                 ) from exc
             raise SubstrateError(f"Substrat-Aufruf {path} fehlgeschlagen: {exc}") from exc
         except httpx.HTTPError as exc:
@@ -209,6 +232,13 @@ class SubstrateClient:
         Ein Fehlschlag WIRFT. Bei einem Löschverlangen ist die Erfolgsmeldung
         der ganze Nachweis; eine verschluckte Ausnahme wäre ein Häkchen ohne
         Wirkung.
+
+        UND EINE ZWEITE, SCHÄRFERE GRENZE: Ein 404 ist hier KEIN Nachweis der
+        Löschung. Die Gegenstelle liefert ihn auch für eine abgewiesene
+        Löschung (`SubstrateNotFoundError`). Wer ein Verlangen nach Art. 17
+        DSGVO bearbeitet, darf ihn deshalb nicht als Erfüllung buchen — und
+        vor allem den Rückweg (`substrate_ref`) nicht verwerfen, denn ohne ihn
+        ist ein weiterlebender Eintrag später nicht mehr aufzufinden.
         """
         kennung = entry_id.strip()
         if not kennung:

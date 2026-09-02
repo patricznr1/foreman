@@ -3271,3 +3271,45 @@ claims:
     geltung: "gueltig"
     freigabe:
       - "intern"
+
+  - id: "C-114"
+    aussage: "Ein 404 der Loeschroute belegt nicht, dass die Erinnerung fort ist — und die Aufraeum-Wege verwerfen dabei den Rueckweg."
+    status: "gemessen"
+    wert: "2 von 2 Aufrufern behandeln SubstrateNotFoundError als erreichtes Ziel und geben danach den Rueckweg auf; 0 Aufrufer bearbeiten ein Loeschverlangen nach Art. 17"
+    bedingung: >-
+      Am 02.09.2026 gegen den Code erhoben, nicht gegen ein Dokument: Alle
+      Aufrufer von `SubstrateClient.forget` ausgezaehlt (`aufraeumen.py:190`,
+      `nachtrag.py:295`) und ihre Fehlerzweige gelesen. Beide fangen
+      `SubstrateNotFoundError` und fuehren fort — der Aufraeum-Lauf loescht
+      danach die Zeile, der Nachtrag ueberschreibt `substrate_ref`. Damit ist
+      der einzige Zeiger auf die Erinnerung weg.
+      ANLASS ist der Substrat-Befund der Gegenstelle vom 02.09.2026: Ihr
+      Loeschweg liefert 404 auch fuer eine ABGEWIESENE Loeschung; beide Faelle
+      enden in derselben leeren Ebenenliste. Am Statuscode ist das nicht zu
+      trennen, und der Antwortkoerper gibt nichts her — beides an unserem Code
+      geprueft (`client.py::_delete` verwarf den Koerper bisher ungelesen).
+      WAS DER EINTRAG BELEGT: dass die Verwechslung moeglich ist und was sie
+      kostet. WAS ER NICHT BELEGT: dass sie je eingetreten ist. Ob die
+      Gegenstelle je eine Loeschung abgewiesen hat, ist eine Abfrage an ihren
+      Betrieb, keine Codelektuere — hier nicht erhoben.
+      EINGRENZUNG: Ein Weg, der ein Verlangen nach Art. 17 DSGVO bearbeitet,
+      existiert nicht; beide Aufrufer sind Aufraeum-Laeufe. Die Gefahr ist
+      damit heute der verlorene Rueckweg, nicht eine falsch gebuchte Loeschung.
+    datum: "2026-09-02"
+    fundstelle:
+      - "src/foreman/substrate/client.py (SubstrateNotFoundError, _delete, forget)"
+      - "src/foreman/substrate/aufraeumen.py, Fehlerzweig des forget-Aufrufs"
+      - "src/foreman/substrate/nachtrag.py, Fehlerzweig des forget-Aufrufs"
+      - "GROUND_TRUTH.md, Abschnitt 9 (Loeschweg)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      FOREMAN loest die Ungewissheit NICHT auf — eine erfundene Unterscheidung
+      waere schlimmer als die heutige Lage. Sie wird benannt: in der Ausnahme,
+      in der Meldung (samt Antwortkoerper), in den Zaehlernamen
+      (`nicht_auffindbar` statt `schon_fort`/`schon_geloescht`) und in
+      GROUND_TRUTH. Aufloesbar ist sie nur auf der Gegenseite, durch eine
+      Trennung von "nicht gefunden" und "abgewiesen" — benannt, nicht gebaut.
+      Die Kennung C-114 laesst bewusst eine Luecke: C-109 bis C-113 sind auf
+      einem noch offenen Zweig vergeben.

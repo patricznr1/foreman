@@ -470,11 +470,15 @@ async def test_leere_kennung_wird_vor_dem_aufruf_abgelehnt() -> None:
 
 
 async def test_404_wirft_die_eigene_ausnahme() -> None:
-    """Ist-schon-weg muss von Weg-ist-gestoert trennbar sein.
+    """Nicht-auffindbar muss von Weg-ist-gestoert trennbar sein.
 
     Umgedeutet wird nichts: Es WIRFT weiterhin. Nur die Art wird unterscheidbar,
     damit ein Aufrufer entscheiden kann — vorher ging der Statuscode in
     `SubstrateError` verloren und beide Fälle sahen gleich aus.
+
+    Der Docstring sagte hier bis zum 02.09.2026 „Ist-schon-weg". Das trug nicht:
+    Die Gegenstelle liefert denselben 404 für eine abgewiesene Löschung. Siehe
+    den Fall am Ende dieser Datei.
     """
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -551,3 +555,53 @@ async def test_erfolgreiches_loeschen_liefert_den_rumpf_durch() -> None:
     antwort = await client.forget("abc-123")
     assert antwort["status"] == "deleted"
     assert antwort["entry_id"] == "abc-123"
+
+
+# ------------------------------------------------------------
+#  Der 404 belegt NICHT, dass der Eintrag fort ist
+# ------------------------------------------------------------
+async def test_der_404_behauptet_nicht_dass_der_eintrag_fort_ist() -> None:
+    """DER TRAGENDE FALL (Substrat-Befund der Gegenstelle, 02.09.2026).
+
+    Der Löschweg der Gegenstelle liefert 404 auch für eine ABGEWIESENE Löschung —
+    beide Fälle enden dort in derselben leeren Ebenenliste. Wer die Meldung als
+    „ist schon weg" liest, bucht ein Löschverlangen als erfüllt, das es nicht ist,
+    und verwirft dabei den einzigen Rückweg zu einem Eintrag, der weiterlebt.
+
+    WARUM HIER DER WORTLAUT GEPRÜFT WIRD und nicht ein Verhalten: Die Ungewissheit
+    ist am Statuscode nicht zu trennen, und der Antwortkörper gibt nichts her. Die
+    Meldung ist damit das EINZIGE, was sie zu einem Menschen trägt — sie ist hier
+    der Mechanismus, nicht seine Beschreibung. Eine erfundene Unterscheidung wäre
+    schlimmer als die Ungewissheit.
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"detail": "Loeschung verweigert"})
+
+    client = _aus_konfiguration(handler)
+    with pytest.raises(SubstrateNotFoundError) as fehler:
+        await client.forget("weg")
+
+    meldung = str(fehler.value)
+    assert "nicht auffindbar" in meldung
+    assert "ABGEWIESENE" in meldung, (
+        "❌ Die Meldung benennt die Mehrdeutigkeit nicht — dann liest sie sich wie "
+        "ein Beleg der Löschung."
+    )
+    assert "KEIN Beleg" in meldung
+    assert "Loeschung verweigert" in meldung, (
+        "❌ Der Antwortkörper fehlt. Er trennt die beiden Fälle zwar nicht, ist aber "
+        "die einzige Spur, die einem Menschen später noch etwas sagen könnte."
+    )
+
+
+async def test_ein_leerer_rumpf_macht_die_meldung_nicht_unleserlich() -> None:
+    """AUFBAU-KONTROLLE: Ohne Rumpf steht dort etwas Lesbares statt einer Lücke."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404)
+
+    client = _aus_konfiguration(handler)
+    with pytest.raises(SubstrateNotFoundError) as fehler:
+        await client.forget("weg")
+    assert "(leer)" in str(fehler.value)

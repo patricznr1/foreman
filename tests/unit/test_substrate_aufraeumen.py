@@ -187,7 +187,7 @@ async def test_bereits_fortgeschaffte_erinnerung_raeumt_die_zeile_trotzdem_ab(
 
     stats = await aufraeumen(db_session, _Substrat(nicht_da="schon-fort"))
 
-    assert stats.schon_fort == 1
+    assert stats.nicht_auffindbar == 1
     assert stats.geloescht == 0
     assert await _anzahl(db_session) == 0
 

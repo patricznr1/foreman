@@ -457,7 +457,7 @@ async def test_bereits_fortgeschaffte_erinnerung_laesst_die_zeile_durchlaufen(
     stats = await nachtragen(db_session, substrat, _Redactor())
 
     # Getrennt gezählt: weder Erfolg noch Fehlschlag.
-    assert stats.schon_geloescht == 1
+    assert stats.nicht_auffindbar == 1
     assert stats.geloescht == 0, "in `geloescht` mitgezählt — die Zahl verlöre ihre Aussage"
     assert stats.loeschen_fehlgeschlagen == 0
     assert stats.angereichert == 1
@@ -485,7 +485,7 @@ async def test_zweiter_lauf_nach_bereits_fortgeschaffter_erinnerung_ist_ruhig(
     await nachtragen(db_session, substrat, _Redactor())
     zweiter = await nachtragen(db_session, substrat, _Redactor())
 
-    assert zweiter.schon_geloescht == 0
+    assert zweiter.nicht_auffindbar == 0
     assert zweiter.angereichert == 0
     assert zweiter.bereits_vollstaendig == 1
 
@@ -505,7 +505,7 @@ async def test_stoerung_laesst_die_zeile_weiterhin_unangetastet(
     stats = await nachtragen(db_session, _Substrat(wirft_bei="kaputt"), _Redactor())
 
     assert stats.loeschen_fehlgeschlagen == 1
-    assert stats.schon_geloescht == 0, "eine Störung wurde als erledigt gewertet"
+    assert stats.nicht_auffindbar == 0, "eine Störung wurde als erledigt gewertet"
     assert stats.angereichert == 0
 
     danach = await _lade(db_session, zeile.id)
