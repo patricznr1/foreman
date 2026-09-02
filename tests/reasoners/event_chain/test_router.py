@@ -222,7 +222,17 @@ class _FakeSubstrate:
     def __init__(self, *, sister_machine_id: int) -> None:
         self._sister = sister_machine_id
 
-    async def recall(self, query: str, *, max_results: int = 5) -> dict[str, Any]:
+    # ACHTUNG, hier ist schon einmal etwas auseinandergelaufen: Diese Attrappe
+    # bildet die Signatur des echten Klienten VON HAND nach. Kommt dort ein
+    # Feld dazu, bricht der Aufruf hier — und der best-effort-Vertrag von
+    # `recall_similar_incidents` VERSCHLUCKT den Bruch: Der Abruf liefert still
+    # eine leere Liste, der Test wird rot an einer ganz anderen Zusicherung.
+    # Die Nachbartests (test_recall.py, test_substrat_veredelung.py) fahren
+    # deshalb den ECHTEN Klienten gegen einen httpx.MockTransport. Wer diese
+    # Datei ohnehin anfasst, sollte sie dorthin ziehen.
+    async def recall(
+        self, query: str, *, max_results: int = 5, correlation_id: str | None = None
+    ) -> dict[str, Any]:
         return {
             "results": [
                 {
