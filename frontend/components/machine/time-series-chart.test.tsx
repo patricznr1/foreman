@@ -132,7 +132,13 @@ describe("TimeSeriesChart", () => {
       <TimeSeriesChart series={makeSeries()} driftSegments={[]} startMs={START} endMs={END} />,
     );
     const beschriftung = [...container.querySelectorAll("text")].map((t) => t.textContent ?? "");
-    expect(beschriftung).toContain("12:00");
+    // KEINE feste Uhrzeit erwarten: `toLocaleTimeString` rechnet in die Zeitzone
+    // des Laufs um. Der Testdatensatz steht in UTC — lokal (UTC+2) erscheint
+    // "12:00", in der CI (UTC) "10:00". Ein festgeschriebener Wanduhr-Wert
+    // prüft also die Zeitzone des Rechners, nicht den Prüfling. Geprüft wird
+    // die FORM, und um die geht es hier: Uhrzeit ja, Datum nein.
+    const zeiten = beschriftung.filter((b) => /^\d{2}:\d{2}$/.test(b));
+    expect(zeiten).toHaveLength(2);
     expect(beschriftung.some((b) => /\d{2}\.\d{2}\./.test(b))).toBe(false);
   });
 
