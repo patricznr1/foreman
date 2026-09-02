@@ -3221,7 +3221,10 @@ claims:
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis_wdh.json"
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    ueberholt_am: "2026-09-02"
+    ueberholt_weil: >-
+      Der Bewertungssatz, gegen den gemessen wurde, ist am 02.09.2026 um 7 zutreffende Eintraege gewachsen (13 vorgelegte Paare, 7 davon zutreffend). Gegen den erweiterten Satz: Zusatztreffer auf 8 von 10 Anfragen (80 %), Verlust nur noch auf B09. Siehe C-113.
     freigabe:
       - "intern"
 
@@ -3246,7 +3249,10 @@ claims:
     fundstelle:
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
       - "docs/messungen/2026-09-02_rohauswertung.txt"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    ueberholt_am: "2026-09-02"
+    ueberholt_weil: >-
+      Gegen den am 02.09.2026 erweiterten Bewertungssatz ist der Vorsprung sehr wohl gezeigt: alle drei Kennzahlen p < 0,05. Der frueher gemessene Wert beschrieb einen Massstab, in dem 14 der 22 exklusiven Treffer als Fehltreffer zaehlten, weil niemand sie angesehen hatte. Siehe C-112.
     freigabe:
       - "intern"
       - "fach"
@@ -3268,7 +3274,10 @@ claims:
     fundstelle:
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
       - "docs/messungen/2026-09-02_rohauswertung.txt"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    ueberholt_am: "2026-09-02"
+    ueberholt_weil: >-
+      Von den drei verlorenen Treffern haelt nach den Urteilen vom 02.09.2026 nur noch B09 stand. Bei B07 trat ein Wartungsvorgang der Stufe 2 an die Stelle einer Notiz der Stufe 1 — die Rangguete stieg dort. Siehe C-113.
     freigabe:
       - "intern"
 
@@ -3299,7 +3308,10 @@ claims:
       - "tools/archiv_guete/pool_verzerrung.py"
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md, Abschnitt 4 Grenze 2"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    ueberholt_am: "2026-09-02"
+    ueberholt_weil: >-
+      Die gemessene Luecke ist am 02.09.2026 geschlossen worden: 21 von 22 exklusiven Plaetzen beurteilt (95 %) gegen 100 von 103 (97 %). Der Eintrag beschreibt den Zustand VOR der Erhebung und bleibt als deren Anlass stehen. Siehe C-111.
     freigabe:
       - "intern"
 
@@ -3326,6 +3338,86 @@ claims:
       - "tools/archiv_guete/gegenprobe/urteilsbogen_offen.txt"
       - "tools/archiv_guete/pool_verzerrung.py"
       - "claims/claims.yaml, C-106 und C-108"
+    geltung: "ueberholt"
+    ueberholt_am: "2026-09-02"
+    ueberholt_weil: >-
+      Alle drei Verdraenger sind am 02.09.2026 beurteilt worden: maintenance:37 = Stufe 2, note:195 = Stufe 2, maintenance:137 = Stufe 0. Siehe C-113.
+    freigabe:
+      - "intern"
+
+  - id: "C-111"
+    aussage: "Die Beurteilungsluecke bei den exklusiven Treffern der vierten Quelle ist geschlossen."
+    status: "gemessen"
+    wert: "21 von 22 exklusiven Plaetzen beurteilt (95 %) gegen 100 von 103 der uebrigen (97 %) — 2 Prozentpunkte Abstand, vorher 61"
+    bedingung: >-
+      Am 02.09.2026 wurden die 13 unbeurteilten Paare aus
+      tools/archiv_guete/gegenprobe/urteilsbogen_offen.txt einem Beurteiler
+      vorgelegt; die Urteile liegen als
+      gegenprobe/relevanz_urteile_2026-09-02.txt. Der Bewertungssatz wurde mit
+      baue_goldset_v3.py --erweitern neu gebaut: 7 Eintraege kommen hinzu, keiner
+      faellt weg (229 beurteilte Eintraege, 126 zutreffend). Nachgemessen mit
+      pool_verzerrung.py gegen denselben Lauf wie C-109.
+      GRENZEN, die dieser Eintrag ausdruecklich nennt: (1) Die Urteile sind NICHT
+      blind gefaellt — der Bogen wies jeden Eintrag als [memory] aus. Da alle 13
+      Paare aus derselben Quelle stammten, gab es keinen Gegensatz, zu dem hin
+      verzerrt werden konnte; ausgeschlossen ist eine Verzerrung damit nicht.
+      (2) Ein einzelner Beurteiler, kein Uebereinstimmungsmass. (3) 4 Plaetze
+      bleiben unbeurteilt — ihre Eintraege fuehrt goldset_v2_zuordnung.json nicht
+      und sind damit gar nicht beurteilbar.
+    datum: "2026-09-02"
+    fundstelle:
+      - "tools/archiv_guete/gegenprobe/relevanz_urteile_2026-09-02.txt"
+      - "tools/archiv_guete/pool_verzerrung.py"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-112"
+    aussage: "Gegen den vollstaendig beurteilten Bewertungssatz ist der Vorsprung der vierten Quelle statistisch gezeigt."
+    status: "gemessen"
+    wert: "Trefferquote +0,139 (p = 0,031) · Rangguete +0,107 (p = 0,023) · verdichtete Rangguete +0,105 (p = 0,023); gepaarter Permutationstest, zweiseitig, exakt, n = 10"
+    bedingung: >-
+      Erhoben am 02.09.2026 mit tools/archiv_guete/werte_aus.py gegen den
+      erweiterten goldset_v3.json, auf DENSELBEN Rohdaten wie C-107. Es wurde
+      nichts neu gemessen und nichts am System geaendert — nur der Massstab
+      vervollstaendigt. Vorher, mit 14 unbeurteilten Treffern der vierten Quelle
+      im Nenner: +0,051 (p = 0,172) · +0,053 (p = 0,180) · +0,059 (p = 0,109).
+      WAS DAS HEISST: Der frueher berichtete Befund "nicht gezeigt" war eine
+      Eigenschaft des Bewertungssatzes, nicht des Systems.
+      WAS ES NICHT HEISST: dass die Wirkung gross ist. Zehn Anfragen tragen keine
+      Kennzahl mit Vertrauensbereich; p < 0,05 bei n = 10 ist eine
+      Richtungsaussage mit Beleg, kein Effektmass. Und die Urteile, die den
+      Unterschied tragen, sind nicht blind gefaellt (siehe C-111).
+    datum: "2026-09-02"
+    fundstelle:
+      - "docs/messungen/2026-09-02_vierte_quelle_nexus.md, Abschnitt 7"
+      - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+
+  - id: "C-113"
+    aussage: "Die vierte Quelle erfuellt die zweite Freigabe-Bedingung deutlich und verfehlt die erste auf einer einzigen Anfrage."
+    status: "gemessen"
+    wert: "Zusatztreffer auf 8 von 10 Anfragen (80 %, gefordert 30 %); Trefferquote gesunken auf 1 von 10 (B09, verliert note:71 und note:108 an note:195)"
+    bedingung: >-
+      Erhoben am 02.09.2026 gegen den erweiterten Bewertungssatz. Die Schwellen
+      stammen aus GROUND_TRUTH §15.10 (Fassung 27.08.2026). B07 zaehlt nicht mehr
+      als Verlust: maintenance:37 (Stufe 2, Umkehrspiel 0,08 bis 0,11 mm gegen
+      0,02) trat an die Stelle von note:185 (Stufe 1), die Rangguete stieg dort
+      von 0,78 auf 0,82. Bei B09 bleibt es ein Verlust: note:195 (Stufe 2) kommt
+      hinzu, aber zwei beurteilte Notizen fallen aus den 15 Plaetzen.
+      WAS DARAUS FOLGT UND WAS NICHT: Bedingung 1 verlangt, dass auf KEINER
+      Anfrage ein zutreffender Treffer verloren geht. Das ist bei fester
+      Ausgabelaenge und einer zusaetzlichen Quelle eine harte Forderung — sie
+      verlangt, dass jeder neue Treffer besser ist als der schlechteste alte.
+      Ob die Bedingung so gemeint war, ist eine Frage an die Bedingung, nicht an
+      die Messung; dieser Eintrag entscheidet sie nicht.
+    datum: "2026-09-02"
+    fundstelle:
+      - "docs/messungen/2026-09-02_vierte_quelle_nexus.md, Abschnitt 7"
+      - "GROUND_TRUTH.md §15.10"
     geltung: "gueltig"
     freigabe:
       - "intern"

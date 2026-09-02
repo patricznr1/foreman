@@ -9,7 +9,7 @@
 # AUSFUELLEN: das ? hinter dem = durch 0, 1 oder 2 ersetzen.
 # Die Zeilen mit '#' bleiben stehen, sie werden beim Einlesen ignoriert.
 #
-# 13 Paare ueber 7 Anfragen.
+# 0 Paare ueber 0 Anfragen.
 #
 # NICHT IM BOGEN: 6 Paare ueber 6 Eintraege
 # ohne Vorgangskuerzel in goldset_v2_zuordnung.json. Die Zuordnung beginnt erst
@@ -22,43 +22,3 @@
 #   note:6
 #   note:7
 
-
-## B01 — "Undichtigkeit an Achse"
-#   [memory] Wartung 115 (inspection) an AX-03 (Maschine 3), Linearfuehrungslager durchgeführt (2026-07-27T07:30:00+02:00). Prüfung Vertikalachse AX-03. Fließfett hält an der senkrechten Führung nicht, Schmierfil…
-B01-WA-099=?
-#   [memory] Wartung 116 (inspection) an PR-01 (Maschine 7), Hydraulikaggregat durchgeführt (2026-07-28T07:00:00+02:00). Prüfung Aggregat PR-01 nach Warnmeldung. Rückschlagventil im Speicherkreis undicht, Speiche…
-B01-WA-100=?
-#   [memory] Wartung 119 (inspection) an AX-01 (Maschine 1), Linearfuehrungslager durchgeführt (2026-08-04T07:15:00+02:00). Prüfung Führung AX-01 nach anhaltendem Laufgeräusch. Ein Führungswagen schwergängig, bei…
-B01-WA-103=?
-#   [memory] Wartung 124 (inspection) an AX-02 (Maschine 2), Kugelgewindetrieb durchgeführt (2026-08-12T06:30:00+02:00). Prüfung Antriebsspindel AX-02. Kugelrückführung beschädigt, Kugeln teilweise fehlend, Vorsp…
-B01-WA-108=?
-
-## B03 — "Lagerschaden am Lagerbock"
-#   [memory] Wartung 96 (inspection) an RB-02 (Maschine 11), Gelenklager Achse 1 durchgeführt (2026-06-19T07:40:00+02:00). Prüfung Gelenklager RB-02. Spiel in Achse 1 messbar, Fett verbraucht und mit Abrieb dunke…
-B03-WA-080=?
-#   [memory] Wartung 139 (lubrication) an RB-01 (Maschine 10), Gelenklager Achse 1 durchgeführt (2026-08-27T07:30:00+02:00). Nachschmierung Gelenklager Achse 1 RB-01 mit Lithiumkomplexfett NLGI 2. Regelintervall…
-B03-WA-123=?
-
-## B04 — "Dosierunregelmäßigkeiten"
-#   [memory] Wartung 131 (inspection) an FD-02 (Maschine 6), Dosiertrichter mit Klemmzylinder durchgeführt (2026-08-17T07:00:00+02:00). Prüfung Klemmzylinder FD-02. Kolbendichtung verschlissen, innere Leckage mes…
-B04-WA-115=?
-
-## B06 — "Durckabfall Hydraulik"
-#   [memory] Wartung 32 (inspection) an PR-01 (Maschine 7), Hydraulikaggregat durchgeführt (2026-02-27T13:30:00+01:00). Regelprüfung Hydraulik PR-01. Ölstand, Leckölmenge und Filterdifferenzdruck im Sollbereich.…
-B06-WA-016=?
-#   [memory] Wartung 140 (inspection) an PR-03 (Maschine 9), Hydraulikaggregat durchgeführt (2026-08-28T13:30:00+02:00). Regelprüfung Hydraulik PR-03. Ölprobe entnommen, Reinheitsklasse eingehalten, Speicher-Vors…
-B06-WA-124=?
-
-## B07 — "Nullpunktverschiebung an AX"
-#   [memory] Wartung 37 (inspection) an AX-01 (Maschine 1), Kugelgewindetrieb durchgeführt (2026-03-10T06:45:00+01:00). Prüfung Kugelgewindetrieb AX-01. Umkehrspiel an drei Messpunkten 0,08 bis 0,11 mm gegen 0,02…
-B07-WA-021=?
-
-## B09 — "Versatz an PR"
-#   [memory] Notiz 195 zu VS-01 (Maschine 12, 2026-08-20T07:40:00+00:00): VS-01 wirft Teile mit Versatz raus, immer in dieselbe Richtung verschoben. Prüfprogramm ist unverändert.
-B09-SN-179=?
-#   [memory] Wartung 137 (tool_change) an PR-01 (Maschine 7), Fuegewerkzeug durchgeführt (2026-08-24T06:40:00+02:00). Werkzeugwechsel PR-01 nach Standmenge. Verschleißmaß 0,08 mm. Neuer Satz eingebaut, erste zwan…
-B09-WA-121=?
-
-## B10 — "Öl Temperatur an PR"
-#   [memory] Wartung 126 (inspection) an PR-02 (Maschine 8), Hydraulikaggregat durchgeführt (2026-08-12T07:10:00+02:00). Prüfung Hydrauliktank PR-02. Lüfter des Ölkühlers läuft nur auf halber Drehzahl, Kondensato…
-B10-WA-110=?
