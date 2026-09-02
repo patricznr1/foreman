@@ -9,7 +9,7 @@
 // ============================================================
 "use client";
 
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { FailurePredictionRead, WorkerRecommendationRead } from "@/lib/api/contracts";
 import { type OnDemandPhase, initialPhase, onDemandReducer } from "@/lib/ondemand/machine";
 import type { PredictionPair } from "./types";
@@ -26,15 +26,52 @@ export interface UsePredictionResult {
   /** Fordert frisch an: Vorhersage + Empfehlung (nur erlaubte Rollen rufen das auf). */
   trigger: () => void;
   busy: boolean;
+  /**
+   * Laufender Versuch der Empfehlung, 1 bis `MAX_VERSUCHE`.
+   *
+   * Ein Wert über 1 heißt: Der vorige Versuch wurde vom Guard verworfen und es
+   * läuft weiter. Die Anzeige soll das SAGEN — sonst steht der Wartende vor einer
+   * Wartemeldung, die viermal so lange dauert wie sonst, ohne zu wissen, warum.
+   */
+  versuch: number;
 }
 
 const JSON_HEADERS = { "content-type": "application/json" } as const;
+
+/**
+ * Wie oft die Empfehlung insgesamt angefordert wird, bevor aufgegeben wird.
+ *
+ * WARUM ES SIE GIBT: Das Backend verwirft eine Empfehlung hart, wenn sie eine
+ * unbelegte Zahl trägt oder den Simulations-Vorbehalt umdeutet (422, Invarianten
+ * I/II). Es wird dabei NICHTS abgelegt — eigens geprüft in
+ * `test_erfundene_zahl_wird_rejected_und_nicht_persistiert`. Ein zweiter Versuch
+ * kann deshalb keine Dublette erzeugen; genau darauf baut diese Schleife.
+ *
+ * WARUM DREI UND NICHT MEHR: Jeder Versuch ist ein eigener Modellaufruf. Gemessen
+ * an der Demo-Instanz am 01.09.2026: 18,7 / 26,6 / 36,9 Sekunden reine
+ * Modell-Latenz. Drei Versuche kosten also bis zu knapp zwei Minuten und das
+ * Dreifache an Modellzeit. Mehr wäre für den Wartenden nicht mehr zumutbar.
+ *
+ * WARUM VORN UND NICHT IM BACKEND: Die auslösende Anfrage hat 90 Sekunden
+ * (REASONER_TIMEOUT_MS). Drei Modellaufrufe in EINER Anfrage passen dort nicht
+ * hinein — schon der langsamste gemessene Aufruf dreimal wären 110 Sekunden. Je
+ * Versuch eine eigene Anfrage bleibt innerhalb der Frist und macht nebenbei
+ * sichtbar, dass noch gearbeitet wird.
+ *
+ * GRENZE, offen benannt: Ein zweiter Versuch hilft nur, wenn das Modell streut.
+ * Der Cloud-Pfad sendet keine Sampling-Parameter und streut damit. Der LOKALE
+ * Pfad läuft mit `temperature = 0.0` — dort liefert jeder Versuch dasselbe
+ * Ergebnis, und die Wiederholung kostet nur Zeit. Wer lokal betreibt, sollte die
+ * Zahl auf 1 setzen.
+ */
+export const MAX_VERSUCHE = 3;
 
 /** Fehlertext (Hallensprache) zu einem fehlgeschlagenen Schritt. Reine Funktion,
  *  exportiert für den Test — die Statuscode-Abbildung ist Vertrag, kein Detail. */
 export function failureText(
   status: number | null,
   what: "prediction" | "recommendation",
+  versuche = 1,
 ): string {
   if (status === 401) {
     return "Sitzung abgelaufen — bitte neu anmelden";
@@ -43,8 +80,12 @@ export function failureText(
     return "Kein Zugriff auf diese Erkenntnis";
   }
   if (what === "recommendation" && status === 422) {
-    // Backend rejectet eine unbelegte/umdeutende Empfehlung (Invarianten I/II) — ehrlich benennen.
-    return "Empfehlung konnte nicht belegbar erzeugt werden";
+    // Backend rejectet eine unbelegte/umdeutende Empfehlung (Invarianten I/II) —
+    // ehrlich benennen. Die Zahl der Versuche gehört dazu: Sie sagt dem Leser,
+    // dass es nicht an einem Ausrutscher lag, sondern wiederholt nicht gelang.
+    return versuche > 1
+      ? `Empfehlung konnte auch nach ${versuche} Versuchen nicht belegbar erzeugt werden`
+      : "Empfehlung konnte nicht belegbar erzeugt werden";
   }
   if (status === 429) {
     return "Gerade viele Analysen unterwegs — bitte kurz warten";
@@ -74,6 +115,7 @@ export function usePrediction({ machineId, autoload = true }: UsePredictionOptio
   );
   const inflight = useRef<AbortController | null>(null);
   const mounted = useRef(true);
+  const [versuch, setVersuch] = useState(1);
 
   useEffect(() => {
     mounted.current = true;
@@ -131,6 +173,11 @@ export function usePrediction({ machineId, autoload = true }: UsePredictionOptio
     const controller = new AbortController();
     inflight.current?.abort();
     inflight.current = controller;
+    // Zuruecksetzen VOR der Vorhersage: Endete der vorige Lauf bei Versuch 3,
+    // stuende sonst waehrend des ganzen Vorhersage-Schritts noch die alte Zahl
+    // in der Anzeige — eine Wartemeldung, die einen Versuch behauptet, der
+    // noch gar nicht laeuft.
+    setVersuch(1);
     dispatch({ type: "request" });
 
     void (async () => {
@@ -149,16 +196,40 @@ export function usePrediction({ machineId, autoload = true }: UsePredictionOptio
           return;
         }
         const prediction = (await predRes.json()) as FailurePredictionRead;
-        const recRes = await fetch(recommendationEndpoint(prediction.id), {
-          method: "POST",
-          credentials: "same-origin",
-          headers: JSON_HEADERS,
-          body: "{}",
-          signal: controller.signal,
-        });
-        if (!recRes.ok) {
+
+        // WIEDERHOLT WIRD NUR DIE 422 — und das ist die tragende Unterscheidung:
+        // Sie heißt „der erzeugte INHALT hat den Guard nicht bestanden", und ein
+        // streuendes Modell kann beim nächsten Mal etwas Belegbares liefern. Jede
+        // andere Lage ist eine Störung des WEGES (Netz, Sitzung, Zugriff, Frist)
+        // oder ein fehlender Gegenstand (404) — die wiederholt sich unverändert,
+        // und ein zweiter Versuch kostete nur Zeit und Geld.
+        let recRes: Response | null = null;
+        let gefahren = 0;
+        for (let n = 1; n <= MAX_VERSUCHE; n += 1) {
           if (mounted.current) {
-            dispatch({ type: "reject", message: failureText(recRes.status, "recommendation") });
+            setVersuch(n);
+          }
+          gefahren = n;
+          recRes = await fetch(recommendationEndpoint(prediction.id), {
+            method: "POST",
+            credentials: "same-origin",
+            headers: JSON_HEADERS,
+            body: "{}",
+            signal: controller.signal,
+          });
+          if (recRes.status !== 422) {
+            break;
+          }
+        }
+        if (recRes === null || !recRes.ok) {
+          if (mounted.current) {
+            dispatch({
+              type: "reject",
+              // `gefahren` und nicht MAX_VERSUCHE: Bei einem anderen Fehler wurde
+              // genau EINMAL gefahren, und die Meldung darf keine Versuche
+              // behaupten, die es nicht gab.
+              message: failureText(recRes?.status ?? null, "recommendation", gefahren),
+            });
           }
           return;
         }
@@ -181,5 +252,5 @@ export function usePrediction({ machineId, autoload = true }: UsePredictionOptio
     })();
   }, [machineId]);
 
-  return { phase, trigger, busy: phase.kind === "processing" };
+  return { phase, trigger, busy: phase.kind === "processing", versuch };
 }

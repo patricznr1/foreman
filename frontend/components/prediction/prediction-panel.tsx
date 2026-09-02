@@ -25,11 +25,26 @@ import {
 } from "@/lib/prediction/decision";
 import type { PredictionRoleView } from "@/lib/prediction/roles";
 import type { PredictionPair } from "@/lib/prediction/types";
-import { usePrediction } from "@/lib/prediction/use-prediction";
+import { MAX_VERSUCHE, usePrediction } from "@/lib/prediction/use-prediction";
 import { ASSEMBLE_FAILURE_TEXT, assemblePredictionCard } from "@/lib/prediction/view-model";
 import { ConfidenceCaveatCard } from "./confidence-caveat-card";
 
 const PROCESSING_MESSAGE = "Werte die aktuelle Lage gegen vergangene Verläufe aus …";
+
+/**
+ * Wartetext ab dem zweiten Versuch.
+ *
+ * Er sagt AUSDRÜCKLICH, warum es länger dauert. Eine Wartemeldung, die beim
+ * dritten Versuch genauso aussieht wie beim ersten, lässt den Wartenden vor einer
+ * Anzeige stehen, die dreimal so lange braucht wie sonst — und nichts erklärt.
+ * Und sie sagt es EHRLICH: Die vorige Fassung wurde verworfen, weil sie nicht
+ * durchgehend belegbar war, nicht weil etwas kaputt ist.
+ */
+export function processingMessage(versuch: number): string {
+  return versuch <= 1
+    ? PROCESSING_MESSAGE
+    : `Die vorige Fassung war nicht durchgehend belegbar — Versuch ${versuch} von ${MAX_VERSUCHE} läuft …`;
+}
 
 /** Ruhiger Hinweis (Fehler/leer) — Hallensprache, kein Alarm-Rot. */
 function Notice({ tone, role, children }: {
@@ -58,7 +73,7 @@ export function PredictionPanel({
   label: string;
 }) {
   const online = useOnline();
-  const { phase, trigger, busy } = usePrediction({ machineId, autoload: true });
+  const { phase, trigger, busy, versuch } = usePrediction({ machineId, autoload: true });
   // HITL-Entscheidung lokal je Empfehlung (auditierbar; kein Backend-Schreibpfad).
   const [decided, setDecided] = useState<Record<number, DecisionRecord>>({});
 
@@ -104,7 +119,7 @@ export function PredictionPanel({
   if (phase.kind === "processing") {
     body = (
       <div className="flex flex-col gap-4">
-        <NamedProcessingState message={PROCESSING_MESSAGE} />
+        <NamedProcessingState message={processingMessage(versuch)} />
         {previous ? renderResult(previous.data, previous.stampedAt) : null}
       </div>
     );
