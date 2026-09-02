@@ -25,14 +25,18 @@ describe("Rollenmatrix 3.1", () => {
     expect(ACCESS_MATRIX.A.technician).toBe("none");
   });
 
-  it("jede Rolle: ≤ 7 BEGEHBARE Navigationseinträge, keiner ohne zugehörigen Zugriff", () => {
+  it("jede Rolle: ≤ 8 BEGEHBARE Navigationseinträge, keiner ohne zugehörigen Zugriff", () => {
     for (const role of ROLES) {
       const nav = visibleNav(role);
       expect(nav.length).toBeGreaterThan(0);
-      // ≤ 7 begehbare Einträge (Designstudie §3.3); ein deaktivierter Vorschau-Eintrag
-      // ("Hatten wir das schon mal", Paket 1c) zählt NICHT zu den begehbaren.
+      // ≤ 8 begehbare Einträge. Die Studie §3.3 nannte 7 und rechnete den
+      // Vorschau-Eintrag "Hatten wir das schon mal" nicht mit, weil er deaktiviert
+      // war. Seit dem 02.09.2026 führt er in die Verknüpfungs-Ansicht und ist
+      // begehbar — die Zahl der SICHTBAREN Einträge hat sich damit nicht geändert,
+      // nur ihr Zustand. Die Grenze wandert deshalb um genau diesen einen mit
+      // (GROUND_TRUTH §21.16), nicht ins Offene: Sie bleibt eine Grenze.
       const actionable = nav.filter((item) => !item.disabled && item.href !== null);
-      expect(actionable.length).toBeLessThanOrEqual(7);
+      expect(actionable.length).toBeLessThanOrEqual(8);
       for (const item of nav) {
         expect(item.sections.some((section) => canAccessSection(role, section))).toBe(true);
       }
@@ -45,12 +49,19 @@ describe("Rollenmatrix 3.1", () => {
     expect(archive?.href).toBe("/archive");
   });
 
-  it("'Hatten wir das schon mal' ist sichtbar, aber deaktiviert (kein Routing-Ziel)", () => {
+  it("'Hatten wir das schon mal' führt in die Verknüpfungs-Ansicht", () => {
+    // Der Eintrag stand seit Paket 1c dauerhaft ausgegraut da ("folgt mit echter
+    // Substanz"). Die Substanz ist seit dem 27.08.2026 angebunden — die vierte
+    // Quelle — und seit dem 28.08.2026 trägt jede Erinnerung ihr Bauteil.
+    // Ein grauer Eintrag, der ankündigt, was nebenan längst läuft, ist
+    // irreführender als gar keiner.
     const recall = visibleNav("worker").find((item) => item.id === "recall");
     expect(recall).toBeDefined();
-    expect(recall?.disabled).toBe(true);
-    expect(recall?.href).toBeNull();
+    expect(recall?.disabled).toBeUndefined();
     expect(recall?.label).toBe("Hatten wir das schon mal");
+    // Der Parameter ist tragend: OHNE ihn landet der Eintrag auf der wörtlichen
+    // Suche über alle vier Quellen und hielte sein Versprechen nicht.
+    expect(recall?.href).toBe("/archive?quelle=gedaechtnis");
   });
 
   it("Werker sieht weder Cockpit noch Plattform, aber Maschinen und Erfassung", () => {

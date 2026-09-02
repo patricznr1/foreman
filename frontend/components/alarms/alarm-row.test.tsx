@@ -121,4 +121,38 @@ describe("AlarmRow", () => {
     await user.click(screen.getByRole("button", { name: /aufheben/i }));
     expect(onUnshelve).toHaveBeenCalledWith(50);
   });
+  // ──────────────────────────────────────────────────────────────────
+  //  Der Volltext darf nicht zerquetscht werden
+  //  MESSGRENZE, ehrlich benannt: jsdom rechnet kein Layout. Geprüft wird
+  //  deshalb der MECHANISMUS, nicht das gerenderte Bild — mehr ist hier nicht
+  //  zu haben, und ein Test, der so tut, wäre schlimmer als dieser.
+  // ──────────────────────────────────────────────────────────────────
+
+  it("Volltext-Modus: die Textspalte kann nicht auf null schrumpfen", () => {
+    // `min-w-0` erlaubt einem Flex-Kind, unter seine Mindestbreite zu fallen. In
+    // der Maschinensicht konkurriert die Textspalte mit festen Breiten rechts
+    // (Querlinks, erwartete Aktion max-w-40, Quittier-Hinweis max-w-44, Zeitblock);
+    // fiel sie auf null, brach `break-words` JEDES Wort einzeln und der Text lief
+    // buchstabenweise senkrecht die Zeile hinunter.
+    render(<AlarmRow vm={vm({ message: "Hydraulikdruck PR-03 kritisch" })} {...props} fullMessage />);
+    const spalte = screen.getByText("Hydraulikdruck PR-03 kritisch").parentElement;
+    expect(spalte).not.toBeNull();
+    expect(spalte?.className).toContain("min-w-[16rem]");
+    expect(spalte?.className).not.toContain("min-w-0");
+  });
+
+  it("Volltext-Modus: die Zeile darf umbrechen, die Listenzeile nicht", () => {
+    // Die zweite Hälfte des Fixes: Ist der Platz zu eng, weichen die
+    // Bedienelemente in eine zweite Zeile aus, statt den Text zu verdrängen.
+    // In der virtualisierten C-Liste ginge das nicht — dort hat jede Zeile eine
+    // feste Höhe, ein Umbruch würde sie sprengen.
+    const { container, unmount } = render(
+      <AlarmRow vm={vm({ message: "Hydraulikdruck PR-03 kritisch" })} {...props} fullMessage />,
+    );
+    expect(container.querySelector("article")?.className).toContain("flex-wrap");
+    unmount();
+
+    const einzeilig = render(<AlarmRow vm={vm({ message: "x" })} {...props} />);
+    expect(einzeilig.container.querySelector("article")?.className).not.toContain("flex-wrap");
+  });
 });

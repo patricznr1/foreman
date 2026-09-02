@@ -122,4 +122,41 @@ describe("TimeSeriesChart", () => {
     expect(container.querySelector("pattern")).not.toBeNull();
     expect(container.innerHTML).not.toContain("alarm-critical");
   });
+  // ──────────────────────────────────────────────────────────────────
+  //  Die Zeitachse muss die SPANNE lesbar machen
+  // ──────────────────────────────────────────────────────────────────
+
+  it("kurze Spanne: die Enden tragen nur die Uhrzeit", () => {
+    // Eine Stunde — hier ist die Uhrzeit eindeutig und das Datum nur Ballast.
+    const { container } = render(
+      <TimeSeriesChart series={makeSeries()} driftSegments={[]} startMs={START} endMs={END} />,
+    );
+    const beschriftung = [...container.querySelectorAll("text")].map((t) => t.textContent ?? "");
+    // KEINE feste Uhrzeit erwarten: `toLocaleTimeString` rechnet in die Zeitzone
+    // des Laufs um. Der Testdatensatz steht in UTC — lokal (UTC+2) erscheint
+    // "12:00", in der CI (UTC) "10:00". Ein festgeschriebener Wanduhr-Wert
+    // prüft also die Zeitzone des Rechners, nicht den Prüfling. Geprüft wird
+    // die FORM, und um die geht es hier: Uhrzeit ja, Datum nein.
+    const zeiten = beschriftung.filter((b) => /^\d{2}:\d{2}$/.test(b));
+    expect(zeiten).toHaveLength(2);
+    expect(beschriftung.some((b) => /\d{2}\.\d{2}\./.test(b))).toBe(false);
+  });
+
+  it("Tagesfenster: die Enden tragen das Datum, nicht nur die Uhrzeit", () => {
+    // DER TRAGENDE FALL. Ueber 24 Stunden liegen Anfang und Ende fast auf
+    // derselben Uhrzeit — die Achse las sich als "12:00 bis 12:01", und der
+    // Verlauf schien die letzte Minute zu zeigen statt eines ganzen Tages.
+    // Ein Ausschlag ueber einen Tag ist etwas voellig anderes als einer ueber
+    // eine Minute; die Verwechslung ist teuer.
+    const tagEnde = START + 24 * 60 * 60 * 1000 + 60_000;
+    const { container } = render(
+      <TimeSeriesChart series={makeSeries()} driftSegments={[]} startMs={START} endMs={tagEnde} />,
+    );
+    const beschriftung = [...container.querySelectorAll("text")].map((t) => t.textContent ?? "");
+    const mitDatum = beschriftung.filter((b) => /\d{2}\.\d{2}\./.test(b));
+    expect(mitDatum).toHaveLength(2);
+    // Und sie unterscheiden sich — sonst waere das Datum so nichtssagend wie
+    // vorher die Uhrzeit.
+    expect(mitDatum[0]).not.toBe(mitDatum[1]);
+  });
 });

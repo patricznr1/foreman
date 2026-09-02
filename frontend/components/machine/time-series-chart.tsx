@@ -30,8 +30,36 @@ function formatNumber(value: number): string {
   return value.toLocaleString("de-DE", { maximumFractionDigits: 1 });
 }
 
-function formatTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+/** Ab dieser Spanne trägt eine reine Uhrzeit die Achse nicht mehr (12 Stunden). */
+const DATUM_AB_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * Beschriftung der Zeitachse — die Genauigkeit richtet sich nach der SPANNE.
+ *
+ * WARUM NICHT EINFACH DIE UHRZEIT: Bei einem Tages- oder Wochenfenster liegen
+ * Anfang und Ende fast auf derselben Uhrzeit. Die Achse las sich dann als
+ * „08:15 bis 08:16" — der Verlauf schien die letzte Minute zu zeigen, während er
+ * in Wahrheit eine Woche zeigte. Die Angabe war nicht falsch, aber sie führte in
+ * die Irre, und zwar in genau die Richtung, in der eine Fehlinterpretation
+ * teuer ist: Ein Ausschlag über eine Woche ist etwas ganz anderes als einer
+ * über eine Minute.
+ *
+ * Die Spanne entscheidet, nicht das gewählte Fenster: Der Baustein bekommt kein
+ * Fenster übergeben, und eine zweite Quelle dafür liefe der ersten davon.
+ */
+function formatTime(ms: number, spanMs: number): string {
+  const d = new Date(ms);
+  if (spanMs < DATUM_AB_MS) {
+    return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  }
+  // Datum UND Uhrzeit: Bei einem Tagesfenster unterscheiden sich die Enden nur im
+  // Datum, bei einem Wochenfenster wäre die Uhrzeit allein sogar irreführend.
+  return d.toLocaleString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function areaPath(top: readonly Point[], bottom: readonly Point[]): string {
@@ -203,10 +231,10 @@ export function TimeSeriesChart({
       {last ? <circle cx={xScale(last.t)} cy={yScale(last.avg)} r={3} fill="var(--color-data-series-1)" /> : null}
 
       <text x={PAD.left} y={height - 8} fill="var(--color-fg-muted)" fontSize="11">
-        {formatTime(startMs)}
+        {formatTime(startMs, endMs - startMs)}
       </text>
       <text x={width - PAD.right} y={height - 8} textAnchor="end" fill="var(--color-fg-muted)" fontSize="11">
-        {formatTime(endMs)}
+        {formatTime(endMs, endMs - startMs)}
       </text>
 
       {!reduced && hasBand ? (

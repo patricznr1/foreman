@@ -19,13 +19,29 @@ import type { CurrentUser } from "@/lib/api/contracts";
 import { previousResult } from "@/lib/ondemand/machine";
 import { useOnline } from "@/lib/ondemand/use-online";
 import { memoryRoleView } from "@/lib/memory/roles";
-import { SOURCE_LABEL } from "@/lib/memory/source";
+import { SOURCE_LABEL, VERFUEGBARE_QUELLEN } from "@/lib/memory/source";
 import type { ArchiveSearchResult, SourceType } from "@/lib/memory/types";
 import { useMemorySearch } from "@/lib/memory/use-memory-search";
 import { MemoryResultList } from "./memory-result-list";
+import { VerknuepfungView } from "./verknuepfung-view";
 import { MemorySearchBar } from "./memory-search-bar";
 
+/**
+ * Zwei Betriebsarten derselben Sicht — beide ehrlich benannt:
+ *  · "Archiv": woertlich ueber ALLE Quellen (so war es seit Paket 1c).
+ *  · "Hatten wir das schon mal": gezielt NUR das Gedaechtnis. Dieser Eintrag stand
+ *    in der Navigation lange dauerhaft ausgegraut ("folgt mit echter Substanz").
+ *    Die Substanz ist seit dem 27.08.2026 da — die vierte Quelle haengt dran und
+ *    ist im Archiv ohnehin vorgewaehlt. Ein grauer Eintrag, der etwas ankuendigt,
+ *    das nebenan laeuft, ist irrefuehrender als gar keiner.
+ *
+ * MODUL-Konstanten, nicht im Rumpf gebaut: Die Vorwahl haengt am Zuruecksetz-
+ * Effekt der Suchleiste und braucht eine stabile Referenz.
+ */
+const NUR_GEDAECHTNIS: readonly SourceType[] = ["memory"];
+
 const PROCESSING_MESSAGE = "Durchsucht das Archiv nach dem Stichwort …";
+const PROCESSING_MESSAGE_GEDAECHTNIS = "Sucht im Gedächtnis nach Vergleichbarem …";
 
 const OFFLINE_REASON =
   "Offline — neue Suche nicht möglich (zuletzt gefundene Treffer siehe Stand am Ergebnis)";
@@ -59,18 +75,28 @@ function Notice({
   );
 }
 
-export function MemoryView({ user, initialQuery }: { user: CurrentUser; initialQuery?: string }) {
+export function MemoryView({
+  user,
+  initialQuery,
+  focusMemory = false,
+}: {
+  user: CurrentUser;
+  initialQuery?: string;
+  /** Nur das Gedaechtnis befragen ("Hatten wir das schon mal"). */
+  focusMemory?: boolean;
+}) {
   const roleView = memoryRoleView(user.role);
   const online = useOnline();
   const { phase, search, busy } = useMemorySearch();
+  const quellen = focusMemory ? NUR_GEDAECHTNIS : VERFUEGBARE_QUELLEN;
 
   // Deep-Link aus der Befehlsleiste (?q=…) löst beim Eintritt genau eine Suche aus.
   useEffect(() => {
     const initial = initialQuery?.trim();
     if (initial && online) {
-      search(initial, { machineId: null });
+      search(initial, { machineId: null, sources: [...quellen] });
     }
-  }, [initialQuery, online, search]);
+  }, [initialQuery, online, search, quellen]);
 
   // `announce`: nur ein FRISCH geholtes Ergebnis sagt die Live-Region an — ein aus
   // dem Cache rehydriertes oder degradiertes Ergebnis bleibt still (kein alter Stand).
@@ -83,6 +109,10 @@ export function MemoryView({ user, initialQuery }: { user: CurrentUser; initialQ
         caveat={false}
         basis={basisText(result.sources)}
       >
+        {/* Die Verknüpfung steht VOR der Liste: Sie ist der Wert dieser Betriebsart,
+            die rohe Trefferliste ist es nicht (Studie §4H). Ohne Fokus bleibt sie
+            weg — im Archiv ist die wörtliche Fundstelle das Gesuchte. */}
+        {focusMemory ? <VerknuepfungView result={result} roleView={roleView} /> : null}
         <MemoryResultList result={result} roleView={roleView} announce={announce} />
       </ResultWithProvenance>
     );
@@ -94,7 +124,9 @@ export function MemoryView({ user, initialQuery }: { user: CurrentUser; initialQ
   if (phase.kind === "processing") {
     body = (
       <div className="flex flex-col gap-4">
-        <NamedProcessingState message={PROCESSING_MESSAGE} />
+        <NamedProcessingState
+          message={focusMemory ? PROCESSING_MESSAGE_GEDAECHTNIS : PROCESSING_MESSAGE}
+        />
         {previous ? renderResult(previous.data, previous.stampedAt, false) : null}
       </div>
     );
@@ -120,17 +152,22 @@ export function MemoryView({ user, initialQuery }: { user: CurrentUser; initialQ
   }
 
   return (
-    <section className="flex flex-col gap-5" aria-label="Archiv">
+    <section className="flex flex-col gap-5" aria-label={focusMemory ? "Hatten wir das schon mal" : "Archiv"}>
       <div className="flex flex-col gap-1">
-        <h1 className="text-h1 text-fg-primary">Archiv</h1>
+        <h1 className="text-h1 text-fg-primary">
+          {focusMemory ? "Hatten wir das schon mal" : "Archiv"}
+        </h1>
         <p className="max-w-prose text-body text-fg-secondary">
-          Durchsucht abgelegte Schichtberichte, Wartungsprotokolle und Alarme im Wortlaut.
+          {focusMemory
+            ? "Fragt das Gedächtnis nach vergleichbaren Vorgängen — auch wenn im Wortlaut nichts übereinstimmt."
+            : "Durchsucht abgelegte Schichtberichte, Wartungsprotokolle und Alarme im Wortlaut."}
         </p>
       </div>
       <MemorySearchBar
         defaultQuery={initialQuery}
         onSubmit={(query, machineId, sources) => search(query, { machineId, sources })}
         busy={busy}
+        initialSources={quellen}
         canFilter={roleView.canFilter}
         machines={user.assigned_machine_ids}
         disabledReason={online ? null : OFFLINE_REASON}
