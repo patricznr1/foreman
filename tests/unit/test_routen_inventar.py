@@ -270,6 +270,114 @@ def test_die_scope_ausnahmen_gibt_es_noch(app_routen):
     )
 
 
+# ──────────────────────────────────────────────────────────────────────
+#  Die dritte Richtung: ist die Ausnahme HEUTE noch nötig?
+#
+#  Eine Ausnahmeliste braucht drei Prüfungen, nicht eine. Vorwärts (wer nicht
+#  drinsteht, muss die Schutzmaßnahme tragen) baut jeder. Die Existenz (jeder
+#  Eintrag zeigt auf etwas Gebautes) stand für SCOPE_NICHT_NOETIG schon da.
+#  Es fehlte die dritte: Trägt ein freigestellter Fall die Schutzmaßnahme
+#  INZWISCHEN, ist sein Eintrag überholt — und schlimmer als überflüssig, denn
+#  solange er steht, prüft ihn niemand mehr. Fällt die Absicherung später wieder
+#  heraus, bleibt es still.
+#
+#  ANLASS (02.09.2026, zweite und dritte Stelle derselben Klasse): In
+#  `test_ereigniszeit.py` führte eine Ausnahmeliste zwei Ereignisarten als „ohne
+#  eigene Zeit". Für eine dritte war derselbe Eintrag schon einmal falsch gewesen
+#  und korrigiert worden — die beiden anderen blieben stehen, weil nichts sie
+#  nachprüfte. `UEBERGANG_OFFEN` hat diese Richtung längst („Schuldenliste, kein
+#  Bestandsverzeichnis"); die beiden Listen hier hatten sie nicht. Das Vorbild
+#  stand die ganze Zeit in derselben Datei.
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _offene_routen(routen) -> list[APIRoute]:
+    """Die Routen, die `AUSGENOMMEN` freistellt — `_zu_pruefen` filtert sie heraus."""
+    return [
+        r
+        for r in routen
+        if isinstance(r, APIRoute) and (r.methods & GEPRUEFTE_METHODEN) and r.path in AUSGENOMMEN
+    ]
+
+
+def test_die_offenen_pfade_gibt_es_noch(app_routen):
+    """Ein freigestellter Pfad, den es nicht mehr gibt, ist toter Ballast.
+
+    Er täuscht außerdem Sorgfalt vor: Wer die Liste liest, hält einen bedachten
+    Sonderfall für geprüft, während der Fall längst verschwunden ist. Für
+    `SCOPE_NICHT_NOETIG` stand diese Zusicherung seit jeher da, für `AUSGENOMMEN`
+    nicht.
+
+    Die Menge kommt aus ALLEN Routen, nicht nur den `APIRoute`-Instanzen: Die
+    Schema-Pfade (`/docs`, `/openapi.json`, `/redoc`) baut FastAPI selbst, und sie
+    sind keine `APIRoute`. Ein Filter darauf meldete sie fälschlich als verwaist.
+    """
+    vorhanden = {getattr(r, "path", None) for r in app_routen}
+    verwaist = sorted(set(AUSGENOMMEN) - vorhanden)
+    assert not verwaist, (
+        "❌ Freigestellte(r) Pfad(e) ohne zugehörige Route:\n  "
+        + "\n  ".join(verwaist)
+        + "\n\nAus AUSGENOMMEN streichen."
+    )
+
+
+def test_die_offenen_pfade_tragen_noch_keine_identitaet(app_routen):
+    """DIE AKTUALITÄTS-RICHTUNG für `AUSGENOMMEN`.
+
+    Trägt ein freigestellter Pfad inzwischen eine Identitäts-Dependency, ist sein
+    Eintrag überholt. Das ist nicht bloß unordentlich: `_zu_pruefen` filtert genau
+    diese Pfade heraus, sie stehen also unter GAR KEINER Aufsicht. Fällt die
+    Absicherung später wieder heraus, bemerkt es niemand — die Route wäre dann
+    offen, und geprüft hätte sie nie jemand.
+    """
+    # AUFBAU-KONTROLLE: Die Prüfung muss überhaupt etwas zu sehen bekommen. Ohne
+    # sie bliebe sie auch dann grün, wenn `_offene_routen` nie etwas fände — etwa
+    # weil die Schlüssel der Liste nicht mehr zu `route.path` passen.
+    assert _offene_routen(app_routen), (
+        "❌ Kein einziger freigestellter Pfad wurde als gebaute Route wiedergefunden. "
+        "Die Prüfung sieht nichts und wäre damit wertlos."
+    )
+    inzwischen = sorted(
+        _kennung(r) for r in _offene_routen(app_routen) if _dependency_namen(r) & IDENTITAETS_DEPS
+    )
+    assert not inzwischen, (
+        "✅ Freigestellte(r) Pfad(e) tragen inzwischen eine Identitäts-Dependency:\n  "
+        + "\n  ".join(inzwischen)
+        + "\n\nAus AUSGENOMMEN streichen — solange der Eintrag steht, ist die Route von "
+        "jeder Prüfung ausgenommen, obwohl sie längst abgesichert ist."
+    )
+
+
+def test_die_scope_ausnahmen_sind_noch_noetig(app_routen):
+    """DIE AKTUALITÄTS-RICHTUNG für `SCOPE_NICHT_NOETIG`.
+
+    Der Fall darüber prüft, dass jeder Eintrag noch auf eine gebaute Route zeigt.
+    Er sagt nichts darüber, ob die Ausnahme noch NÖTIG ist. Bekommt eine
+    freigestellte Route den Ausschnitt — als Dependency oder im Rumpf —, bleibt
+    ihr Eintrag stehen und behauptet dauerhaft eine begründete Lücke, die es nicht
+    mehr gibt. Genau der Eintrag, der einmal richtig war und es nicht mehr ist.
+    """
+    inzwischen = []
+    for route in _zu_pruefen(app_routen):
+        if _kennung(route) not in SCOPE_NICHT_NOETIG:
+            continue
+        if _dependency_namen(route) & SCOPE_DEPS:
+            inzwischen.append(_kennung(route))
+            continue
+        try:
+            rumpf = inspect.getsource(route.endpoint)
+        except (OSError, TypeError):
+            continue
+        if any(aufruf in rumpf for aufruf in SCOPE_IM_RUMPF):
+            inzwischen.append(_kennung(route))
+    assert not inzwischen, (
+        "✅ Ausnahme(n) tragen den Ausschnitt inzwischen selbst:\n  "
+        + "\n  ".join(sorted(inzwischen))
+        + "\n\nAus SCOPE_NICHT_NOETIG streichen — die Liste führt begründete LÜCKEN, "
+        "keine abgesicherten Routen."
+    )
+
+
 def test_ressourcen_routen_rufen_den_scope_helfer(app_routen):
     """Zweite Stufe: Identität allein genügt nicht, wo eine Kennung im Spiel ist.
 
