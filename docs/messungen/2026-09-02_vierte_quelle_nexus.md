@@ -30,6 +30,7 @@ Quelle dadurch ändert.
 2. **Freigabe-Bedingung 1 bleibt verfehlt.** Zwei Anfragen verlieren zutreffende Treffer:
    B07 (`note:185`) und B09 (`note:71`, `note:108`) — **dieselben zwei wie am 28.08.**
    Die zweite Bedingung ist mit 50 % erfüllt (Schwelle 30 %; am 28.08. waren es 60 %).
+   **Nachtrag (siehe Abschnitt 6): Alle drei verdrängenden Treffer sind unbeurteilt.**
 3. **Das Gedächtnis liefert 18 % der Plätze exklusiv.** Von 125 ausgelieferten Plätzen
    werden 50 (40 %) auch vom Gedächtnis gefunden, **22 (18 %) ausschließlich** von ihm.
    Zahlengleich zur Vormessung.
@@ -170,3 +171,119 @@ die Güte **nicht** bewegt.
   ausgelieferten Plätze exklusiv bei und liefert auf der Hälfte der Anfragen einen
   zusätzlichen zutreffenden Treffer." Beides ist ausgezählt und reproduziert.
   **Nicht** taugt: „Sie verbessert die Suche" — das ist bei n = 10 nicht gezeigt.
+
+---
+
+## 6. Nachtrag vom 02.09.2026 — woran die verfehlte Bedingung gemessen ist
+
+Der Bericht nennt in Abschnitt 5 die Verdrängung als Ansatzpunkt. Eine Nachprüfung der
+Rohdaten zeigt, dass sie **so noch nicht beurteilbar ist** — und warum Bedingung 1 auf
+dem heutigen Bewertungssatz durch keine Verbesserung erfüllt werden kann.
+
+**Die drei Verdränger hat nie jemand angesehen** (C-110). Sie stehen weder in
+`goldset_v3.json` noch in `beurteilt_v3.json` — auch nicht mit der Stufe 0:
+
+| Anfrage | verliert | Rang (Basis) | an | Rang (mit Gedächtnis) | Urteil |
+|---|---|---|---|---|---|
+| B07 | `note:185` (Stufe 1) | 15 | `maintenance:37` | 6 | **nie beurteilt** |
+| B09 | `note:71` (Stufe 2) | 14 | `maintenance:137` | 4 | **nie beurteilt** |
+| B09 | `note:108` (Stufe 1) | 15 | `note:195` | 5 | **nie beurteilt** |
+
+Alle drei Verdränger tragen einen intakten Rückweg und landen weit **vor** den Plätzen, die
+sie verdrängen. Es ist der Schnitt bei k = 15, der die Notizen herausnimmt — keine
+Fehlfunktion der Fusion. Ob dabei etwas verloren geht, hängt allein daran, ob die drei
+neuen Treffer zutreffen. Der Maßstab wertet sie als nicht zutreffend, **weil sie fehlen**,
+nicht weil jemand sie geprüft und verworfen hätte.
+
+**Das ist kein Einzelfall, sondern die Bauart des Maßstabs** (C-109):
+
+| Herkunft eines ausgelieferten Platzes | beurteilt | davon zutreffend |
+|---|---|---|
+| nur vom Gedächtnis gefunden | **8 von 22 (36 %)** | 7 von 8 |
+| von einer eigenen Quelle gefunden | 100 von 103 (97 %) | 60 von 100 |
+
+61 Prozentpunkte Abstand. Das ist die Pool-Verzerrung, die `baue_goldset_v3.py` im Kopf
+zitiert (Buettcher et al., SIGIR 2007) — hier ausgezählt statt vermutet, mit
+`tools/archiv_guete/pool_verzerrung.py`. Die Zahl der unbeurteilten Plätze stimmt mit
+Grenze 2 dieses Berichts überein (17 im Gedächtnis-Arm, 5 in der Basis); die beiden
+Rechnungen sind unabhängig entstanden.
+
+**Der Kreisschluss:** Jeder Treffer, den nur die vierte Quelle findet, ist per Bauart
+nicht im Pool — also unbeurteilt — also gewertet wie ein Fehltreffer, und er verdrängt
+einen beurteilten. Je besser die vierte Quelle wird, desto sicherer verfehlt sie
+Bedingung 1.
+
+**Was daraus folgt — statt Abschnitt 5, Punkt 1:** Nicht die Verdrängung angehen, sondern
+zuerst den Pool schließen. Der Bogen dafür ist erzeugt und enthält **13 Paare über sieben
+Anfragen**: `tools/archiv_guete/gegenprobe/urteilsbogen_offen.txt`. Erst danach ist die
+Frage entscheidbar, ob die vierte Quelle etwas verdrängt oder etwas Besseres einsetzt.
+
+**Was dieser Nachtrag NICHT belegt:** dass die 14 unbeurteilten Treffer zutreffend wären.
+Dass 7 der 8 bereits beurteilten es sind, ist ein Hinweis und keine Schätzung für die
+übrigen. Die Kennzahlen des Berichts bleiben, wie sie stehen — der Nachtrag sagt nur, was
+sie messen.
+
+---
+
+## 7. Nachtrag vom 02.09.2026, abends — der Pool ist geschlossen
+
+Die 13 Paare aus Abschnitt 6 wurden vorgelegt und beurteilt
+(`gegenprobe/relevanz_urteile_2026-09-02.txt`). Sieben davon sind zutreffend. Der
+Bewertungssatz wuchs damit auf 229 beurteilte Einträge (126 zutreffend); **kein Eintrag ist
+weggefallen**, und **an System und Rohdaten wurde nichts geändert** — dieselben Läufe, nur
+ein vollständigerer Maßstab.
+
+### 7.1 Die Lücke
+
+| Herkunft eines Platzes | vorher | nachher |
+|---|---|---|
+| nur vom Gedächtnis gefunden | 8 von 22 (36 %) | **21 von 22 (95 %)** |
+| von einer eigenen Quelle | 100 von 103 (97 %) | 100 von 103 (97 %) |
+| Abstand | 61 Prozentpunkte | **2 Prozentpunkte** |
+
+Exklusive Treffer, die zutreffen: von 7 auf **14**. (C-111)
+
+### 7.2 Was sich am Ergebnis ändert
+
+| Kennzahl | Abschnitt 1 (Pool offen) | **jetzt (Pool geschlossen)** |
+|---|---|---|
+| Trefferquote | +0,051 (p = 0,172) | **+0,139 (p = 0,031)** |
+| Ranggüte | +0,053 (p = 0,180) | **+0,107 (p = 0,023)** |
+| Ranggüte verdichtet | +0,059 (p = 0,109) | **+0,105 (p = 0,023)** |
+| Anfragen mit Zusatztreffer | 5 von 10 (50 %) | **8 von 10 (80 %)** |
+| Anfragen mit Verlust | 2 (B07, B09) | **1 (B09)** |
+
+**Alle drei Kennzahlen erreichen jetzt das Niveau.** Der Befund aus der Kurzfassung — „die
+Richtung stimmt, der Nachweis fehlt" — war eine Eigenschaft des Bewertungssatzes, nicht des
+Systems. Vierzehn Treffer der vierten Quelle standen im Nenner als Fehltreffer, weil
+niemand sie angesehen hatte. (C-112)
+
+**B07 zählt nicht mehr als Verlust:** `maintenance:37` ist Stufe 2 — der Prüfbericht nennt
+Umkehrspiel von 0,08 bis 0,11 mm gegen einen Sollwert von 0,02, und die Anfrage lautete
+„Nullpunktverschiebung an AX". Er trat an die Stelle von `note:185` (Stufe 1); die Ranggüte
+stieg dort von 0,78 auf 0,82. **B09 bleibt ein Verlust** (C-113).
+
+### 7.3 Freigabe-Bedingung
+
+- **(2) mindestens 30 % Zusatztreffer: ERFÜLLT** mit 80 %.
+- **(1) auf keiner Anfrage ein Verlust: weiterhin NICHT ERFÜLLT** — B09.
+
+Bei fester Ausgabelänge und einer zusätzlichen Quelle verlangt Bedingung (1), dass **jeder**
+neue Treffer besser ist als der schlechteste alte. Ob sie so gemeint war, ist eine Frage an
+die Bedingung; diese Messung entscheidet sie nicht.
+
+### 7.4 Grenzen — und die wiegen hier schwerer als sonst
+
+1. **Die Urteile sind NICHT blind gefällt.** Der Bogen wies jeden Eintrag als `[memory]`
+   aus. Alle 13 Paare stammten aus derselben Quelle, es gab also keinen Gegensatz, zu dem
+   hin verzerrt werden konnte — ausgeschlossen ist eine Verzerrung damit nicht. Da genau
+   diese Urteile den Unterschied zwischen „nicht gezeigt" und „gezeigt" tragen, gehört das
+   an jede Weitergabe der Zahl.
+2. **Ein Beurteiler, kein Übereinstimmungsmaß.**
+3. **Zehn Anfragen tragen keine Kennzahl mit Vertrauensbereich.** `p < 0,05` ist hier eine
+   belegte Richtungsaussage, kein Effektmaß.
+4. **Vier Plätze bleiben unbeurteilt** — ihre Einträge führt `goldset_v2_zuordnung.json`
+   nicht, sie sind nicht beurteilbar.
+5. **Grenze 4 aus Abschnitt 4 bleibt bestehen:** Der Bestand ist dünn.
+
+**Rohauswertung:** [`2026-09-02b_rohauswertung_erweitert.txt`](2026-09-02b_rohauswertung_erweitert.txt)

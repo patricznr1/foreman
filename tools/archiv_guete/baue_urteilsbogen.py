@@ -145,7 +145,14 @@ def main() -> None:
         zeilen.append(f'## {anfrage_id} — "{text_zu.get(anfrage_id, "(unbekannt)")}"')
         for kuerzel in sorted(offen[anfrage_id]):
             t = offen[anfrage_id][kuerzel]
-            auszug = " ".join((t.get("excerpt") or "").split())[:150]
+            # NICHT ein zweites Mal kuerzen: Das Archiv deckelt den Auszug
+            # bereits (EXCERPT_BUDGET). Ein Schnitt bei 150 Zeichen nahm dem
+            # Beurteiler genau den Teil, auf den es ankommt — bei B07-WA-021
+            # endete die Zeile auf "Umkehrspie", waehrend die Messwerte
+            # ("0,08 bis 0,11 mm gegen 0,02") dahinter standen, die das Urteil
+            # entscheiden. Ein Bogen, der die tragende Angabe abschneidet,
+            # erzeugt Urteile ueber etwas anderes als den Treffer.
+            auszug = " ".join((t.get("excerpt") or "").split())
             zeilen.append(f"#   [{t['source_type']}] {auszug}")
             zeilen.append(f"{anfrage_id}-{kuerzel}=?")
 

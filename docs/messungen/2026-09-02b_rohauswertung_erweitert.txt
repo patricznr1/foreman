@@ -1,0 +1,94 @@
+
+==============================================================================
+LAUF: nexus_2026-09-02_basis  |  Quellen: note,maintenance,alarm  |  k=15
+==============================================================================
+ID     Tref  rel  /Best  Recall   Praez    nDCG  Anfrage
+------------------------------------------------------------------------------
+B01      15    2      4    0.50    0.13    0.68  Undichtigkeit an Achse
+B02       6    3     11    0.27    0.50    0.43  Fleck auf Bild
+B03       4    3      7    0.43    0.75    0.63  Lagerschaden am Lagerbock
+B04       4    1     12    0.08    0.25    0.13  Dosierunregelmäßigkeiten
+B05      15   12     20    0.60    0.80    0.75  Schleppfehler an AX
+B06       8    3     12    0.25    0.38    0.28  Durckabfall Hydraulik
+B07      15   12     20    0.60    0.80    0.78  Nullpunktverschiebung an AX
+B08      15    9     10    0.90    0.60    0.83  Ruckeln beim Hub
+B09      15    8     17    0.47    0.53    0.56  Versatz an PR
+B10      15   10     13    0.77    0.67    0.79  Öl Temperatur an PR
+------------------------------------------------------------------------------
+MITTEL  Recall 0.487 · Praezision 0.541 · nDCG 0.587
+        nDCG verdichtet 0.595 (unbeurteilt: 5 von 112 Plaetzen)
+Anfragen ohne EINEN relevanten Treffer: 0 von 10  []
+
+==============================================================================
+LAUF: nexus_2026-09-02_gedaechtnis  |  Quellen: note,maintenance,alarm,memory  |  k=15
+==============================================================================
+ID     Tref  rel  /Best  Recall   Praez    nDCG  Anfrage
+------------------------------------------------------------------------------
+B01      15    4      4    1.00    0.27    0.86  Undichtigkeit an Achse
+B02       7    4     11    0.36    0.57    0.54  Fleck auf Bild
+B03       7    5      7    0.71    0.71    0.85  Lagerschaden am Lagerbock
+B04       8    4     12    0.33    0.50    0.43  Dosierunregelmäßigkeiten
+B05      15   12     20    0.60    0.80    0.75  Schleppfehler an AX
+B06      13    5     12    0.42    0.38    0.43  Durckabfall Hydraulik
+B07      15   12     20    0.60    0.80    0.82  Nullpunktverschiebung an AX
+B08      15    9     10    0.90    0.60    0.83  Ruckeln beim Hub
+B09      15    7     17    0.41    0.47    0.52  Versatz an PR
+B10      15   12     13    0.92    0.80    0.92  Öl Temperatur an PR
+------------------------------------------------------------------------------
+MITTEL  Recall 0.626 · Praezision 0.590 · nDCG 0.695
+        nDCG verdichtet 0.700 (unbeurteilt: 4 von 125 Plaetzen)
+Anfragen ohne EINEN relevanten Treffer: 0 von 10  []
+
+==============================================================================
+VERGLEICH  nexus_2026-09-02_basis  ->  nexus_2026-09-02_gedaechtnis
+Schwellen (GROUND_TRUTH §15.10, Freigabe-Bedingung 1, Fassung vom 27.08.2026):
+  (1) auf KEINER Anfrage geht ein zutreffender Treffer VERLOREN
+  (2) auf >= 30% der Anfragen ein ZUSAETZLICHER relevanter Treffer
+==============================================================================
+ID               Recall             nDCG  neue relevante Treffer
+------------------------------------------------------------------------------
+B01      0.50 ->   1.00 ↑   0.68 ->   0.86 ↑  maintenance:115, maintenance:116
+B02      0.27 ->   0.36 ↑   0.43 ->   0.54 ↑  note:145
+B03      0.43 ->   0.71 ↑   0.63 ->   0.85 ↑  maintenance:107, maintenance:96
+B04      0.08 ->   0.33 ↑   0.13 ->   0.43 ↑  maintenance:43, maintenance:92, maintenance:131
+B05      0.60 ->   0.60 =   0.75 ->   0.75 ↓  
+B06      0.25 ->   0.42 ↑   0.28 ->   0.43 ↑  maintenance:44, maintenance:71
+B07      0.60 ->   0.60 =   0.78 ->   0.82 ↑  maintenance:37   VERLOREN: note:185
+B08      0.90 ->   0.90 =   0.83 ->   0.83 =  
+B09      0.47 ->   0.41 ↓   0.56 ->   0.52 ↓  note:195   VERLOREN: note:71, note:108
+B10      0.77 ->   0.92 ↑   0.79 ->   0.92 ↑  maintenance:58, maintenance:126
+------------------------------------------------------------------------------
+Anfragen gesamt vergleichbar : 10
+davon Trefferquote gesunken  : 1  ['B09']
+davon mit Zusatztreffer      : 8 = 80.0%  ['B01', 'B02', 'B03', 'B04', 'B06', 'B07', 'B09', 'B10']
+davon unveraendert           : 2
+
+  Bedingung (1) keine gesunkene Trefferquote: NICHT ERFUELLT
+  Bedingung (2) >= 30% Zusatztreffer       : ERFUELLT (80.0%)
+
+  FREIGABE-BEDINGUNG 1 INSGESAMT: NICHT ERFUELLT
+
+  Zum Vergleich, Fassung bis 27.08.2026 (JEDER verlorene Treffer zaehlt):
+    betroffen: 2 ['B07', 'B09'] → Bedingung (1) waere NICHT ERFUELLT
+
+------------------------------------------------------------------------------
+TRAEGT DER UNTERSCHIED? (gepaarter Permutationstest, zweiseitig)
+  recall           n=10  mittlere Differenz +0.139  p=0.031 (exakt)
+  ndcg             n=10  mittlere Differenz +0.107  p=0.023 (exakt)
+  ndcg_verdichtet  n=10  mittlere Differenz +0.105  p=0.023 (exakt)
+  Lesehilfe: p > 0,05 heisst NICHT GEZEIGT, nicht 'kein Unterschied'. Bei zehn
+  Anfragen reicht die Erhebung fuer eine Richtungsaussage, nicht fuer eine
+  Kennzahl mit Vertrauensbereich (Dincer 2013: 10 bis 722 Topics je Systempaar).
+  Die Freigabe-Bedingung oben haengt NICHT an diesem Wert — sie zaehlt verlorene
+  und gewonnene Treffer, und das ist eine andere Frage als die nach dem Mittel.
+
+📊 nexus_2026-09-02_gedaechtnis
+   nur vom Gedaechtnis : beurteilt 21/22 (95%) — davon zutreffend 14
+   von eigenen Quellen : beurteilt 100/103 (97%) — davon zutreffend 60
+   ➜ Abstand: +2% zulasten der vierten Quelle
+   unbeurteilte Plaetze: 4 — Bogen dafuer: python baue_urteilsbogen.py goldset_v3.json messung_nexus_2026-09-02_gedaechtnis.json
+
+📊 nexus_2026-09-02_basis
+   nur vom Gedaechtnis : beurteilt 0/0 (—) — davon zutreffend 0
+   von eigenen Quellen : beurteilt 107/112 (96%) — davon zutreffend 63
+   unbeurteilte Plaetze: 5 — Bogen dafuer: python baue_urteilsbogen.py goldset_v3.json messung_nexus_2026-09-02_basis.json
