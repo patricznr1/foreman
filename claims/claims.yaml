@@ -419,20 +419,26 @@ claims:
   - id: "C-018"
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
-    wert: "1083 bestanden, 2 übersprungen, 4 abgewählt"
+    wert: "1524 bestanden, 2 übersprungen, 9 abgewählt"
     bedingung: >-
-      Automatischer Prüflauf vom 22.08.2026 auf dem Stand von main (fad4de5)
-      gegen eine echte Zeitreihen-Datenbank, nicht gegen Attrappen. Die zwei
-      Übersprungenen brauchen ein lokal laufendes Sprachmodell. Die vier
-      Abgewählten verteilen sich seit dem 20.08.2026 auf ZWEI Klassen: die
-      Namenserkennung (braucht ein 560 MB grosses Sprachmodell) und die
-      Freigabe-Prüfungen (sprechen eine betriebene Instanz an). Beide sind im
-      Pflichtlauf ausdrücklich ausgenommen; wer sie fahren will, muss sie
-      einzeln anwählen.
-    datum: "2026-08-24"
+      Eigener Lauf vom 02.09.2026 auf dem Stand von main (e566510) gegen eine
+      echte Zeitreihen-Datenbank, nicht gegen Attrappen (1047 s). Die zwei
+      Übersprungenen brauchen ein lokal laufendes Sprachmodell. Die neun
+      Abgewählten verteilen sich weiterhin auf dieselben ZWEI Klassen wie seit
+      dem 20.08.2026 — nur mit mehr Fällen: sieben aus der Namenserkennung
+      (tests/integration/test_redact_real.py, braucht ein 560 MB grosses
+      Sprachmodell) und zwei aus den Freigabe-Prüfungen
+      (tests/release/test_substrat_antwortform.py, sprechen eine betriebene
+      Instanz an). Beide sind im Pflichtlauf ausdrücklich ausgenommen
+      (`-m "not ner and not release"`); wer sie fahren will, muss sie einzeln
+      anwählen. Die Zahl ist ein STICHTAGSWERT und wächst mit dem Bestand: Der
+      Sprung von 1083 auf 1524 ist Zuwachs an Prüfungen, keine Änderung am
+      Maßstab.
+    datum: "2026-09-02"
     fundstelle:
-      - "Eigener Lauf 24.08.2026: 1083 passed / 2 skipped / 4 deselected in 717 s (vierte Archiv-Quelle, Notiz-Spiegelung, Empfehlungs-Prompt und Datenblock-Entpackung)"
-      - "Commit fad4de5"
+      - "Eigener Lauf 02.09.2026: 1524 passed / 2 skipped / 9 deselected in 1047 s, Zweigabdeckung 94,34 %"
+      - "Commit e566510"
+      - "Vorherige Erhebung 24.08.2026 (Commit fad4de5): 1083 passed / 2 skipped / 4 deselected in 717 s"
       - "Gegenprobe 24.08.2026: pytest --collect-only --no-cov meldet die Summe aus bestanden und übersprungen; tools/pruefe_registerzahlen.py hält beides gegeneinander"
     geltung: "gueltig"
     freigabe:
@@ -525,16 +531,19 @@ claims:
   - id: "C-022"
     aussage: "Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch."
     status: "gemessen"
-    wert: "0 Typfehler über 150 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 316 Dateien ohne Befund"
+    wert: "0 Typfehler über 155 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 363 Dateien ohne Befund"
     bedingung: >-
-      Lauf vom 24.08.2026 auf dem Stand von main (fad4de5), passend zum
-      automatischen Prüflauf vom 22.08.2026. Die Typprüfung läuft im strengsten
-      Modus. Die Dateizahlen wachsen mit dem Bestand — sie sind Stichtagswerte,
-      keine Zielgrössen.
-    datum: "2026-08-24"
+      Lauf vom 02.09.2026 auf dem Stand von main (e566510), im selben
+      Arbeitsschritt wie der Prüflauf zu C-018. Die Typprüfung läuft im
+      strengsten Modus; der Oberflächen-Teil wurde mit `tsc --noEmit` auf
+      demselben Stand erhoben, nicht aus einem früheren Lauf übernommen. Die
+      Dateizahlen wachsen mit dem Bestand — sie sind Stichtagswerte, keine
+      Zielgrössen. Die Typprüfung deckt `src/foreman`; die Formatprüfung reicht
+      weiter und zählt deshalb mehr Dateien.
+    datum: "2026-09-02"
     fundstelle:
-      - "Eigener Lauf 24.08.2026: mypy Success in 150 source files, ruff check All checks passed, ruff format 316 files already formatted"
-      - "Automatischer Prüflauf 22.08.2026 (Lauf 32589782455) für den Oberflächen-Teil"
+      - "Eigener Lauf 02.09.2026: mypy Success in 155 source files, ruff format 363 files already formatted, tsc --noEmit ohne Befund"
+      - "Vorherige Erhebung 24.08.2026 (Commit fad4de5): mypy 150 source files, ruff format 316 files"
       - "GROUND_TRUTH.md, Abschnitt 10.2"
     geltung: "gueltig"
     freigabe:
