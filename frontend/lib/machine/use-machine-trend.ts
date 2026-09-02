@@ -4,9 +4,11 @@
 //         der historische Teil kommt stabil per Pull (`/machines/{id}/trend`, by NAME),
 //         der jüngste Rand live über das WS-Thema `trend:{data_point_id}` (das bei
 //         jedem Reading das ganze 1h-Fenster neu pusht). Der Merge (trend-series.ts)
-//         läuft auf dem bucket-Schlüssel → der Rand atmet ohne Sprung. Die X-Domäne
-//         setzt das Zeitfenster (startMs/endMs), nicht die Daten. Degradation: ohne
-//         offene Verbindung „gecacht mit Stand", Live eingefroren (kein weißer Schirm).
+//         läuft auf dem bucket-Schlüssel → der Rand atmet ohne Sprung. Der sichtbare
+//         AUSSCHNITT gehört NICHT hierher — er lebt im Ausschnitts-Zustand der
+//         Detailsicht; dieser Hook sagt allein, welches LADEFENSTER wirklich
+//         beantwortet wurde. Degradation: ohne offene Verbindung „gecacht mit Stand",
+//         Live eingefroren (kein weißer Schirm).
 //  Architektur-Einordnung: View-State-Hook (Schicht 2/3). Nutzt FE1-Echtzeit-Schicht.
 // ============================================================
 "use client";
@@ -33,14 +35,21 @@ export interface UseMachineTrendArgs {
   dataPointId: number;
   dataPointName: string;
   hours: number;
-  /** Injizierbar für deterministische Tests; sonst der aktuelle Zeitpunkt. */
-  nowMs?: number;
 }
 
 export interface UseMachineTrendResult {
   state: DataState<MachineTrendData>;
-  startMs: number;
-  endMs: number;
+  /**
+   * Anfang (Epoche ms) des zuletzt ERFOLGREICH beantworteten Ladefensters, sonst
+   * null. Speist die `unloaded`-Marke: links davon hat niemand gefragt, und genau
+   * das soll dort stehen. Die Quelle ist das Fenster der Anfrage, die zurückkam —
+   * NICHT `now - hours*3.6e6` (die Marke wanderte dann schon beim Absenden nach
+   * links, während die Kurve dort noch fehlt) und NICHT `samples[0].t` (das machte
+   * aus einer echten Messlücke am linken Rand eine erfundene Ladelücke).
+   */
+  loadedFromMs: number | null;
+  /** Eine Anfrage ist unterwegs, während bereits Punkte im Bild stehen. */
+  refetching: boolean;
   stampedAt: Date | null;
   refetch: () => void;
 }
@@ -57,7 +66,6 @@ export function useMachineTrend({
   dataPointId,
   dataPointName,
   hours,
-  nowMs,
 }: UseMachineTrendArgs): UseMachineTrendResult {
   const store = useRealtimeStore();
   const status = useConnectionStatus(store);
@@ -66,6 +74,7 @@ export function useMachineTrend({
   const [historical, setHistorical] = useState<MachineTrendOut | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [loadedFromMs, setLoadedFromMs] = useState<number | null>(null);
   const [stampedAt, setStampedAt] = useState<Date | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const inflight = useRef<AbortController | null>(null);
@@ -75,6 +84,11 @@ export function useMachineTrend({
     inflight.current?.abort();
     const controller = new AbortController();
     inflight.current = controller;
+    // Das Fenster, das GENAU DIESE Anfrage abdeckt (die Route pinnt `end` auf jetzt
+    // und nimmt nur `hours`). Es liegt bewusst im Abschluss dieses Laufs und nicht in
+    // einem Ref: so kann eine überholte Antwort den Wert einer neueren nicht
+    // überschreiben. Fortgeschrieben wird es erst unten im Erfolgszweig.
+    const requestedFromMs = windowStartMs(Date.now(), hours);
     setLoaded(false);
     setError(null);
     fetch(machineTrendUrl(machineId, dataPointName, hours), {
@@ -90,6 +104,11 @@ export function useMachineTrend({
       .then((data) => {
         if (cancelled) return;
         setHistorical(data);
+        // Die Fortschrittsmarke — und sie steht NUR hier. Ein Wegfehler (Netz,
+        // Zeitüberschreitung, 500) darf keinen Bereich als abgerufen-und-leer
+        // markieren: die Fläche links davon trägt sonst keine Schraffur mehr und
+        // behauptet damit „dort war nichts", wo in Wahrheit niemand gefragt hat.
+        setLoadedFromMs(requestedFromMs);
         setStampedAt(new Date());
         setLoaded(true);
       })
@@ -125,13 +144,16 @@ export function useMachineTrend({
     state = { kind: "empty" };
   }
 
-  const endMs = nowMs ?? Date.now();
-  const startMs = windowStartMs(endMs, hours);
+  // `loaded` ist genau „eine HTTP-Anfrage ist unterwegs" (false beim Absenden, true
+  // bei Antwort UND bei Fehler). Nachladen heißt: unterwegs, obwohl schon Punkte im
+  // Bild stehen — und genau diese beiden Zustände tragen Daten. Der Zustand wird
+  // hier ZURÜCKGELESEN statt die Bedingung ein zweites Mal hinzuschreiben.
+  const refetching = !loaded && (state.kind === "live" || state.kind === "cached");
 
   return {
     state,
-    startMs,
-    endMs,
+    loadedFromMs,
+    refetching,
     stampedAt,
     refetch: () => setReloadKey((key) => key + 1),
   };

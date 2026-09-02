@@ -52,7 +52,19 @@ function renderPanel() {
   const store = new RealtimeStore(transport);
   return render(
     <RealtimeProvider store={store}>
-      <MachineTrendPanel machineId={7} dataPoint={dataPoint} hours={24} nowMs={NOW} />
+      <MachineTrendPanel
+        machineId={7}
+        dataPoint={dataPoint}
+        // Fester Ausschnitt statt Schnellwahl: Der Test prueft das Panel, nicht die
+        // Bedienung. `presetViewport("day")` waere gleichwertig, nennt aber eine
+        // Spanne, die der Datensatz gar nicht abdeckt.
+        viewport={{ mode: "follow", spanMs: 24 * 3_600_000 }}
+        hours={24}
+        onPan={() => {}}
+        onZoom={() => {}}
+        onGestureEnd={() => {}}
+        nowMs={NOW}
+      />
     </RealtimeProvider>,
   );
 }
