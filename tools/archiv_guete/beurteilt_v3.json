@@ -33,7 +33,8 @@
   "maintenance:115": 1,
   "maintenance:116": 1,
   "maintenance:119": 0,
-  "maintenance:124": 0
+  "maintenance:124": 0,
+  "note:207": 2
  },
  "B02": {
   "maintenance:108": 2,
@@ -51,7 +52,8 @@
   "note:38": 0,
   "alarm:15": 0,
   "note:20": 2,
-  "note:119": 1
+  "note:119": 1,
+  "note:208": 0
  },
  "B03": {
   "note:150": 0,
@@ -86,7 +88,9 @@
   "note:55": 0,
   "note:168": 2,
   "note:173": 2,
-  "maintenance:131": 2
+  "maintenance:131": 2,
+  "note:5": 0,
+  "note:6": 2
  },
  "B05": {
   "note:45": 1,
@@ -141,7 +145,10 @@
   "note:184": 0,
   "note:189": 0,
   "maintenance:32": 0,
-  "maintenance:140": 0
+  "maintenance:140": 0,
+  "note:207": 2,
+  "maintenance:10": 0,
+  "note:7": 0
  },
  "B07": {
   "note:191": 2,
@@ -222,7 +229,8 @@
   "note:202": 0,
   "note:203": 0,
   "note:195": 2,
-  "maintenance:137": 0
+  "maintenance:137": 0,
+  "note:207": 0
  },
  "B10": {
   "note:144": 1,
