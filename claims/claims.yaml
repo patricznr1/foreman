@@ -3765,7 +3765,14 @@ claims:
       - "tools/archiv_guete/messung_nexus_2026-09-03_gedaechtnis_wdh.json"
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json (Vorher-Lauf)"
       - "claims/claims.yaml, C-112, C-113, C-117"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Überholt am 03.09.2026 durch C-122: Die acht offenen Plätze sind beurteilt, der
+      Pool ist geschlossen (100 % der ausgelieferten Plätze an beiden Tagen). Der hier
+      beschriebene Verlust auf B01 war ein Tausch zweier zutreffender Treffer, der
+      Verlust auf B06 ein Gewinn (note:207 = Stufe 2). Die Zahlen dieses Eintrags
+      waren durch die unbeurteilten Plätze verzerrt — genau die Pool-Verzerrung,
+      die er selbst als Vorbehalt führte.
     freigabe:
       - "intern"
 
@@ -3802,6 +3809,40 @@ claims:
       - "src/foreman/adapters/simulation/scenarios/park_*.yaml (Labels ASCII)"
       - "src/foreman/substrate/content.py::_gegenstand (Satz trägt Kennung + Nummer)"
       - "claims/claims.yaml, C-117, C-120"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-122"
+    aussage: "Mit geschlossenem Bewertungssatz hat die Knoten-Zusammenführung der vierten Archiv-Quelle nichts gekostet: Trefferquote unverändert, Rangfolge leicht besser — beides nicht gezeigt."
+    status: "gemessen"
+    wert: "Gedächtnis 02.09. → 03.09., gepaart über 10 Anfragen: Trefferquote −0,001 (p=1,000), nDCG +0,028 (p=0,375); 7 Anfragen unverändert, B01 Tausch (maintenance:116 → note:207, Quote 0,80 = 0,80, nDCG 0,67 → 0,87), B06 Gewinn (note:207, Quote 0,38 → 0,46), B02 Verlust (note:145 → note:208 = Stufe 0). Nachher Basis → mit Gedächtnis: Trefferquote +0,097 (p=0,062), nDCG +0,080 (p=0,031), Zusatztreffer 7 von 10, Bedingung 1 an B09 verfehlt, Bedingung 2 erfüllt. Vorher gegen denselben Satz: +0,126 (p=0,031), nDCG +0,094 (p=0,023), 8 von 10."
+    bedingung: >-
+      Dieselben Rohläufe wie C-120 (03.09.2026, 12:55 UTC, gegen die Demo-Instanz,
+      k=15, goldset_v2_anfragen) und C-112/C-113 (02.09.), neu ausgewertet gegen
+      den ERWEITERTEN Bewertungssatz goldset_v3: 237 beurteilte Einträge, 129
+      zutreffend (74 Stufe 2, 55 Stufe 1) — die acht offenen Paare der Nachmessung
+      sind am 03.09.2026 abends von Patric beurteilt (relevanz_urteile_2026-09-03.txt;
+      drei davon zutreffend: note:207 auf B01 und B06 je Stufe 2, note:6 auf B04
+      Stufe 2). KONTROLLPUNKT Pool: 22 von 22 (02.09.) und 21 von 21 (03.09.)
+      Gedächtnis-Plätze beurteilt, Abstand zu den eigenen Quellen 0 Punkte — die
+      Verzerrung aus C-120 (9 Punkte) ist weg. Ein Beurteiler, kein
+      Übereinstimmungsmaß; die Urteile sind nicht blind gefällt.
+      WAS GEMESSEN IST: der Zustand nach der ersten Zusammenführung (12:25 UTC) und
+      VOR der Alias-Wanderung (16:32 UTC, C-121), vor dem zweiten Stand der
+      Gegenstelle und vor der Satzform-Änderung (#165, 18:40 UTC). Eine neue Erhebung
+      gegen den heutigen Stand ist nicht gefahren — jeder Abruf hebt bei der
+      Gegenstelle die Relevanz des Ausgelieferten; gemessen wird erst wieder, wenn
+      die Gegenstelle die neue Satzform bestätigt hat (dann als eigener Eintrag).
+      WAS DARAUS FOLGT: C-112 („Vorsprung statistisch gezeigt“) gilt nach der
+      Zusammenführung auf der Rangfolge weiter (nDCG p=0,031), auf der Trefferquote
+      nicht mehr (p=0,062) — bei zehn Anfragen eine Richtungsaussage, keine Kennzahl.
+      Die Freigabe-Bedingung 1 bleibt an B09 verfehlt, wie an beiden Tagen zuvor.
+    datum: "2026-09-03"
+    fundstelle:
+      - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json, messung_nexus_2026-09-03_basis.json, messung_nexus_2026-09-03_gedaechtnis.json"
+      - "tools/archiv_guete/gegenprobe/relevanz_urteile_2026-09-03.txt (8 Urteile), goldset_v3.json, beurteilt_v3.json"
+      - "claims/claims.yaml, C-120 (überholt), C-117, C-121"
     geltung: "gueltig"
     freigabe:
       - "intern"
