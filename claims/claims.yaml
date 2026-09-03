@@ -3652,11 +3652,14 @@ claims:
     bemerkung: >-
       BEWEISORT, damit beim nächsten Mal an der richtigen Stelle gesucht wird:
       Bei der Gegenstelle belegt `retrieval_logs` den Rauchtest SOFORT (der
-      Recall wird dort unmittelbar protokolliert). In `memory_entries` liegt der
-      Eintrag erst nach der Konsolidierung im Viertelstundentakt — fünf Minuten
-      nach dem Rauchtest steht dort noch der Bestand vom 22.08. Wer dort zu früh
-      nachsieht und nichts findet, hat kein Problem entdeckt, sondern zu früh
-      geschaut. Die Ableitung der Gegenstelle „Größenordnung Minute" lag für ihre
+      Recall wird dort unmittelbar protokolliert; ebenso das Laufzeit-Log ihres
+      Dienstes mit der remember-Referenz). In `memory_entries` liegt der Eintrag
+      erst nach der Beförderung aus dem Working-Tier — laut Auskunft vom Abend des
+      03.09. durch die Schlafphase im Fenster 02:00–05:00 UTC, laut Auskunft vom
+      Morgen durch eine Konsolidierung im Viertelstundentakt; beides Fremdaussagen,
+      beide geführt. Fünf Minuten nach dem Rauchtest stand dort noch der Bestand vom
+      22.08. Wer dort zu früh nachsieht und nichts findet, hat kein Problem
+      entdeckt, sondern zu früh geschaut. Die Ableitung der Gegenstelle „Größenordnung Minute" lag für ihre
       Hälfte richtig; für die Summe hätte sie nicht gereicht. Beim nächsten Mal
       mit vier bis fünf Minuten planen.
 

@@ -292,10 +292,16 @@ Ausrollen *ist* der Neustart.
 4. **Nachweis lesen, nicht anstoßen:** Railway-Deploy-Log des Backends, Zeile
    `Substrat-Smoke beim Start: ok=True`. Die HTTP-Route `GET /api/v1/substrate/smoke`
    braucht ein Login und ist dafür nicht nötig.
-5. **Gegenprobe bei der Gegenstelle:** in `retrieval_logs` — dort steht der Recall
-   sofort. **Nicht** in `memory_entries`: Dort landet der Eintrag erst nach der
-   Konsolidierung im Viertelstundentakt. Wer zu früh nachsieht und nichts findet, hat
-   kein Problem entdeckt, sondern zu früh geschaut.
+5. **Gegenprobe bei der Gegenstelle:** in `retrieval_logs` (Recall) und im Laufzeit-Log
+   ihres Dienstes (`Substrate-remember: namespace=foreman entry=<ref>`) — beides sofort.
+   **Nicht** in `memory_entries`: `remember` schreibt nur in den Working-Tier (Redis);
+   nach Postgres wandert der Eintrag erst mit der Schlafphase (Fenster 02:00–05:00 UTC),
+   und erst danach sieht ihn die Wissensgewinnung (Auskunft der Gegenstelle vom
+   03.09.2026; eine frühere Auskunft nannte einen Viertelstundentakt — beides
+   Fremdaussagen). Wer zu früh nachsieht und nichts findet, hat kein Problem entdeckt,
+   sondern zu früh geschaut — mit Stunden, nicht Minuten. Ein
+   `POST /api/substrate/consolidate` zöge die Schlafphase vor, greift aber in den
+   Bestand ein, den eine laufende Messreihe vergleicht: nur auf Entscheidung.
 6. Danach `python -m foreman.substrate.backfill` **nur, wenn** im Fenster Zeilen mit
    `substrate_ref IS NULL` entstanden sind (Trockenlauf zuerst). Zählerstände lesen —
    `amain` liefert unbedingt 0, der Rückgabewert belegt nichts.
