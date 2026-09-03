@@ -3652,11 +3652,14 @@ claims:
     bemerkung: >-
       BEWEISORT, damit beim nächsten Mal an der richtigen Stelle gesucht wird:
       Bei der Gegenstelle belegt `retrieval_logs` den Rauchtest SOFORT (der
-      Recall wird dort unmittelbar protokolliert). In `memory_entries` liegt der
-      Eintrag erst nach der Konsolidierung im Viertelstundentakt — fünf Minuten
-      nach dem Rauchtest steht dort noch der Bestand vom 22.08. Wer dort zu früh
-      nachsieht und nichts findet, hat kein Problem entdeckt, sondern zu früh
-      geschaut. Die Ableitung der Gegenstelle „Größenordnung Minute" lag für ihre
+      Recall wird dort unmittelbar protokolliert; ebenso das Laufzeit-Log ihres
+      Dienstes mit der remember-Referenz). In `memory_entries` liegt der Eintrag
+      erst nach der Beförderung aus dem Working-Tier — laut Auskunft vom Abend des
+      03.09. durch die Schlafphase im Fenster 02:00–05:00 UTC, laut Auskunft vom
+      Morgen durch eine Konsolidierung im Viertelstundentakt; beides Fremdaussagen,
+      beide geführt. Fünf Minuten nach dem Rauchtest stand dort noch der Bestand vom
+      22.08. Wer dort zu früh nachsieht und nichts findet, hat kein Problem
+      entdeckt, sondern zu früh geschaut. Die Ableitung der Gegenstelle „Größenordnung Minute" lag für ihre
       Hälfte richtig; für die Summe hätte sie nicht gereicht. Beim nächsten Mal
       mit vier bis fünf Minuten planen.
 
@@ -3843,6 +3846,49 @@ claims:
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json, messung_nexus_2026-09-03_basis.json, messung_nexus_2026-09-03_gedaechtnis.json"
       - "tools/archiv_guete/gegenprobe/relevanz_urteile_2026-09-03.txt (8 Urteile), goldset_v3.json, beurteilt_v3.json"
       - "claims/claims.yaml, C-120 (überholt), C-117, C-121"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-123"
+    aussage: "Die Wissensgewinnung der Gegenstelle liest die neue Satzform „(Kennung n)“ genauso als Alias wie die alte „(Maschine n)“; der gemischte Bestand ist unschädlich."
+    status: "gemessen"
+    wert: "20 von 20 Läufen je Form: Anlagenkennung als Konzept, Klammertext als Alias desselben Konzepts, kein eigenes Konzept, kein Fakt zwischen beiden. 40 Aufrufe, 0 Fehler, 52 Sekunden."
+    bedingung: >-
+      FREMDERHEBUNG der Gegenstelle (03.09.2026 abends, dort C-193, Rohdaten
+      research/messungen/2026-09-03_kennung_satzform_probe.json): zehn echte Sätze aus
+      unserem Namensraum (je Maschine einer, dazu note:207 und maintenance:137 zu
+      PR-01), jeder in alter und neuer Form, je zweimal, gegen den PRODUKTIONSWEG
+      ihrer Wissensgewinnung (Anbieter claude-sonnet-4-6, derselbe Prompt wie auf der
+      Anlage); keine Datenbank berührt. Von uns nicht nachprüfbar. Ihre Prompt-Regel
+      ist allgemein formuliert („eine Kennung in Klammern ist kein zweites Ding“),
+      „(Maschine 7)“ ist dort nur das Beispiel.
+      WAS DARAUS FOLGT: Alte Einträge tragen „Maschine n“ als Alias am Knoten, neue
+      hängen „Kennung n“ daneben; beide zeigen auf denselben Knoten, die Slugs
+      kollidieren nicht. Weder Neuspiegel-Lauf noch Revert von #165 sind nötig —
+      beides bleibt Patrics Entscheidung. Damit ist der Vorbehalt aus GROUND_TRUTH §9
+      (Satzform seit 18:40 UTC) und aus C-122 („gemessen wird erst wieder, wenn die
+      Gegenstelle die neue Satzform bestätigt hat“) aufgehoben.
+      WAS ES NICHT BELEGT: die Wirkung im Betrieb. Dafür liegt seit dem 03.09.2026,
+      19:29:28 UTC ein Eintrag in der neuen Form bei der Gegenstelle — Patrics
+      Ereigniskette zu Alarm 4 (Deploy e38f9815 nach #165), gespiegelt mit
+      Referenz 88cca775-0d91-4f82-ab52-82dad51aceb8 (Deploy-Log: „Substrat-Spiegel
+      ok, event_type=event_chain_reconstructed“). Die Aussage der Gegenstelle, seit
+      dem 02.09. sei kein Eintrag angekommen, war falsch — vermutlich vor der
+      Konsolidierung in memory_entries geschaut. An dieser Referenz ist zu prüfen:
+      Alias-Regel im Betrieb (Alias „Kennung ⟨n⟩“ statt eigenes Konzept), der
+      #160-Nachweis (created_at und recall_used in der Nutzlast, occurred_at =
+      19:29:28 UTC) und ob recall_used im Bestand ankommt. Nur diese eine Kette wurde
+      am Abend neu rekonstruiert; weitere Aufrufe zeigten bestehende Ketten an.
+      LEHRE am Rande: Railways Log-Suche ist unscharf — die Suche nach dem httpx-Text
+      lieferte die vorhandene remember-Zeile nicht; die Erfolgszeile der eigenen
+      Spiegelung fand sie sofort. Eine fehlende Zeile in einer unscharfen Suche ist
+      kein Befund.
+    datum: "2026-09-03"
+    fundstelle:
+      - "NEXUS-Register C-193 (Fremderhebung), Rohdaten research/messungen/2026-09-03_kennung_satzform_probe.json"
+      - "src/foreman/substrate/content.py::_gegenstand (PR #165)"
+      - "claims/claims.yaml, C-121, C-122"
     geltung: "gueltig"
     freigabe:
       - "intern"
