@@ -3733,6 +3733,28 @@ claims:
       von 21 Gedächtnis-Plätzen beurteilt (86 %) gegen 99 von 104 eigenen (95 %),
       Abstand 9 Punkte zulasten der vierten Quelle (vorher 2). Urteilsbogen für
       die 8 offenen Plätze liegt vor.
+      DREI VORBEHALTE AUS DEN ABRUFPROTOKOLLEN DER GEGENSTELLE (Fremderhebung, 03.09.
+      13:10 UTC, ihr C-187/C-189): (1) In unseren 20 Abrufen von 12:55:25 bis
+      12:55:46 UTC kam KEIN ausgelieferter Treffer über den Graphweg — 100 Treffer:
+      vector 100, fulltext 8, phrase 2, graph 0, bei eingeschaltetem
+      NEXUS_GRAPH_EXPANSION_ENABLED. Die Zusammenführung kann die Differenz also
+      nicht über den Graphweg erzeugt haben; warum der Weg nichts beisteuert, ist
+      bei ihnen offen (C-189). (2) Zwischen den Läufen änderte sich die Bewertungs-
+      formel nicht, wohl aber drei Vorgaben der Relevanz-Dynamik (Lernrate der
+      plastischen Ebene 0,99 → 0,9, Deckel 0,8, Replay hebt nicht mehr) — wirksam
+      seit 12:25 UTC, bis zu unserem Lauf eine Konsolidierung mit zwei Einträgen,
+      für diesen Vergleich praktisch ohne Wirkung; ab jetzt driftet relevance_score
+      anders als vorher. (3) JEDER ABRUF HEBT relevance_score der ausgelieferten
+      Einträge dauerhaft an. Unser Vorher-Lauf hat damit selbst verschoben, was der
+      Nachher-Lauf misst; der zeilengleiche Wiederholungslauf belegt Kurzzeit-
+      stabilität, nicht Unabhängigkeit vom Vorher-Lauf. Das Messinstrument verändert
+      das Gemessene — jede Serie von Messungen gegen diese Gegenstelle trägt diesen
+      Vorbehalt, bis dort ein Abruf ohne Relevanzwirkung möglich ist.
+      ZU note:207 AUF B09 (Fremderhebung): Rang 3 mit 0,323 über den Vektorweg aus
+      einer dünnen Kandidatenmenge (Spitze 0,912, dann vier zwischen 0,30 und 0,33),
+      nicht nachsortiert — kein Brückentreffer, der drittbeste einer schwachen Menge.
+      Unsere Abrufe laufen mit min_relevance 0,0 und max_results 5; eine Untergrenze
+      liegt nicht im Fassadenvertrag.
       WAS DARAUS FOLGT: Eine Richtungsaussage zur Zusammenführung ist erst nach
       dem Urteil möglich. Bis dahin gilt für die vierte Quelle nur, was beide Tage
       gemeinsam zeigen — Bedingung 2 erfüllt, Bedingung 1 an B09 verfehlt.
