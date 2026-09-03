@@ -84,6 +84,18 @@ def _gegenstand(
     Die Nummer bleibt trotzdem im Satz — sie ist der Rückweg in unsere eigene
     Datenbank, und ohne sie müsste ein Leser sie nachschlagen.
 
+    ABER NICHT ALS „MASCHINE 7“ (03.09.2026, Befund der Gegenstelle): Ihre Gewinnung
+    las „PR-01 (Maschine 7)“ als ZWEI Anlagen und machte daraus „PR-01 enthält
+    Maschine-7“ und die Umkehrung — 12 Faktenpaare, Zyklen, reflexive Aussagen. Die
+    Nummer ist aber keine zweite Anlage, sondern der Primärschlüssel derselben
+    Zeile. Deshalb steht in der Klammer ein Eigenschaftswort („Kennung 7“) und
+    kein Anlagenwort: Ein Satz, der zwei Anlagennamen nennt, behauptet eine
+    Beziehung zwischen ihnen, ob er will oder nicht. Der Satz ist der einzige
+    Kanal in den Graphen (C-104) — also muss er sagen, was er meint.
+
+    Ohne Kennung bleibt es bei „Maschine 8“: Dort IST die Nummer der einzige Name,
+    und ein Knoten dafür ist richtig.
+
     WEICHER ZUGRIFF: Altbestand trägt `machine_external_id` nicht. Ohne sie
     entsteht wortgleich die bisherige Formulierung. Das ist Absicht: Der
     Nachtrag reichert die Nutzlast erst an; bis dahin darf der Satz nicht
@@ -94,7 +106,7 @@ def _gegenstand(
     if maschine is None:
         kopf, klammer = "ohne Maschinenbezug", []
     elif kennung:
-        kopf, klammer = kennung, [f"Maschine {maschine}"]
+        kopf, klammer = kennung, [f"Kennung {maschine}"]
     else:
         kopf, klammer = f"Maschine {maschine}", []
     if zusatz:

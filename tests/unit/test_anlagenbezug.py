@@ -116,7 +116,10 @@ def test_der_satz_nennt_die_anlagenkennung_und_behaelt_die_nummer() -> None:
         "worker_note", notiz_payload(_notiz(4711, "Fügekraft schwankt."), "x", BEZUG)
     )
     assert "AX-02" in satz
-    assert "Maschine 2" in satz
+    # Die Nummer bleibt — als KENNUNG, nicht als zweite Anlage. „PR-01 (Maschine 7)“ las die
+    # Gewinnung der Gegenstelle als zwei Anlagen (03.09.2026); siehe test_substrate_content.
+    assert "Kennung 2" in satz
+    assert "Maschine" not in satz
 
 
 def test_zwei_notizen_beginnen_NICHT_mehr_gleich() -> None:
