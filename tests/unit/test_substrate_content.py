@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from foreman.substrate.content import CONTENT_BUILDERS, baue_inhalt
+from foreman.substrate.content import CONTENT_BUILDERS, _gegenstand, baue_inhalt
 
 # Nutzlast einer ALTEN Zeile: genau die Felder, die vor dem 24.08.2026
 # geschrieben wurden. Diese Gestalt liegt real in der Datenbank und ist der
@@ -205,3 +205,40 @@ def test_jeder_registrierte_typ_baut_einen_nichtleeren_satz() -> None:
     ):
         assert satz.strip()
         assert not satz.endswith(" ")
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Der Gegenstand nennt EINE Anlage — die Nummer ist eine Eigenschaft, kein zweiter Name
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_die_klammer_nennt_die_nummer_als_kennung_nicht_als_zweite_anlage() -> None:
+    """DER TRAGENDE FALL (03.09.2026): „PR-01 (Kennung 7)“, nicht „PR-01 (Maschine 7)“.
+
+    Die Gegenstelle bildet ihre Knoten aus dem Satz. „PR-01 (Maschine 7)“ las ihre
+    Gewinnung als zwei Anlagen und machte daraus „PR-01 enthaelt Maschine-7“ samt
+    Umkehrung — 12 Faktenpaare, Zyklen, reflexive Aussagen. Die Nummer ist der
+    Primaerschluessel DERSELBEN Zeile. Ein Eigenschaftswort in der Klammer sagt das;
+    ein Anlagenwort behauptet eine Beziehung, die es nicht gibt.
+    """
+    satz = _gegenstand({"machine_id": 7, "machine_external_id": "PR-01"})
+    assert satz == "PR-01 (Kennung 7)", satz
+    assert "Maschine" not in satz, "ein zweites Anlagenwort im Satz behauptet eine zweite Anlage"
+
+
+def test_der_zusatz_teilt_sich_die_klammer_mit_der_kennung() -> None:
+    """Die Notiz haengt den Zeitpunkt in DIESELBE Klammer — sonst stuenden zwei hintereinander."""
+    satz = _gegenstand(
+        {"machine_id": 7, "machine_external_id": "PR-01"}, zusatz="2026-09-02T09:16:57+00:00"
+    )
+    assert satz == "PR-01 (Kennung 7, 2026-09-02T09:16:57+00:00)", satz
+
+
+def test_ohne_kennung_bleibt_die_nummer_der_name() -> None:
+    """AUFBAU-KONTROLL-ZWILLING: Traegt die Nutzlast keine Anlagenkennung, IST die Nummer
+
+    der einzige Name — dann ist „Maschine 8“ richtig, und ein Knoten dafuer auch. Ohne
+    diesen Fall bliebe der Fall oben auch gruen, wenn das Anlagenwort ueberall verschwaende.
+    """
+    assert _gegenstand({"machine_id": 8}) == "Maschine 8"
+    assert _gegenstand({"machine_id": None}, maschine_optional=True) == "ohne Maschinenbezug"
