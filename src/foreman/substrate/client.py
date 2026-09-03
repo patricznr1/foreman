@@ -16,10 +16,40 @@ from typing import Any
 import httpx
 
 from foreman.config import Settings
+from foreman.logging_setup import ALERT, get_logger
 
 
 class SubstrateNotConfiguredError(RuntimeError):
     """Substrat-Anbindung ist nicht konfiguriert (SUBSTRATE_BASE_URL fehlt)."""
+
+
+logger = get_logger("foreman.substrate.client")
+
+# Einmal je Prozess, nicht je Klient: Das Backend baut je Anfrage einen neuen
+# Klienten (api/deps.py) — eine Meldung je Anfrage wäre Lärm, eine je Prozess ist
+# ein Befund. Der Worker baut genau einen; dort ist es dieselbe Zeile beim Start.
+_GEMELDET: set[str] = set()
+
+
+def _warne_ohne_token(base_url: str) -> None:
+    """Base-URL gesetzt, Token nicht: Der Klient hat keinen Authorization-Kopf.
+
+    ANLASS (03.09.2026): Der Live-Worker lief seit dem 25.06. ohne SUBSTRATE_TOKEN —
+    die Variable war in seinem Dienst nie gesetzt. Nichts warf, nichts meldete;
+    jeder Aufruf wäre still in 401 gelaufen, und weil die Aufrufer best-effort
+    sind, hätte es hinterher ausgesehen wie „das Gedächtnis hat nichts gefunden“.
+    Aufgefallen ist es nur, weil die Gegenstelle bei einer Token-Rotation nachsah.
+    """
+    if "ohne_token" in _GEMELDET:
+        return
+    _GEMELDET.add("ohne_token")
+    logger.warning(
+        "%s Substrat konfiguriert (%s), aber SUBSTRATE_TOKEN fehlt — der Klient hat "
+        "keinen Authorization-Kopf und JEDER Aufruf wird 401 liefern. Die Aufrufer sind "
+        "best-effort: Das sieht später aus wie „das Gedächtnis hat nichts gefunden“.",
+        ALERT,
+        base_url,
+    )
 
 
 class SubstrateError(RuntimeError):
@@ -107,6 +137,8 @@ class SubstrateClient:
         # Round-Trip-Smoke setzt einen) schriebe in den einen und löschte im
         # anderen. Die Falle ist heute gestellt, nicht ausgelöst: Der Smoke ruft
         # `forget` nicht auf.
+        if settings.substrate_token is None:
+            _warne_ohne_token(settings.substrate_base_url)
         ns = namespace or settings.substrate_namespace
         return cls(
             base_url=settings.substrate_base_url,

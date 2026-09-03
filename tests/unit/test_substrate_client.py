@@ -6,12 +6,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable
 
 import httpx
 import pytest
 
 from foreman.config import Settings
+from foreman.substrate import client as client_modul
 from foreman.substrate.client import (
     SubstrateClient,
     SubstrateError,
@@ -605,3 +607,59 @@ async def test_ein_leerer_rumpf_macht_die_meldung_nicht_unleserlich() -> None:
     with pytest.raises(SubstrateNotFoundError) as fehler:
         await client.forget("weg")
     assert "(leer)" in str(fehler.value)
+
+
+# ──────────────────────────────────────────────────────────────────────
+#  Ohne Token wird es laut — einmal je Prozess
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _substrat_einstellungen(token: str | None) -> Settings:
+    return Settings(
+        _env_file=None, substrate_base_url="http://substrate.test", substrate_token=token
+    )
+
+
+def _tokenwarnungen(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [r.getMessage() for r in caplog.records if "SUBSTRATE_TOKEN" in r.getMessage()]
+
+
+def test_ohne_token_wird_beim_bau_laut_gewarnt(caplog: pytest.LogCaptureFixture) -> None:
+    """DER TRAGENDE FALL: Base-URL gesetzt, Token fehlt → eine Alarmzeile.
+
+    ANLASS (03.09.2026): Der Live-Worker lief seit dem 25.06. ohne SUBSTRATE_TOKEN,
+    weil die Variable in seinem Dienst nie gesetzt war. `from_settings` baute einen
+    Klienten ohne Authorization-Kopf, nichts warf, nichts meldete. Aufgefallen ist es
+    erst, als die Gegenstelle bei einer Token-Rotation in die Variablen sah.
+    """
+    client_modul._GEMELDET.clear()
+    with caplog.at_level(logging.WARNING, logger="foreman.substrate.client"):
+        SubstrateClient.from_settings(_substrat_einstellungen(None))
+    warnungen = _tokenwarnungen(caplog)
+    assert len(warnungen) == 1, warnungen
+    assert "401" in warnungen[0], "die Zeile muss sagen, WAS passieren wird"
+
+
+def test_mit_token_keine_warnung(caplog: pytest.LogCaptureFixture) -> None:
+    """AUFBAU-KONTROLL-ZWILLING: Mit Token bleibt es still.
+
+    Ohne diesen Fall bliebe der Fall darüber auch dann grün, wenn die Warnung
+    bedingungslos käme — und eine Warnung, die immer kommt, liest niemand.
+    """
+    client_modul._GEMELDET.clear()
+    with caplog.at_level(logging.WARNING, logger="foreman.substrate.client"):
+        SubstrateClient.from_settings(_substrat_einstellungen("tok"))
+    assert _tokenwarnungen(caplog) == []
+
+
+def test_die_warnung_kommt_einmal_je_prozess(caplog: pytest.LogCaptureFixture) -> None:
+    """Das Backend baut je Anfrage einen Klienten (api/deps.py).
+
+    Eine Meldung je Anfrage wäre Lärm, den ein Betreiber nach der dritten Zeile
+    ausblendet — und damit auch die eine, die zählt.
+    """
+    client_modul._GEMELDET.clear()
+    with caplog.at_level(logging.WARNING, logger="foreman.substrate.client"):
+        SubstrateClient.from_settings(_substrat_einstellungen(None))
+        SubstrateClient.from_settings(_substrat_einstellungen(None))
+    assert len(_tokenwarnungen(caplog)) == 1
