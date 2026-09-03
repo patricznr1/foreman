@@ -16,7 +16,7 @@ import { useId, useState } from "react";
 
 import type { CurrentUser, DataPointRead, MachineCardOut, MachineRead } from "@/lib/api/contracts";
 import { machineRoleView } from "@/lib/machine/roles";
-import { DEFAULT_TIME_WINDOW, type TimeWindowId, timeWindow } from "@/lib/machine/time-window";
+import { useTimeViewport } from "@/lib/machine/use-time-viewport";
 
 import { SavedChainsBrowser } from "@/components/event-chains/saved-chains-browser";
 import { PredictionPanel } from "@/components/prediction/prediction-panel";
@@ -31,7 +31,7 @@ import { MachineHistory } from "./machine-history";
 import { PinnedChains } from "./pinned-chains";
 import { MachineTrendPanel } from "./machine-trend-panel";
 import { SensorPicker } from "./sensor-picker";
-import { TimeWindowPicker } from "./time-window-picker";
+import { ViewportBar } from "./viewport-bar";
 
 export interface MachineDetailViewProps {
   user: CurrentUser;
@@ -56,7 +56,12 @@ export function MachineDetailView({ user, machine, dataPoints, card }: MachineDe
     .slice(0, reduced ? 1 : Math.min(2, dataPoints.length))
     .map((dp) => dp.id);
 
-  const [windowId, setWindowId] = useState<TimeWindowId>(DEFAULT_TIME_WINDOW);
+  // Der Ausschnitt loest die feste Fensterwahl ab und wird von ALLEN gestapelten
+  // Panels geteilt. Kein zweiter Zustand daneben: Zwei Kurven mit verschiedenen
+  // Zeitachsen uebereinander behaupten eine Gleichzeitigkeit, die es nicht gibt —
+  // und zwar unsichtbar, weil das Auge vertikale Buendigkeit als Zeit-Buendigkeit
+  // liest.
+  const vp = useTimeViewport();
   const [selected, setSelected] = useState<number[]>(initialSelected);
 
   // Vorhersage und Ereignisketten werden AN ORT UND STELLE gezeigt statt
@@ -80,7 +85,6 @@ export function MachineDetailView({ user, machine, dataPoints, card }: MachineDe
     setOffen((vorher) => (vorher === was ? null : was));
   };
 
-  const hours = timeWindow(windowId).hours;
   const selectedDataPoints = dataPoints.filter((dp) => selected.includes(dp.id));
 
   const toggleSensor = (id: number): void => {
@@ -146,7 +150,14 @@ export function MachineDetailView({ user, machine, dataPoints, card }: MachineDe
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-h2 text-fg-primary">Sensortrend</h2>
-          <TimeWindowPicker value={windowId} onChange={setWindowId} />
+          <ViewportBar
+            viewport={vp.viewport}
+            announcement={vp.announcement}
+            onQuickPick={vp.quickPick}
+            onZoom={vp.zoom}
+            onPan={vp.pan}
+            onNow={vp.toNow}
+          />
         </div>
 
         {dataPoints.length > 0 ? (
@@ -162,7 +173,11 @@ export function MachineDetailView({ user, machine, dataPoints, card }: MachineDe
                 key={dataPoint.id}
                 machineId={machine.id}
                 dataPoint={dataPoint}
-                hours={hours}
+                viewport={vp.viewport}
+                hours={vp.hours}
+                onPan={vp.pan}
+                onZoom={vp.zoom}
+                onGestureEnd={vp.endGesture}
                 reduced={reduced}
               />
             ))

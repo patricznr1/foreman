@@ -18,6 +18,21 @@ export interface TimeWindow {
 /** Obergrenze der Backend-Trend-Route (`hours` 1–168). */
 export const MAX_BACKEND_HOURS = 168;
 
+/**
+ * Breite eines Aggregat-Buckets. Der Speicher ist `readings_1m` und verdichtet
+ * NICHT nach Spanne — feiner als eine Minute gibt es nichts, egal wie weit man
+ * hineinzoomt. Die Zahl steht hier und nirgends sonst.
+ */
+export const BUCKET_MS = 60_000;
+
+/**
+ * Wie weit die Trend-Route zurueckreicht. Benannter Alias auf dieselbe Zahl —
+ * KEINE zweite Groesse: Die Route deckelt `hours` bei 168, und genau dort endet
+ * auch der abrufbare Verlauf. Zwei Zahlen, die dasselbe meinen, laufen
+ * auseinander, sobald eine von beiden angefasst wird.
+ */
+export const RETENTION_HOURS = MAX_BACKEND_HOURS;
+
 const SHIFT: TimeWindow = { id: "shift", label: "Schicht", hours: 8 };
 const DAY: TimeWindow = { id: "day", label: "Tag", hours: 24 };
 const WEEK: TimeWindow = { id: "week", label: "Woche", hours: 168 };
