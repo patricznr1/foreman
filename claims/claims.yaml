@@ -3584,12 +3584,17 @@ claims:
       setzen bewirkt allein nichts; das Ausrollen ist der Neustart, und der
       zweite kann erst beginnen, wenn der erste durch ist.
       WAS DIE MESSUNG NICHT DECKT: den zweiten FOREMAN-Prozess. Der Live-Worker
-      (gleiches Abbild, eigener Variablensatz) wurde seit dem 25.06.2026 nicht
-      neu gestartet und trägt nach der Rotation den alten Wert. Heute folgenlos,
-      weil sein Erzeuger keine diskreten Ereignisse liefert und der Klient dort
-      nur im Ereignispfad benutzt wird — aber ein Prozess mit totem Token, der
-      erst beim ersten Ereignis auffällt, sieht später aus wie „das Gedächtnis
-      hat nichts gefunden".
+      (gleiches Abbild, eigener Variablensatz) hatte NIE einen Substrat-Token —
+      SUBSTRATE_TOKEN ist in seinem Dienst nicht gesetzt (Patric, Railway,
+      03.09.2026). Die Rotation hat für ihn nichts geändert. Der erste Eintrag
+      dieses Registers sagte „trägt noch den alten Wert" — ein Schluss vom
+      geteilten Abbild auf geteilte Variablen, der bei Railway nicht hält:
+      Variablen hängen am Dienst, nicht am Abbild. Folgenlos war es nur, weil
+      der Live-Erzeuger keine diskreten Ereignisse liefert (live.py:227) — jede
+      Spiegelung aus dem Worker wäre sonst still in 401 gelaufen (client.py:115
+      baut ohne Token einen Klienten ohne Authorization-Kopf; der Recall-Weg
+      ist best-effort). Zahlen über „Ereignisse aus dem Worker im Gedächtnis"
+      sind null — nicht aus Verfügbarkeit.
     datum: "2026-09-03"
     fundstelle:
       - "Railway, Projekt foreman, Dienst backend: Ausrollungen 2b4edc24 (06:44:45 UTC) und 7a681882 (07:19:56 UTC), Deploy-Protokoll der zweiten"

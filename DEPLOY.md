@@ -283,10 +283,12 @@ Ausrollen *ist* der Neustart.
    über eine Peer-Leitung weiterreicht, ist dort keine.
 2. **Dann `SUBSTRATE_TOKEN` am `backend`** setzen → Railway rollt aus. Beim Start läuft der
    Rauchtest von selbst (`main.py`: `remember` → `recall` unter `foreman-smoke`).
-3. **Dann `SUBSTRATE_TOKEN` am `live-worker`** setzen → ebenfalls Neustart. Nicht
-   zeitkritisch (sein Erzeuger liefert heute keine diskreten Ereignisse), aber ein
-   Prozess mit totem Token, der erst beim ersten Ereignis auffällt, sieht später aus wie
-   „das Gedächtnis hat nichts gefunden".
+3. **Dann `SUBSTRATE_TOKEN` am `live-worker`** setzen → ebenfalls Neustart. Vorher
+   nachsehen, ob die Variable dort überhaupt steht: Am 03.09.2026 fehlte sie — der
+   Worker hatte nie Zugang, und weil sein Erzeuger keine diskreten Ereignisse liefert,
+   fiel es nie auf. Ein fehlender Token baut einen Klienten ohne `Authorization`-Kopf
+   (`client.py:115`); jeder Aufruf liefe still in 401 und sähe später aus wie „das
+   Gedächtnis hat nichts gefunden".
 4. **Nachweis lesen, nicht anstoßen:** Railway-Deploy-Log des Backends, Zeile
    `Substrat-Smoke beim Start: ok=True`. Die HTTP-Route `GET /api/v1/substrate/smoke`
    braucht ein Login und ist dafür nicht nötig.
