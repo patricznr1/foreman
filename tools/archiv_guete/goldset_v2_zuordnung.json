@@ -325,5 +325,11 @@
   "AL-011": "alarm:17",
   "AL-012": "alarm:18",
   "AL-013": "alarm:19",
-  "AL-014": "alarm:20"
+  "AL-014": "alarm:20",
+  "SN-190": "note:207",
+  "SN-191": "note:208",
+  "SN-192": "note:5",
+  "SN-193": "note:6",
+  "SN-194": "note:7",
+  "WA-125": "maintenance:10"
 }

@@ -3212,8 +3212,7 @@ claims:
       zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
       mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
       die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
-      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
-      durch einen neuen.
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist am 03.09.2026 gefahren: C-120.
     freigabe:
       - "intern"
 
@@ -3389,8 +3388,7 @@ claims:
       zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
       mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
       die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
-      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
-      durch einen neuen.
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist am 03.09.2026 gefahren: C-120.
     freigabe:
       - "intern"
 
@@ -3423,8 +3421,7 @@ claims:
       zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
       mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
       die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
-      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
-      durch einen neuen.
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist am 03.09.2026 gefahren: C-120.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -3464,8 +3461,7 @@ claims:
       zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
       mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
       die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
-      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
-      durch einen neuen.
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist am 03.09.2026 gefahren: C-120.
     freigabe:
       - "intern"
 
@@ -3710,3 +3706,43 @@ claims:
       Zwei-Sekunden-Takt. Der Vorbehalt oben („nicht gemessen“) steht damit auf
       „zweimal beobachtet, kein 404“. Zwei Beobachtungen sind keine Zusicherung:
       Aufräum- und Nachtragslauf bleiben im Fenster stehen.
+
+  - id: "C-120"
+    aussage: "Nach der Knoten-Zusammenführung bringt die vierte Quelle auf sieben von zehn Anfragen einen zutreffenden Treffer hinzu, kostet auf einer einen; der Vorsprung im Mittel ist nicht gezeigt."
+    status: "gemessen"
+    wert: "Basis → mit Gedächtnis (03.09.2026, k=15, 10 Anfragen, goldset_v3): Trefferquote 0,487 → 0,592 (+0,105, p=0,062), nDCG 0,582 → 0,652 (+0,071, p=0,109), nDCG verdichtet 0,595 → 0,693 (+0,098, p=0,020). Zusatztreffer auf 7 von 10 (70 %), Verlust auf B09. Freigabe-Bedingung 1 verfehlt (B09), Bedingung 2 erfüllt. Wiederholungslauf zeilengleich. Vorher (02.09.): +0,139 (p=0,031) · 80 % · nDCG +0,107 (p=0,023)."
+    bedingung: >-
+      Dieselben Parameter wie C-112/C-113: goldset_v2_anfragen.yaml, k=15, Demo-Instanz,
+      Quellen note+maintenance+alarm gegen +memory, Auswertung werte_aus.py gegen
+      goldset_v3 (126 zutreffende, 229 beurteilte Einträge). Drei Läufe, 0 Fehler.
+      DIE DIREKTE WIRKUNG DER ZUSAMMENFÜHRUNG (Gedächtnis 02.09. gegen Gedächtnis
+      03.09., gepaart): Trefferquote −0,034 (p=0,500), nDCG −0,043 (p=0,188),
+      verdichtet −0,006 (p=0,938) — acht Anfragen unverändert, auf B01 und B02 je
+      ein zutreffender Gedächtnistreffer weniger (maintenance:116, note:145; dazu
+      maintenance:32 auf B06 ohne Wirkung auf die Quote). Die Basis (eigene Quellen)
+      ist zwischen den Tagen unverändert (p=1,000).
+      KONFUNDIERT, und das ist der tragende Vorbehalt: Zwischen den beiden Läufen
+      sind zwei Schichtnotizen entstanden (note:207 zu PR-01, 02.09. 09:16 UTC —
+      „Druckabfall durch undichte Kolbendichtung, Kolbendichtung erneuert“; note:208 zu
+      VS-01, 09:21 UTC — Kameraposition verstellt). Das Gedächtnis liefert sie jetzt
+      auf B01, B06, B09 (Rang 1, 1, 4) und B02 (Rang 6) und verdrängt damit genau
+      die drei verlorenen Treffer aus den 15 Plätzen. Beide Notizen sind UNBEURTEILT
+      und zählen darum als Fehltreffer. Ob die Nachher-Zahlen einen Verlust durch
+      die Zusammenführung zeigen oder einen Tausch gegen neue, womöglich bessere
+      Treffer, entscheidet ihr Urteil — nicht diese Messung. Pool-Verzerrung: 18
+      von 21 Gedächtnis-Plätzen beurteilt (86 %) gegen 99 von 104 eigenen (95 %),
+      Abstand 9 Punkte zulasten der vierten Quelle (vorher 2). Urteilsbogen für
+      die 8 offenen Plätze liegt vor.
+      WAS DARAUS FOLGT: Eine Richtungsaussage zur Zusammenführung ist erst nach
+      dem Urteil möglich. Bis dahin gilt für die vierte Quelle nur, was beide Tage
+      gemeinsam zeigen — Bedingung 2 erfüllt, Bedingung 1 an B09 verfehlt.
+    datum: "2026-09-03"
+    fundstelle:
+      - "tools/archiv_guete/messung_nexus_2026-09-03_basis.json"
+      - "tools/archiv_guete/messung_nexus_2026-09-03_gedaechtnis.json"
+      - "tools/archiv_guete/messung_nexus_2026-09-03_gedaechtnis_wdh.json"
+      - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json (Vorher-Lauf)"
+      - "claims/claims.yaml, C-112, C-113, C-117"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
