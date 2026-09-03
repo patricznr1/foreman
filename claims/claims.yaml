@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-09-02"
+stand: "2026-09-03"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -3231,9 +3231,8 @@ claims:
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis_wdh.json"
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
     geltung: "ueberholt"
-    ueberholt_am: "2026-09-02"
-    ueberholt_weil: >-
-      Der Bewertungssatz, gegen den gemessen wurde, ist am 02.09.2026 um 7 zutreffende Eintraege gewachsen (13 vorgelegte Paare, 7 davon zutreffend). Gegen den erweiterten Satz: Zusatztreffer auf 8 von 10 Anfragen (80 %), Verlust nur noch auf B09. Siehe C-113.
+    geltung_grund: >-
+      Überholt am 02.09.2026: Der Bewertungssatz, gegen den gemessen wurde, ist am 02.09.2026 um 7 zutreffende Eintraege gewachsen (13 vorgelegte Paare, 7 davon zutreffend). Gegen den erweiterten Satz: Zusatztreffer auf 8 von 10 Anfragen (80 %), Verlust nur noch auf B09. Siehe C-113.
     freigabe:
       - "intern"
 
@@ -3259,12 +3258,10 @@ claims:
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
       - "docs/messungen/2026-09-02_rohauswertung.txt"
     geltung: "ueberholt"
-    ueberholt_am: "2026-09-02"
-    ueberholt_weil: >-
-      Gegen den am 02.09.2026 erweiterten Bewertungssatz ist der Vorsprung sehr wohl gezeigt: alle drei Kennzahlen p < 0,05. Der frueher gemessene Wert beschrieb einen Massstab, in dem 14 der 22 exklusiven Treffer als Fehltreffer zaehlten, weil niemand sie angesehen hatte. Siehe C-112.
+    geltung_grund: >-
+      Überholt am 02.09.2026: Gegen den am 02.09.2026 erweiterten Bewertungssatz ist der Vorsprung sehr wohl gezeigt: alle drei Kennzahlen p < 0,05. Der frueher gemessene Wert beschrieb einen Massstab, in dem 14 der 22 exklusiven Treffer als Fehltreffer zaehlten, weil niemand sie angesehen hatte. Siehe C-112.
     freigabe:
       - "intern"
-      - "fach"
 
   - id: "C-108"
     aussage: "Die vierte Quelle verschiebt das Ergebnis von Schichtnotizen zu Wartungsvorgaengen."
@@ -3284,9 +3281,8 @@ claims:
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
       - "docs/messungen/2026-09-02_rohauswertung.txt"
     geltung: "ueberholt"
-    ueberholt_am: "2026-09-02"
-    ueberholt_weil: >-
-      Von den drei verlorenen Treffern haelt nach den Urteilen vom 02.09.2026 nur noch B09 stand. Bei B07 trat ein Wartungsvorgang der Stufe 2 an die Stelle einer Notiz der Stufe 1 — die Rangguete stieg dort. Siehe C-113.
+    geltung_grund: >-
+      Überholt am 02.09.2026: Von den drei verlorenen Treffern haelt nach den Urteilen vom 02.09.2026 nur noch B09 stand. Bei B07 trat ein Wartungsvorgang der Stufe 2 an die Stelle einer Notiz der Stufe 1 — die Rangguete stieg dort. Siehe C-113.
     freigabe:
       - "intern"
 
@@ -3318,9 +3314,8 @@ claims:
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md, Abschnitt 4 Grenze 2"
     geltung: "ueberholt"
-    ueberholt_am: "2026-09-02"
-    ueberholt_weil: >-
-      Die gemessene Luecke ist am 02.09.2026 geschlossen worden: 21 von 22 exklusiven Plaetzen beurteilt (95 %) gegen 100 von 103 (97 %). Der Eintrag beschreibt den Zustand VOR der Erhebung und bleibt als deren Anlass stehen. Siehe C-111.
+    geltung_grund: >-
+      Überholt am 02.09.2026: Die gemessene Luecke ist am 02.09.2026 geschlossen worden: 21 von 22 exklusiven Plaetzen beurteilt (95 %) gegen 100 von 103 (97 %). Der Eintrag beschreibt den Zustand VOR der Erhebung und bleibt als deren Anlass stehen. Siehe C-111.
     freigabe:
       - "intern"
 
@@ -3348,9 +3343,8 @@ claims:
       - "tools/archiv_guete/pool_verzerrung.py"
       - "claims/claims.yaml, C-106 und C-108"
     geltung: "ueberholt"
-    ueberholt_am: "2026-09-02"
-    ueberholt_weil: >-
-      Alle drei Verdraenger sind am 02.09.2026 beurteilt worden: maintenance:37 = Stufe 2, note:195 = Stufe 2, maintenance:137 = Stufe 0. Siehe C-113.
+    geltung_grund: >-
+      Überholt am 02.09.2026: Alle drei Verdraenger sind am 02.09.2026 beurteilt worden: maintenance:37 = Stufe 2, note:195 = Stufe 2, maintenance:137 = Stufe 0. Siehe C-113.
     freigabe:
       - "intern"
 
@@ -3566,3 +3560,97 @@ claims:
       und drei Varianten von "Kollege". Es sind Maschinenkennungen, kein
       Klarname, und alle neun tragen null Fakten. Die Maskierung auf unserer
       Seite hat also gehalten; die Fehltypisierung ist dieselbe Ursache wie oben.
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Token-Rotation gegen das Gedächtnis-Substrat, 03.09.2026
+  # ──────────────────────────────────────────────────────────────────────
+
+  - id: "C-118"
+    aussage: "Eine Rotation des Substrat-Tokens öffnet ein Fenster von rund vier Minuten, in dem FOREMAN das Gedächtnis nicht erreicht — beide Hälften gemessen, nicht abgeleitet."
+    status: "gemessen"
+    wert: "4 min 04 s Gesamtfenster (07:17:57 → 07:22:01 UTC, 03.09.2026). Davon NEXUS-Neustart 50,8 s (07:17:57 → 07:18:48) und FOREMAN-Backend-Neustart 2 min 05 s (07:19:56 Ausrollung angelegt → 07:22:01 Anwendung bereit). Erster Rauchtest mit neuem Wert: ok=True, 6.942 ms — davon 363 ms Bearbeitung bei der Gegenstelle, der Rest Kaltstart auf unserer Seite."
+    bedingung: >-
+      Unsere Hälfte SELBST gemessen an den Zeitstempeln der Railway-Ausrollungen
+      des Backends (2b4edc24 → 7a681882, derselbe Commit 658bb65 — ein Ausrollen
+      ohne Codeänderung ist die Variablenänderung) und am Deploy-Protokoll
+      („Substrat-Smoke beim Start: ok=True latency_ms=6942.23", 07:22:01 UTC).
+      Die Hälfte der Gegenstelle ist FREMDERHEBUNG: zwei Sonden im
+      Zwei-Sekunden-Takt auf ihren Healthcheck und eine Substrat-Route, dort als
+      C-186 geführt; die 363 ms stammen aus ihrem retrieval_logs. Reihenfolge war
+      NEXUS zuerst, dann FOREMAN — Patric hat sie als eigene Aussage bestätigt.
+      WARUM DIE SUMME UND NICHT DAS MAXIMUM: Beide Seiten lesen den Token beim
+      Prozessstart (bei uns `get_settings()` mit `lru_cache`, config.py:203, und
+      der Klient friert den Kopf beim Bau ein, client.py:83). Die Variable zu
+      setzen bewirkt allein nichts; das Ausrollen ist der Neustart, und der
+      zweite kann erst beginnen, wenn der erste durch ist.
+      WAS DIE MESSUNG NICHT DECKT: den zweiten FOREMAN-Prozess. Der Live-Worker
+      (gleiches Abbild, eigener Variablensatz) hatte NIE einen Substrat-Token —
+      SUBSTRATE_TOKEN ist in seinem Dienst nicht gesetzt (Patric, Railway,
+      03.09.2026). Die Rotation hat für ihn nichts geändert. Der erste Eintrag
+      dieses Registers sagte „trägt noch den alten Wert" — ein Schluss vom
+      geteilten Abbild auf geteilte Variablen, der bei Railway nicht hält:
+      Variablen hängen am Dienst, nicht am Abbild. Folgenlos war es nur, weil
+      der Live-Erzeuger keine diskreten Ereignisse liefert (live.py:227) — jede
+      Spiegelung aus dem Worker wäre sonst still in 401 gelaufen (client.py:115
+      baut ohne Token einen Klienten ohne Authorization-Kopf; der Recall-Weg
+      ist best-effort). Zahlen über „Ereignisse aus dem Worker im Gedächtnis"
+      sind null — nicht aus Verfügbarkeit.
+    datum: "2026-09-03"
+    fundstelle:
+      - "Railway, Projekt foreman, Dienst backend: Ausrollungen 2b4edc24 (06:44:45 UTC) und 7a681882 (07:19:56 UTC), Deploy-Protokoll der zweiten"
+      - "src/foreman/config.py:203 (get_settings, lru_cache) · src/foreman/substrate/client.py:83 · src/foreman/main.py:98 (Start-Rauchtest)"
+      - "NEXUS-Register C-186 (Fremderhebung, Neustartdauer der Gegenstelle)"
+      - "DEPLOY.md §7.1 (Ablauf)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+    bemerkung: >-
+      BEWEISORT, damit beim nächsten Mal an der richtigen Stelle gesucht wird:
+      Bei der Gegenstelle belegt `retrieval_logs` den Rauchtest SOFORT (der
+      Recall wird dort unmittelbar protokolliert). In `memory_entries` liegt der
+      Eintrag erst nach der Konsolidierung im Viertelstundentakt — fünf Minuten
+      nach dem Rauchtest steht dort noch der Bestand vom 22.08. Wer dort zu früh
+      nachsieht und nichts findet, hat kein Problem entdeckt, sondern zu früh
+      geschaut. Die Ableitung der Gegenstelle „Größenordnung Minute" lag für ihre
+      Hälfte richtig; für die Summe hätte sie nicht gereicht. Beim nächsten Mal
+      mit vier bis fünf Minuten planen.
+
+  - id: "C-119"
+    aussage: "Das Rotationsfenster vom 03.09.2026 hat keinen Eintrag gekostet — weil in dieser Zeit kein Aufruf anfiel, nicht weil die Bauart es verhindert hätte."
+    status: "gemessen"
+    wert: "0 × 401, 0 fehlgeschlagene Spiegelungen, 0 Zeilen mit substrate_ref=NULL im Protokoll des Prozesses, der während des Fensters lief. Letzter Substrat-Aufruf davor: 06:49:39 UTC (Recall, 200 OK, alter Wert). Nächster: 07:22:01 UTC (Rauchtest, neuer Wert). Dazwischen nichts — auf beiden Seiten deckungsgleich."
+    bedingung: >-
+      Gemessen am Deploy-Protokoll der Ausrollung 2b4edc24 (der Prozess, der
+      während des Fensters lief): Suche nach „401", „fehlgeschlagen" und
+      „substrate_ref" liefert je null Zeilen. KONTROLLPUNKT gegen ein falsches
+      Grün: dieselbe Abfrage auf denselben Prozess mit dem Suchwort „Substrat"
+      liefert fünf Zeilen — die Suche greift. Die Gegenstelle bestätigt aus
+      ihrem retrieval_logs dieselbe Lücke zwischen 06:49:39 und 07:22:01 UTC.
+      AUS VERFÜGBARKEIT, NICHT AUS BAUART: In den vier Minuten hat niemand eine
+      Ereigniskette oder Empfehlung angestoßen und kein Ereignis wurde
+      gespiegelt. Bei Betrieb hätte der Preis angelegen — Lesen degradiert
+      (Ketten und Empfehlungen ohne historischen Kontext, kein Abbruch, beide
+      Recall-Wege fangen breit ab), Schreiben landet lokal mit
+      substrate_ref=NULL und wird vom Nachlauf geholt (wählt genau diese Zeilen,
+      idempotent). Der EINZIGE dauerhafte Preis — Ereigniskette und Empfehlung
+      hätten beim Nachholen die Laufzeit statt ihrer Entstehungszeit getragen —
+      war seit 06:44 UTC geschlossen: PR #160 lief vor der Rotation aus.
+      VORABPRÜFUNG davor: sieben Agenten (sechs Erhebungen, ein Kritiker), 64
+      Befunde, vier als blockierend gemeldet, alle vier vom Kritiker gegen den
+      Maßstab „Eintrag geht dauerhaft verloren ODER Läufer bleibt stehen"
+      widerlegt. Der eine dauerhafte Preis (Zeitfeld) stand in keinem der 64
+      Befunde; ihn fand erst der Kritiker.
+      NICHT GEMESSEN: welchen Statuscode der Vermittler der Gegenstelle im
+      Neustartfenster liefert. 404 liegt nachweislich in seiner Codomäne
+      (Sonde gegen eine tote Adresse), ob er im Fenster kommt, ist offen — und
+      unser Löschweg bucht einen 404 als erledigt. Deshalb wurden Aufräum- und
+      Nachtragslauf im Fenster nicht gestartet; ein Nachlauf war nicht nötig.
+    datum: "2026-09-03"
+    fundstelle:
+      - "Railway, Projekt foreman, Dienst backend: Deploy-Protokoll der Ausrollung 2b4edc24"
+      - "PR #160 (Entstehungszeit + Recall-Merkmal in der Spiegelung), Commit 84ba7e6, ausgerollt 06:44 UTC"
+      - "tests/unit/test_ereigniszeit.py (Deckung in beide Richtungen)"
+      - "claims/claims.yaml, C-118"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"

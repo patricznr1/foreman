@@ -265,8 +265,54 @@ sauber dazu:
 - **Adapter-Fassade** vor der NEXUS, die FOREMANs generische 5 Endpunkte
   (`/remember`, `/recall`, `/reason`, `/drift_status`, `/reflect`) auf die echten
   NEXUS-Operationen übersetzt (HTTP-Methoden, SPARQL-Semantik, Auth-Schema).
-- Anschließend `SUBSTRATE_BASE_URL` + `SUBSTRATE_TOKEN` am Backend setzen — die
-  H-Sektion/Gedächtnis verlässt den Fallback.
+- Anschließend `SUBSTRATE_BASE_URL` + `SUBSTRATE_TOKEN` setzen — **an beiden Diensten,
+  die den Token tragen: `backend` und `live-worker`.** Gleiches Abbild, getrennte
+  Variablensätze; config-as-code verwaltet keine Env-Vars, es gibt keinen Automatismus,
+  der den Worker mitnimmt. Die H-Sektion/Gedächtnis verlässt den Fallback.
+
+### 7.1 Token-Rotation — Ablauf (gemessen am 03.09.2026, Register C-118/C-119)
+
+Der Token wird **beim Prozessstart** gelesen (`get_settings()` ist `lru_cache`-gepuffert,
+`src/foreman/config.py:203`) und beim Bau des Klienten in den `Authorization`-Kopf
+eingefroren (`substrate/client.py:83`). **Die Variable zu setzen bewirkt allein nichts** —
+erst der Neustart. Bei Railway löst eine Variablenänderung das Ausrollen aus; das
+Ausrollen *ist* der Neustart.
+
+1. **Zuerst die Gegenstelle** (NEXUS) dreht und startet neu — von Hand. Keine Sitzung
+   fasst den Wert an, und er geht über keine Leitung; eine Freigabe, die eine Sitzung
+   über eine Peer-Leitung weiterreicht, ist dort keine.
+2. **Dann `SUBSTRATE_TOKEN` am `backend`** setzen → Railway rollt aus. Beim Start läuft der
+   Rauchtest von selbst (`main.py`: `remember` → `recall` unter `foreman-smoke`).
+3. **Dann `SUBSTRATE_TOKEN` am `live-worker`** setzen → ebenfalls Neustart. Vorher
+   nachsehen, ob die Variable dort überhaupt steht: Am 03.09.2026 fehlte sie — der
+   Worker hatte nie Zugang, und weil sein Erzeuger keine diskreten Ereignisse liefert,
+   fiel es nie auf. Ein fehlender Token baut einen Klienten ohne `Authorization`-Kopf
+   (`client.py:115`); jeder Aufruf liefe still in 401 und sähe später aus wie „das
+   Gedächtnis hat nichts gefunden".
+4. **Nachweis lesen, nicht anstoßen:** Railway-Deploy-Log des Backends, Zeile
+   `Substrat-Smoke beim Start: ok=True`. Die HTTP-Route `GET /api/v1/substrate/smoke`
+   braucht ein Login und ist dafür nicht nötig.
+5. **Gegenprobe bei der Gegenstelle:** in `retrieval_logs` — dort steht der Recall
+   sofort. **Nicht** in `memory_entries`: Dort landet der Eintrag erst nach der
+   Konsolidierung im Viertelstundentakt. Wer zu früh nachsieht und nichts findet, hat
+   kein Problem entdeckt, sondern zu früh geschaut.
+6. Danach `python -m foreman.substrate.backfill` **nur, wenn** im Fenster Zeilen mit
+   `substrate_ref IS NULL` entstanden sind (Trockenlauf zuerst). Zählerstände lesen —
+   `amain` liefert unbedingt 0, der Rückgabewert belegt nichts.
+
+**Fenster:** Die beiden Neustarts liegen **hintereinander**, das Fenster ist die Summe:
+NEXUS 50,8 s + FOREMAN 2 min 05 s = **4 min 04 s**. Mit vier bis fünf Minuten planen.
+
+**Im Fenster nicht starten:** `foreman.substrate.aufraeumen` und `foreman.substrate.nachtrag`
+(beide buchen einen 404 beim Löschen als erledigt, und 404 liegt in der Codomäne des
+Vermittlers — ob er im Neustartfenster kommt, ist nicht gemessen) sowie
+`foreman.substrate.backfill` (eingefrorener Token für die gesamte Laufzeit).
+
+**Was das Fenster kostet:** Lesen degradiert — Ketten und Empfehlungen entstehen ohne
+historischen Kontext, kein Abbruch. Schreiben landet lokal mit `substrate_ref=NULL` und
+wird nachgeholt. Seit PR #160 tragen auch Ereigniskette und Empfehlung ihre
+Entstehungszeit, ein späteres Nachholen verschiebt sie nicht mehr. `/metrics` steht nach
+dem Ausrollen auf 0 — vorher abziehen, wenn Zahlen gebraucht werden.
 
 Details bei Erreichen von Etappe 2.
 
