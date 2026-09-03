@@ -291,7 +291,7 @@ class EventChainService:
         self._last = explanation
 
         record = await self._persist(explanation, chain, siblings)
-        await self._mirror(explanation, chain)
+        await self._mirror(explanation, chain, record)
         record_event_chain_explanation(flagged=bool(explanation.flagged_unsupported))
         # Strukturierter Log (§11.1): Umfang/Flags/Konfidenz, KEINE PII/keine Notiz-Texte.
         logger.info(
@@ -463,7 +463,12 @@ class EventChainService:
             explanation_by_machine[machine_id] = await self.session.scalar(stmt)
         return class_by_machine, explanation_by_machine
 
-    async def _mirror(self, explanation: ReasonerExplanation, chain: EventChain) -> None:
+    async def _mirror(
+        self,
+        explanation: ReasonerExplanation,
+        chain: EventChain,
+        record: ReasonerExplanationRecord,
+    ) -> None:
         """Spiegelt das Reasoning-Ergebnis als diskretes semantic_event (§12.4).
 
         Gespiegelt wird eine STRUKTURIERTE, PII-freie Zusammenfassung — NICHT der
@@ -484,6 +489,16 @@ class EventChainService:
             "is_hypothesis": explanation.is_hypothesis,
             "referenced_source_ids": list(explanation.referenced_source_ids),
             "flagged_unsupported": list(explanation.flagged_unsupported),
+            # ENTSTEHUNGSZEIT, aus der eigenen Zeile GELESEN statt beim Spiegeln
+            # erzeugt. Scheitert der Dual-Write, spiegelt der Nachlauf später —
+            # ohne dieses Feld trüge der Eintrag drüben die Zeit des Nachlaufs,
+            # und dort wird sie zur Gültigkeitszeit der gewonnenen Fakten.
+            "created_at": record.created_at.isoformat(),
+            # Ob das Gedächtnis beim Erzählen zur Verfügung stand. Die Zeile führt
+            # es seit jeher als Spalte; ohne dieses Feld liegt eine blind erzählte
+            # Kette drüben ununterscheidbar neben einer mit vollem Kontext — und
+            # rückwirkend ist das nicht zu heilen, weil die Angabe nie ankam.
+            "recall_used": explanation.recall_used,
         }
         await record_semantic_event(
             self.session,

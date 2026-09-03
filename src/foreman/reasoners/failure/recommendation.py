@@ -313,7 +313,7 @@ class RecommendationService:
             allowed=allowed_source_ids(sources),
         )
         record = await self._persist(recommendation)
-        await self._mirror(recommendation)
+        await self._mirror(recommendation, record, recall_used=bool(recall_items))
         observe_failure_recommendation(data_regime=prediction.data_regime, result="issued")
         # Strukturierter Log (§11.1): Umfang/Vorbehalt, KEINE PII/kein Empfehlungstext.
         logger.info(
@@ -347,7 +347,13 @@ class RecommendationService:
         await self.session.refresh(record)
         return record
 
-    async def _mirror(self, recommendation: WorkerRecommendation) -> None:
+    async def _mirror(
+        self,
+        recommendation: WorkerRecommendation,
+        record: FailureRecommendationRecord,
+        *,
+        recall_used: bool,
+    ) -> None:
         """Spiegelt die Empfehlung als diskretes semantic_event (§12.4).
 
         Gespiegelt wird eine STRUKTURIERTE, PII-freie Zusammenfassung mit
@@ -369,6 +375,14 @@ class RecommendationService:
             "validation_status": recommendation.validation_status,
             # Pflicht: der Sim-Charakter wandert mit ins Gedächtnis (§16).
             "data_regime": recommendation.data_regime,
+            # ENTSTEHUNGSZEIT, aus der eigenen Zeile GELESEN — Begründung bei
+            # ZEIT_FELDER (substrate/content.py): Ein Nachlauf-Zeitstempel wird
+            # drüben zur Gültigkeitszeit jedes gewonnenen Fakts.
+            "created_at": record.created_at.isoformat(),
+            # Ob das Gedächtnis beim Erzeugen zur Verfügung stand. Anders als bei der
+            # Ereigniskette führt die Zeile das nicht als Spalte — der Wert kommt
+            # deshalb vom Aufrufer, der ihn ohnehin schon protokolliert.
+            "recall_used": recall_used,
         }
         await record_semantic_event(
             self.session,
