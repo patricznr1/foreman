@@ -3203,10 +3203,19 @@ claims:
     fundstelle:
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Überholt am 03.09.2026: erhoben VOR der Knoten-Zusammenführung der Gegenstelle
+      (siehe C-117), also unter genau dem Zustand, in dem dieselbe Maschine mehrfach im
+      Graphen lag und die Zersplitterung — bei NEXUS_GRAPH_EXPANSION_ENABLED=true —
+      als Brücke in der rekursiven Suche wirkte. Der Abruf arbeitet seit 12:25 UTC auf
+      zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
+      mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
+      die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
+      durch einen neuen.
     freigabe:
       - "intern"
-      - "fach"
 
   - id: "C-106"
     aussage: "Die vierte Quelle gewinnt auf der Haelfte der Anfragen einen zutreffenden Treffer hinzu und verliert auf zwei von zehn einen."
@@ -3371,7 +3380,17 @@ claims:
     fundstelle:
       - "tools/archiv_guete/gegenprobe/relevanz_urteile_2026-09-02.txt"
       - "tools/archiv_guete/pool_verzerrung.py"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Überholt am 03.09.2026: erhoben VOR der Knoten-Zusammenführung der Gegenstelle
+      (siehe C-117), also unter genau dem Zustand, in dem dieselbe Maschine mehrfach im
+      Graphen lag und die Zersplitterung — bei NEXUS_GRAPH_EXPANSION_ENABLED=true —
+      als Brücke in der rekursiven Suche wirkte. Der Abruf arbeitet seit 12:25 UTC auf
+      zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
+      mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
+      die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
+      durch einen neuen.
     freigabe:
       - "intern"
 
@@ -3395,10 +3414,19 @@ claims:
     fundstelle:
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md, Abschnitt 7"
       - "tools/archiv_guete/messung_nexus_2026-09-02_gedaechtnis.json"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Überholt am 03.09.2026: erhoben VOR der Knoten-Zusammenführung der Gegenstelle
+      (siehe C-117), also unter genau dem Zustand, in dem dieselbe Maschine mehrfach im
+      Graphen lag und die Zersplitterung — bei NEXUS_GRAPH_EXPANSION_ENABLED=true —
+      als Brücke in der rekursiven Suche wirkte. Der Abruf arbeitet seit 12:25 UTC auf
+      zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
+      mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
+      die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
+      durch einen neuen.
     freigabe:
       - "intern"
-      - "fach"
     bemerkung: >-
       UNTER WELCHEN BEDINGUNGEN die Zahl entstand, sagt C-117: Der Wissensgraph
       der Gegenstelle fuehrt dieselbe Maschine mehrfach, und ihre Nachbarsuche
@@ -3427,7 +3455,17 @@ claims:
     fundstelle:
       - "docs/messungen/2026-09-02_vierte_quelle_nexus.md, Abschnitt 7"
       - "GROUND_TRUTH.md §15.10"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Überholt am 03.09.2026: erhoben VOR der Knoten-Zusammenführung der Gegenstelle
+      (siehe C-117), also unter genau dem Zustand, in dem dieselbe Maschine mehrfach im
+      Graphen lag und die Zersplitterung — bei NEXUS_GRAPH_EXPANSION_ENABLED=true —
+      als Brücke in der rekursiven Suche wirkte. Der Abruf arbeitet seit 12:25 UTC auf
+      zusammengeführten Knoten; welche Richtung die Zahlen nehmen, ist offen (C-117:
+      mehr Brücken oder weniger Streuung). Die Messung bleibt als Vorher-Wert stehen;
+      die Nachmessung mit demselben Bewertungssatz (goldset_v3, 229 beurteilte Einträge,
+      10 Anfragen, k=15, gegen die Demo-Instanz) ist fällig und ersetzt diesen Eintrag
+      durch einen neuen.
     freigabe:
       - "intern"
 
@@ -3551,7 +3589,18 @@ claims:
     fundstelle:
       - "Substrat-Befund FOREMAN (Artifact d36944c5), Nachtrag zu Frage 3"
       - "claims/claims.yaml, C-105 bis C-113"
-    geltung: "gueltig"
+    geltung: "ueberholt"
+    geltung_grund: >-
+      Überholt am 03.09.2026: Die Gegenstelle hat die Knoten-Zusammenführung in
+      Produktion gefahren (Migrationslauf ab 12:23:26 UTC, neuer Behälter 12:25:37 UTC,
+      Deploy e7003970). FREMDERHEBUNG ihres Nachher-Stands, gegen die Datenbank gezählt
+      um 12:32 UTC: 595 Knoten für 595 Bezeichner, 0 mehrfach (vorher 675 für 595,
+      47 mehrfach). PR-01: 81 Fakten an EINEM Knoten (vorher 79 auf fünf, höchstens 51
+      an einem); RB-01: 47; AX-02: 53. Kennungsform jetzt /inst/<user>/<name> — FOREMAN
+      liest nirgends ein Pfadsegment (geprüft über src/ und tools/), der
+      Fassadenvertrag ist unverändert. Die Aussage dieses Eintrags gilt damit nicht
+      mehr; was er als Folge benannte, ist eingetreten: C-105, C-111, C-112, C-113 sind
+      unter der Zersplitterung erhoben und bis zur Nachmessung überholt.
     freigabe:
       - "intern"
     bemerkung: >-
@@ -3654,3 +3703,10 @@ claims:
     geltung: "gueltig"
     freigabe:
       - "intern"
+    bemerkung: >-
+      NACHTRAG 03.09.2026 (Fremderhebung der Gegenstelle): In zwei Neustartfenstern —
+      Rotation 07:17:57–07:18:48 UTC und Knoten-Zusammenführung 12:25:32–12:26:24 UTC
+      (51,6 s) — kam in keiner Phase ein 404, jeweils mit zwei Sonden im
+      Zwei-Sekunden-Takt. Der Vorbehalt oben („nicht gemessen“) steht damit auf
+      „zweimal beobachtet, kein 404“. Zwei Beobachtungen sind keine Zusicherung:
+      Aufräum- und Nachtragslauf bleiben im Fenster stehen.
