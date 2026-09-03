@@ -1,0 +1,35 @@
+# Urteilsbogen — Nachmessung 03.09.2026 nach der Knoten-Zusammenfuehrung (C-120)
+#
+# FRAGE JE ZEILE: Wollte ein Inbetriebnehmer diesen Eintrag zu DIESER Anfrage sehen?
+#   2 = gleiche Ursache (dasselbe Stoerungsbild)   1 = gleiches Symptombild, ANDERE Ursache   0 = nein
+#
+# AUSFUELLEN: das ? hinter dem = durch 0, 1 oder 2 ersetzen. Zeilen mit '#' bleiben stehen.
+# Danach als gegenprobe/relevanz_urteile_2026-09-03.txt ablegen — baue_goldset_v3.py liest genau diesen Namen.
+# 8 Paare ueber 5 Anfragen. Die drei mit note:207 und das mit note:208 liefert ALLEIN das Gedaechtnis;
+# sie zaehlen bis zum Urteil als Fehltreffer und entscheiden, ob die Zusammenfuehrung etwas gekostet hat.
+
+# ── B01: "Undichtigkeit an Achse"
+#   SN-190 = note:207 an PR-01: Druckabfall durch undichte Kolbendichtung, Kolbendichtung erneuert
+B01-SN-190=?
+
+# ── B02: "Fleck auf Bild"
+#   SN-191 = note:208 an VS-01: Kameraposition verstellt, wahrscheinlich bei Kontrolle aus Versehen drangekommen
+B02-SN-191=?
+
+# ── B04: "Dosierunregelmaessigkeiten"
+#   SN-192 = note:5 an FD-01: FD-01 laeuft sauber, Dosierung stabil. [PERSON] in der Frueh.
+B04-SN-192=?
+#   SN-193 = note:6 an FD-02: FD-02 Dosierung laeuft seit heute unruhig, die Fuellmenge schwankt. Ein paar Teile kommen zu leicht raus.
+B04-SN-193=?
+
+# ── B06: "Druckabfall Hydraulik"
+#   SN-190 = note:207 an PR-01: Druckabfall durch undichte Kolbendichtung, Kolbendichtung erneuert
+B06-SN-190=?
+#   WA-125 = maintenance:10 an PR-01: Wartung 10 (inspection), Hydraulikaggregat: planmaessige Inspektion Hydraulikkreis (06.06.2026)
+B06-WA-125=?
+#   SN-194 = note:7 an FD-02: FD-02 Klemmzylinder schaltet traeger als sonst, Endlage kommt spaeter. Pneumatik mal pruefen lassen.
+B06-SN-194=?
+
+# ── B09: "Versatz an PR"
+#   SN-190 = note:207 an PR-01: Druckabfall durch undichte Kolbendichtung, Kolbendichtung erneuert
+B09-SN-190=?
