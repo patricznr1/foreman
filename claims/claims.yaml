@@ -3866,10 +3866,21 @@ claims:
       beides bleibt Patrics Entscheidung. Damit ist der Vorbehalt aus GROUND_TRUTH §9
       (Satzform seit 18:40 UTC) und aus C-122 („gemessen wird erst wieder, wenn die
       Gegenstelle die neue Satzform bestätigt hat“) aufgehoben.
-      WAS ES NICHT BELEGT: dass ein Satz in der neuen Form bei ihr angekommen ist.
-      Ihr letzter Eintrag von uns datiert vom 02.09.2026, 09:21 UTC — die am 03.09.
-      angekündigte Probe (Schichtnotiz oder Ereigniskette) hat sie nicht erreicht;
-      ihre Zähler zeigen erst mit dem nächsten gespiegelten Ereignis etwas.
+      WAS ES NICHT BELEGT: die Wirkung im Betrieb. Dafür liegt seit dem 03.09.2026,
+      19:29:28 UTC ein Eintrag in der neuen Form bei der Gegenstelle — Patrics
+      Ereigniskette zu Alarm 4 (Deploy e38f9815 nach #165), gespiegelt mit
+      Referenz 88cca775-0d91-4f82-ab52-82dad51aceb8 (Deploy-Log: „Substrat-Spiegel
+      ok, event_type=event_chain_reconstructed“). Die Aussage der Gegenstelle, seit
+      dem 02.09. sei kein Eintrag angekommen, war falsch — vermutlich vor der
+      Konsolidierung in memory_entries geschaut. An dieser Referenz ist zu prüfen:
+      Alias-Regel im Betrieb (Alias „Kennung ⟨n⟩“ statt eigenes Konzept), der
+      #160-Nachweis (created_at und recall_used in der Nutzlast, occurred_at =
+      19:29:28 UTC) und ob recall_used im Bestand ankommt. Nur diese eine Kette wurde
+      am Abend neu rekonstruiert; weitere Aufrufe zeigten bestehende Ketten an.
+      LEHRE am Rande: Railways Log-Suche ist unscharf — die Suche nach dem httpx-Text
+      lieferte die vorhandene remember-Zeile nicht; die Erfolgszeile der eigenen
+      Spiegelung fand sie sofort. Eine fehlende Zeile in einer unscharfen Suche ist
+      kein Befund.
     datum: "2026-09-03"
     fundstelle:
       - "NEXUS-Register C-193 (Fremderhebung), Rohdaten research/messungen/2026-09-03_kennung_satzform_probe.json"
