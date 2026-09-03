@@ -3768,3 +3768,40 @@ claims:
     geltung: "gueltig"
     freigabe:
       - "intern"
+
+  - id: "C-121"
+    aussage: "Seit dem 03.09.2026, 16:32:33 UTC hängen im Wissensgraphen der Gegenstelle alle Fakten zu „Maschine ⟨n⟩“ an den Bezeichnungsknoten unserer zwölf Maschinen; Alias-Knoten gibt es dort nicht mehr."
+    status: "gemessen"
+    wert: "19 Alias-Knoten (12 maschine-1..12, 6 Label-Knoten, 1 Mischknoten maschine-4-ax-04) auf 12 Zielknoten gelegt (ax-01..04, fd-01/02, pr-01..03, rb-01/02, vs-01). 1.467 Fakten berührt, 394 Subjekte und 533 Objekte umgehängt, 150 entstehende Selbstbezüge und 436 abgeleitete Dubletten entfernt, 0 Kollisionen. Fakten des Namensraums 4.187 → 3.601, Knoten danach 576, 0 Alias-Knoten übrig."
+    bedingung: >-
+      FREMDERHEBUNG der Gegenstelle: Protokoll der Wanderung e6c0a4d8f3b2 im
+      Pre-Deploy von Deployment bd42fd82 (03.09.2026, 16:32:33 UTC) und Nachher-
+      Zählung gegen ihre Datenbank um ca. 16:50 UTC, die alle Werte bestätigt; dort
+      als C-192 geführt (C-190, Trockenlauf, überholt). Von uns nicht nachprüfbar.
+      Grundlage war unsere Maschinentabelle (id, external_id, label, Klasse der
+      zwölf Demo-Maschinen). Eine Typabweichung: fuegepresse-3 war dort Tool,
+      pr-03 ist Infrastructure — der Zieltyp gilt. Die zehn verbleibenden
+      Selbstbezüge sind die in der ersten Wanderung entwerteten, keiner gültig.
+      WAS DAS FÜR UNSERE MESSUNGEN HEISST: Zweite Änderung am Graphen an einem Tag
+      (die erste: Knoten-Zusammenführung 12:25 UTC, siehe C-117/C-120). C-120 ist
+      VOR dieser Wanderung erhoben (12:55 UTC). Nachmessung C-122 erst nach den
+      acht offenen Urteilen UND dem Deploy des zweiten Stands der Gegenstelle
+      (schreibweisenfeste Alias-Auflösung) — nicht je Deploy, weil jeder Abruf
+      dort die Relevanz des Ausgelieferten hebt.
+      UMLAUTE, von der Gegenstelle als offene Stelle benannt und hier geklärt:
+      Die Aliasse liegen dort in ASCII-Schreibung („Bestueckroboter“,
+      „Fuegepresse“), und ihre Slug-Regel transliteriert keine Umlaute. Für
+      uns folgenlos: Die Seed-Szenarien schreiben alle zwölf Labels ASCII (belegt
+      gegen src/foreman/adapters/simulation/scenarios/park_*.yaml), und der
+      gespiegelte Maschinensatz trägt ohnehin nur Anlagenkennung und Nummer
+      („PR-01 (Maschine 7, …)“), nie das Label. Ein Umlaut kann nur aus Werker-
+      Freitext kommen; das ist dann kein Alias, sondern Text.
+    datum: "2026-09-03"
+    fundstelle:
+      - "NEXUS-Register C-192 (Echtlauf), C-190 (Trockenlauf, überholt) — Fremderhebung"
+      - "src/foreman/adapters/simulation/scenarios/park_*.yaml (Labels ASCII)"
+      - "src/foreman/substrate/content.py::_gegenstand (Satz trägt Kennung + Nummer)"
+      - "claims/claims.yaml, C-117, C-120"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"

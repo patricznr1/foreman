@@ -105,6 +105,7 @@ Stand: 2026-09-03
 | C-118 | Eine Rotation des Substrat-Tokens öffnet ein Fenster von rund vier Minuten, in dem FOREMAN das Gedächtnis nicht erreicht — beide Hälften gemessen, nicht abgeleitet. | gemessen | 4 min 04 s Gesamtfenster (07:17:57 → 07:22:01 UTC, 03.09.2026). Davon NEXUS-Neustart 50,8 s (07:17:57 → 07:18:48) und FOREMAN-Backend-Neustart 2 min 05 s (07:19:56 Ausrollung angelegt → 07:22:01 Anwendung bereit). Erster Rauchtest mit neuem Wert: ok=True, 6.942 ms — davon 363 ms Bearbeitung bei der Gegenstelle, der Rest Kaltstart auf unserer Seite. | 2026-09-03 | gueltig | intern |
 | C-119 | Das Rotationsfenster vom 03.09.2026 hat keinen Eintrag gekostet — weil in dieser Zeit kein Aufruf anfiel, nicht weil die Bauart es verhindert hätte. | gemessen | 0 × 401, 0 fehlgeschlagene Spiegelungen, 0 Zeilen mit substrate_ref=NULL im Protokoll des Prozesses, der während des Fensters lief. Letzter Substrat-Aufruf davor: 06:49:39 UTC (Recall, 200 OK, alter Wert). Nächster: 07:22:01 UTC (Rauchtest, neuer Wert). Dazwischen nichts — auf beiden Seiten deckungsgleich. | 2026-09-03 | gueltig | intern |
 | C-120 | Nach der Knoten-Zusammenführung bringt die vierte Quelle auf sieben von zehn Anfragen einen zutreffenden Treffer hinzu, kostet auf einer einen; der Vorsprung im Mittel ist nicht gezeigt. | gemessen | Basis → mit Gedächtnis (03.09.2026, k=15, 10 Anfragen, goldset_v3): Trefferquote 0,487 → 0,592 (+0,105, p=0,062), nDCG 0,582 → 0,652 (+0,071, p=0,109), nDCG verdichtet 0,595 → 0,693 (+0,098, p=0,020). Zusatztreffer auf 7 von 10 (70 %), Verlust auf B09. Freigabe-Bedingung 1 verfehlt (B09), Bedingung 2 erfüllt. Wiederholungslauf zeilengleich. Vorher (02.09.): +0,139 (p=0,031) · 80 % · nDCG +0,107 (p=0,023). | 2026-09-03 | gueltig | intern |
+| C-121 | Seit dem 03.09.2026, 16:32:33 UTC hängen im Wissensgraphen der Gegenstelle alle Fakten zu „Maschine ⟨n⟩“ an den Bezeichnungsknoten unserer zwölf Maschinen; Alias-Knoten gibt es dort nicht mehr. | gemessen | 19 Alias-Knoten (12 maschine-1..12, 6 Label-Knoten, 1 Mischknoten maschine-4-ax-04) auf 12 Zielknoten gelegt (ax-01..04, fd-01/02, pr-01..03, rb-01/02, vs-01). 1.467 Fakten berührt, 394 Subjekte und 533 Objekte umgehängt, 150 entstehende Selbstbezüge und 436 abgeleitete Dubletten entfernt, 0 Kollisionen. Fakten des Namensraums 4.187 → 3.601, Knoten danach 576, 0 Alias-Knoten übrig. | 2026-09-03 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -136,17 +137,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 118
+Einträge gesamt: 119
 
 Nach Status:
 
-- gemessen: 111
+- gemessen: 112
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 97
+- gueltig: 98
 - ueberholt: 21
 - ungeprueft: 0
