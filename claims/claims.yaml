@@ -3846,3 +3846,35 @@ claims:
     geltung: "gueltig"
     freigabe:
       - "intern"
+
+  - id: "C-123"
+    aussage: "Die Wissensgewinnung der Gegenstelle liest die neue Satzform „(Kennung n)“ genauso als Alias wie die alte „(Maschine n)“; der gemischte Bestand ist unschädlich."
+    status: "gemessen"
+    wert: "20 von 20 Läufen je Form: Anlagenkennung als Konzept, Klammertext als Alias desselben Konzepts, kein eigenes Konzept, kein Fakt zwischen beiden. 40 Aufrufe, 0 Fehler, 52 Sekunden."
+    bedingung: >-
+      FREMDERHEBUNG der Gegenstelle (03.09.2026 abends, dort C-193, Rohdaten
+      research/messungen/2026-09-03_kennung_satzform_probe.json): zehn echte Sätze aus
+      unserem Namensraum (je Maschine einer, dazu note:207 und maintenance:137 zu
+      PR-01), jeder in alter und neuer Form, je zweimal, gegen den PRODUKTIONSWEG
+      ihrer Wissensgewinnung (Anbieter claude-sonnet-4-6, derselbe Prompt wie auf der
+      Anlage); keine Datenbank berührt. Von uns nicht nachprüfbar. Ihre Prompt-Regel
+      ist allgemein formuliert („eine Kennung in Klammern ist kein zweites Ding“),
+      „(Maschine 7)“ ist dort nur das Beispiel.
+      WAS DARAUS FOLGT: Alte Einträge tragen „Maschine n“ als Alias am Knoten, neue
+      hängen „Kennung n“ daneben; beide zeigen auf denselben Knoten, die Slugs
+      kollidieren nicht. Weder Neuspiegel-Lauf noch Revert von #165 sind nötig —
+      beides bleibt Patrics Entscheidung. Damit ist der Vorbehalt aus GROUND_TRUTH §9
+      (Satzform seit 18:40 UTC) und aus C-122 („gemessen wird erst wieder, wenn die
+      Gegenstelle die neue Satzform bestätigt hat“) aufgehoben.
+      WAS ES NICHT BELEGT: dass ein Satz in der neuen Form bei ihr angekommen ist.
+      Ihr letzter Eintrag von uns datiert vom 02.09.2026, 09:21 UTC — die am 03.09.
+      angekündigte Probe (Schichtnotiz oder Ereigniskette) hat sie nicht erreicht;
+      ihre Zähler zeigen erst mit dem nächsten gespiegelten Ereignis etwas.
+    datum: "2026-09-03"
+    fundstelle:
+      - "NEXUS-Register C-193 (Fremderhebung), Rohdaten research/messungen/2026-09-03_kennung_satzform_probe.json"
+      - "src/foreman/substrate/content.py::_gegenstand (PR #165)"
+      - "claims/claims.yaml, C-121, C-122"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"

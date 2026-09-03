@@ -106,6 +106,7 @@ Stand: 2026-09-03
 | C-119 | Das Rotationsfenster vom 03.09.2026 hat keinen Eintrag gekostet — weil in dieser Zeit kein Aufruf anfiel, nicht weil die Bauart es verhindert hätte. | gemessen | 0 × 401, 0 fehlgeschlagene Spiegelungen, 0 Zeilen mit substrate_ref=NULL im Protokoll des Prozesses, der während des Fensters lief. Letzter Substrat-Aufruf davor: 06:49:39 UTC (Recall, 200 OK, alter Wert). Nächster: 07:22:01 UTC (Rauchtest, neuer Wert). Dazwischen nichts — auf beiden Seiten deckungsgleich. | 2026-09-03 | gueltig | intern |
 | C-121 | Seit dem 03.09.2026, 16:32:33 UTC hängen im Wissensgraphen der Gegenstelle alle Fakten zu „Maschine ⟨n⟩“ an den Bezeichnungsknoten unserer zwölf Maschinen; Alias-Knoten gibt es dort nicht mehr. | gemessen | 19 Alias-Knoten (12 maschine-1..12, 6 Label-Knoten, 1 Mischknoten maschine-4-ax-04) auf 12 Zielknoten gelegt (ax-01..04, fd-01/02, pr-01..03, rb-01/02, vs-01). 1.467 Fakten berührt, 394 Subjekte und 533 Objekte umgehängt, 150 entstehende Selbstbezüge und 436 abgeleitete Dubletten entfernt, 0 Kollisionen. Fakten des Namensraums 4.187 → 3.601, Knoten danach 576, 0 Alias-Knoten übrig. | 2026-09-03 | gueltig | intern |
 | C-122 | Mit geschlossenem Bewertungssatz hat die Knoten-Zusammenführung der vierten Archiv-Quelle nichts gekostet: Trefferquote unverändert, Rangfolge leicht besser — beides nicht gezeigt. | gemessen | Gedächtnis 02.09. → 03.09., gepaart über 10 Anfragen: Trefferquote −0,001 (p=1,000), nDCG +0,028 (p=0,375); 7 Anfragen unverändert, B01 Tausch (maintenance:116 → note:207, Quote 0,80 = 0,80, nDCG 0,67 → 0,87), B06 Gewinn (note:207, Quote 0,38 → 0,46), B02 Verlust (note:145 → note:208 = Stufe 0). Nachher Basis → mit Gedächtnis: Trefferquote +0,097 (p=0,062), nDCG +0,080 (p=0,031), Zusatztreffer 7 von 10, Bedingung 1 an B09 verfehlt, Bedingung 2 erfüllt. Vorher gegen denselben Satz: +0,126 (p=0,031), nDCG +0,094 (p=0,023), 8 von 10. | 2026-09-03 | gueltig | intern |
+| C-123 | Die Wissensgewinnung der Gegenstelle liest die neue Satzform „(Kennung n)“ genauso als Alias wie die alte „(Maschine n)“; der gemischte Bestand ist unschädlich. | gemessen | 20 von 20 Läufen je Form: Anlagenkennung als Konzept, Klammertext als Alias desselben Konzepts, kein eigenes Konzept, kein Fakt zwischen beiden. 40 Aufrufe, 0 Fehler, 52 Sekunden. | 2026-09-03 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -138,17 +139,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 120
+Einträge gesamt: 121
 
 Nach Status:
 
-- gemessen: 113
+- gemessen: 114
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 98
+- gueltig: 99
 - ueberholt: 22
 - ungeprueft: 0
