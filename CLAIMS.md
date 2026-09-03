@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-09-02
+Stand: 2026-09-03
 
 ## FOREMAN
 
@@ -25,11 +25,11 @@ Stand: 2026-09-02
 | C-015 | Die Ausfalleinschätzung entscheidet erst ab einer sehr hohen Modellsicherheit auf Ausfall. | gemessen | Entscheidungsschwelle 0,997 | 2026-06-15 | gueltig | intern |
 | C-016 | Die Ausfalleinschätzung ist auf einen Vorhersagehorizont von zwei Wochen ausgelegt. | konzipiert | — | 2026-06-15 | gueltig | intern, fach |
 | C-017 | Zahlen in einer Werker-Empfehlung stammen ausschliesslich aus dem Rechenmodell, nie aus dem Sprachmodell. | gemessen | Unbelegte Zahlen führen zur Ablehnung der Empfehlung, nicht zu einer Markierung | 2026-07-31 | gueltig | intern, fach, kunde |
-| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1083 bestanden, 2 übersprungen, 4 abgewählt | 2026-08-24 | gueltig | intern, fach |
+| C-018 | Die Prüfsuite des Backends läuft vollständig grün. | gemessen | 1524 bestanden, 2 übersprungen, 9 abgewählt | 2026-09-02 | gueltig | intern, fach |
 | C-019 | Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze. | gemessen | 94,33 Prozent Zweigabdeckung, Untergrenze 85 Prozent | 2026-08-22 | gueltig | intern, fach |
 | C-020 | Die Prüfabdeckung wird im Manifest erzwungen und lässt den Bau unterhalb der Grenze scheitern. | geplant | — | 2026-07-31 | gueltig | intern, fach |
 | C-021 | Die Prüfsuite des Oberflächen-Teils läuft vollständig grün. | gemessen | 754 bestanden in 147 Prüfdateien | 2026-08-24 | gueltig | intern, fach |
-| C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 150 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 316 Dateien ohne Befund | 2026-08-24 | gueltig | intern, fach |
+| C-022 | Typprüfung und Stilprüfung laufen über den gesamten Quelltext ohne Befund durch. | gemessen | 0 Typfehler über 155 Dateien im Backend, 0 im Oberflächen-Teil; Stilprüfung und Formatprüfung über 363 Dateien ohne Befund | 2026-09-02 | gueltig | intern, fach |
 | C-023 | Die Prüfläufe laufen gegen eine echte Zeitreihen-Datenbank statt gegen Attrappen. | gemessen | Ein Dienst-Container mit der produktiv eingesetzten Datenbankfassung wird für jeden Lauf gestartet | 2026-07-31 | gueltig | intern, fach |
 | C-024 | Der Freitext-Pfad des erklärenden Sprachmodells wird mit gezielten Angriffsmustern geprüft. | gemessen | Ein fester Angriffssatz läuft bei jedem Prüflauf durch die vollständige Erklär-Kette | 2026-07-31 | gueltig | intern, fach, kunde |
 | C-025 | Die Plattform ist als KI-System mit begrenztem Risiko eingestuft, mit Transparenzpflichten. | konzipiert | — | 2026-06-30 | gueltig | intern, fach, kunde |
@@ -100,9 +100,15 @@ Stand: 2026-09-02
 | C-103 | Jede fuenfte Kennung, unter der FOREMAN eine gespiegelte Erinnerung fuehrte, zeigte ins Leere. | gemessen | Von 348 angereicherten Zeilen liessen sich 271 im Gedaechtnis loeschen; bei 77 (22,1 %) lag unter der gefuehrten Kennung nichts mehr. Null Loeschungen schlugen fehl. | 2026-09-01 | gueltig | intern |
 | C-104 | Nach dem Neuspiegel-Lauf benennt jeder gespiegelte Satz seinen Gegenstand und traegt eine eigene Datensatznummer. | gemessen | 50 von 50 Erinnerungs-Treffern in der neuen Form (Datensatznummer am Satzanfang), 50 von 50 mit Anlagenkennung im Satz. Vorher: 0 von 50. | 2026-09-01 | gueltig | intern |
 | C-105 | Die vierte Quelle steuert knapp ein Fuenftel der ausgelieferten Plaetze allein bei. | gemessen | 22 von 125 Plaetzen (18 %) tragen das Gedaechtnis als einzige Quelle; 50 von 125 (40 %) werden auch von ihm gefunden | 2026-09-02 | gueltig | intern, fach |
-| C-106 | Die vierte Quelle gewinnt auf der Haelfte der Anfragen einen zutreffenden Treffer hinzu und verliert auf zwei von zehn einen. | gemessen | Zusatztreffer auf 5 von 10 Anfragen (50 %); Verlust auf 2 von 10 (B07, B09) — Freigabe-Bedingung 1 damit weiterhin verfehlt | 2026-09-02 | gueltig | intern |
-| C-107 | Auch nach dem Neuspiegel-Lauf ist der Vorsprung der vierten Quelle bei zehn Anfragen statistisch nicht gezeigt. | gemessen | Trefferquote +0,051 (p = 0,172) · Rangguete +0,053 (p = 0,180) · verdichtete Rangguete +0,059 (p = 0,109); gepaarter Permutationstest, zweiseitig, exakt, n = 10 | 2026-09-02 | gueltig | intern, fach |
-| C-108 | Die vierte Quelle verschiebt das Ergebnis von Schichtnotizen zu Wartungsvorgaengen. | gemessen | Alle 3 verlorenen Treffer sind Schichtnotizen (note:185, note:71, note:108); 5 der 6 gewonnenen sind Wartungsvorgaenge (maintenance:107, :43, :92, :44, :71, dazu note:145) | 2026-09-02 | gueltig | intern |
+| C-111 | Die Beurteilungsluecke bei den exklusiven Treffern der vierten Quelle ist geschlossen. | gemessen | 21 von 22 exklusiven Plaetzen beurteilt (95 %) gegen 100 von 103 der uebrigen (97 %) — 2 Prozentpunkte Abstand, vorher 61 | 2026-09-02 | gueltig | intern |
+| C-112 | Gegen den vollstaendig beurteilten Bewertungssatz ist der Vorsprung der vierten Quelle statistisch gezeigt. | gemessen | Trefferquote +0,139 (p = 0,031) · Rangguete +0,107 (p = 0,023) · verdichtete Rangguete +0,105 (p = 0,023); gepaarter Permutationstest, zweiseitig, exakt, n = 10 | 2026-09-02 | gueltig | intern, fach |
+| C-113 | Die vierte Quelle erfuellt die zweite Freigabe-Bedingung deutlich und verfehlt die erste auf einer einzigen Anfrage. | gemessen | Zusatztreffer auf 8 von 10 Anfragen (80 %, gefordert 30 %); Trefferquote gesunken auf 1 von 10 (B09, verliert note:71 und note:108 an note:195) | 2026-09-02 | gueltig | intern |
+| C-114 | Ein 404 der Loeschroute belegt nicht, dass die Erinnerung fort ist — und die Aufraeum-Wege verwerfen dabei den Rueckweg. | gemessen | 2 von 2 Aufrufern behandeln SubstrateNotFoundError als erreichtes Ziel und geben danach den Rueckweg auf; 0 Aufrufer bearbeiten ein Loeschverlangen nach Art. 17 | 2026-09-02 | gueltig | intern |
+| C-115 | Die Anlagenbezug-Metadaten jeder Spiegelung werden von der Gegenstelle abgelegt und unveraendert zurueckgegeben, aber von keinem ihrer Pfade gelesen. | gemessen | 0 Treffer fuer die vier Anlagenbezug-Schluessel im gesamten NEXUS-Quellbaum; entry_metadata wird weder von der Suche noch vom Ranking noch vom Graphaufbau gelesen | 2026-09-02 | gueltig | intern |
+| C-116 | Der Wissensgraph der Gegenstelle ist fuer den FOREMAN-Namensraum vollstaendig gebaut, und die Kausalkette darin stammt ausschliesslich aus unseren gespiegelten Saetzen. | gemessen | 388 von 388 Eintraegen verarbeitet; 675 Knoten, 3.987 Fakten ueber 23 Praedikate, davon 2.767 abgeleitet. `verursacht`: 251 Fakten, davon 0 abgeleitet. `istTeilVon` + `enthaelt`: 74 % aller Fakten | 2026-09-02 | gueltig | intern, fach |
+| C-117 | Dieselbe Maschine liegt im Wissensgraphen mehrfach, und das wirkt bereits heute auf unsere Abruf-Ergebnisse. | gemessen | PR-01 siebenfach (Concept, Person, Infrastructure, Product, Tool, Activity, Project); 47 von 595 Dingen mehrfach gefuehrt (7,9 %) — betroffen sind ausgerechnet die Maschinen. Eine Graph-Anfrage sieht je nach Einstiegsknoten 3 % bis 65 % des ueber PR-01 Bekannten | 2026-09-02 | gueltig | intern |
+| C-118 | Eine Rotation des Substrat-Tokens öffnet ein Fenster von rund vier Minuten, in dem FOREMAN das Gedächtnis nicht erreicht — beide Hälften gemessen, nicht abgeleitet. | gemessen | 4 min 04 s Gesamtfenster (07:17:57 → 07:22:01 UTC, 03.09.2026). Davon NEXUS-Neustart 50,8 s (07:17:57 → 07:18:48) und FOREMAN-Backend-Neustart 2 min 05 s (07:19:56 Ausrollung angelegt → 07:22:01 Anwendung bereit). Erster Rauchtest mit neuem Wert: ok=True, 6.942 ms — davon 363 ms Bearbeitung bei der Gegenstelle, der Rest Kaltstart auf unserer Seite. | 2026-09-03 | gueltig | intern |
+| C-119 | Das Rotationsfenster vom 03.09.2026 hat keinen Eintrag gekostet — weil in dieser Zeit kein Aufruf anfiel, nicht weil die Bauart es verhindert hätte. | gemessen | 0 × 401, 0 fehlgeschlagene Spiegelungen, 0 Zeilen mit substrate_ref=NULL im Protokoll des Prozesses, der während des Fensters lief. Letzter Substrat-Aufruf davor: 06:49:39 UTC (Recall, 200 OK, alter Wert). Nächster: 07:22:01 UTC (Rauchtest, neuer Wert). Dazwischen nichts — auf beiden Seiten deckungsgleich. | 2026-09-03 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -121,20 +127,25 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 | C-082 | FOREMAN | Der gemessene Aehnlichkeits-Grenzwert stand nirgends im Repository, und gegen welches Einbettungsmodell er erhoben wurde, ist nicht belegt. | ueberholt | ÜBERHOLT am 28.08.2026 durch C-091: Die hier beschriebene Luecke ist zu. Gegen welches Einbettungsmodell der Grenzwert erhoben wurde, ist jetzt belegt — `kalibrierung.ARCHIV_VEKTOR_GRENZWERT` fuehrt `modell="Snowflake/snowflake-arctic-embed-l-v2.0"`, und ein Test fordert ein, dass das Feld gefuellt bleibt. Der Eintrag beschreibt damit einen Zustand, den es nicht mehr gibt. Was er BEGRUENDET hat, gilt weiter: Ein Wert ohne bekannte Grundlage laesst sich nicht widerlegen — genau deshalb wurde neu erhoben statt uebernommen. |
 | C-089 | FOREMAN | Produktiv laeuft das Cloud-Einbettungsmodell text-embedding-3-small ohne lokalen Ausweichpfad. | ueberholt | ÜBERHOLT am 28.08.2026: BEIDE abgelesenen Werte gelten nicht mehr. Der Dienst laeuft auf FOREMAN_EMBED_PRIORITY = st_only mit Snowflake/snowflake-arctic-embed-l-v2.0 aus dem Abbild. Damit ist auch der Befund zum fehlenden Ausweichpfad hinfaellig: `st_only` laeuft lokal, ein Ausfall der Cloud beruehrt die Einbettung nicht mehr. KORREKTUR AM SELBEN TAG, und sie gehoert hierher, weil sie diesen Eintrag betrifft: Dieser Absatz behauptete zunaechst, die Dienst-Variable FOREMAN_ARCHIVE_VECTOR_MAX_DISTANCE sei entfernt und die Vorgabe aus `config.py` trage allein. Das war eine Annahme, nicht abgelesen — die Variable stand weiter auf 0,60 und ueberstimmte den am 28.08. erhobenen Wert 0,75 (C-091). Die ausgerollte Suche lief also in genau der Einstellung, bei der sechs von zehn Anfragen des Bewertungssatzes nichts Zutreffendes liefern. Abgelesen und entfernt wurde die Variable erst danach; seither traegt `config.py`. DER UEBERTRAGBARE TEIL: Eine erhobene Kalibrierung im Quelltext greift nur, wenn keine Umgebungsvariable desselben Namens daneben steht. Genau davor warnte dieser Eintrag urspruenglich — und die Warnung wurde beim Ueberholen selbst uebersehen. |
 | C-092 | FOREMAN | Ob der Wechsel des Einbettungsmodells die Archiv-Suche besser oder schlechter macht, ist mit dem heutigen Bewertungssatz nicht entscheidbar. | ueberholt | ÜBERHOLT NOCH AM SELBEN TAG durch C-098, und zwar aus dem Grund, den dieser Eintrag selbst benannt hat. Der Bewertungssatz wurde am 28.08.2026 um 81 Urteile auf 216 beurteilte Paare erweitert; dieselben Rohdaten, neu gerechnet, ergeben ein anderes Bild: Trefferquote -0,156 (p=0,031) wird +0,001 (p=1,000), Rangguete -0,106 (p=0,008) wird +0,024 (p=0,744), verdichtet -0,076 (p=0,148) wird +0,025 (p=0,719). Aus "gewoehnlich gerechnet schlechter" wird "in keiner Richtung gezeigt". Der Eintrag bleibt stehen, weil er den Befund traegt, der ihn ueberholt hat: Die Aussage war nicht falsch gemessen, sondern gegen einen unvollstaendigen Massstab. Genau davor hat er gewarnt. |
+| C-106 | FOREMAN | Die vierte Quelle gewinnt auf der Haelfte der Anfragen einen zutreffenden Treffer hinzu und verliert auf zwei von zehn einen. | ueberholt | Überholt am 02.09.2026: Der Bewertungssatz, gegen den gemessen wurde, ist am 02.09.2026 um 7 zutreffende Eintraege gewachsen (13 vorgelegte Paare, 7 davon zutreffend). Gegen den erweiterten Satz: Zusatztreffer auf 8 von 10 Anfragen (80 %), Verlust nur noch auf B09. Siehe C-113. |
+| C-107 | FOREMAN | Auch nach dem Neuspiegel-Lauf ist der Vorsprung der vierten Quelle bei zehn Anfragen statistisch nicht gezeigt. | ueberholt | Überholt am 02.09.2026: Gegen den am 02.09.2026 erweiterten Bewertungssatz ist der Vorsprung sehr wohl gezeigt: alle drei Kennzahlen p < 0,05. Der frueher gemessene Wert beschrieb einen Massstab, in dem 14 der 22 exklusiven Treffer als Fehltreffer zaehlten, weil niemand sie angesehen hatte. Siehe C-112. |
+| C-108 | FOREMAN | Die vierte Quelle verschiebt das Ergebnis von Schichtnotizen zu Wartungsvorgaengen. | ueberholt | Überholt am 02.09.2026: Von den drei verlorenen Treffern haelt nach den Urteilen vom 02.09.2026 nur noch B09 stand. Bei B07 trat ein Wartungsvorgang der Stufe 2 an die Stelle einer Notiz der Stufe 1 — die Rangguete stieg dort. Siehe C-113. |
+| C-109 | FOREMAN | Der Bewertungssatz beurteilt die exklusiven Treffer der vierten Quelle weit seltener als die der eigenen Quellen. | ueberholt | Überholt am 02.09.2026: Die gemessene Luecke ist am 02.09.2026 geschlossen worden: 21 von 22 exklusiven Plaetzen beurteilt (95 %) gegen 100 von 103 (97 %). Der Eintrag beschreibt den Zustand VOR der Erhebung und bleibt als deren Anlass stehen. Siehe C-111. |
+| C-110 | FOREMAN | Die verfehlte Freigabe-Bedingung stuetzt sich auf drei Treffer, die niemand je beurteilt hat. | ueberholt | Überholt am 02.09.2026: Alle drei Verdraenger sind am 02.09.2026 beurteilt worden: maintenance:37 = Stufe 2, note:195 = Stufe 2, maintenance:137 = Stufe 0. Siehe C-113. |
 
 ## Zählung
 
-Einträge gesamt: 106
+Einträge gesamt: 117
 
 Nach Status:
 
-- gemessen: 99
+- gemessen: 110
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 95
-- ueberholt: 11
+- gueltig: 101
+- ueberholt: 16
 - ungeprueft: 0
