@@ -30,7 +30,7 @@ from foreman.reasoners.failure.recommendation import (
     RecommendationService,
 )
 from foreman.substrate.client import SubstrateClient
-from foreman.substrate.content import ereigniszeit
+from foreman.substrate.content import baue_inhalt, ereigniszeit
 
 pytestmark = pytest.mark.integration
 
@@ -38,7 +38,7 @@ _REF = datetime(2026, 3, 20, 12, 0, tzinfo=UTC)
 
 
 async def _seed_prediction(session: AsyncSession) -> FailurePredictionRecord:
-    machine = Machine(label="BAZ-01", machine_class="cnc_machining_center")
+    machine = Machine(label="BAZ-01", machine_class="cnc_machining_center", external_id="BAZ-01")
     session.add(machine)
     await session.flush()
     record = FailurePredictionRecord(
@@ -167,3 +167,28 @@ async def test_das_recall_merkmal_folgt_der_lage(
     events = await _gespiegelte(db_session)
     assert len(events) == 1
     assert events[0].payload["recall_used"] is True
+
+
+async def test_die_gespiegelte_empfehlung_ist_einmalig_und_nennt_die_anlage(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """DIE NAHT zwischen Nutzlast und Satz (C-124) — wie bei der Ereigniskette."""
+    pred = await _seed_prediction(db_session)
+    service = RecommendationService(
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=_antwort(pred.id))]),
+    )
+    erste = await service.recommend(pred.id)
+    zweite = await service.recommend(pred.id)
+
+    events = await _gespiegelte(db_session)
+    assert len(events) == 2
+    nutzlasten = {ev.payload["source_id"]: ev.payload for ev in events}
+    assert set(nutzlasten) == {erste.id, zweite.id}
+    assert nutzlasten[erste.id]["machine_external_id"] == "BAZ-01"
+    saetze = {baue_inhalt(RECOMMENDATION_EVENT_TYPE, p) for p in nutzlasten.values()}
+    assert len(saetze) == 2, saetze
+    assert all(f"an BAZ-01 (Kennung {pred.machine_id}, " in s for s in saetze), saetze
