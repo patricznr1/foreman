@@ -294,12 +294,16 @@ Ausrollen *ist* der Neustart.
    braucht ein Login und ist dafür nicht nötig.
 5. **Gegenprobe bei der Gegenstelle:** in `retrieval_logs` (Recall) und im Laufzeit-Log
    ihres Dienstes (`Substrate-remember: namespace=foreman entry=<ref>`) — beides sofort.
-   **Nicht** in `memory_entries`: `remember` schreibt nur in den Working-Tier (Redis);
-   nach Postgres wandert der Eintrag erst mit der Schlafphase (Fenster 02:00–05:00 UTC),
-   und erst danach sieht ihn die Wissensgewinnung (Auskunft der Gegenstelle vom
-   03.09.2026; eine frühere Auskunft nannte einen Viertelstundentakt — beides
-   Fremdaussagen). Wer zu früh nachsieht und nichts findet, hat kein Problem entdeckt,
-   sondern zu früh geschaut — mit Stunden, nicht Minuten. Ein
+   **Nicht sofort** in `memory_entries`: `remember` schreibt nur in den Working-Tier
+   (Redis). Der Leichtschlaf der Gegenstelle läuft alle 15 Minuten je Nutzer mit
+   Bestand im Working-Tier (Prüfung alle 5 Minuten), befördert nach Postgres und stößt
+   die Wissensgraph-Nachführung der Charge an; das Nachtfenster 02:00–05:00 UTC fährt
+   den vollen Zyklus (Destillation, Pruning, Ontologie) — Auskunft der Gegenstelle aus
+   Scheduler und Log, 04.09.2026. Also: `memory_entries` und Graph binnen etwa 15
+   Minuten. Wer früher nachsieht und nichts findet, hat kein Problem entdeckt, sondern
+   zu früh geschaut. **Und eine byte-gleiche Wiederholung eines früheren Spiegels
+   erscheint dort nie** — der Plastic-Store der Gegenstelle verwirft Hash-Dubletten
+   still samt Metadaten (ihr C-194; unser C-124). Ein
    `POST /api/substrate/consolidate` zöge die Schlafphase vor, greift aber in den
    Bestand ein, den eine laufende Messreihe vergleicht: nur auf Entscheidung.
 6. Danach `python -m foreman.substrate.backfill` **nur, wenn** im Fenster Zeilen mit

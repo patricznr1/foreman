@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-09-03"
+stand: "2026-09-04"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -3654,12 +3654,13 @@ claims:
       Bei der Gegenstelle belegt `retrieval_logs` den Rauchtest SOFORT (der
       Recall wird dort unmittelbar protokolliert; ebenso das Laufzeit-Log ihres
       Dienstes mit der remember-Referenz). In `memory_entries` liegt der Eintrag
-      erst nach der Beförderung aus dem Working-Tier — laut Auskunft vom Abend des
-      03.09. durch die Schlafphase im Fenster 02:00–05:00 UTC, laut Auskunft vom
-      Morgen durch eine Konsolidierung im Viertelstundentakt; beides Fremdaussagen,
-      beide geführt. Fünf Minuten nach dem Rauchtest stand dort noch der Bestand vom
-      22.08. Wer dort zu früh nachsieht und nichts findet, hat kein Problem
-      entdeckt, sondern zu früh geschaut. Die Ableitung der Gegenstelle „Größenordnung Minute" lag für ihre
+      erst nach der Beförderung aus dem Working-Tier durch den Leichtschlaf der
+      Gegenstelle — alle 15 Minuten je Nutzer mit Bestand, danach Graph-Nachführung
+      der Charge; das Nachtfenster 02:00–05:00 UTC fährt den vollen Zyklus (Auskunft
+      aus Scheduler und Log, 04.09.2026; eine Zwischenauskunft hatte nur das
+      Nachtfenster genannt). Fünf Minuten nach dem Rauchtest stand dort noch der
+      Bestand vom 22.08. Wer dort zu früh nachsieht und nichts findet, hat kein
+      Problem entdeckt, sondern zu früh geschaut. Die Ableitung der Gegenstelle „Größenordnung Minute" lag für ihre
       Hälfte richtig; für die Summe hätte sie nicht gereicht. Beim nächsten Mal
       mit vier bis fünf Minuten planen.
 
@@ -3889,6 +3890,43 @@ claims:
       - "NEXUS-Register C-193 (Fremderhebung), Rohdaten research/messungen/2026-09-03_kennung_satzform_probe.json"
       - "src/foreman/substrate/content.py::_gegenstand (PR #165)"
       - "claims/claims.yaml, C-121, C-122"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+
+  - id: "C-124"
+    aussage: "Die gespiegelten Sätze für Ereignisketten und Empfehlungen tragen weder Anlagenkennung noch Datensatznummer noch Zeit; eine wiederholte Kette zu demselben Alarm erreicht das Gedächtnis deshalb nie."
+    status: "gemessen"
+    wert: "Satz der Kette zu Alarm 4 am 03.09.2026, 19:29:28 UTC: „Ereigniskette zu Alarm 4 an Maschine 7: 3 Ereignisse, Konfidenz low (Hypothese).“ — byte-gleich mit dem Spiegel vom 20.08.2026 (consolidation_count 11). Leichtschlaf der Gegenstelle 19:33:32 UTC: 1 verarbeitet, 1 promoted, 0 Zeilen in memory_entries, 0 Einträge in der Graph-Charge."
+    bedingung: >-
+      Eigene Seite selbst geprüft: `substrate/content.py::_event_chain` und
+      `_failure_recommendation` schreiben „an Maschine <id>“ fest und laufen NICHT
+      durch `_gegenstand` — keine Anlagenkennung, keine Klammer mit Kennung und Zeit,
+      keine Datensatznummer (`source_id` ist für beide Arten `None`). Damit hat die
+      Satzform-Änderung #165 diese beiden Arten nie berührt, und C-104 („jeder Satz
+      nennt seinen Gegenstand und trägt eine Datensatznummer“) galt nur für die
+      Ingestion-Ereignisse. Der Text wurde mit `baue_inhalt` aus der Nutzlast der
+      Kette nachgebaut und ist byte-gleich mit dem, den die Gegenstelle nennt.
+      FREMDERHEBUNG der Gegenstelle (04.09.2026, ihr C-194): Ihr Plastic-Store sucht
+      vor dem Schreiben einen Eintrag desselben Nutzers mit gleichem SHA-256 des
+      Inhalts und gibt ihn zurück, ohne zu schreiben, ohne Zähler, nur mit einer
+      DEBUG-Zeile; das Replay wertet das als Beförderung und entfernt den Eintrag aus
+      Redis. Die Ähnlichkeits-Dublette achtet unser forgetting_free, die Hash-Dublette
+      nicht. Folge: Alles, was #160 mitschickt (created_at, recall_used, occurred_at),
+      kommt für Wiederholungen nie an — der Nachweis zu #160 im Betrieb braucht einen
+      Eintrag mit NEUEM Inhalt.
+      WAS DARAUS FOLGT: Beide Arten müssen durch denselben Gegenstands-Bauer wie alle
+      anderen — Anlagenkennung, (Kennung <id>, Entstehungszeit) und Datensatznummer der
+      Erklärung; dann ist jeder Satz einmalig, trägt die Kennung für die Alias-Regel
+      und die Zeit für occurred_at. Umbau offen (Stand 04.09., 01:00). Die
+      Nachmessung der vierten Quelle rückt dahinter (C-125).
+    datum: "2026-09-04"
+    fundstelle:
+      - "src/foreman/substrate/content.py::_event_chain, ::_failure_recommendation (eigene Seite)"
+      - "src/foreman/reasoners/event_chain/service.py::_mirror (source_id None)"
+      - "Railway-Deploy-Log backend e38f9815, 19:29:28 UTC (Substrat-Spiegel ok, ref 88cca775)"
+      - "NEXUS-Register C-194 (Fremderhebung), Leichtschlaf-Log 19:33:32 UTC"
+      - "claims/claims.yaml, C-104, C-123"
     geltung: "gueltig"
     freigabe:
       - "intern"
