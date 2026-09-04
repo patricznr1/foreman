@@ -32,7 +32,7 @@ from foreman.reasoners.event_chain.service import (
     sanitize_narrative,
 )
 from foreman.substrate.client import SubstrateClient
-from foreman.substrate.content import ereigniszeit
+from foreman.substrate.content import baue_inhalt, ereigniszeit
 
 _ANCHOR_TIME = datetime(2026, 6, 14, 12, 0, tzinfo=UTC)
 
@@ -148,7 +148,7 @@ def test_reasoner_explanation_validator_lehnt_nicht_whitelisted_ab() -> None:
 async def _seed(
     session: AsyncSession, *, note_text: str = "Lager läuft heiß, bitte beobachten"
 ) -> tuple[Machine, Alarm, WorkerNote]:
-    machine = Machine(label="CNC-1", machine_class="cnc")
+    machine = Machine(label="CNC-1", machine_class="cnc", external_id="CNC-1")
     session.add(machine)
     await session.flush()
     anchor = Alarm(
@@ -547,3 +547,39 @@ async def test_das_recall_merkmal_folgt_der_lage(
     )
     assert record.recall_used is True
     assert events[0].payload["recall_used"] is True
+
+
+@pytest.mark.integration
+async def test_die_gespiegelte_kette_ist_einmalig_und_nennt_die_anlage(
+    db_session: AsyncSession,
+    make_gateway: Callable[..., LiteLLMGateway],
+    make_backend: Callable[..., object],
+) -> None:
+    """DIE NAHT zwischen Nutzlast und Satz (C-124).
+
+    Die Nutzlast traegt Nummer und Anlagenbezug, der Satz nennt sie — und zwei
+    Rekonstruktionen derselben Kette ergeben zwei verschiedene Saetze. Vorher
+    waren sie byte-gleich, und die Gegenstelle verwarf die zweite still.
+    """
+    _, anchor, _ = await _seed(db_session)
+    service = EventChainService(
+        sichtbare_maschinen=None,
+        session=db_session,
+        gateway=make_gateway(backends=[make_backend("local", reply=f"Siehe [alarm:{anchor.id}].")]),
+    )
+    erste = await service.reconstruct(anchor.id)
+    zweite = await service.reconstruct(anchor.id)
+
+    events = list(
+        await db_session.scalars(
+            select(SemanticEvent).where(SemanticEvent.event_type == EVENT_CHAIN_EVENT_TYPE)
+        )
+    )
+    assert len(events) == 2
+    nutzlasten = {ev.payload["source_id"]: ev.payload for ev in events}
+    assert set(nutzlasten) == {erste.id, zweite.id}
+    assert nutzlasten[erste.id]["machine_external_id"] == "CNC-1"
+    saetze = {baue_inhalt(EVENT_CHAIN_EVENT_TYPE, p) for p in nutzlasten.values()}
+    assert len(saetze) == 2, saetze
+    assert all(f"an CNC-1 (Kennung {anchor.machine_id}, " in s for s in saetze), saetze
+    assert any(s.startswith(f"Ereigniskette {erste.id} zu Alarm {anchor.id} an ") for s in saetze)
