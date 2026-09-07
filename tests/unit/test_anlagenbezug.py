@@ -18,8 +18,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from foreman.db.models import Alarm, WorkerNote
-from foreman.ingestion.semantic import Anlagenbezug, alarm_payload, notiz_payload
+from foreman.db.models import Alarm, MaintenanceEvent, WorkerNote
+from foreman.ingestion.semantic import (
+    Anlagenbezug,
+    alarm_payload,
+    notiz_payload,
+    wartung_payload,
+)
 from foreman.substrate.content import baue_inhalt
 
 BEZUG = Anlagenbezug(
@@ -39,6 +44,18 @@ def _notiz(kennung: int, text: str) -> WorkerNote:
         text=text,
         classification="auffaellig",
         created_at=datetime(2026, 6, 1, 12, 0, tzinfo=UTC),
+    )
+
+
+def _wartung(kennung: int, *, bauteil: int | None = 7) -> MaintenanceEvent:
+    return MaintenanceEvent(
+        id=kennung,
+        machine_id=2,
+        component_id=bauteil,
+        type="lubrication",
+        performed_at=datetime(2026, 6, 20, 8, 30, tzinfo=UTC),
+        performed_by=None,
+        description=None,
     )
 
 
@@ -77,6 +94,50 @@ def test_die_vier_felder_stehen_immer_in_der_nutzlast() -> None:
     ):
         for feld in felder:
             assert feld in nutzlast, feld
+
+
+def test_das_bauteil_label_steht_mit_seinem_WERT_in_der_nutzlast() -> None:
+    """Der Test darüber prüft, dass der SCHLÜSSEL da ist — ein `None` besteht das.
+
+    Diese Lücke ist gemessen (07.09.2026): Wird `component_label` in
+    `bezugsfelder` fest auf `None` gesetzt, bleiben alle 1575 Tests grün.
+    Dieselbe Mutation an `machine_class` fällt auf — der Test darunter nagelt
+    sie fest, `component_label` nagelte niemand fest.
+
+    Der Wert ist kein Beiwerk: Die Gegenstelle filtert über ihn, und er kommt
+    als `detail["bauteil"]` in die Trefferkarte zurück. `Component.label` ist in
+    der Datenbank NOT NULL — löst die Kennung auf, steht dort immer ein echter
+    Name, nie ein leerer.
+    """
+    assert wartung_payload(_wartung(5), None, BEZUG)["component_label"] == "Achslager"
+
+
+def test_der_wartungssatz_nennt_das_bauteil() -> None:
+    """Die zweite Beobachtungsseite: Der Wert steht auch WÖRTLICH im Satz.
+
+    Getrennt vom Nutzlast-Test, weil es zwei Wege sind — das Metadatum trägt den
+    Feldvergleich, der Satz die Einbettung. Ein Sammeltest über beide würde bei
+    jeder der zwei Mutationen rot und sagte dann nicht mehr, welche.
+    """
+    satz = baue_inhalt("maintenance_performed", wartung_payload(_wartung(5), None, BEZUG))
+    assert "Achslager" in satz
+
+
+def test_ohne_bauteil_bleibt_der_wartungssatz_ohne_anhaengsel() -> None:
+    """KONTROLL-ZWILLING zu den beiden darüber.
+
+    Ohne ihn belegten sie nur, dass „Achslager" irgendwie im Satz landet — nicht,
+    dass der weiche Zugriff die Wartung ohne Bauteil weiterhin unversehrt lässt.
+    Eine Wartung ohne Komponente ist der Regelfall, nicht die Ausnahme:
+    `MaintenanceEvent.component_id` ist nullable.
+    """
+    satz = baue_inhalt(
+        "maintenance_performed", wartung_payload(_wartung(6, bauteil=None), None, LEER)
+    )
+    assert "Achslager" not in satz
+    # Kein hängendes Komma und kein leeres Klammerpaar, wo nichts steht.
+    assert ", durchgeführt" not in satz
+    assert "()" not in satz
 
 
 def test_die_klasse_geht_in_die_metadaten_und_nicht_in_den_satz() -> None:
