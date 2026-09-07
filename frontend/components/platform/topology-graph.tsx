@@ -222,7 +222,7 @@ export function TopologyGraph({ model }: TopologyGraphProps) {
             strokeDasharray="5 4"
           />
           <text x={LEFT_X + 12} y={visionTop + 22} fontSize="12" fontWeight="600" fill="var(--color-fg-muted)">
-            [VISION] — geplant, nicht verbunden
+            Geplant — nicht verbunden
           </text>
           {model.vision.map((node, i) => (
             <text

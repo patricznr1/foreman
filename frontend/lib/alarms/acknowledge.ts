@@ -68,7 +68,7 @@ export function ackDisabledReason(options: {
 
 export const ACK_DISABLED_TEXT: Record<NonNullable<AckDisabledReason>, string> = {
   offline: "Offline — Quittieren nicht möglich (Stand siehe Stempel)",
-  "no-route": "Quittier-Route für diese Alarmklasse noch nicht verfügbar",
+  "no-route": "Quittieren für diese Alarmart noch nicht möglich",
   "no-permission": "Quittieren ist dieser Rolle nicht erlaubt",
 };
 

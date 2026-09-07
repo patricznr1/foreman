@@ -71,7 +71,7 @@ export function TimelineColumn({ nodes, selectedSourceId, onSelect }: TimelineCo
   if (nodes.length === 0) {
     return (
       <div role="status" className="rounded-lg border border-line-subtle bg-surface-raised p-4 text-body text-fg-muted">
-        Ketten-Momentaufnahme nicht verfügbar (vor der Snapshot-Erweiterung erstellt).
+        Für diese Kette liegt keine Zeitachse vor (älterer Datensatz).
       </div>
     );
   }

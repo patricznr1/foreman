@@ -66,7 +66,7 @@ export function RecommendationBlock({
     >
       <div className="flex flex-col gap-1">
         <h3 className="text-caption font-semibold uppercase tracking-wide text-fg-muted">
-          Empfehlung — Vorschlag an Sie
+          Empfehlung — ein Vorschlag, keine Anweisung
         </h3>
         <p className="text-body-l text-fg-primary">{recommendation.text}</p>
         {recommendation.sourceCount > 0 ? (

@@ -5,8 +5,9 @@
 #  Architektur-Einordnung: Betrieb (Railway, Schicht 0).
 #
 #  WICHTIG — config-as-code ist SINGLE-SERVICE und verwaltet KEINE Env-Vars.
-#  Die übrigen zwei Services (TimescaleDB-Image + Frontend), alle Variablen/
-#  Secrets und die DATABASE_URL-Service-Referenz sind in DEPLOY.md beschrieben
+#  Die übrigen drei Services (TimescaleDB-Image, Frontend, Live-Worker über
+#  railway.worker.toml), alle Variablen/Secrets und die DATABASE_URL-Service-
+#  Referenz sind in DEPLOY.md beschrieben
 #  (Etappe 1b, manuelle Provisionierung). TimescaleDB läuft als eigener Service
 #  aus dem Image timescale/timescaledb-ha:pg16 mit Volume; postgres.conf-Tuning
 #  ist optional (Railway-Default genügt für die Demo).

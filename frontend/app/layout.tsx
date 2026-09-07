@@ -12,7 +12,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "FOREMAN",
-  description: "Production Intelligence mit Gedächtnis — ruhige, rollenbasierte Hallen-Oberfläche.",
+  description:
+    "FOREMAN — Production Intelligence with Memory. Die ruhige, rollenbasierte Hallen-Oberfläche der Produktionsplattform.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

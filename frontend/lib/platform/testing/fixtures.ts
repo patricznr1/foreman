@@ -40,7 +40,7 @@ export function makeSubstrateNode(over: Partial<TopologyNodeRead> = {}): Topolog
 export function makeMcpNode(over: Partial<TopologyNodeRead> = {}): TopologyNodeRead {
   return makeNode({
     id: "mcp",
-    label: "MCP-Schnittstelle (F7)",
+    label: "MCP-Schnittstelle",
     kind: "mcp_boundary",
     direction: "liest",
     status: "inaktiv",
@@ -59,7 +59,7 @@ export function makeVisionNode(over: Partial<TopologyNodeRead> = {}): TopologyNo
     status: "unbekannt",
     last_activity: null,
     vision: true,
-    detail: { note: "geplant — nicht verbunden ([VISION])" },
+    detail: { note: "geplant — nicht verbunden" },
     ...over,
   });
 }

@@ -146,7 +146,7 @@ export function MemoryView({
       renderResult(previous.data, previous.stampedAt, false)
     ) : (
       <Notice tone="muted" role="status">
-        Noch keine Suche — geben Sie ein Stichwort ein, um die abgelegten Berichte zu durchsuchen.
+        Noch keine Suche — ein Stichwort eingeben, um die abgelegten Berichte zu durchsuchen.
       </Notice>
     );
   }

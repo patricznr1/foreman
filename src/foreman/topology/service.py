@@ -161,7 +161,9 @@ async def _mcp_node(
 
     return TopologyNode(
         id="mcp",
-        label="MCP-Schnittstelle (F7)",
+        # Sichtbares Label — das Bausteinkürzel der Spezifikation bleibt im Code,
+        # nicht in der Plattform-Sicht (claims/wortlisten.yaml, interne_bezeichner).
+        label="MCP-Schnittstelle",
         kind="mcp_boundary",
         direction=DIR_OUTBOUND,
         status=status,
@@ -172,7 +174,7 @@ async def _mcp_node(
 
 def _vision_nodes() -> list[TopologyNode]:
     """Illustrative [VISION]-Drittsysteme — benannt, aber NICHT als verbunden gezeigt."""
-    note = "geplant — nicht verbunden ([VISION])"
+    note = "geplant — nicht verbunden"
     return [
         TopologyNode(
             id="vision:erp",

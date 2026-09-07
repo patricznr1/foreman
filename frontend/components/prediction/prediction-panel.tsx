@@ -149,7 +149,7 @@ export function PredictionPanel({
     ) : (
       <Notice tone="muted" role="status">
         {roleView.canTrigger
-          ? "Noch keine Vorhersage — fordern Sie eine an."
+          ? "Noch keine Vorhersage — auf Anfrage erzeugen."
           : "Noch keine Erkenntnis vorhanden."}
       </Notice>
     );

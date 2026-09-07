@@ -31,7 +31,7 @@ export function CaptureView({ user, initialMachineId }: CaptureViewProps) {
       <div className="flex flex-col gap-1">
         <h1 className="text-h1 text-fg-primary">Erfassung</h1>
         <p className="max-w-prose text-body text-fg-secondary">
-          Was du gerade siehst — schnell und richtig zugeordnet ins System.
+          Was gerade auffällt — schnell und richtig zugeordnet ins System.
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export function CaptureView({ user, initialMachineId }: CaptureViewProps) {
             Zum Nachlesen früherer Notizen geht es ins Gedächtnis der Halle.
           </p>
           <Link
-            href="/memory"
+            href="/archive?quelle=gedaechtnis"
             className="touch-target inline-flex w-fit items-center rounded-lg border border-line-strong bg-surface-overlay px-4 text-body font-semibold text-fg-primary"
           >
             Zur Suche im Gedächtnis

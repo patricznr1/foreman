@@ -68,7 +68,7 @@ describe("CaptureForm — Happy-Path", () => {
     render(
       <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={null} />,
     );
-    await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Lager läuft heiß");
+    await userEvent.type(screen.getByLabelText(/Was ist aufgefallen/), "Lager läuft heiß");
     await userEvent.click(screen.getByRole("button", { name: /Notiz speichern/ }));
 
     await waitFor(() => expect(screen.getByText("Notiz erfasst.")).toBeInTheDocument());
@@ -83,7 +83,7 @@ describe("CaptureForm — Happy-Path", () => {
     render(
       <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={null} />,
     );
-    await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Beobachtung");
+    await userEvent.type(screen.getByLabelText(/Was ist aufgefallen/), "Beobachtung");
     await userEvent.click(screen.getByRole("button", { name: /Notiz speichern/ }));
     await waitFor(() => {
       const post = mock.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === "POST");
@@ -109,7 +109,7 @@ describe("CaptureForm — Kategorie mitgesendet (Anschlusspunkt)", () => {
     render(
       <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={null} />,
     );
-    await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Späne bläulich");
+    await userEvent.type(screen.getByLabelText(/Was ist aufgefallen/), "Späne bläulich");
     await userEvent.click(screen.getByRole("button", { name: /Kritisch/ }));
     await userEvent.click(screen.getByRole("button", { name: /Notiz speichern/ }));
     await waitFor(() => expect(lastPostBody(mock)?.classification).toBe("kritisch"));
@@ -123,7 +123,7 @@ describe("CaptureForm — Offline-Puffer (Degradation)", () => {
     render(
       <CaptureForm roleView={roleView} machinesState={READY} initialMachineId={2} />,
     );
-    await userEvent.type(screen.getByLabelText(/Was hast du beobachtet/), "Notiz ohne Netz");
+    await userEvent.type(screen.getByLabelText(/Was ist aufgefallen/), "Notiz ohne Netz");
     await userEvent.click(screen.getByRole("button", { name: /Notiz speichern/ }));
 
     await waitFor(() => expect(screen.getByText(/wird gesendet, sobald wieder Netz/)).toBeInTheDocument());

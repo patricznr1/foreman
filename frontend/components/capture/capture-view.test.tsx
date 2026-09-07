@@ -23,7 +23,7 @@ describe("CaptureView — Rollen", () => {
   it("zeigt dem Werker das Erfassungs-Formular (Kernnutzer)", () => {
     stubMachines();
     render(<CaptureView user={makeUser({ role: "worker" })} initialMachineId={null} />);
-    expect(screen.getByLabelText(/Was hast du beobachtet/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Was ist aufgefallen/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Notiz speichern/ })).toBeInTheDocument();
   });
 
@@ -41,7 +41,7 @@ describe("CaptureView — Rollen", () => {
     // die Befehlspalette und die Querverweise der Vorhersage.
     stubMachines();
     render(<CaptureView user={makeUser({ role: "manager" })} initialMachineId={null} />);
-    expect(screen.getByLabelText(/Was hast du beobachtet/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Was ist aufgefallen/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Notiz speichern/ })).toBeInTheDocument();
   });
 
@@ -51,8 +51,13 @@ describe("CaptureView — Rollen", () => {
     // ihm die Zusicherung, dass eine unbekannte Backend-Rolle nichts erfasst.
     stubMachines();
     render(<CaptureView user={makeUser({ role: "auditor" as never })} initialMachineId={null} />);
-    expect(screen.queryByLabelText(/Was hast du beobachtet/)).toBeNull();
+    expect(screen.queryByLabelText(/Was ist aufgefallen/)).toBeNull();
     expect(screen.queryByRole("button", { name: /Notiz speichern/ })).toBeNull();
-    expect(screen.getByRole("link", { name: /Gedächtnis/ })).toHaveAttribute("href", "/memory");
+    // „Gedächtnis" meint seit dem 02.09.2026 die zweite Betriebsart des Archivs —
+    // der Querlink führt dorthin, nicht auf die Wortlaut-Suche hinter `/memory`.
+    expect(screen.getByRole("link", { name: /Gedächtnis/ })).toHaveAttribute(
+      "href",
+      "/archive?quelle=gedaechtnis",
+    );
   });
 });

@@ -45,7 +45,9 @@ export function ProvenanceStamp({
 }: ProvenanceStampProps) {
   const time = formatStamp(stampedAt);
   const isLive = freshness === "live";
-  const freshnessText = isLive ? "Live" : freshness === "history" ? "Verlauf" : "Gecacht";
+  // Hallensprache statt Anglizismus: „Letzter Stand" sagt dem Werker, was er sieht —
+  // eingefrorene Daten mit Zeitstempel, kein Live-Bild.
+  const freshnessText = isLive ? "Live" : freshness === "history" ? "Verlauf" : "Letzter Stand";
   const timeText = time ? (isLive ? ` · aktualisiert ${time}` : ` · Stand ${time}`) : "";
 
   return (

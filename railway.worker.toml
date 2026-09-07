@@ -8,7 +8,7 @@
 #         Singleton — genau EINE Instanz (replicas=1), sonst Doppel-Schreiber.
 #  Nutzung: Der Worker-Service zeigt via Service-Setting "Config-as-code file"
 #         auf /railway.worker.toml — das Root-railway.toml ist Backend-only
-#         (alembic + uvicorn + Healthcheck /health) und würde den Worker sonst
+#         (alembic + uvicorn + Healthcheck /readyz) und würde den Worker sonst
 #         als zweiten Web-Server starten.
 # ============================================================
 

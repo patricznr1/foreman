@@ -353,7 +353,7 @@ export function SynoptikScene({ placements, onSelectMachine, className }: Synopt
           role="status"
           className="absolute inset-0 flex items-center justify-center rounded-lg border border-line-subtle bg-surface-raised p-6 text-center text-body text-note-caveat"
         >
-          3D-Ansicht hier nicht verfügbar (WebGL fehlt). Die Maschinenliste unten bleibt nutzbar.
+          3D-Ansicht auf diesem Gerät nicht verfügbar. Die Maschinenliste unten bleibt nutzbar.
         </div>
       ) : null}
       {hover !== null && supported ? (

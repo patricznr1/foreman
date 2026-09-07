@@ -35,7 +35,7 @@ Production lines generate data non-stop — sensor readings, PLC states, mainten
 
 The name says it all: a *foreman* is the experienced supervisor who has known the shop floor for years — and that institutional experience is exactly what FOREMAN provides as a system.
 
-> **Context:** FOREMAN is the capstone project of the MSIT AI track. It combines 17 years of industrial background (workshop management, field service, PLC programming) with applied AI architecture.
+> **Context:** FOREMAN is the capstone project of the MSIT AI track. It combines an industrial background (workshop management, field service, PLC programming) with applied AI architecture.
 
 ---
 
@@ -46,7 +46,7 @@ deliberately shared so anyone can look around.
 
 | | |
 | --- | --- |
-| **URL** | **[frontend-production-169a.up.railway.app](https://frontend-production-169a.up.railway.app)** |
+| **URL** | **[foreman-demo.de](https://foreman-demo.de)** |
 | **E-mail** | `chef@foreman.de` |
 | **Password** | `ForemanDemo2026!` |
 
@@ -97,7 +97,7 @@ flowchart TB
             R1[Event-Chain\nReconstruction]
             R2[Drift\nDetection]
             R3[Failure\nPrediction]
-            R4[Maintenance\nCycle Analysis]
+            R4[Maintenance\nCycle Analysis\n— planned]
         end
         GW[Model Gateway\nlocal + cloud]
     end
@@ -124,7 +124,7 @@ flowchart TB
 | **Event-Chain Reconstruction** | What led to this state? | Time-filtered recall + LLM synthesis |
 | **Drift Detection** | Is something drifting slowly? | Statistical deviation monitoring |
 | **Failure Prediction** | When will it fail? | Gradient boosting + LLM explanation |
-| **Maintenance-Cycle Analysis** | Which maintenance actually helps? | Causal evaluation of past interventions |
+| **Maintenance-Cycle Analysis** — *planned, not built* | Which maintenance actually helps? | Causal evaluation of past interventions — needs a real maintenance history |
 
 > **Load data, not load simulation.** FOREMAN does not run its own load simulation — a real one needs parameters outside FOREMAN's observation boundary (machine timing, tool/material behaviour, environment) that the platform never sees. Instead it exposes the *observed* load profiles and limits read-only over the MCP interface, for an external simulation tool to build on. See [GROUND_TRUTH.md](GROUND_TRUTH.md) §2 / §17.
 
@@ -140,11 +140,11 @@ FOREMAN builds on an **external, biologically inspired memory substrate** that i
 |---|---|
 | **Backend** | Python 3.12, FastAPI, async SQLAlchemy 2.0, Pydantic v2 |
 | **Storage** | PostgreSQL + TimescaleDB (time series) + vector search |
-| **Model gateway** | LiteLLM — local model (Qwen3 via Ollama) + cloud fallback (Anthropic) |
+| **Model gateway** | Own gateway abstraction — local open-weight model first, cloud fallback (Anthropic); the public demo runs cloud-only |
 | **Frontend** | Next.js 15 (App Router), React 19, Tailwind CSS 4, bespoke SVG (no charting library) |
 | **Industrial connectivity** | asyncua (OPC UA), paho-mqtt, pymodbus — *target picture, not yet installed*; the only adapter built so far is the simulation one ([GROUND_TRUTH.md](GROUND_TRUTH.md) §3) |
 | **Integration** | Model Context Protocol (MCP) SDK |
-| **Operations** | Docker Compose |
+| **Operations** | Docker Compose (local development) · Railway (public demo, see [DEPLOY.md](DEPLOY.md)) |
 
 ---
 
@@ -152,22 +152,32 @@ FOREMAN builds on an **external, biologically inspired memory substrate** that i
 
 ```
 foreman/
-├── README.md            ← you are here
-├── GROUND_TRUTH.md      ← the specification (single source of truth)
-├── pyproject.toml       ← deps + strict typing/lint/test config
-├── docker-compose.yml   ← TimescaleDB + app
-├── Dockerfile           ← runtime image (incl. NER model)
-├── postgres.conf        ← TimescaleDB tuning
-├── alembic.ini
-├── src/foreman/         ← application package (config · db · core · api · substrate)
-├── migrations/          ← Alembic migrations (schema + TimescaleDB setup)
-├── tests/               ← unit + integration tests
+├── README.md              ← you are here
+├── GROUND_TRUTH.md        ← the specification (single source of truth)
+├── CLAIMS.md              ← generated view of the claims register (what may be said, with evidence)
+├── SECURITY.md            ← threat model, deployment profiles, what counts as a finding
+├── DEPLOY.md              ← the public demo on Railway, step by step
+├── AGENTS.md · REVIEW.md  ← the same context for coding agents and reviewers
+├── pyproject.toml         ← deps + strict typing/lint/test config
+├── docker-compose.yml     ← TimescaleDB + app for local development
+├── Dockerfile             ← backend runtime image (incl. NER model)
+├── railway.toml · railway.worker.toml · frontend/railway.toml ← Railway config-as-code
+├── src/foreman/           ← application package (api · core · db · reasoners · llm · embeddings · mcp · substrate · …)
+├── migrations/            ← Alembic migrations (schema + TimescaleDB setup)
+├── tests/                 ← unit + integration tests
+├── frontend/              ← Next.js operator dashboard (BFF, bespoke SVG, 3D line view)
+├── claims/                ← claims register source + word lists
+├── compliance/            ← machine-checkable regulatory scope, retention policy, SoA
+├── security/              ← findings register (pre-triaged, verified in CI)
+├── scripts/ · tools/      ← register checks run by CI and before anything leaves the house
 ├── docs/
-│   ├── WALKTHROUGH.md   ← plain-language explanation of every building block (German)
-│   ├── research/        ← binding implementation references
-│   └── compliance/      ← EU AI Act + GDPR assessments
-├── .env.example         ← configuration contract (no secrets)
-└── .gitignore           ← protects secrets & the memory connection
+│   ├── WALKTHROUGH.md     ← plain-language explanation of every building block (German)
+│   ├── research/          ← binding implementation references
+│   ├── compliance/        ← EU AI Act + GDPR assessments (the reasoning behind compliance/)
+│   ├── models/            ← model card of the failure-prediction demonstrator
+│   └── messungen/         ← measurement protocols behind the register entries
+├── .env.example           ← configuration contract (no secrets)
+└── .gitignore             ← protects secrets & the memory connection
 ```
 
 > Code is added module by module. See **[GROUND_TRUTH.md](GROUND_TRUTH.md)** for the binding state and **[docs/WALKTHROUGH.md](docs/WALKTHROUGH.md)** for the plain-language explanation.
@@ -205,6 +215,12 @@ Every change passes defined gates before it reaches `main`:
 - **Bounded consumption** — rate-limiting + pinned model versions (LLM10 / LLM03)
 - **Living docs** — GROUND_TRUTH + WALKTHROUGH updated in the same commit; where they
   disagree with the code, the documentation is the defect and gets reported as one
+- **Agent governance (AEOS)** — the code is written with AI coding agents under AEOS, a
+  private rule-and-guard layer between the agent and the shell. Blocking rules refuse,
+  among others, direct pushes to `main`, force pushes, recursive deletes, pushes with a
+  red linter, f-string SQL, and any read or transfer of secret files; every decision is
+  written to [`.claude/aeos-log.jsonl`](.claude/aeos-log.jsonl) with the rule that made
+  it. The guards enforce the process — they do not replace the review
 
 See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
@@ -214,8 +230,8 @@ See [`GROUND_TRUTH.md`](GROUND_TRUTH.md) §10 for the binding definition.
 
 Every push and pull request runs three CI jobs (see the **CI badge** at the top). The
 backend job is `mypy --strict`, `ruff check`, `ruff format --check` and `pytest`
-**against a real TimescaleDB/pgvector service**, not mocks, followed by the two register
-checks and `pip-audit`. Alongside it, `gitleaks` scans the full history in its own job,
+**against a real TimescaleDB/pgvector service**, not mocks, followed by the three register
+checks (regulatory scope, findings, claims) and `pip-audit`. Alongside it, `gitleaks` scans the full history in its own job,
 and the frontend job runs token sync, `tsc --noEmit`, `eslint`, `vitest`, `npm audit` and
 a production build. The backend suite is layered:
 
@@ -226,7 +242,7 @@ a production build. The backend suite is layered:
 | **Red-team** | prompt-injection payloads driven through the **live LLM-reasoner pipeline** — spotlighting holds, output-guard flags invented sources/numbers, reasoner stays inert | `tests/reasoners/event_chain/security/` |
 | **Smoke** | real round-trips against local Ollama (LLM completion + `bge-m3` embeddings) | `@pytest.mark.smoke`, skips cleanly if absent |
 
-**Current state (`main`, measured 2026-08-22 in CI):** **1068 backend tests** green (2 skipped — they need a local model — and 4 opt-in tests deselected: NER, and the release checks that run against a live counterpart), plus **744 frontend tests** across 146 files. **94.28 % branch coverage** against a real TimescaleDB. `mypy --strict` 0 errors across 150 source files, `ruff` check and format clean, `tsc --noEmit` and `eslint` clean. The coverage gate **fails the build under 85 %** — enforced in `pyproject.toml`, not just claimed. Each feature ships a mandatory test block (happy path · error · auth · edge), and docs (`GROUND_TRUTH` + `WALKTHROUGH`) move in the same commit as the code.
+**Current state (measured 2026-09-07, own run against a real TimescaleDB):** **1579 backend tests** green (2 skipped — they need a local model — and 9 opt-in tests deselected: 7 NER, 2 release checks that run against a live counterpart), plus **995 frontend tests** across 165 files. **94.33 % branch coverage** in the CI run of 2026-08-22 (94.39 % in the run above). `mypy --strict` 0 errors across 155 source files, `ruff` check and format clean over 367 files, `tsc --noEmit` and `eslint` clean. The coverage gate **fails the build under 85 %** — enforced in `pyproject.toml`, not just claimed. Each feature ships a mandatory test block (happy path · error · auth · edge), and docs (`GROUND_TRUTH` + `WALKTHROUGH`) move in the same commit as the code.
 
 Numbers in this README are entries in the [claims register](CLAIMS.md) — each one carries its measurement conditions, its evidence status, and the date it was taken. A measurement without a register entry counts as not having happened (see `GROUND_TRUTH.md` §23).
 
@@ -266,9 +282,9 @@ Integration tests run against a real TimescaleDB (`timescale/timescaledb-ha:pg16
 
 ## Status
 
-🚧 **Active development.** In `main`: the foundation (F2 — schema, TimescaleDB migrations, JWT auth, CRUD + batch ingestion, pseudonymization + NER), data adapters with a synthetic simulation (F3), the **drift reasoner** (F4 — ADWIN over `river`), the **model gateway** (F-LLM — own `LLMGateway` abstraction over LiteLLM, local-first), the **event-chain reasoner** (F6 — the first LLM free-text reasoner, with a sharp prompt-injection red-team), **semantic note search** (F-SEM — embeddings + HNSW), the **failure-prediction reasoner** (F-PRED — an honestly declared method demonstrator on simulation data, see its [model card](docs/models/failure_prediction_model_card.md)) with its **LLM explanation layer** (F-REC), the read-only **MCP interface** (F7), and the **operator dashboard** (F5 — eight of ten sections built, plus the platform/audit view).
+🚧 **Active development.** In `main`: the foundation (F2 — schema, TimescaleDB migrations, JWT auth, CRUD + batch ingestion, pseudonymization + NER), data adapters with a synthetic simulation (F3), the **drift reasoner** (F4 — ADWIN over `river`), the **model gateway** (F-LLM — own `LLMGateway` abstraction over LiteLLM, local-first), the **event-chain reasoner** (F6 — the first LLM free-text reasoner, with a sharp prompt-injection red-team), **semantic note search** (F-SEM — embeddings + HNSW), the **failure-prediction reasoner** (F-PRED — an honestly declared method demonstrator on simulation data, see its [model card](docs/models/failure_prediction_model_card.md)) with its **LLM explanation layer** (F-REC), the read-only **MCP interface** (F7), and the **operator dashboard** (F5 — eight of ten sections built, the platform/audit view among them; a 3D line view of the plant and a memory-only mode of the archive were added in August/September 2026).
 
-Three of the four reasoners are built. Still open: **maintenance-cycle analysis** (reasoner #4 — data-dependent, it needs a real maintenance history) and the two remaining dashboard sections. Roadmap and binding state live in the [GROUND_TRUTH](GROUND_TRUTH.md); what may be *claimed* about any of it lives in [CLAIMS.md](CLAIMS.md).
+Three of the four reasoners are built. Still open: **maintenance-cycle analysis** (reasoner #4 — data-dependent, it needs a real maintenance history) and the two remaining dashboard sections (maintenance, load), which are marked placeholders in the demo. Roadmap and binding state live in the [GROUND_TRUTH](GROUND_TRUTH.md); what may be *claimed* about any of it lives in [CLAIMS.md](CLAIMS.md).
 
 ---
 

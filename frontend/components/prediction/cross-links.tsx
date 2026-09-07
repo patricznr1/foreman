@@ -23,7 +23,9 @@ export function PredictionCrossLinks({ machineId }: { machineId: number }) {
   const targets: CrossTarget[] = [
     { label: "Belegender Sensorverlauf (Maschinen)", href: "/machines" },
     { label: "Auslösender Alarm", href: "/alarms" },
-    { label: "Ähnliche Vorfälle (Gedächtnis)", href: "/memory" },
+    // Das Gedächtnis ist die zweite Betriebsart des Archivs (§21.12) — der Querlink
+    // führt dorthin, nicht auf die Wortlaut-Suche, die `/memory` nur noch umleitet.
+    { label: "Ähnliche Vorfälle (Gedächtnis)", href: "/archive?quelle=gedaechtnis" },
     { label: "Risikosenkende Wartung", href: null },
   ];
 

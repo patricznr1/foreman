@@ -40,7 +40,7 @@ findings:
   - id: F-001
     title: "Unauthenticated /metrics endpoint"
     where:
-      - "src/foreman/api/middleware.py:25"
+      - "src/foreman/api/middleware.py:29"
       - "src/foreman/api/metrics.py:17"
       - "src/foreman/observability/metrics.py:10"
     observation: >
@@ -476,15 +476,17 @@ findings:
     profile: [A]
     justification: >
       The directive has no effect without a preload-list submission, and none has
-      been made. It becomes meaningful only on an owned domain, where it should be
-      a deliberate decision rather than an inherited default.
+      been made. Since 2026-09-07 the demo runs on the owned domain foreman-demo.de;
+      the directive was kept as a deliberate decision, not an inherited default: the
+      domain carries nothing but the demo and its www alias, no HTTP-only subdomain
+      is planned, and the preload list is not submitted to.
     depends_on: >
-      The platform keeps running on a shared provider subdomain and no submission to
-      the HSTS preload list is made. On an owned domain this directive stops being
-      inert and becomes a commitment that must be made deliberately.
+      No submission to the HSTS preload list is made, and foreman-demo.de keeps
+      serving only the demo over HTTPS. Adding an HTTP-only subdomain or submitting
+      the domain to the preload list reopens this finding.
     remedy: >
-      Drop preload until the platform runs on an owned domain, or make it
-      conditional on the deployment.
+      Drop preload or make it conditional on the deployment if the domain ever
+      carries anything that must stay reachable over plain HTTP.
     review_by: "2027-02-26"
 
   # ---------------------------------------------------------------------------

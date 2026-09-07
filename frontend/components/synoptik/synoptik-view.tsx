@@ -34,7 +34,7 @@ export interface SynoptikViewProps {
 
 /** Rollen-Untertitel — Manager: ganze Linie/Flotte, Schichtleiter: seine Linie. */
 function roleSubtitle(role: CurrentUser["role"]): string {
-  return role === "manager" ? "Montagelinie 1 — Flottenbild" : "Montagelinie 1 — Ihre Linie";
+  return role === "manager" ? "Montagelinie 1 — Flottenbild" : "Montagelinie 1 — eigene Linie";
 }
 
 export function SynoptikView({ user, initialData }: SynoptikViewProps) {

@@ -28,7 +28,9 @@ describe("TopologyGraph", () => {
   it("zeigt die [VISION]-Zone getrennt und als nicht verbunden", () => {
     render(<TopologyGraph model={assembleTopology(makeTopologyView())} />);
     expect(screen.getByTestId("vision-zone")).toBeInTheDocument();
-    expect(screen.getByText(/\[VISION\] — geplant, nicht verbunden/)).toBeInTheDocument();
+    expect(screen.getByText(/Geplant — nicht verbunden/)).toBeInTheDocument();
+    // Der interne Reifegrad-Marker der Spezifikation bleibt im Code, nicht im Sichtbaren.
+    expect(screen.queryByText(/\[VISION\]/)).toBeNull();
   });
 
   it("blendet die [VISION]-Zone aus, wenn keine Vision-Knoten kommen", () => {
@@ -95,7 +97,7 @@ describe("TopologyNodeMark", () => {
       makeTopologyView({ nodes: [], vision: [makeVisionNode()] }),
     ).vision;
     render(<TopologyNodeMark node={node!} />);
-    expect(screen.getByText(/\[VISION\] · nicht verbunden/)).toBeInTheDocument();
+    expect(screen.getByText(/Geplant · nicht verbunden/)).toBeInTheDocument();
   });
 
   it("ein gestörter Knoten wird mit der ruhigen Warn-Form gezeigt (kein Alarm-Glyph)", () => {

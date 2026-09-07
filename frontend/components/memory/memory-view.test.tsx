@@ -67,7 +67,7 @@ describe("Archiv (MemoryView, On-Demand)", () => {
     render(<MemoryView user={user()} initialQuery="Fett" />);
     await waitFor(() => expect(screen.getByText(/3 Treffer im Archiv/)).toBeInTheDocument());
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/api/v1/archive/search");
-    expect(screen.getByText(/Gecacht/)).toBeInTheDocument();
+    expect(screen.getByText(/Letzter Stand/)).toBeInTheDocument();
     expect(screen.queryByText("KI-erzeugt")).toBeNull();
     expect(document.body.textContent).not.toMatch(/%/);
   });

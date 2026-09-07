@@ -20,7 +20,7 @@ export function AuditTable({ rows }: AuditTableProps) {
     <div className="overflow-x-auto rounded-lg border border-line-subtle">
       <table className="w-full border-collapse text-left">
         <caption className="sr-only">
-          Audit-Trail: abgerufene Erkenntnisse und Human-in-the-Loop-Entscheidungen, jüngste zuerst.
+          Audit-Trail: abgerufene Erkenntnisse und von Menschen bestätigte Entscheidungen, jüngste zuerst.
           Nur lesend.
         </caption>
         <thead className="bg-surface-overlay">

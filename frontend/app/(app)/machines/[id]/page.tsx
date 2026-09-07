@@ -9,6 +9,7 @@
 //         nicht zugreifbare Maschine (out-of-scope → 403) → freundlicher Hinweis.
 //  Architektur-Einordnung: Sektions-Route (Schicht 2, server).
 // ============================================================
+import Link from "next/link";
 import { MachineDetailView } from "@/components/machine/machine-detail-view";
 import type { DataPointRead, MachineCardOut, MachineRead } from "@/lib/api/contracts";
 import { requireSection } from "@/lib/auth/guard";
@@ -91,9 +92,14 @@ export default async function MachineDetailPage({ params }: { params: Promise<{ 
       >
         <h1 className="text-h1 text-fg-primary">Maschine nicht gefunden</h1>
         <p className="text-body text-fg-secondary">
-          Diese Maschine existiert nicht oder ist nicht in deinem Zugriff. Zurück zur
-          Maschinen-Übersicht.
+          Diese Maschine existiert nicht oder liegt außerhalb des eigenen Zugriffs.
         </p>
+        <Link
+          href="/machines"
+          className="text-body text-fg-secondary underline underline-offset-2 hover:text-fg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+        >
+          Zurück zur Maschinen-Übersicht
+        </Link>
       </section>
     );
   }
