@@ -14,7 +14,7 @@
 # FOREMAN auf Railway — Deploy-Anleitung
 
 **Stand:** 2026-09-07 · Etappen 1–3 ausgerollt. Die Vorführinstanz läuft unter
-**https://foreman-demo.de** (eigene Domain, §3.4a).
+**https://www.foreman-demo.de** (eigene Domain, §3.4a; der nackte Name leitet per HTTP dorthin um).
 
 **Ziel von Etappe 1:** FOREMAN **Backend + TimescaleDB + Frontend** online und
 vorführbar. Das Gedächtnis-Substrat (NEXUS) ist seit **Etappe 2** angebunden (§7,
@@ -205,11 +205,16 @@ kennt nur **CNAME**-Ziele, keine festen IP-Adressen — das bestimmt den Aufbau:
    lässt ihn auf `@` nicht zu, und Railway bietet dort weder ALIAS noch A-Record.
    Stattdessen eine Ionos-**Domain-Weiterleitung** (Verwendungsart anpassen →
    Domain-Weiterleitung → beliebige URL `https://www.foreman-demo.de`, HTTP-Redirect,
-   Option „auch für www" **aus**). Damit die Weiterleitung auch über `https://`
-   ohne Warnung läuft, braucht die Domain bei Ionos ein zugewiesenes Zertifikat.
+   Option „auch für www" **aus**). Die Weiterleitung läuft über `http://`; über
+   `https://` bräuchte der nackte Name ein bei Ionos zugewiesenes Zertifikat, das
+   dort kostenpflichtig ist — **bewusst nicht gekauft.** Die gedruckte Adresse ist
+   deshalb überall `www.foreman-demo.de`; der nackte Name bleibt der
+   Bequemlichkeitsweg für Leute, die ihn eintippen (Browser fallen bei
+   fehlgeschlagenem `https://` auf `http://` zurück und landen über die
+   Weiterleitung bei `www`).
 4. **Warten,** bis Railway die Domain verifiziert und das Zertifikat ausgestellt hat
    (Minuten bis eine Stunde; bis dahin antwortet `https://www.…` mit einem
-   TLS-Alert). Dann `https://foreman-demo.de/login` prüfen.
+   TLS-Alert). Dann `https://www.foreman-demo.de/login` prüfen.
 
 **Was der Wechsel im Code NICHT braucht** (geprüft 07.09.2026): Das Session-Cookie
 trägt kein `domain`-Attribut, die CSP-Regel `connect-src` führt weiter nur die
@@ -257,7 +262,7 @@ Befehl anlegen.
 
 ### Die öffentliche Demo-Instanz
 
-Die Showcase-Instanz läuft unter `https://foreman-demo.de` (§3.4a). Für sie ist ein
+Die Showcase-Instanz läuft unter `https://www.foreman-demo.de` (§3.4a). Für sie ist ein
 Manager-Konto **bewusst geteilt** — die Zugangsdaten stehen im
 [README](README.md#try-it-live) und sind kein Versehen. Manager ist dort die
 richtige Wahl, weil dieses Profil laut §21.18 das Vorführprofil ist: Es erreicht jede

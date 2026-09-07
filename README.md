@@ -46,7 +46,7 @@ deliberately shared so anyone can look around.
 
 | | |
 | --- | --- |
-| **URL** | **[foreman-demo.de](https://foreman-demo.de)** |
+| **URL** | **[www.foreman-demo.de](https://www.foreman-demo.de)** |
 | **E-mail** | `chef@foreman.de` |
 | **Password** | `ForemanDemo2026!` |
 

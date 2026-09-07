@@ -952,7 +952,7 @@ Damit eine Zahl, die einmal gemessen wurde, nicht als Wahrheit weiterlebt, wenn 
 ### Betrieb der Vorführinstanz (`DEPLOY.md`, `railway.toml`, `frontend/railway.toml`, `railway.worker.toml`)
 
 **Was tut es?**
-Beschreibt, wie die öffentliche Demo unter `foreman-demo.de` läuft: vier Dienste bei einem Plattformanbieter — Zeitreihen-Datenbank, Backend, Frontend und ein Live-Worker, der den Zwilling-Park fortlaufend Messwerte erzeugen lässt. Die Sprachmodell-Aufrufe der Demo gehen an einen Cloud-Anbieter mit gedrosselter Rate und Kostendeckel; das Gedächtnis ist angebunden.
+Beschreibt, wie die öffentliche Demo unter `www.foreman-demo.de` läuft: vier Dienste bei einem Plattformanbieter — Zeitreihen-Datenbank, Backend, Frontend und ein Live-Worker, der den Zwilling-Park fortlaufend Messwerte erzeugen lässt. Die Sprachmodell-Aufrufe der Demo gehen an einen Cloud-Anbieter mit gedrosselter Rate und Kostendeckel; das Gedächtnis ist angebunden.
 
 **Warum existiert es / wo sitzt es?**
 Damit jemand die Plattform ansehen kann, ohne sie zu installieren — mit geteiltem Vorführkonto, simulierten Daten und den fünf ehrlichen Hinweisen aus dem README. Die Demo ist bewusst nicht das Zielbild: Das ist ein Betrieb im Anlagennetz mit echten Daten und eigenen Konten (SECURITY.md, zwei Profile). Was die Konfigurationsdateien nicht können — Variablen, Geheimnisse, die eigene Domain —, steht als Anleitung in DEPLOY.md.
