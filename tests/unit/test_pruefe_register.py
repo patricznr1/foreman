@@ -244,3 +244,58 @@ def test_das_echte_register_haelt_seine_eigenen_regeln_ein() -> None:
     ansicht = Path(ANSICHT).read_text(encoding="utf-8")
     verstoesse = pruefe_kopf(roh) + pruefe_eintraege(roh) + pruefe_ansicht(roh, ansicht)
     assert verstoesse == [], _texte(verstoesse)
+
+
+# --------------------------------------------------------------------------
+#  ZEILENBINDUNG UND FORM — zwei Befunde an #174, am Code bestätigt (07.09.2026)
+# --------------------------------------------------------------------------
+
+
+def test_eine_aussage_in_einer_fremden_zeile_faellt_auf() -> None:
+    """Die Aussage von C-001 steht in der Ansicht — aber in der Zeile von C-002.
+
+    Bis dahin suchte der Prüfer die Aussage in der GANZEN Ansicht: Eine
+    veraltete Zeile blieb unbemerkt, solange der Text irgendwo stand, und das
+    Gate meldete Drift als synchron. Die Aussage gehört in die Zeile IHRER
+    Kennung.
+    """
+    vertauscht = ANSICHT_TEXT.replace(
+        "| C-001 | Die Anlage meldet drei von vier Bausteinen als gebaut. | gemessen |",
+        "| C-001 | Veraltete Fassung der ersten Aussage. | gemessen |",
+    ).replace(
+        "| C-002 | Die zweite Aussage steht hier. | geschaetzt |",
+        "| C-002 | Die zweite Aussage steht hier. "
+        "Die Anlage meldet drei von vier Bausteinen als gebaut. | geschaetzt |",
+    )
+    # AUFBAU-KONTROLLE: Der Text steht noch in der Ansicht — nur in der falschen Zeile.
+    assert "Die Anlage meldet drei von vier Bausteinen als gebaut." in vertauscht
+    verstoesse = pruefe_ansicht(BASIS, vertauscht)
+    assert any("C-001" in v.was and "ihrer Zeile" in v.was for v in verstoesse), _texte(verstoesse)
+
+
+def test_ein_stand_nur_in_der_prosa_faellt_auf() -> None:
+    """`Stand: <datum>` ist eine Kopfzeile, kein Teilstring irgendwo im Text."""
+    ohne_kopfzeile = ANSICHT_TEXT.replace(
+        "\nStand: 2026-09-07\n", "\nHinweis: Stand: 2026-09-07 galt gestern.\n"
+    )
+    assert "Stand: 2026-09-07" in ohne_kopfzeile  # AUFBAU-KONTROLLE: der Teilstring ist da
+    verstoesse = pruefe_ansicht(BASIS, ohne_kopfzeile)
+    assert any("Stand" in v.was for v in verstoesse), _texte(verstoesse)
+
+
+def test_claims_als_mapping_gibt_einen_verstoss_und_keinen_traceback() -> None:
+    """Der Kopf meldet die Form; die anderen Prüfungen dürfen danach nicht werfen."""
+    r = _register(claims={"C-001": {"aussage": "x"}})
+    assert any("keine Liste" in v.was for v in pruefe_kopf(r)), _texte(pruefe_kopf(r))
+    # Die Form meldet der Kopf GENAU EINMAL. Die anderen Prüfungen geben leer
+    # zurück — sonst iterierten sie über die Schlüssel des Mappings und
+    # meldeten jeden als „kein Mapping“: vier Rausch-Verstöße für einen Fehler.
+    assert pruefe_eintraege(r) == [], _texte(pruefe_eintraege(r))
+    assert pruefe_ansicht(r, ANSICHT_TEXT) == [], _texte(pruefe_ansicht(r, ANSICHT_TEXT))
+
+
+def test_ein_skalarer_eintrag_wird_als_verstoss_benannt() -> None:
+    r = copy.deepcopy(BASIS)
+    r["claims"].append("nur ein Text statt eines Eintrags")
+    verstoesse = pruefe_eintraege(r) + pruefe_ansicht(r, ANSICHT_TEXT)
+    assert any("kein Mapping" in v.was for v in verstoesse), _texte(verstoesse)

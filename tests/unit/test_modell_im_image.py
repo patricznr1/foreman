@@ -108,7 +108,24 @@ def test_der_zwischenspeicher_wird_gesetzt_und_gehoert_dem_dienstnutzer() -> Non
         "Bibliothek den Zwischenspeicher an ihrem Vorgabeort und lädt das Modell "
         "erneut — falls sie darf."
     )
-    assert "chown -R foreman:foreman /opt/hf-cache" in text, (
-        "❌ Der Zwischenspeicher wechselt nicht in das Eigentum des Dienstnutzers. "
-        "Der Dienst läuft unter uid 10001 und könnte dort nicht schreiben."
+    # ANWEISUNGSGEBUNDEN (07.09.2026): Der `chown` steht auf einer Fortsetzungs-
+    # zeile einer RUN-Anweisung, und ein Kommentar weiter oben ERKLAERT denselben
+    # Befehl. Eine Suche ueber die ganze Datei bliebe gruen, wenn die Anweisung
+    # durch `COPY --chown` ersetzt wuerde und der Kommentar bliebe. Deshalb erst
+    # die logischen Anweisungen bilden — Fortsetzungen zusammenziehen, Kommentare
+    # weglassen — und dann in den RUN-Anweisungen suchen.
+    anweisungen: list[str] = []
+    aktuell = ""
+    for zeile in text.splitlines():
+        s = zeile.strip()
+        if not s or s.startswith("#"):
+            continue
+        aktuell += " " + s.rstrip("\\").strip()
+        if not s.endswith("\\"):
+            anweisungen.append(aktuell.strip())
+            aktuell = ""
+    run_anweisungen = [a for a in anweisungen if a.startswith("RUN")]
+    assert any("chown -R foreman:foreman /opt/hf-cache" in a for a in run_anweisungen), (
+        "❌ Keine RUN-Anweisung wechselt den Zwischenspeicher in das Eigentum des "
+        "Dienstnutzers. Der Dienst läuft unter uid 10001 und könnte dort nicht schreiben."
     )

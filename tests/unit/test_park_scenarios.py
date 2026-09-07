@@ -170,15 +170,27 @@ def test_failure_anker_nur_bei_echten_komponenten_ausfaellen() -> None:
 def test_szenarien_doc_deckt_park_und_muster_ab() -> None:
     assert SZENARIEN_DOC.exists(), f"{SZENARIEN_DOC} fehlt"
     text = SZENARIEN_DOC.read_text(encoding="utf-8")
+    zeilen = text.splitlines()
+    # Ganzdatei-Ausnahme: Der Linien-Titel steht genau einmal; „die Doku nennt die Linie“ IST die Aussage.
     assert PARK_LINE_LABEL in text
-    # Alle Maschinen im Master-Ueberblick referenziert.
+    # ZEILENGEBUNDEN (07.09.2026): Jede Maschine hat ihre Tabellenzeile im
+    # Master-Ueberblick. FD-01 steht auch in der B7-Liste — eine Suche ueber
+    # die ganze Datei bliebe gruen, wenn die Tabellenzeile fehlte.
     for external_id in EXPECTED_MACHINES:
-        assert external_id in text, f"szenarien.md erwaehnt {external_id} nicht"
-    # Degradationsfamilien B1-B7 und Kausalmuster P1-P4 dokumentiert.
+        assert any(z.startswith(f"| {external_id} |") for z in zeilen), (
+            f"szenarien.md fuehrt {external_id} nicht als Zeile im Master-Ueberblick"
+        )
+    # Jede Familie hat ihre Aufzaehlungszeile, jedes Muster seine Tabellenzeile.
+    # "B1" steht auch in der Ueberschrift "B1-B7", "P1" in "P1-P4" und in den
+    # Maschinenzeilen - die Kennung allein belegt keine Beschreibung.
     for family in ("B1", "B2", "B3", "B4", "B5", "B6", "B7"):
-        assert family in text, f"szenarien.md erwaehnt {family} nicht"
+        assert any(z.startswith(f"- **{family} ") for z in zeilen), (
+            f"szenarien.md beschreibt {family} nicht (keine Aufzaehlungszeile `- **{family} …`)"
+        )
     for pattern in ("P1", "P2", "P3", "P4"):
-        assert pattern in text, f"szenarien.md erwaehnt {pattern} nicht"
+        assert any(z.startswith(f"| **{pattern} ") for z in zeilen), (
+            f"szenarien.md beschreibt {pattern} nicht (keine Tabellenzeile `| **{pattern} …`)"
+        )
     # P5 darf NICHT als umgesetzt behauptet werden: die Doku muss P5 ausdruecklich
     # als nicht-Teil-dieses-Schritts UND an die (offene) Engine-Erweiterung E1
     # gekoppelt fuehren — nicht nur den Token erwaehnen (sonst wuerde eine
