@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-09-04
+Stand: 2026-09-07
 
 ## FOREMAN
 
@@ -94,7 +94,7 @@ Stand: 2026-09-04
 | C-097 | Die vierte Archiv-Quelle kostet das Neunfache an Antwortzeit. | gemessen | Median je Suchaufruf 0,097 s mit drei Quellen gegen 0,853 s mit vier | 2026-08-28 | gueltig | intern |
 | C-098 | Zwischen dem alten und dem neuen Einbettungsmodell ist auf dem eigenen Bewertungssatz kein Gueteunterschied nachweisbar — in keiner Richtung. | gemessen | Trefferquote +0,001 (p=1,000), Rangguete +0,024 (p=0,744), verdichtet +0,025 (p=0,719) | 2026-08-28 | gueltig | intern |
 | C-099 | Ein unvollstaendiger Bewertungssatz kehrte das Ergebnis um: Dieselben Rohdaten sagten erst 'signifikant schlechter' und nach 81 zusaetzlichen Urteilen 'kein Unterschied'. | gemessen | Rangguete -0,106 (p=0,008) wird +0,024 (p=0,744); unbeurteilte Plaetze im neuen Arm fallen von 64 von 112 auf 5 von 112 | 2026-08-28 | gueltig | intern, fach |
-| C-100 | Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen. | gemessen | remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz | 2026-08-28 | gueltig | intern |
+| C-100 | Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen. | gemessen | remember 3 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz | 2026-08-28 | gueltig | intern |
 | C-101 | Die Archiv-Suche liefert unter gleichen Bedingungen gleiche Ergebnisse — auch mit dem Gedaechtnis als vierter Quelle. | gemessen | Zwei Laeufe unmittelbar nacheinander: 10 von 10 Anfragen mit identischer Rangfolge; der Gedaechtnis-Anteil ebenfalls 10 von 10 identisch. | 2026-08-28 | gueltig | intern |
 | C-102 | Das Gedaechtnis schoepft sein Abrufbudget voll aus; mehr als die Haelfte der Erinnerungen entfaellt in der Zusammenfuehrung, weil sie einen Treffer der eigenen Quellen doppelt. | gemessen | Nur-Gedaechtnis-Lauf: 5 von 5 Treffern bei 10 von 10 Anfragen, also 50. In der Zusammenfuehrung verbleiben 22; 28 entfallen. Bei 2 von 10 Anfragen (B05, B08) traegt das Gedaechtnis nichts bei, bei 1 von 10 (B06) alle fuenf. | 2026-08-28 | gueltig | intern |
 | C-103 | Jede fuenfte Kennung, unter der FOREMAN eine gespiegelte Erinnerung fuehrte, zeigte ins Leere. | gemessen | Von 348 angereicherten Zeilen liessen sich 271 im Gedaechtnis loeschen; bei 77 (22,1 %) lag unter der gefuehrten Kennung nichts mehr. Null Loeschungen schlugen fehl. | 2026-09-01 | gueltig | intern |
@@ -107,6 +107,7 @@ Stand: 2026-09-04
 | C-121 | Seit dem 03.09.2026, 16:32:33 UTC hängen im Wissensgraphen der Gegenstelle alle Fakten zu „Maschine ⟨n⟩“ an den Bezeichnungsknoten unserer zwölf Maschinen; Alias-Knoten gibt es dort nicht mehr. | gemessen | 19 Alias-Knoten (12 maschine-1..12, 6 Label-Knoten, 1 Mischknoten maschine-4-ax-04) auf 12 Zielknoten gelegt (ax-01..04, fd-01/02, pr-01..03, rb-01/02, vs-01). 1.467 Fakten berührt, 394 Subjekte und 533 Objekte umgehängt, 150 entstehende Selbstbezüge und 436 abgeleitete Dubletten entfernt, 0 Kollisionen. Fakten des Namensraums 4.187 → 3.601, Knoten danach 576, 0 Alias-Knoten übrig. | 2026-09-03 | gueltig | intern |
 | C-122 | Mit geschlossenem Bewertungssatz hat die Knoten-Zusammenführung der vierten Archiv-Quelle nichts gekostet: Trefferquote unverändert, Rangfolge leicht besser — beides nicht gezeigt. | gemessen | Gedächtnis 02.09. → 03.09., gepaart über 10 Anfragen: Trefferquote −0,001 (p=1,000), nDCG +0,028 (p=0,375); 7 Anfragen unverändert, B01 Tausch (maintenance:116 → note:207, Quote 0,80 = 0,80, nDCG 0,67 → 0,87), B06 Gewinn (note:207, Quote 0,38 → 0,46), B02 Verlust (note:145 → note:208 = Stufe 0). Nachher Basis → mit Gedächtnis: Trefferquote +0,097 (p=0,062), nDCG +0,080 (p=0,031), Zusatztreffer 7 von 10, Bedingung 1 an B09 verfehlt, Bedingung 2 erfüllt. Vorher gegen denselben Satz: +0,126 (p=0,031), nDCG +0,094 (p=0,023), 8 von 10. | 2026-09-03 | gueltig | intern |
 | C-123 | Die Wissensgewinnung der Gegenstelle liest die neue Satzform „(Kennung n)“ genauso als Alias wie die alte „(Maschine n)“; der gemischte Bestand ist unschädlich. | gemessen | 20 von 20 Läufen je Form: Anlagenkennung als Konzept, Klammertext als Alias desselben Konzepts, kein eigenes Konzept, kein Fakt zwischen beiden. 40 Aufrufe, 0 Fehler, 52 Sekunden. | 2026-09-03 | gueltig | intern |
+| C-125 | Der gespiegelte Kettensatz traegt im Betrieb Datensatznummer, Anlagenkennung und Entstehungszeit; er kommt in der Datenhaltung der Gegenstelle an, wo die alte Form verworfen wurde. | gemessen | Zurueckgeholter Wortlaut: „Ereigniskette 13 zu Alarm 20 an PR-02 (Kennung 8, 2026-09-07T09:03:03.227217+00:00): 4 Ereignisse, Konfidenz low (Hypothese).“ Rueckweg im Treffer: quelle {art: event_chain, id: 13}; Anlagenklasse servo_press; Zeitstempel 2026-09-07T09:03:03.227217Z, also die Entstehungszeit. | 2026-09-07 | gueltig | intern |
 
 ## Nicht verwendbar
 
@@ -140,17 +141,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 122
+Einträge gesamt: 123
 
 Nach Status:
 
-- gemessen: 115
+- gemessen: 116
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 99
+- gueltig: 100
 - ueberholt: 23
 - ungeprueft: 0

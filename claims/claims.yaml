@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-09-04"
+stand: "2026-09-07"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -2980,7 +2980,7 @@ claims:
   - id: "C-100"
     aussage: "Von den Faehigkeiten des Gedaechtnissystems nutzt FOREMAN Schreiben, Lesen und Loeschen; Wissensnetz, Selbstauskunft, Drifterkennung und Kontextaufbau werden nicht gerufen."
     status: "gemessen"
-    wert: "remember 4 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz"
+    wert: "remember 3 Aufrufe, recall 3, forget 2 — reason 0, reflect 0, drift_status 0; ein Pfad fuer den Kontextaufbau fehlt im Client ganz"
     bedingung: >-
       Abgelesen am 28.08.2026 am Quelltext: `substrate/client.py` fuehrt die
       Pfade in `_paths`; ein Pfad fuer den Kontextaufbau ist weder als Vorgabe
@@ -2993,6 +2993,13 @@ claims:
       reasoners/failure/recall.py und substrate/smoke.py; forget in
       substrate/aufraeumen.py und substrate/nachtrag.py. Fuer reason, reflect
       und drift_status findet sich kein einziger Aufrufer.
+      BERICHTIGT am 07.09.2026: Der Wert nannte vier remember-Aufrufe. Es sind
+      drei — die Suche im Quelltext trifft zusaetzlich eine Kommentarzeile
+      (`substrate/backfill.py`, Kopf), die keinen Aufruf enthaelt. Am Stand des
+      Messtages nachgeprueft (Commit 5d62643): dort standen dieselben drei
+      Aufrufe, der Wert war also von Anfang an ein Zaehlfehler und keine
+      Aenderung am Code. Die drei Aufrufstellen und alle uebrigen Zahlen des
+      Eintrags bleiben unberuehrt.
       NICHT BELEGT und deshalb hier nicht behauptet: WARUM das so ist. Eine
       Entscheidung gegen den Kontextaufbau ist in GROUND_TRUTH, im Register und
       in den Freigabe-Bedingungen nirgends dokumentiert — daraus folgt aber
@@ -3130,7 +3137,7 @@ claims:
       von dreien ins Leere.
     datum: "2026-09-01"
     fundstelle:
-      - "src/foreman/substrate/nachtrag.py, NachtragStats.schon_geloescht"
+      - "src/foreman/substrate/nachtrag.py, NachtragStats.nicht_auffindbar"
       - "Lauf vom 01.09.2026, 10:52 Uhr"
     geltung: "gueltig"
     freigabe:
@@ -3938,5 +3945,58 @@ claims:
       gemessen ist, ob die Gegenstelle die Klammer dieser Arten als Alias liest und ob
       created_at, recall_used und occurred_at ankommen — Nachweis mit der ersten Kette
       nach dem Deploy; die Nachmessung der vierten Quelle folgt danach (C-125).
+    freigabe:
+      - "intern"
+
+  - id: "C-125"
+    aussage: "Der gespiegelte Kettensatz traegt im Betrieb Datensatznummer, Anlagenkennung und Entstehungszeit; er kommt in der Datenhaltung der Gegenstelle an, wo die alte Form verworfen wurde."
+    status: "gemessen"
+    wert: "Zurueckgeholter Wortlaut: „Ereigniskette 13 zu Alarm 20 an PR-02 (Kennung 8, 2026-09-07T09:03:03.227217+00:00): 4 Ereignisse, Konfidenz low (Hypothese).“ Rueckweg im Treffer: quelle {art: event_chain, id: 13}; Anlagenklasse servo_press; Zeitstempel 2026-09-07T09:03:03.227217Z, also die Entstehungszeit."
+    bedingung: >-
+      Gegen die laufende Demo-Instanz erhoben, 07.09.2026. Vorlauf: Deploy 65723ff2
+      mit Commit 58bf0ac (Zusammenfuehrung #172) um 08:53:55 UTC, Start 08:59:04 UTC,
+      Substrat-Rauchtest beim Start ok. Um 09:03:03 UTC eine Ereigniskette zu Alarm 20
+      angestossen (Erklaerungszeile 13, Maschine 8); der Dienst meldete 09:03:34 UTC
+      „Substrat-Spiegel ok (event_type=event_chain_reconstructed,
+      ref=d95e404c-6a3f-4b76-a183-63d98b92a54e)“.
+      DER SATZ WURDE NICHT NACHGEBAUT, sondern ueber die Archivsuche der eigenen
+      Anwendung ZURUECKGEHOLT — der Wortlaut oben ist der, den die Gegenstelle
+      ausliefert, nicht ein lokal erzeugtes Abbild. Damit ist zugleich belegt, dass
+      der Eintrag dort abrufbar ankam.
+      WAS DAMIT GEZEIGT IST: Die Satzform aus #172 wirkt im Betrieb; die
+      Datensatznummer macht jede Rekonstruktion einmalig; der Anlagenbezug
+      (`lade_anlagenbezug`) und der Rueckweg (`source_id`) kommen in der Nutzlast an;
+      der Zeitstempel des Treffers ist die Entstehungszeit der Erklaerung.
+      NACHGEMESSEN am selben Tag, 09:35 UTC, direkt in der Datenhaltung der
+      Gegenstelle (nur lesende Abfrage): Der Eintrag d95e404c steht in
+      `memory_entries`, memory_tier `plastic` — er hat die Befoerderung aus dem
+      Working-Tier also ueberstanden und wurde NICHT als Hash-Dublette verworfen.
+      `occurred_at` = 2026-09-07 09:03:03.227217, also exakt die Entstehungszeit der
+      Erklaerung (Nachweis zu #160). Die Nutzlast traegt dort vollstaendig
+      source_id 13, machine_external_id PR-02, machine_class servo_press,
+      component_type/-label null, created_at und recall_used true.
+      `kg_processed_at` 09:04:01 UTC: auch die Wissensgraph-Nachfuehrung hat ihn
+      verarbeitet.
+      GEGENPROBE zur Aussage von C-124: Der byte-gleiche Kettensatz vom 03.09.
+      (Referenz 88cca775) steht bis heute NICHT in `memory_entries` — dieselbe
+      Abfrage liefert dafuer null Zeilen. Alte Form verworfen, neue Form
+      angekommen, gemessen am selben Ort mit derselben Abfrage.
+      NEBENBEFUND ZUM TAKT, vorsichtig zu lesen: Zwischen dem Spiegeln (09:03:34)
+      und der Graph-Verarbeitung (09:04:01) lagen 27 Sekunden. Die in DEPLOY.md 7.1
+      und C-118 gefuehrte Wartezeit von etwa 15 Minuten ist damit jedenfalls nicht
+      die untere Schranke, die sie nahelegt. Ob der Takt sich geaendert hat oder ein
+      Zyklus zufaellig guenstig fiel, ist von hier aus NICHT zu unterscheiden — eine
+      Einzelbeobachtung, kein neuer Taktwert.
+      WAS WEITERHIN NICHT GEZEIGT IST: ob die Wissensgewinnung der Gegenstelle die
+      Klammer dieser Ereignisart als Alias liest (fuer die Ingestion-Arten hat sie
+      das gemessen, C-123). Das ist ihre Messung, nicht unsere.
+    datum: "2026-09-07"
+    fundstelle:
+      - "Railway-Deploy-Log backend 65723ff2, 09:03:34 UTC"
+      - "src/foreman/substrate/content.py::_event_chain (Satzform seit #172)"
+      - "src/foreman/reasoners/event_chain/service.py::_mirror (source_id, Anlagenbezug)"
+      - "memory_entries d95e404c (Datenhaltung der Gegenstelle, nur lesend abgefragt)"
+      - "claims/claims.yaml, C-124 (ueberholt), C-104, C-118"
+    geltung: "gueltig"
     freigabe:
       - "intern"

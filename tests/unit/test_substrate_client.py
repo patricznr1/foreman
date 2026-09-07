@@ -640,6 +640,25 @@ def test_ohne_token_wird_beim_bau_laut_gewarnt(caplog: pytest.LogCaptureFixture)
     assert "401" in warnungen[0], "die Zeile muss sagen, WAS passieren wird"
 
 
+def test_ein_leer_gesetztes_token_warnt_genauso(caplog: pytest.LogCaptureFixture) -> None:
+    """Die zweite Gestalt desselben Vorfalls: Variable gesetzt, aber leer.
+
+    `SecretStr("")` ist NICHT None, aber falsch. Der Header-Bau und der
+    Klartext-Zugriff prüfen den Wahrheitswert — der Klient läuft also ohne
+    Authorization-Kopf, ganz wie bei fehlender Variable. Eine Prüfung auf None
+    schwiege hier, und der Betreiber sähe eine gesetzte Variable und stille Logs:
+    von aussen ununterscheidbar von einem funktionierenden Zugang.
+    """
+    client_modul._GEMELDET.clear()
+    with caplog.at_level(logging.WARNING, logger="foreman.substrate.client"):
+        klient = SubstrateClient.from_settings(_substrat_einstellungen(""))
+    assert len(_tokenwarnungen(caplog)) == 1, (
+        "leeres Token muss dieselbe Zeile auslösen wie gar keins"
+    )
+    # Und der Grund, warum die Warnung nötig ist: Es geht wirklich kein Kopf raus.
+    assert "Authorization" not in klient._client.headers
+
+
 def test_mit_token_keine_warnung(caplog: pytest.LogCaptureFixture) -> None:
     """AUFBAU-KONTROLL-ZWILLING: Mit Token bleibt es still.
 

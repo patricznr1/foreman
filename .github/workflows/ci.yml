@@ -97,6 +97,22 @@ jobs:
       - name: Type check — mypy --strict
         run: uv run mypy
 
+      - name: Type check — Torwächter und Werkzeuge
+        # `uv run mypy` oben prüft nur `packages = ["foreman"]`. Die Skripte, die
+        # in dieser Pipeline die TORE STELLEN (check_findings) und die Werkzeuge,
+        # die am Aussagen-Register arbeiten, standen damit ausserhalb jeder
+        # Typprüfung — ausgerechnet der Code, dessen stiller Fehlschlag ein
+        # grünes Häkchen erzeugt.
+        #
+        # Zwei Altlasten sind AUSGENOMMEN statt stillschweigend übergangen:
+        # `tools/archiv_guete/` (38 Befunde, Messwerkzeuge) und
+        # `scripts/check_compliance.py` (17). Beide zu sanieren ist ein eigener
+        # Arbeitsgang; bis dahin gilt hier, was heute sauber ist. Wichtig an
+        # dieser Form: Eine NEUE Datei unter `scripts/` oder `tools/` ist
+        # automatisch geprüft — die Ausnahme nennt Bestehendes, keinen Bereich
+        # für die Zukunft.
+        run: uv run mypy --strict scripts tools --exclude 'tools/archiv_guete/' --exclude 'scripts/check_compliance\.py'
+
       - name: Lint — ruff check
         run: uv run ruff check
 
@@ -106,15 +122,23 @@ jobs:
       - name: Tests + coverage — pytest (integration, red-team, ≥85 %)
         run: uv run pytest
 
-      - name: Register — Regulatorik und Funde
-        # Beide Register tragen Aussagen, die nach außen gehen. Ohne diesen Lauf
-        # verrotten sie lautlos: ein Verweis auf eine verschwundene Datei, eine
-        # verstrichene Wiedervorlage, ein akzeptiertes Risiko ohne die Bedingung,
-        # unter der es akzeptiert wurde. Alles drei sieht von außen wie ein
-        # gepflegtes Register aus. Was sie NICHT prüfen: ob eine Begründung trägt.
+      - name: Register — Regulatorik, Funde und Aussagen
+        # Alle drei Register tragen Aussagen, die nach außen gehen. Ohne diesen
+        # Lauf verrotten sie lautlos: ein Verweis auf eine verschwundene Datei,
+        # eine verstrichene Wiedervorlage, ein akzeptiertes Risiko ohne die
+        # Bedingung, unter der es akzeptiert wurde. Alles drei sieht von außen wie
+        # ein gepflegtes Register aus. Was sie NICHT prüfen: ob eine Begründung trägt.
+        #
+        # Das Aussagen-Register kam am 07.09.2026 dazu. Sein Erzeugerwerkzeug
+        # liegt auf einer einzelnen Maschine und kann hier nicht laufen; geprüft
+        # wird deshalb, was ohne es belegbar ist — Struktur und die Frage, ob
+        # CLAIMS.md noch dasselbe sagt wie claims.yaml. Die Ansicht liegt in
+        # einem öffentlichen Repository: driftet sie, steht draußen eine
+        # Aussage, die drinnen nicht mehr gilt.
         run: |
           uv run python scripts/check_compliance.py
           uv run python scripts/check_findings.py
+          uv run python -m tools.pruefe_register
 
       - name: Abhängigkeits-Audit — pip-audit
         # `--no-emit-project`: Der Export enthält sonst das Projekt selbst als
