@@ -4,8 +4,9 @@
 #         echten Push je Teilbefehl — an seiner Form, hinter Variablen,
 #         Schlüsselwörtern, Vorschaltern und Schalen, mit Trockenlauf-Semantik
 #         wie git — und zählt nur, was den Rechner verlässt: Committetes auf dem
-#         Ref, den der Push trägt. Jede Klasse hier ist ein belegter Angriff
-#         oder eine belegte Überblockung (drei Skeptiker, 07.09.2026).
+#         Ref, den der Push trägt, im Repo, in dem der Push läuft (cd, -C,
+#         --git-dir/--work-tree). Jede Klasse hier ist ein belegter Angriff oder
+#         eine belegte Überblockung (drei Skeptiker und Greptile, 07.09.2026).
 #  Architektur-Einordnung: Quality Gate §10.3 (Unit, kein DB-Zugriff); git als
 #         Subprozess gegen ein Wegwerf-Repository unter tmp_path.
 # ============================================================
@@ -69,6 +70,18 @@ def zweig(tmp_path: Path) -> Path:
     return repo
 
 
+@pytest.fixture
+def fremd(tmp_path: Path) -> Path:
+    """Ein Repo ohne WALKTHROUGH — den Hook geht es nichts an."""
+    repo = tmp_path / "fremd"
+    repo.mkdir()
+    _git("init", "-q", "-b", "main", cwd=repo)
+    _schreibe(repo / "a.txt", "x\n")
+    _git("add", ".", cwd=repo)
+    _git("commit", "-q", "-m", "a", cwd=repo)
+    return repo
+
+
 def _lauf(
     hook: ModuleType,
     befehl: str,
@@ -105,11 +118,12 @@ def _lauf(
         'GIT_SSH_COMMAND="ssh -o BatchMode=yes" git push origin feature/x',
         # Zeilenfortsetzung zwischen git-Option und Unterbefehl.
         'git -C "$PWD" \\\n  push origin feature/x',
-        # Schlüsselwörter, Gruppierung, Substitution.
+        # Schlüsselwörter, Gruppierung, Substitution, Verzeichniswechsel.
         "for b in feature/x; do git push origin $b; done",
         "if ! git push origin feature/x; then echo fehl; fi",
         "{ git push origin feature/x; }",
         '(cd "$PWD" && git push)',
+        "cd /pfad/zum/foreman && git push origin feature/x",
         'OUT=$(git push origin feature/x 2>&1); echo "$OUT"',
         # Ein Kommentar hinter dem Push ist kein Argument.
         "git push origin feature/x # -n",
@@ -181,6 +195,9 @@ def test_kein_echter_push(hook: ModuleType, befehl: str) -> None:
         ("git push origin --tags", []),
         ("git push --all origin", ["*"]),
         ("git push -o ci.skip origin feature/x", ["feature/x"]),
+        # Mit --repo ist die erste Position eine Refspec, kein Remote.
+        ("git push --repo=origin feature/x", ["feature/x"]),
+        ("git push --repo origin feature/x", ["feature/x"]),
     ],
 )
 def test_die_quellen_eines_pushes(hook: ModuleType, befehl: str, quellen: list[str]) -> None:
@@ -188,11 +205,31 @@ def test_die_quellen_eines_pushes(hook: ModuleType, befehl: str, quellen: list[s
     assert hook._quellen(push.argumente) == quellen
 
 
-def test_das_verzeichnis_kommt_aus_der_git_option(hook: ModuleType) -> None:
-    (push,) = hook.echte_pushes('git -C "C:\\foreman" push origin feature/x')
-    assert push.verzeichnis == "C:\\foreman"
-    (push,) = hook.echte_pushes("git --work-tree=/w --git-dir=/w/.git push")
-    assert push.verzeichnis == "/w"
+@pytest.mark.parametrize(
+    ("befehl", "verzeichnis", "optionen"),
+    [
+        ("git push", None, ()),
+        ('git -C "C:\\foreman" push origin feature/x', None, ("-C", "C:\\foreman")),
+        (
+            "git --work-tree=/w --git-dir=/w/.git push",
+            None,
+            ("--work-tree=/w", "--git-dir=/w/.git"),
+        ),
+        ("cd /pfad/zum/foreman && git push origin feature/x", "/pfad/zum/foreman", ()),
+        ("cd frontend; git push", "frontend", ()),
+        ("pushd x && git push", "x", ()),
+        ("cd x && git -C y push", "x", ("-C", "y")),
+        ("cd a && cd b && git push", str(Path("a") / "b"), ()),
+        ("cd a && cd /abs && git push", "/abs", ()),
+        ("bash -c 'cd /w && git push'", "/w", ()),
+    ],
+)
+def test_wo_der_push_laeuft(
+    hook: ModuleType, befehl: str, verzeichnis: str | None, optionen: tuple[str, ...]
+) -> None:
+    (push,) = hook.echte_pushes(befehl)
+    assert push.verzeichnis == verzeichnis
+    assert push.optionen == optionen
 
 
 # --- Das Gate: nur Committetes verlaesst das Haus -----------------------------
@@ -320,16 +357,10 @@ def test_nur_lokal_geaenderter_code_verlaesst_das_haus_nicht(
 
 def test_ein_repo_ohne_walkthrough_ist_nicht_betroffen(
     hook: ModuleType,
-    tmp_path: Path,
+    fremd: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    fremd = tmp_path / "fremd"
-    fremd.mkdir()
-    _git("init", "-q", "-b", "main", cwd=fremd)
-    _schreibe(fremd / "a.txt", "x\n")
-    _git("add", ".", cwd=fremd)
-    _git("commit", "-q", "-m", "a", cwd=fremd)
     code, _ = _lauf(hook, "git push origin main", fremd, monkeypatch, capsys)
     assert code == 0
 
@@ -347,6 +378,17 @@ def test_der_gepushte_zweig_zaehlt_auch_wenn_head_woanders_steht(
     code, err = _lauf(hook, "git push origin feature/x", zweig, monkeypatch, capsys)
     assert code == 2
     assert "feature/x" in err
+
+
+def test_mit_repo_option_ist_die_erste_position_die_refspec(
+    hook: ModuleType,
+    zweig: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _git("switch", "-q", "main", cwd=zweig)
+    code, _ = _lauf(hook, "git push --repo=origin feature/x", zweig, monkeypatch, capsys)
+    assert code == 2
 
 
 def test_alle_zweige_pushen_zaehlt_jeden(
@@ -381,6 +423,9 @@ def test_ein_push_der_den_code_nicht_traegt_laeuft_durch(
     assert code == 0
 
 
+# --- Das Repo ist das, in dem der Push laeuft ---------------------------------
+
+
 def test_das_repo_kommt_aus_der_git_option_nicht_nur_aus_cwd(
     hook: ModuleType,
     zweig: Path,
@@ -391,6 +436,48 @@ def test_das_repo_kommt_aus_der_git_option_nicht_nur_aus_cwd(
     aussen = tmp_path / "aussen"
     aussen.mkdir()
     code, _ = _lauf(hook, f'git -C "{zweig}" push origin feature/x', aussen, monkeypatch, capsys)
+    assert code == 2
+
+
+def test_ein_cd_im_befehl_fuehrt_ins_repo(
+    hook: ModuleType,
+    zweig: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    aussen = tmp_path / "aussen"
+    aussen.mkdir()
+    code, _ = _lauf(hook, f'cd "{zweig}" && git push origin feature/x', aussen, monkeypatch, capsys)
+    assert code == 2
+
+
+def test_ein_cd_aus_dem_repo_heraus_prueft_nicht_foreman(
+    hook: ModuleType,
+    zweig: Path,
+    fremd: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # cwd ist FOREMAN mit Code ohne Nachtrag — aber der Push laeuft woanders.
+    code, _ = _lauf(hook, f'cd "{fremd}" && git push origin feature/x', zweig, monkeypatch, capsys)
+    assert code == 0
+
+
+def test_getrennter_git_dir_und_work_tree(
+    hook: ModuleType,
+    zweig: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Der Arbeitsbaum liegt woanders als das Repo — was zaehlt, sind die Refs im Repo.
+    aussen = tmp_path / "aussen"
+    aussen.mkdir()
+    export = tmp_path / "export"
+    export.mkdir()
+    befehl = f'git --git-dir="{zweig / ".git"}" --work-tree="{export}" push origin feature/x'
+    code, _ = _lauf(hook, befehl, aussen, monkeypatch, capsys)
     assert code == 2
 
 

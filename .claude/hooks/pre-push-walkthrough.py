@@ -11,28 +11,32 @@
 #         zählt, ist der Stand, der das Haus verlässt. Dieselbe Stelle, an der
 #         auch die Registerzahlen geprüft werden (GROUND_TRUTH §23.1).
 #  Was zählt: nur Committetes, und zwar auf dem Ref, den der Push trägt — die
-#         Refspec (`origin feature/x`, `HEAD~1:refs/heads/y`, `--all`), sonst HEAD.
-#         Löschungen (`--delete`, `:ref`) und `--tags` tragen keinen Zweig. Eine
-#         offene Änderung am WALKTHROUGH ist kein Nachtrag (die Meldung sagt das),
-#         offener Anwendungscode kein Grund zu sperren. Das Repo ist das, in dem
-#         der Push läuft: `-C <pfad>` / `--work-tree` zählen, nicht nur `cwd`.
+#         Refspec (`origin feature/x`, `HEAD~1:refs/heads/y`, `--repo=origin x`,
+#         `--all`), sonst HEAD. Löschungen (`--delete`, `:ref`) und `--tags`
+#         tragen keinen Zweig. Eine offene Änderung am WALKTHROUGH ist kein
+#         Nachtrag (die Meldung sagt das), offener Anwendungscode kein Grund zu
+#         sperren. Das Repo ist das, in dem der Push läuft: ein `cd` im selben
+#         Befehl wird mitgeführt, git-Optionen (`-C`, `--git-dir`, `--work-tree`)
+#         gehen unverändert an jeden git-Aufruf — nicht nur `cwd`.
 #  Wie ein Push erkannt wird: je Teilbefehl, an seiner Form. Getrennt wird an
 #         && || ; | & ( ) ` und Zeilenumbruch ausserhalb von Anführungszeichen;
 #         Backslash ist Escape und Zeilenfortsetzung; Kommentare hinter # und
-#         Heredoc-Rümpfe (<<EOF … EOF) sind keine Befehle. Vor dem Programm dürfen
-#         Variablenzuweisungen (GIT_TERMINAL_PROMPT=0) und Schlüsselwörter (if, !,
-#         do) stehen; Vorschalter (timeout, sudo, env, command, winpty …) und
-#         Schalen (sh -c "…", cmd /c …) werden aufgelöst. Erkannt wird `git`
-#         (auch als Pfad oder git.exe), davor beliebige git-Optionen, dann `push`.
-#         Ein Trockenlauf stellt nur seinen Teilbefehl frei, und wie bei git
-#         gewinnt die letzte Option (`--no-dry-run`); -h/--help pushen nichts.
-#         Dieselbe Bauart wie die Zerlegung in AEOS, hier ohne Abhängigkeit,
-#         damit der Hook ohne .venv läuft.
+#         Heredoc-Rümpfe (<<EOF … EOF) sind keine Befehle, Umleitungen keine
+#         Argumente. Vor dem Programm dürfen Variablenzuweisungen
+#         (GIT_TERMINAL_PROMPT=0) und Schlüsselwörter (if, !, do) stehen;
+#         Vorschalter (timeout, sudo, env, command, winpty …) und Schalen
+#         (sh -c "…", cmd /c …) werden aufgelöst. Erkannt wird `git` (auch als
+#         Pfad oder git.exe), davor beliebige git-Optionen, dann `push`. Ein
+#         Trockenlauf stellt nur seinen Teilbefehl frei, und wie bei git gewinnt
+#         die letzte Option (`--no-dry-run`); -h/--help pushen nichts. Dieselbe
+#         Bauart wie die Zerlegung in AEOS, hier ohne Abhängigkeit, damit der
+#         Hook ohne .venv läuft.
 #  Grenzen, bewusst: ein git-Alias (`-c alias.p=push p`), ein Push aus Python
 #         (subprocess) oder mit `push` aus stdin (`echo push | xargs git`) wird
-#         nicht gesehen; ein WALKTHROUGH-Commit zählt an der Berührung, nicht am
-#         Inhalt; ist keine Basis zu main bestimmbar (fremdes Remote, Orphan),
-#         lässt der Hook durch. Belegt von drei Skeptikern am 07.09.2026.
+#         nicht gesehen; ein `cd` in einer Subshell wirkt auch danach; ein
+#         WALKTHROUGH-Commit zählt an der Berührung, nicht am Inhalt; ist keine
+#         Basis zu main bestimmbar (fremdes Remote, Orphan), lässt der Hook durch.
+#         Belegt von drei Skeptikern, Greptile und der AEOS-Messlatte, 07.09.2026.
 #  Ausweg: `# Walkthrough-Ausnahme: <grund>` im Push-Befehl — sichtbar im
 #         Transkript, damit die Ausnahme eine Entscheidung ist und kein Vergessen.
 #  Architektur-Einordnung: Projekt-Hook (Claude Code PreToolUse, Bash). Kein
@@ -79,14 +83,17 @@ VORSCHALTER = frozenset(
 SCHLUESSELWOERTER = frozenset({"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}"})
 VARIABLE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+UMLEITUNG_ALLEIN = re.compile(r"^\d*(>>?|<<?|>&|<&|&>)\d*$")  # `>`, `2>`, `>>` — das Ziel folgt
+UMLEITUNG_MIT_ZIEL = re.compile(r"^\d*[<>]{1,2}\S")  # `>datei`, `2>/dev/null`, `<<EOF`
 TRENNER = frozenset("\n;|&()`")
 
 
 class Push(NamedTuple):
-    """Ein `git push`-Teilbefehl: wo er läuft (aus -C/--work-tree) und womit."""
+    """Ein `git push`-Teilbefehl: git-Optionen, Push-Argumente und das Verzeichnis aus `cd`."""
 
-    verzeichnis: str | None
+    optionen: tuple[str, ...]
     argumente: tuple[str, ...]
+    verzeichnis: str | None
 
 
 # --- Zerlegung: was ein echter Push ist ---------------------------------------
@@ -158,6 +165,21 @@ def _woerter(teil: str) -> list[str]:
         return teil.split()
 
 
+def _ohne_umleitungen(woerter: list[str]) -> list[str]:
+    """`> datei`, `2>/dev/null`, `<<EOF` sind keine Argumente — und ihr Ziel auch nicht."""
+    aus: list[str] = []
+    i = 0
+    while i < len(woerter):
+        if UMLEITUNG_ALLEIN.match(woerter[i]):
+            i += 2
+        elif UMLEITUNG_MIT_ZIEL.match(woerter[i]):
+            i += 1
+        else:
+            aus.append(woerter[i])
+            i += 1
+    return aus
+
+
 def _programmname(wort: str) -> str:
     name = wort.replace("\\", "/").rsplit("/", 1)[-1].lower()
     return name[:-4] if name.endswith(".exe") else name
@@ -176,31 +198,19 @@ def _ohne_vorspann(woerter: list[str]) -> list[str]:
 
 
 def _push(woerter: list[str]) -> Push | None:
-    """Der Push, wenn die Wörter ein `git [optionen] push …` sind; sonst None."""
+    """Der Push, wenn die Wörter ein `git [optionen] push …` sind; sonst None.
+
+    Die git-Optionen bleiben wörtlich erhalten und gehen später an jeden
+    git-Aufruf — git löst `-C`, `--git-dir` und `--work-tree` selbst auf.
+    """
     if not woerter or not _ist_git(woerter[0]):
         return None
-    verzeichnis: str | None = None
     i = 1
     while i < len(woerter) and woerter[i].startswith("-"):
-        wort = woerter[i]
-        if wort in GIT_OPTION_MIT_WERT:
-            wert = woerter[i + 1] if i + 1 < len(woerter) else ""
-            if wort == "-C":
-                verzeichnis = str(Path(verzeichnis) / wert) if verzeichnis else wert
-            elif wort == "--work-tree":
-                verzeichnis = wert
-            elif wort == "--git-dir" and verzeichnis is None:
-                verzeichnis = str(Path(wert).parent)
-            i += 2
-            continue
-        if wort.startswith("--work-tree="):
-            verzeichnis = wort.split("=", 1)[1]
-        elif wort.startswith("--git-dir=") and verzeichnis is None:
-            verzeichnis = str(Path(wort.split("=", 1)[1]).parent)
-        i += 1
+        i += 2 if woerter[i] in GIT_OPTION_MIT_WERT else 1
     if i >= len(woerter) or woerter[i] != "push":
         return None
-    return Push(verzeichnis, tuple(woerter[i + 1 :]))
+    return Push(tuple(woerter[1:i]), tuple(woerter[i + 1 :]), None)
 
 
 def _pushes_aus_woertern(woerter: list[str]) -> list[Push]:
@@ -230,11 +240,43 @@ def _pushes_aus_woertern(woerter: list[str]) -> list[Push]:
     return gefunden
 
 
+def _cd_ziel(woerter: list[str]) -> tuple[bool, str | None]:
+    """(ist ein cd/pushd, Ziel). Ziel None: unbekannt (`cd`, `cd -`) oder unverändert (`$PWD`)."""
+    if not woerter or woerter[0] not in ("cd", "pushd"):
+        return False, None
+    ziele = [w for w in woerter[1:] if not w.startswith("-") or w == "-"]
+    if not ziele or ziele[0] in ("-", ".", "$PWD", "${PWD}"):
+        return True, None
+    ziel = ziele[0]
+    if ziel in ("~", "$HOME", "${HOME}"):
+        return True, str(Path.home())
+    if ziel.startswith("~/"):
+        return True, str(Path.home() / ziel[2:])
+    return True, ziel
+
+
+def _verbinde(basis: str | None, neu: str | None) -> str | None:
+    if neu is None:
+        return basis
+    # `/abs` ist in Git Bash absolut, auch wenn Windows keinen Laufwerksbuchstaben sieht.
+    if basis is None or Path(neu).is_absolute() or neu.startswith(("/", "\\")):
+        return neu
+    return str(Path(basis) / neu)
+
+
 def _pushes(befehl: str) -> list[Push]:
-    """Alle `git push`-Teilbefehle, Vorschalter und Schalen aufgelöst."""
+    """Alle `git push`-Teilbefehle — Vorschalter und Schalen aufgelöst, `cd` mitgeführt."""
     gefunden: list[Push] = []
+    verzeichnis: str | None = None
     for teil in _teilbefehle(befehl):
-        gefunden.extend(_pushes_aus_woertern(_woerter(teil)))
+        woerter = _ohne_umleitungen(_ohne_vorspann(_woerter(teil)))
+        ist_cd, ziel = _cd_ziel(woerter)
+        if ist_cd:
+            if ziel is not None or not woerter[1:]:
+                verzeichnis = _verbinde(verzeichnis, ziel) if ziel else None
+            continue
+        for push in _pushes_aus_woertern(woerter):
+            gefunden.append(push._replace(verzeichnis=_verbinde(verzeichnis, push.verzeichnis)))
     return gefunden
 
 
@@ -265,7 +307,7 @@ def enthaelt_echten_push(befehl: str) -> bool:
 
 
 def _positionen_und_flags(argumente: tuple[str, ...]) -> tuple[list[str], set[str]]:
-    """Trennt Push-Argumente in Positionen (Remote, Refspecs) und Flags."""
+    """Trennt Push-Argumente in Positionen (Remote, Refspecs) und Flags (Name ohne Wert)."""
     positionen: list[str] = []
     flags: set[str] = set()
     i = 0
@@ -275,9 +317,10 @@ def _positionen_und_flags(argumente: tuple[str, ...]) -> tuple[list[str], set[st
             positionen.extend(argumente[i + 1 :])
             break
         if a in PUSH_OPTION_MIT_WERT:
+            flags.add(a)
             i += 1
         elif a.startswith("-"):
-            flags.add(a)
+            flags.add(a.split("=", 1)[0])
         else:
             positionen.append(a)
         i += 1
@@ -287,37 +330,23 @@ def _positionen_und_flags(argumente: tuple[str, ...]) -> tuple[list[str], set[st
 def _quellen(argumente: tuple[str, ...]) -> list[str]:
     """Die lokalen Refs, die dieser Push trägt.
 
-    Ohne Refspec ist es HEAD; `--all`/`--mirror`/`--branches` heisst jeder
-    lokale Zweig (`*`); Löschungen und reine Tag-Pushes tragen keinen Zweig.
+    Ohne Refspec ist es HEAD; `--all`/`--mirror`/`--branches` und ein Muster wie
+    `refs/heads/*` heissen jeder lokale Zweig (`*`); Löschungen und reine
+    Tag-Pushes tragen keinen Zweig. Mit `--repo` ist jede Position eine Refspec.
     """
     positionen, flags = _positionen_und_flags(argumente)
     if flags & {"--delete", "-d"}:
         return []
     if flags & {"--all", "--mirror", "--branches"}:
         return ["*"]
-    refspecs = positionen[1:]  # die erste Position ist das Remote
+    refspecs = positionen if "--repo" in flags else positionen[1:]
     if not refspecs:
         return [] if "--tags" in flags else ["HEAD"]
     quellen = [refspec.lstrip("+").split(":", 1)[0] for refspec in refspecs]
-    return [q for q in quellen if q]
+    return ["*" if "*" in q else q for q in quellen if q]
 
 
 # --- Was den Rechner verlässt ------------------------------------------------
-
-
-def _git(*args: str, cwd: Path) -> str:
-    try:
-        ergebnis = subprocess.run(
-            ["git", *args],
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-    except OSError:  # cwd gibt es nicht, git fehlt — dann gibt es auch nichts zu prüfen
-        return ""
-    return ergebnis.stdout if ergebnis.returncode == 0 else ""
 
 
 def _pfade(ausgabe: str) -> set[str]:
@@ -325,48 +354,83 @@ def _pfade(ausgabe: str) -> set[str]:
     return {d.replace("\\", "/") for d in ausgabe.split("\0") if d}
 
 
-def _basis(wurzel: Path, ref: str) -> str:
-    return (
-        _git("merge-base", ref, "origin/main", cwd=wurzel).strip()
-        or _git("merge-base", ref, "main", cwd=wurzel).strip()
-    )
+class Repo(NamedTuple):
+    """Wo und mit welchen git-Optionen die Prüfung läuft — so, wie der Push selbst liefe."""
 
+    ort: Path
+    optionen: tuple[str, ...]
 
-def _committete_dateien(wurzel: Path, ref: str) -> set[str]:
-    """Was `ref` gegenüber main mitbringt — nur Committetes, denn nur das pusht.
+    def _lauf(self, *args: str) -> subprocess.CompletedProcess[str] | None:
+        try:
+            return subprocess.run(
+                ["git", *self.optionen, *args],
+                cwd=self.ort,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except OSError:  # Verzeichnis gibt es nicht, git fehlt — dann gibt es nichts zu prüfen
+            return None
 
-    `--no-renames`: eine Verschiebung aus src/foreman heraus zeigt beide Seiten,
-    sonst verschwände der Weggang hinter dem Zielpfad.
-    """
-    basis = _basis(wurzel, ref)
-    if not basis:
-        return set()
-    return _pfade(_git("diff", "--name-only", "-z", "--no-renames", f"{basis}..{ref}", cwd=wurzel))
+    def git(self, *args: str) -> str:
+        ergebnis = self._lauf(*args)
+        return ergebnis.stdout if ergebnis is not None and ergebnis.returncode == 0 else ""
 
+    def ok(self, *args: str) -> bool:
+        ergebnis = self._lauf(*args)
+        return ergebnis is not None and ergebnis.returncode == 0
 
-def _offene_dateien(wurzel: Path) -> set[str]:
-    """Vorgemerkt oder geändert, aber nicht committet — für den Hinweis, nicht fürs Gate."""
-    return _pfade(_git("diff", "--name-only", "-z", "HEAD", cwd=wurzel))
+    def basis(self, ref: str) -> str:
+        return (
+            self.git("merge-base", ref, "origin/main").strip()
+            or self.git("merge-base", ref, "main").strip()
+        )
 
+    def committete_dateien(self, ref: str) -> set[str]:
+        """Was `ref` gegenüber main mitbringt — nur Committetes, denn nur das pusht.
 
-def _zweige(wurzel: Path) -> list[str]:
-    return _git("for-each-ref", "--format=%(refname:short)", "refs/heads", cwd=wurzel).split()
+        `--no-renames`: eine Verschiebung aus src/foreman heraus zeigt beide
+        Seiten, sonst verschwände der Weggang hinter dem Zielpfad.
+        """
+        basis = self.basis(ref)
+        if not basis:
+            return set()
+        return _pfade(self.git("diff", "--name-only", "-z", "--no-renames", f"{basis}..{ref}"))
+
+    def offene_dateien(self) -> set[str]:
+        """Vorgemerkt oder geändert, aber nicht committet — für den Hinweis, nicht fürs Gate."""
+        return _pfade(self.git("diff", "--name-only", "-z", "HEAD"))
+
+    def zweige(self) -> list[str]:
+        return self.git("for-each-ref", "--format=%(refname:short)", "refs/heads").split()
+
+    def ist_ausgecheckt(self, ref: str) -> bool:
+        """Zeigt `ref` auf den Stand der Arbeitskopie? Nur dann ist ein offener Nachtrag ein Hinweis."""
+        kopf = self.git("rev-parse", "--verify", "HEAD").strip()
+        return bool(kopf) and self.git("rev-parse", "--verify", ref).strip() == kopf
+
+    def name(self, ref: str) -> str:
+        return self.git("rev-parse", "--abbrev-ref", ref).strip() or ref
 
 
 def _bauend(dateien: set[str]) -> list[str]:
     return sorted(d for d in dateien if d.startswith(BAUENDE_PFADE) and not NICHT_BAUEND.search(d))
 
 
-def _repo_wurzel(cwd: Path, push: Push) -> Path | None:
+def _repo(cwd: Path, push: Push) -> Repo | None:
+    """Das Repo, in dem dieser Push läuft — oder None, wenn es nicht FOREMAN ist."""
     ort = cwd
     if push.verzeichnis:
         kandidat = cwd / push.verzeichnis
         if kandidat.is_dir():
             ort = kandidat
-    wurzel = _git("rev-parse", "--show-toplevel", cwd=ort).strip()
-    if not wurzel or not (Path(wurzel) / WALKTHROUGH).exists():
-        return None  # anderes Repo — der Hook ist nur für FOREMAN gedacht
-    return Path(wurzel)
+    repo = Repo(ort, push.optionen)
+    # FOREMAN erkennt man am WALKTHROUGH im Repo selbst — nicht an einer Datei im
+    # Arbeitsverzeichnis, das bei --work-tree woanders liegen kann.
+    if not repo.ok("cat-file", "-e", f"HEAD:{WALKTHROUGH}"):
+        return None
+    return repo
 
 
 def main() -> int:
@@ -383,33 +447,26 @@ def main() -> int:
 
     cwd = Path(eingabe.get("cwd") or Path.cwd())
     for push in pushes:
-        wurzel = _repo_wurzel(cwd, push)
-        if wurzel is None:
+        repo = _repo(cwd, push)
+        if repo is None:
             continue
         quellen = _quellen(push.argumente)
-        if quellen == ["*"]:
-            quellen = _zweige(wurzel)
+        if "*" in quellen:
+            quellen = repo.zweige()
         for quelle in quellen:
-            committet = _committete_dateien(wurzel, quelle)
+            committet = repo.committete_dateien(quelle)
             bauend = _bauend(committet)
             if not bauend or WALKTHROUGH in committet:
                 continue
-            return _sperre(wurzel, quelle, bauend)
+            return _sperre(repo, quelle, bauend)
     return 0
 
 
-def _ist_ausgecheckt(wurzel: Path, ref: str) -> bool:
-    """Zeigt `ref` auf den Stand der Arbeitskopie? Nur dann ist ein offener Nachtrag ein Hinweis."""
-    kopf = _git("rev-parse", "--verify", "HEAD", cwd=wurzel).strip()
-    return bool(kopf) and _git("rev-parse", "--verify", ref, cwd=wurzel).strip() == kopf
-
-
-def _sperre(wurzel: Path, quelle: str, bauend: list[str]) -> int:
-    name = _git("rev-parse", "--abbrev-ref", quelle, cwd=wurzel).strip() or quelle
+def _sperre(repo: Repo, quelle: str, bauend: list[str]) -> int:
     hinweis = (
         f"  {WALKTHROUGH} ist geändert, aber nicht committet — der Push trägt den Stand "
         "von HEAD, nicht den der Arbeitskopie.\n"
-        if _ist_ausgecheckt(wurzel, quelle) and WALKTHROUGH in _offene_dateien(wurzel)
+        if repo.ist_ausgecheckt(quelle) and WALKTHROUGH in repo.offene_dateien()
         else ""
     )
     try:
@@ -417,9 +474,9 @@ def _sperre(wurzel: Path, quelle: str, bauend: list[str]) -> int:
     except (AttributeError, ValueError, OSError):
         pass  # umgeleiteter Strom (Kontrollpunkt, Tests) — die Meldung zählt, nicht die Kodierung
     print(
-        f"WALKTHROUGH-Pflicht: Der Zweig {name} bringt Anwendungscode mit, docs/WALKTHROUGH.md "
-        "bleibt unberührt. Die Spielregel im Dokumentkopf verlangt den Nachtrag im "
-        "selben Arbeitsgang.\n"
+        f"WALKTHROUGH-Pflicht: Der Zweig {repo.name(quelle)} bringt Anwendungscode mit, "
+        "docs/WALKTHROUGH.md bleibt unberührt. Die Spielregel im Dokumentkopf verlangt den "
+        "Nachtrag im selben Arbeitsgang.\n"
         f"  Betroffen ({len(bauend)}): "
         + ", ".join(bauend[:8])
         + (" …" if len(bauend) > 8 else "")
