@@ -31,7 +31,7 @@ from typing import NoReturn
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from foreman.db.models import FailurePredictionRecord, FailureRecommendationRecord, Machine
-from foreman.ingestion.semantic import record_semantic_event
+from foreman.ingestion.semantic import bezugsfelder, lade_anlagenbezug, record_semantic_event
 from foreman.llm import GroundingViolation, LLMGateway, Task, check_grounding
 from foreman.logging_setup import ERROR, REASON, get_logger
 from foreman.observability.metrics import (
@@ -362,13 +362,20 @@ class RecommendationService:
         """
         payload = {
             "reasoner": REASONER_NAME,
-            # Herkunft wie bei den Ingestion-Ereignissen (§12.4). Eine Empfehlung
-            # ist keine Archiv-Quelle und hat keine eigene Zeile — `source_id`
-            # bleibt leer statt geraten; die Vorhersage steht separat darunter.
+            # Herkunft wie bei den Ingestion-Ereignissen (§12.4). Die Empfehlung HAT
+            # eine eigene Zeile — `_persist` läuft vor `_mirror` —, und ihre Nummer
+            # ist der Rückweg und macht den Satz einmalig (C-104, C-124). Die
+            # Vorhersage steht separat darunter.
             "source_type": "failure_recommendation",
-            "source_id": None,
+            "source_id": record.id,
             "prediction_id": recommendation.prediction_id,
             "machine_id": recommendation.machine_id,
+            # Anlagenbezug wie bei jedem gespiegelten Ereignis — immer alle vier Felder.
+            **bezugsfelder(
+                await lade_anlagenbezug(
+                    self.session, machine_id=recommendation.machine_id, component_id=None
+                )
+            ),
             "decision": recommendation.decision,
             "horizon_h": recommendation.horizon_h,
             "referenced_source_ids": list(recommendation.referenced_source_ids),

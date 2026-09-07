@@ -34,7 +34,7 @@ from foreman.db.models import (
     WorkerNote,
 )
 from foreman.embeddings import EmbeddingProvider
-from foreman.ingestion.semantic import record_semantic_event
+from foreman.ingestion.semantic import bezugsfelder, lade_anlagenbezug, record_semantic_event
 from foreman.llm import GroundingReport, LLMGateway, Task
 from foreman.logging_setup import ERROR, REASON, get_logger
 from foreman.notes import embed_and_search
@@ -476,14 +476,22 @@ class EventChainService:
         Gedächtnis-Substrat). Best-effort über F3 `record_semantic_event`."""
         payload = {
             "reasoner": REASONER_NAME,
-            # Herkunft wie bei den Ingestion-Ereignissen (§12.4). Eine Kette ist
-            # keine Archiv-Quelle und hat keine eigene Zeile — die Erklärung ist
-            # ein Pydantic-Ergebnis, kein Datensatz. `source_id` bleibt deshalb
-            # leer statt geraten; der Anker-Alarm steht separat darunter.
+            # Herkunft wie bei den Ingestion-Ereignissen (§12.4). Die Erklärung HAT
+            # eine eigene Zeile — `_persist` läuft vor `_mirror` —, und ihre Nummer
+            # ist der Rückweg und macht den Satz einmalig (C-104, C-124). Der
+            # Anker-Alarm steht separat darunter.
             "source_type": "event_chain",
-            "source_id": None,
+            "source_id": record.id,
             "anchor_alarm_id": explanation.anchor_alarm_id,
             "machine_id": explanation.machine_id,
+            # Anlagenbezug wie bei jedem gespiegelten Ereignis — immer alle vier
+            # Felder, auch leer. Ohne die Kennung nennt der Satz nur die Nummer, und
+            # die Gegenstelle bildet keinen Knoten, den ein anderer Eintrag trifft.
+            **bezugsfelder(
+                await lade_anlagenbezug(
+                    self.session, machine_id=explanation.machine_id, component_id=None
+                )
+            ),
             "event_count": len(chain.events),
             "confidence": explanation.confidence,
             "is_hypothesis": explanation.is_hypothesis,

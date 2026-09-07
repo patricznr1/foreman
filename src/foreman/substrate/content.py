@@ -228,18 +228,38 @@ def _drift_detected(payload: Mapping[str, Any]) -> str:
 
 
 def _event_chain(payload: Mapping[str, Any]) -> str:
+    """Ereigniskette — mit Datensatznummer, Anlagenkennung und Entstehungszeit.
+
+    WARUM DIESELBE FORM WIE ALLE ANDEREN (Befund 03./04.09.2026, beidseitig
+    gemessen, C-124): Bis dahin stand hier „an Maschine <id>“ fest — ohne Kennung,
+    ohne Klammer, ohne Nummer. Zwei Folgen: Die Alias-Regel der Gegenstelle bekam
+    von dieser Art nie eine Klammer zu sehen, und jede erneute Rekonstruktion
+    derselben Kette mit gleichen Zählern ergab denselben Text. Den verwirft der
+    Plastic-Store der Gegenstelle still als Hash-Dublette — samt allen Metadaten,
+    die der Satz mitbringt (created_at, recall_used, occurred_at). Patrics Kette
+    vom 03.09. war byte-gleich mit dem Spiegel vom 20.08. und kam nie an.
+
+    Die Entstehungszeit in der Klammer macht jeden Satz einmalig; die
+    Datensatznummer ist der Rückweg auf die Erklärungszeile (C-104).
+
+    WEICH für den Altbestand: Ohne `source_id`, `machine_external_id` und
+    `created_at` entsteht wortgleich der bisherige Satz — der Nachlauf schreibt
+    alte Zeilen nicht um. `test_erkenntnis_saetze.py` fordert beides ein.
+    """
     hint = " (Hypothese)" if payload["is_hypothesis"] else ""
     return (
-        f"Ereigniskette zu Alarm {payload['anchor_alarm_id']} an Maschine "
-        f"{payload['machine_id']}: {payload['event_count']} Ereignisse, "
-        f"Konfidenz {payload['confidence']}{hint}."
+        f"Ereigniskette {_datensatz(payload)}zu Alarm {payload['anchor_alarm_id']} an "
+        f"{_gegenstand(payload, zusatz=_freitext(payload.get('created_at')))}: "
+        f"{payload['event_count']} Ereignisse, Konfidenz {payload['confidence']}{hint}."
     )
 
 
 def _failure_recommendation(payload: Mapping[str, Any]) -> str:
+    """Werker-Empfehlung — dieselbe Form wie die Ereigniskette, aus demselben Grund."""
     return (
-        f"Werker-Empfehlung zu Vorhersage {payload['prediction_id']} an Maschine "
-        f"{payload['machine_id']}: Entscheidung {payload['decision']}, Horizont "
+        f"Werker-Empfehlung {_datensatz(payload)}zu Vorhersage {payload['prediction_id']} an "
+        f"{_gegenstand(payload, zusatz=_freitext(payload.get('created_at')))}: "
+        f"Entscheidung {payload['decision']}, Horizont "
         f"{payload['horizon_h']} h (simulationsbasiert, nicht validiert)."
     )
 
