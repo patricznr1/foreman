@@ -64,7 +64,7 @@ export function MemoryResultList({ result, roleView, announce }: MemoryResultLis
           role="status"
           className="flex min-h-24 items-center rounded-lg border border-line-subtle bg-surface-raised p-4 text-body text-fg-muted"
         >
-          Keine Treffer im Archiv — versuchen Sie ein anderes Stichwort.
+          Keine Treffer im Archiv — ein anderes Stichwort versuchen.
         </div>
       ) : (
         <>

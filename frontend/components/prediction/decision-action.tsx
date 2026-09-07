@@ -86,7 +86,7 @@ export function DecisionAction({ decision, onDecide, pending = false }: Decision
           ))}
         </div>
         <p className="text-caption text-fg-muted">
-          Ihre Entscheidung wird protokolliert — die Anlage wird dadurch nicht geschaltet.
+          Die Entscheidung wird protokolliert — die Anlage wird dadurch nicht geschaltet.
         </p>
       </div>
     );

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- FOREMAN App-Icon: ein Gedächtniskern (Teal) auf der ruhigen Grundfläche —
+       dasselbe Motiv wie das Favicon der Projektseite, damit Demo und Seite im
+       Browser-Tab gleich aussehen. Next.js bindet app/icon.svg automatisch ein. -->
+  <rect width="32" height="32" rx="6" fill="#0A0E14"/>
+  <circle cx="16" cy="16" r="7" fill="none" stroke="#2DD4BF" stroke-width="2"/>
+  <circle cx="16" cy="16" r="2.5" fill="#2DD4BF"/>
+</svg>

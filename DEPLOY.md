@@ -1,26 +1,33 @@
 <!--
 ============================================================
  FOREMAN — DEPLOY.md
- Zweck: Schritt-für-Schritt-Provisionierung von FOREMAN auf Railway (Etappe 1).
-        Für einen Menschen folgbar (Etappe 1b). Kein Secret im Repo.
+ Zweck: Schritt-für-Schritt-Provisionierung von FOREMAN auf Railway — Etappe 1
+        (Backend, TimescaleDB, Frontend), Etappe 2 (Substrat, §7) und Etappe 3
+        (Live-Worker, §8). Für einen Menschen folgbar. Kein Secret im Repo.
  Architektur-Einordnung: Betrieb (Railway, Schicht 0). Ergänzt railway.toml
-        (Backend) + frontend/railway.toml (Frontend) um das, was config-as-code
-        NICHT kann: Service-Anlage, Variablen/Secrets, Service-Referenzen.
+        (Backend), frontend/railway.toml (Frontend) und railway.worker.toml
+        (Live-Worker) um das, was config-as-code NICHT kann: Service-Anlage,
+        Variablen/Secrets, Service-Referenzen, eigene Domain.
 ============================================================
 -->
 
-# FOREMAN auf Railway — Deploy-Anleitung (Etappe 1)
+# FOREMAN auf Railway — Deploy-Anleitung
+
+**Stand:** 2026-09-07 · Etappen 1–3 ausgerollt. Die Vorführinstanz läuft unter
+**https://www.foreman-demo.de** (eigene Domain, §3.4a; der nackte Name leitet per HTTP dorthin um).
 
 **Ziel von Etappe 1:** FOREMAN **Backend + TimescaleDB + Frontend** online und
-vorführbar. Das Gedächtnis-Substrat (NEXUS) bleibt **leer** (`SUBSTRATE_BASE_URL=""`,
-Fallback) — es kommt erst in **Etappe 2** dazu. Die LLM-Reasoner laufen über die
+vorführbar. Das Gedächtnis-Substrat (NEXUS) ist seit **Etappe 2** angebunden (§7,
+gemessen am 03.09.2026); für eine Erstinstallation darf `SUBSTRATE_BASE_URL` leer
+bleiben (Fallback), bis §7 durch ist. Die LLM-Reasoner laufen über die
 **Anthropic-Cloud** (`cloud_only`, kein Ollama im Container).
 
-> **Warum drei Services statt eines `railway.toml` mit drei Blöcken?**
+> **Warum vier Services statt eines `railway.toml` mit vier Blöcken?**
 > Railways config-as-code (`railway.toml`) ist **single-service** (nur `build`/
 > `deploy`) und verwaltet **keine** Variablen. Darum:
 > - `railway.toml` (Repo-Root) konfiguriert den **Backend**-Service,
 > - `frontend/railway.toml` den **Frontend**-Service,
+> - `railway.worker.toml` den **Live-Worker**-Service (§8.3),
 > - **TimescaleDB**, alle **Variablen/Secrets** und die **DATABASE_URL-Referenz**
 >   stehen hier in dieser Anleitung (manuelle Provisionierung).
 
@@ -134,9 +141,12 @@ Warten, bis der DB-Service **läuft**.
    | --- | --- |
    | `FOREMAN_EMBED_PRIORITY` | `st_only` |
 
-   > Ohne Ollama greift der sentence-transformers-Fallback (`BAAI/bge-m3`, CPU —
-   > schwer/langsam). `st_only` spart den toten Ollama-Versuch. Semantische
-   > Notiz-Suche darf in Etappe 1 degradiert sein; Dauerlast später über Ollama/GPU.
+   > Ohne Ollama greift der sentence-transformers-Pfad — seit dem 28.08.2026 mit
+   > `Snowflake/snowflake-arctic-embed-l-v2.0` (Code-Default, `embeddings/config.py`),
+   > das ins Backend-Image vorgeladen ist (`Dockerfile`, `HF_HOME=/opt/hf-cache`).
+   > `st_only` spart den toten Ollama-Versuch. `FOREMAN_EMBED_ST_MODEL` **nicht**
+   > auf ein anderes Modell setzen, ohne den Archiv-Cutoff neu zu erheben — er ist
+   > auf dieses Modell kalibriert (GROUND_TRUTH §15). Dauerlast später über Ollama/GPU.
 
    **Substrat (NEXUS) — Etappe 2, LEER lassen**:
    | Variable | Wert |
@@ -180,6 +190,40 @@ Warten, bis der DB-Service **läuft**.
 4. **Öffentliche Domain** generieren → das ist die FOREMAN-URL für den Browser.
 5. **Verifizieren:** `https://<frontend-domain>/login` lädt die Login-Maske.
 
+### 3.4a Eigene Domain (Demo: `foreman-demo.de`)
+
+Die Vorführinstanz hängt seit dem 07.09.2026 an einer eigenen Domain. Railway
+kennt nur **CNAME**-Ziele, keine festen IP-Adressen — das bestimmt den Aufbau:
+
+1. **Bei Railway:** Frontend-Service → Settings → Networking → *Custom Domain*, oder
+   per CLI `railway domain www.foreman-demo.de -s frontend --json`. Die Antwort nennt
+   das CNAME-Ziel (`<kennung>.up.railway.app`) und einen Verify-Token.
+2. **Beim DNS-Anbieter (Ionos)** zwei Records für `www`: `CNAME www → <kennung>.up.railway.app`
+   und `TXT _railway-verify.www → railway-verify=<token>`. Beide sind Pflicht; ohne
+   den TXT bleibt die Domain unverifiziert und antwortet mit 404.
+3. **Der nackte Name** (`foreman-demo.de`) bekommt bei Ionos **keinen** CNAME — Ionos
+   lässt ihn auf `@` nicht zu, und Railway bietet dort weder ALIAS noch A-Record.
+   Stattdessen eine Ionos-**Domain-Weiterleitung** (Verwendungsart anpassen →
+   Domain-Weiterleitung → beliebige URL `https://www.foreman-demo.de`, HTTP-Redirect,
+   Option „auch für www" **aus**). Die Weiterleitung läuft über `http://`; über
+   `https://` bräuchte der nackte Name ein bei Ionos zugewiesenes Zertifikat, das
+   dort kostenpflichtig ist — **bewusst nicht gekauft.** Die gedruckte Adresse ist
+   deshalb überall `www.foreman-demo.de`; der nackte Name bleibt der
+   Bequemlichkeitsweg für Leute, die ihn eintippen (Browser fallen bei
+   fehlgeschlagenem `https://` auf `http://` zurück und landen über die
+   Weiterleitung bei `www`).
+4. **Warten,** bis Railway die Domain verifiziert und das Zertifikat ausgestellt hat
+   (Minuten bis eine Stunde; bis dahin antwortet `https://www.…` mit einem
+   TLS-Alert). Dann `https://www.foreman-demo.de/login` prüfen.
+
+**Was der Wechsel im Code NICHT braucht** (geprüft 07.09.2026): Das Session-Cookie
+trägt kein `domain`-Attribut, die CSP-Regel `connect-src` führt weiter nur die
+Backend-Domain für den WebSocket, der Healthcheck spricht den Container direkt an,
+und das Backend prüft weder Host noch Origin. Einzige bewusste Entscheidung: Der
+HSTS-Header mit `includeSubDomains; preload` bindet unter der eigenen Domain erstmals
+alle Unterdomänen — belassen, solange die Domain nur die Demo trägt, und **nicht**
+bei hstspreload.org einreichen (security/findings.yaml, F-012).
+
 ---
 
 ## 4. Einmal-Schritt: Park-Seed (Demo-Daten)
@@ -218,8 +262,9 @@ Befehl anlegen.
 
 ### Die öffentliche Demo-Instanz
 
-Für die Showcase-Instanz ist ein Manager-Konto **bewusst geteilt** — die Zugangsdaten
-stehen im [README](README.md#try-it-live) und sind kein Versehen. Manager ist dort die
+Die Showcase-Instanz läuft unter `https://www.foreman-demo.de` (§3.4a). Für sie ist ein
+Manager-Konto **bewusst geteilt** — die Zugangsdaten stehen im
+[README](README.md#try-it-live) und sind kein Versehen. Manager ist dort die
 richtige Wahl, weil dieses Profil laut §21.18 das Vorführprofil ist: Es erreicht jede
 Sicht und darf die Reasoner anstoßen, ohne dass ein Besucher das Konto wechseln muss.
 
@@ -254,10 +299,11 @@ Wer FOREMAN so betreibt, sollte zwei Dinge bedenken:
 
 ---
 
-## 7. Etappe 2 — Substrat (NEXUS) anbinden *(Platzhalter, später)*
+## 7. Etappe 2 — Substrat (NEXUS) anbinden *(ausgerollt; §7.1 ist gemessen)*
 
-In Etappe 1 läuft FOREMAN bewusst **ohne** Gedächtnis-Substrat. Etappe 2 hängt es
-sauber dazu:
+Eine Erstinstallation läuft zunächst **ohne** Gedächtnis-Substrat (Etappe 1). Etappe 2
+hängt es sauber dazu — für die Vorführinstanz ist das geschehen, der Betriebsablauf
+in §7.1 stammt aus der Messung vom 03.09.2026:
 
 - **Dedizierte FOREMAN-NEXUS-Instanz** (eigenes Railway-Setup, eigener Token, nur
   Industrie-Inhalte) — **nicht** gegen die persönliche Production-NEXUS (IP-/
@@ -323,8 +369,6 @@ historischen Kontext, kein Abbruch. Schreiben landet lokal mit `substrate_ref=NU
 wird nachgeholt. Seit PR #160 tragen auch Ereigniskette und Empfehlung ihre
 Entstehungszeit, ein späteres Nachholen verschiebt sie nicht mehr. `/metrics` steht nach
 dem Ausrollen auf 0 — vorher abziehen, wenn Zahlen gebraucht werden.
-
-Details bei Erreichen von Etappe 2.
 
 ---
 

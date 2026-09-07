@@ -19,7 +19,7 @@ export interface MachineCardGridProps {
 
 export function MachineCardGrid({ cards }: MachineCardGridProps) {
   if (cards.length === 0) {
-    return <p className="text-body text-fg-muted">Keine Maschinen in deinem Zugriff.</p>;
+    return <p className="text-body text-fg-muted">Keine Maschinen im eigenen Zugriff.</p>;
   }
   const groups = groupByStage(cards);
   return (

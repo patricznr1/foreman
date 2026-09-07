@@ -198,8 +198,8 @@ function TopologyContent({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <NodeGroup title="Eingänge" nodes={model.inputs} />
         <NodeGroup title="Gedächtnis-Substrat" nodes={model.substrate} />
-        <NodeGroup title="Schnittstelle (F7)" nodes={model.mcp} />
-        <NodeGroup title="Geplant — nicht verbunden ([VISION])" nodes={model.vision} />
+        <NodeGroup title="MCP-Schnittstelle" nodes={model.mcp} />
+        <NodeGroup title="Geplant — nicht verbunden" nodes={model.vision} />
       </div>
     </div>
   );
@@ -216,8 +216,8 @@ function AuditPanel() {
     <div className="flex flex-col gap-3">
       <h2 className="text-h2 text-fg-primary">Audit-Trail</h2>
       <p className="text-caption text-fg-muted">
-        Nachweis abgerufener Erkenntnisse und Human-in-the-Loop-Entscheidungen. Nur lesend — der Audit
-        protokolliert, löst nichts aus. Akteure erscheinen ausschließlich pseudonym.
+        Nachweis abgerufener Erkenntnisse und von Menschen bestätigter Entscheidungen. Nur lesend — der
+        Audit protokolliert, löst nichts aus. Akteure erscheinen ausschließlich pseudonym.
       </p>
       <AuditFilters initial={filter} onApply={setFilter} />
       <FiveState state={state} label="Audit-Trail">

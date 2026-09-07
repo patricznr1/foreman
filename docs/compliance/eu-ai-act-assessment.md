@@ -1,6 +1,6 @@
 # EU-AI-Act-Compliance-Assessment: FOREMAN
 
-> Compliance-Selbsteinschätzung · Stand Juni 2026 · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage)
+> Compliance-Selbsteinschätzung · Stand Juni 2026, Nachtrag September 2026 (Bau-Stand, Anbieter-Rolle, Fristenvorbehalt) · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage) · maschinenprüfbare Fassung: `compliance/scope.yaml` (eingestuft 26.08.2026, Register C-126)
 > Gegenstand: Einordnung der FOREMAN-Plattform unter die Verordnung (EU) 2024/1689 (KI-Verordnung / „AI Act").
 > **Rechtlicher Vorbehalt:** Dieses Dokument ist eine fundierte Selbsteinschätzung zur internen Orientierung und zur Darstellung des methodischen Vorgehens nach außen. Es ist **keine Rechtsberatung**. Die verbindliche Einstufung ist vor einem echten Produktiveinsatz juristisch (Fachanwalt / Konformitätsbewertungsstelle) abzusichern (siehe Abschluss).
 > **Hinweis zur Architektur (IP):** Das Langzeitgedächtnis ist ein **externer Dienst hinter einer HTTP-API** — eine biologisch inspirierte Gedächtnisarchitektur, die wie eine Datenbank konsumiert wird. Über dessen interne Verfahren werden in diesem Dokument bewusst keine Aussagen getroffen; sie sind für die regulatorische Einordnung von FOREMAN nicht erforderlich.
@@ -9,7 +9,7 @@
 
 ## 1. Systembeschreibung
 
-FOREMAN ist eine Reasoning-Plattform für industrielle Produktionsumgebungen. Vier Reasoner (Ereignisketten-Rekonstruktion, Drift-Erkennung, Ausfallvorhersage, Wartungszyklen-Analyse) werten **Maschinen-Sensordaten, SPS-Daten und Werker-Notizen** aus und erzeugen daraus **Empfehlungen, Warnungen und Erklärungen**. Diese werden (a) in einem **Werker-Dashboard** dargestellt und (b) als aggregierte Erkenntnisse über eine **MCP-Schnittstelle** an Drittsysteme (z. B. Wartungsplanung, ERP) ausgegeben. Beobachtete Lastdaten (historische Lastprofile/Grenzwerte) werden — sofern künftig exponiert — als **reine Messdaten** read-only über dieselbe MCP-Schnittstelle bereitgestellt (**kein KI-Output**); eine eigentliche Belastungs-Simulation führt FOREMAN nicht selbst durch, die fährt extern bei einem Drittsystem.
+FOREMAN ist eine Reasoning-Plattform für industrielle Produktionsumgebungen. Vier Reasoner sind vorgesehen — Ereignisketten-Rekonstruktion, Drift-Erkennung, Ausfallvorhersage, Wartungszyklen-Analyse —, drei davon gebaut; die Wartungszyklen-Analyse ist datenabhängig zurückgestellt (Register C-001, Stand 31.07.2026). Sie werten **Maschinen-Sensordaten, SPS-Daten und Werker-Notizen** aus und erzeugen daraus **Empfehlungen, Warnungen und Erklärungen**. Diese werden (a) in einem **Werker-Dashboard** dargestellt und (b) als aggregierte Erkenntnisse über eine **MCP-Schnittstelle** an Drittsysteme (z. B. Wartungsplanung, ERP) ausgegeben. Beobachtete Lastdaten (historische Lastprofile/Grenzwerte) werden — sofern künftig exponiert — als **reine Messdaten** read-only über dieselbe MCP-Schnittstelle bereitgestellt (**kein KI-Output**); eine eigentliche Belastungs-Simulation führt FOREMAN nicht selbst durch, die fährt extern bei einem Drittsystem.
 
 Architektonisch entscheidend für die regulatorische Einordnung:
 
@@ -95,7 +95,9 @@ FOREMAN nutzt ein vortrainiertes **General-Purpose-AI-Modell** (Qwen3, lokal üb
 - **Provider eines GPAI-Modells** (hier: der Modell-Anbieter, z. B. das Qwen-Team) trägt die GPAI-spezifischen Pflichten nach Art. 53/55: technische Dokumentation des Modells, Zusammenfassung der Trainingsdaten, Urheberrechts-Policy, bei systemischem Risiko zusätzliche Bewertungs-/Meldepflichten.
 - **Deployer** (hier: FOREMAN) ist, wer das Modell **betreibt/einsetzt**. FOREMAN trifft **nicht** die GPAI-Provider-Pflichten, sondern die Deployer-/System-Pflichten: insbesondere die Transparenzpflichten aus Art. 50 und die KI-Kompetenz aus Art. 4 (oben).
 
-**FOREMAN wird nur dann selbst zum Provider**, wenn es das Modell **wesentlich verändert/feintunt** und unter eigenem Namen in Verkehr bringt. Der reine Betrieb eines unveränderten Qwen3 über Ollama macht FOREMAN **nicht** zum GPAI-Provider. (Open-Source-Lizenzierung des Modells ändert nichts an den Transparenzpflichten des Art. 50, die unberührt bleiben.)
+**FOREMAN wird nur dann selbst zum GPAI-Provider**, wenn es das Modell **wesentlich verändert/feintunt** und unter eigenem Namen in Verkehr bringt. Der reine Betrieb eines unveränderten Qwen3 über Ollama macht FOREMAN **nicht** zum GPAI-Provider. (Open-Source-Lizenzierung des Modells ändert nichts an den Transparenzpflichten des Art. 50, die unberührt bleiben.)
+
+**Zwei Rollen, sauber getrennt (Nachtrag September 2026):** Gegenüber dem eingesetzten GPAI-Modell ist FOREMAN *Betreiber*. Für das **KI-System FOREMAN selbst** ist die Entwicklung **Anbieter** im Sinne von Art. 3 Nr. 3 — sie entwickelt das System und stellt es unter eigenem Namen bereit. Die Pflichten aus Art. 50 (Transparenz) und Art. 4 (KI-Kompetenz) treffen sie in dieser Rolle; der Anlagenbetreiber, der FOREMAN einsetzt, ist dessen Betreiber. So führt es auch `compliance/scope.yaml` (`rolle: anbieter`).
 
 **Wegweiser Betriebsvariante (kurz):**
 - **Lokal (Qwen3/Ollama, Default):** Deployer-Rolle, keine Datenweitergabe an Dritte; AI-Act-seitig wie oben.
@@ -123,6 +125,13 @@ FOREMAN nutzt ein vortrainiertes **General-Purpose-AI-Modell** (Qwen3, lokal üb
 
 ## 8. Zeitschiene (Verordnung (EU) 2024/1689)
 
+> **Vorbehalt (Nachtrag September 2026):** Die Termine dieser Tabelle stammen aus dem
+> Stand Juni 2026 und sind **nicht** gegen die Änderungsverordnung (EU) 2026/1744
+> („Digital Omnibus") nachgeführt, die einzelne Fristen verschoben hat. Verbindlich
+> ist allein die konsolidierte Fassung im Amtsblatt; Übersichtsseiten führen die
+> Verschiebung teils nicht nach. Wer einen Termin braucht, liest das Amtsblatt — die
+> Tabelle bleibt als Orientierung für die *Reihenfolge* der Pflichten stehen.
+
 | Datum | Wirksam | Relevanz für FOREMAN |
 |---|---|---|
 | 01.08.2024 | Inkrafttreten der Verordnung | Rahmen gesetzt |
@@ -141,7 +150,7 @@ FOREMAN nutzt ein vortrainiertes **General-Purpose-AI-Modell** (Qwen3, lokal üb
 
 **Maßnahmenliste (direkt in GROUND_TRUTH §10.5 + Code übernehmbar):**
 
-1. **KI-Kennzeichnung Dashboard (Art. 50(1)):** Jede LLM-Empfehlung/-Erklärung sichtbar als „KI-Empfehlung – vom Operator zu prüfen" auszeichnen.
+1. **KI-Kennzeichnung Dashboard (Art. 50(1)) — ✅ gebaut (F5):** Jedes KI-erzeugte Ergebnis trägt im Dashboard den Herkunftsstempel mit dem Wortlaut „KI-erzeugt" (`frontend/components/atoms/provenance-stamp.tsx`, GROUND_TRUTH §10.5/§21); Empfehlungen sind zusätzlich als Vorschlag ohne Anweisungscharakter beschriftet, sicherheitsrelevante Entscheidungen laufen über die Quittierung (Maßnahme 3). Der ursprünglich vorgesehene Zusatz „vom Operator zu prüfen" steht nicht wörtlich im Stempel — die Prüfpflicht trägt die Quittierung, nicht das Etikett.
 2. **KI-Kennzeichnung MCP (Art. 50(2)) — ✅ gebaut (F7):** Maschinenlesbares Herkunfts-Flag im Output-Schema: `ai_generated: true`, `generated_by: "foreman-ai"`, `requires_human_review: true`, `model_version`. Umgesetzt im read-only MCP-Server (`src/foreman/mcp/`): ein gemeinsamer Transparenz-Wrapper hüllt jeden KI-stämmigen Output (Vorhersage/Empfehlung zusätzlich `validation_status`/`data_regime`/`validation_caveat`); ein Validator erzwingt die Ehrlichkeit strukturell, Nicht-KI-Daten tragen keine KI-Flags. Vertrag: GROUND_TRUTH §17.
 3. **Human-in-the-Loop hart verankern:** keine automatische Aktorik; sicherheitskritische Alarme nur über Operator-Quittierung (`alarms.acknowledged_at/_by`) als erledigt — bereits in §8 GROUND_TRUTH, hier als AI-Act-Pflicht bekräftigt.
 4. **Logging/Nachvollziehbarkeit:** KI-Ausgaben mit `model_version`, Zeitstempel, Reasoner-Quelle protokollieren (Observability §11).

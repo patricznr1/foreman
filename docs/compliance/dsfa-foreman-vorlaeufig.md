@@ -1,6 +1,6 @@
 # Datenschutz-Folgenabschätzung (DSFA) — FOREMAN · vorläufig, konzeptbasiert
 
-> Vorläufige DSFA nach Art. 35 DSGVO · Stand Juni 2026 · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage)
+> Vorläufige DSFA nach Art. 35 DSGVO · Stand Juni 2026, Nachtrag September 2026 (Review-Trigger „neue Datenarten" bedient: Spiegelung ins Gedächtnis, Löschweg) · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage)
 > **Status:** *konzeptbasiert und vorläufig.* FOREMAN ist im Capstone-/MVP-Stadium; es findet **kein** Produktivbetrieb mit echten Beschäftigtendaten statt. Diese DSFA bewertet das **geplante Verarbeitungskonzept** und ist vor Produktiveinsatz mit realen Daten, konkreten Löschfristen und Betreiber-Kontext zu **finalisieren**.
 > **Grundlage:** baut auf [`dsgvo-assessment.md`](./dsgvo-assessment.md) (rechtliche Einordnung) und [`../research/anonymisierung-werkerdaten.md`](../research/anonymisierung-werkerdaten.md) (technisches Wie) auf. Methodik: Art. 35(7) DSGVO, orientiert an der CNIL-PIA-Methode und dem Standard-Datenschutzmodell (SDM) der DSK; Risikoeinstufung nach Schwere × Eintrittswahrscheinlichkeit.
 > **Architektur (IP):** Das Langzeitgedächtnis ist ein **externer Dienst hinter einer HTTP-API**; über dessen Interna werden keine Aussagen getroffen.
@@ -86,8 +86,8 @@ Bewertung des **Risikos vor Maßnahmen** (Schwere × Eintrittswahrscheinlichkeit
 | R3 | Strikte Zweckbindung; **kein** Scoring-/Bewertungsfeld by design; Betriebsvereinbarung (Art. 88) + Betriebsrat; Transparenz; HITL ohne Aktorik | **gering** |
 | R4 | NER-Maskierung **vor** Speicherung (recall-orientiert), zweiter Pass für kritische Berichte; Löschfrist + Zugriffsschutz auf Rohtext; org. Regel „keine vollen Namen"; Freitext **nie** als anonym deklariert | **gering–mittel** (offen benannt) |
 | R5 | Prompt-Injection-Schutz-Stack (Least-Privilege, Spotlighting, Schema, Grounding, Safety-Agent-Quorum); KI-Kennzeichnung; HITL — vgl. `../research/prompt-injection-schutz.md` | **gering** |
-| R6 | **Crypto-Shredding** des Personenschlüssels kappt den Bezug in DB **und** externem Dienst zugleich; ergänzend Lösch-Request an den Dienst; dokumentierter Lösch-Workflow | **gering** |
-| R7 | **Lokaler Default ⇒ Risiko entfällt.** Falls Cloud: AVV (Art. 28) + Transfergrundlage (Art. 44 ff.) + Maskierung vor Versand (§6) | lokal **entfällt** / bei Cloud **gering–mittel** (gesondert) |
+| R6 | **Crypto-Shredding** des Personenschlüssels kappt den Bezug in der DB. Für die Gedächtniskopie (seit 24.08.2026 der maskierte Notiztext ohne Verfasser-Token) greift es **nicht** — dort wirkt der **Lösch-Request** an den Dienst: gebaut, am 27.08.2026 mit 22 von 22 Verlangen durchgelaufen (C-072); dokumentierter Lösch-Workflow | **gering–mittel** — gemessen ist der technische Durchlauf, nicht die Vollständigkeit der Wirkung beim Dienst (Nachtrag) |
+| R7 | **Lokaler Sprachmodell-Pfad ⇒ Risiko entfällt dort.** Der Gedächtnis-Dienst ist ein eigener Empfänger maskierten Texts: AVV (Art. 28) + Transfergrundlage (Art. 44 ff.), sobald er außerhalb der Anlage betrieben wird (Nachtrag). Falls Cloud-LLM: dasselbe Paket + Maskierung vor Versand (§6) | lokal **gering** (Gedächtnis-Dienst als Empfänger) / bei Cloud **gering–mittel** (gesondert) |
 | R8 | „Keine PII in Logs"-Policy; strukturierte Logs ohne Klartext; Review | **gering** |
 | R9 | Informationspflichten (Art. 13/14) + Betriebsvereinbarung; Auskunfts-/Löschprozess über `users`-Mapping; KI-Kennzeichnung (Art. 50 AI Act) | **gering** |
 
@@ -95,7 +95,7 @@ Bewertung des **Risikos vor Maßnahmen** (Schwere × Eintrittswahrscheinlichkeit
 
 ## 6. Cloud-Fallback (fokussierter Wegweiser)
 
-Der **Default-Betrieb ist lokal** (Qwen3/Ollama) — kein personenbezogenes Datum verlässt die Anlage, R7 entfällt. **Falls** der Cloud-LLM-Fallback aktiviert wird, ist ergänzend erforderlich: Auftragsverarbeitungsvertrag (Art. 28), Transfergrundlage für Drittland (Art. 44 ff.; EU-US Data Privacy Framework sofern zertifiziert, sonst SCC + Transfer-Impact-Assessment), und Pseudonymisierung/NER-Maskierung **vor** dem Versand. Dieser Fall ist vor Aktivierung in einer eigenen DSFA-Ergänzung zu bewerten.
+Der **Default-Betrieb ist lokal** (Qwen3/Ollama) — über den Sprachmodell-Pfad verlässt kein personenbezogenes Datum die Anlage, R7 entfällt dort. Der Gedächtnis-Dienst ist davon ausgenommen (Nachtrag September 2026). **Falls** der Cloud-LLM-Fallback aktiviert wird, ist ergänzend erforderlich: Auftragsverarbeitungsvertrag (Art. 28), Transfergrundlage für Drittland (Art. 44 ff.; EU-US Data Privacy Framework sofern zertifiziert, sonst SCC + Transfer-Impact-Assessment), und Pseudonymisierung/NER-Maskierung **vor** dem Versand. Dieser Fall ist vor Aktivierung in einer eigenen DSFA-Ergänzung zu bewerten.
 
 ---
 
@@ -126,7 +126,7 @@ Nach Umsetzung der Maßnahmen aus §5 ist das **Restrisiko durchgängig gering**
 2. **DSB** zur Beratung einbinden (Art. 35(2)); DSFA-Ergebnis gegenzeichnen.
 3. **Betriebsrat** einbinden, **Betriebsvereinbarung** (Art. 88) abschließen.
 4. **R4 (Freitext) messen:** NER-Recall an realen Berichten quantifizieren; Zweitpass-Politik festlegen; Restrisiko dokumentieren.
-5. **Lösch-Workflow** technisch verproben (Crypto-Shredding + Lösch-Request an den externen Dienst end-to-end).
+5. **Lösch-Workflow** technisch verproben — in zwei Teilen: (a) der Lösch-Request an den externen Dienst ist **gemessen** (22 von 22 mit 200 OK am 27.08.2026, C-072; Grenzen im Nachtrag), (b) Crypto-Shredding-Verprobung und der Test, dass der Löschweg der Schichtberichte die Nachweis-Felder nicht mitreißt, sind **offen**.
 6. **Verarbeitungsverzeichnis (Art. 30)** und Informationspflichten (Art. 13/14) erstellen.
 7. **Cloud-Ergänzung** nur bei Aktivierung; bis dahin beim lokalen Default bleiben.
 8. **Versionierung:** diese DSFA bei jedem Review-Trigger (§8) aktualisieren.
@@ -143,3 +143,37 @@ Nach Umsetzung der Maßnahmen aus §5 ist das **Restrisiko durchgängig gering**
 - Querverweise: [`dsgvo-assessment.md`](./dsgvo-assessment.md), [`../research/anonymisierung-werkerdaten.md`](../research/anonymisierung-werkerdaten.md), [`../research/prompt-injection-schutz.md`](../research/prompt-injection-schutz.md), [`eu-ai-act-assessment.md`](./eu-ai-act-assessment.md).
 
 > **Rechtlicher Vorbehalt:** Diese vorläufige, konzeptbasierte DSFA dient der internen Orientierung und der Außendarstellung des methodischen Vorgehens. Sie ist keine Rechtsberatung und ersetzt keine vom Datenschutzbeauftragten begleitete, finale DSFA. Vor einem echten Produktiveinsatz mit Beschäftigtendaten sind DSB und ggf. Betriebsrat einzubinden; maßgeblich ist der konkrete Betreiber-Kontext.
+
+---
+
+## Nachtrag September 2026 — Review-Trigger „neue Datenarten" bedient
+
+Der Review-Trigger aus §8 hat ausgelöst: Seit dem **24.08.2026** spiegelt die Plattform
+den **vollständigen, namensmaskierten Text jeder Schichtnotiz** in den externen
+Gedächtnis-Dienst — ohne Verfasser-Token (Register C-044). Zum Stand Juni 2026 gingen
+nur Kennungen, Typen und Zeitpunkte dorthin. Was sich dadurch in dieser DSFA ändert:
+
+- **§2 Datenfluss:** Der Gedächtnis-Dienst empfängt maskierten Freitext, nicht nur
+  Token. Er ist damit ein Empfänger im Sinne von §2 „Empfänger" und gehört ins
+  Verarbeitungsverzeichnis (To-do 6).
+- **R4 (Namen im Freitext)** wirkt jetzt auch in der Gedächtniskopie: Was die
+  NER-Maskierung vor dem Versand nicht erkennt, liegt beim Dienst. Das Restrisiko
+  bleibt gering–mittel und ist weiter offen benannt.
+- **R6 (unvollständige Löschung)** ist neu bewertet (Tabelle §5): Crypto-Shredding kappt
+  den Bezug in der Kopie nicht; wirksam ist der Lösch-Request. Der ist gebaut und
+  gemessen (22 von 22 mit 200 OK, 27.08.2026, C-072). Gemessen ist der technische
+  Durchlauf; ob der Dienst abgeleitete Sachverhalte mitentfernt, ist von FOREMAN aus
+  nicht nachgemessen — der Betreiber des Dienstes meldet das seit September 2026,
+  hier wird es nicht als Eigenschaft der Plattform geführt.
+- **R7 (Drittland)** hängt nicht mehr allein am Cloud-LLM: Wird der Gedächtnis-Dienst
+  außerhalb der Anlage betrieben, sind AVV und Transfergrundlage fällig. Der zusätzliche
+  Einbettungs-Pfad zu einem US-Anbieter (seit 25.06.2026) ist ein reiner
+  Demonstrations-Pfad auf simulierten Daten, nicht Teil des Zielbetriebs, und wird bei
+  Aktivierung mit realen Daten wie der Cloud-LLM-Fall behandelt.
+- **§7 Ergebnis** bleibt: kein hohes Restrisiko, keine Art.-36-Konsultation — unter der
+  zusätzlichen Bedingung, dass der Gedächtnis-Dienst vertraglich und technisch als
+  Auftragsverarbeiter geführt wird, sobald reale Daten fließen.
+
+Die maschinenprüfbare Fassung der Einstufungen liegt seit dem 26.08.2026 unter
+`compliance/scope.yaml` und `compliance/retention-policy.yaml`
+(`python scripts/check_compliance.py`).

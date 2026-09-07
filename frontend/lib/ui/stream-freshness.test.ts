@@ -22,7 +22,7 @@ describe("streamBadgeFreshness", () => {
     expect(streamBadgeFreshness(false, false)).toBe("history");
   });
 
-  it("'Gecacht' (cached), wenn der Stream tickt, aber die WS-Verbindung weg ist", () => {
+  it("'Letzter Stand' (cached), wenn der Stream tickt, aber die WS-Verbindung weg ist", () => {
     expect(streamBadgeFreshness(false, true)).toBe("cached");
   });
 });

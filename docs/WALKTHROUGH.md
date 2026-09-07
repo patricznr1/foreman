@@ -4,7 +4,9 @@
 >
 > **Spielregel:** Dieses Dokument wächst mit dem Code. Jeder Commit, der etwas baut, ergänzt hier den passenden Abschnitt — im selben Commit. So kann die Erklär-Doku nicht von der Realität abdriften.
 
-**Stand:** 2026-06-16 · F7 — MCP-Schnittstelle (FOREMAN als offener Knoten: read-only Model-Context-Protocol-Server über Streamable HTTP, der die Reasoner-Erkenntnisse als maschinenlesbare Tools an Drittsysteme reicht — AI-Act-Transparenz-Flags an jedem KI-Output, PII nur pseudonymisiert/maskiert, eigene Token-Auth, Hidden-Term-Scan, keine Aktorik) auf F-REC (LLM-Werker-Empfehlung), F-PRED (Ausfallvorhersage), F-SEM (semantische Notiz-Suche), F6 (Ereignisketten-Reasoner), F-LLM (Modell-Gateway), F4 (Drift-Reasoner), F3 (Datenakquise & Adapterschicht) und dem F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke).
+**Stand:** 2026-09-07 · Enthält das F2-Fundament (Skeleton, Schema, Migrationen, Auth, Datenschutz, Substrat-Smoke), F3 (Datenakquise & Adapterschicht), F4 (Drift-Reasoner), F-LLM (Modell-Gateway), F6 (Ereignisketten-Reasoner), F-SEM (semantische Notiz-Suche und Archiv über vier Quellen), F-PRED (Ausfallvorhersage), F-REC (LLM-Werker-Empfehlung), F7 (MCP-Schnittstelle), F5 (Dashboard-Backend und Live-Push), F5-FE (die gebauten Sektionen A–E, H–J samt Maschinenkarte und 3D-Synoptik), Sektion I (Audit-Trail und Topologie, Backend und Frontend), die Spiegelung ins Gedächtnis (seit August 2026), das Aussagen-Register und den Betrieb der Vorführinstanz auf Railway. Nicht gebaut und hier nur benannt: der vierte Reasoner (Wartungszyklen) und die Sektionen F (Wartung) und G (Belastung).
+
+> **Wo die Spielregel trägt:** Der Push-Hook `.claude/hooks/pre-push-walkthrough.py` sperrt seit dem 07.09.2026 jeden `git push`, der Anwendungscode ohne Nachtrag in diesem Dokument mitbringt — mit dem Ausweg `# Walkthrough-Ausnahme: <grund>` für Änderungen, die nichts Neues erklären. Anlass: zwanzig Code-Commits zwischen dem 28.08. und dem 07.09.2026, kein einziger Nachtrag.
 
 ---
 
@@ -20,7 +22,7 @@ Jeder Baustein bekommt dieselben zwei Punkte:
 ## Das große Bild (in drei Sätzen)
 
 1. Eine Produktionsanlage erzeugt ständig Messdaten und Ereignisse — FOREMAN sammelt sie ein.
-2. Vier spezialisierte "Denker" (Reasoner) werten diese Daten mit Hilfe eines Langzeitgedächtnisses aus und beantworten Fragen, die ein normales Dashboard nicht beantworten kann.
+2. Vier spezialisierte "Denker" (Reasoner) sind vorgesehen, drei davon gebaut — Ereignisketten, Abweichungserkennung und Ausfalleinschätzung (C-001). Sie werten diese Daten mit Hilfe eines Langzeitgedächtnisses aus und beantworten Fragen, die ein normales Dashboard nicht beantworten kann. Der vierte, die Wartungszyklen-Analyse, folgt datenabhängig: Er braucht eine echte Wartungshistorie, die der Simulator nicht liefert.
 3. Die Antworten landen entweder im Werker-Dashboard oder werden über eine standardisierte Schnittstelle an andere Systeme weitergereicht.
 
 ---
@@ -677,10 +679,10 @@ Pydantic-Ausgabeschemata pro Tool (`MachineOut`, `AlarmOut`, `FailurePredictionO
 **Warum existiert es / wo sitzt es?**
 PII-frei: nur HMAC-Token (`acknowledged_by`/`author`) und NER-maskierter Text raus, kein Embedding-Vektor, keine `users`-Felder. SHAP heißt nach außen neutral `contribution` (Invariante III).
 
-### Read-Schicht (`mcp/reads.py`)
+### Read-Schicht (geteilter Read-Core `reads/queries.py`, `reads/status.py`)
 
 **Was tut es?**
-Dedizierte Read-only-Datenzugriffsfunktionen (injizierte Session), die die Tools aufrufen — der saubere Service-Layer der Schnittstelle. Spiegelt die bereits existierenden Read-Pfade als wiederverwendbare Funktionen; aggregierte Trends über die Minuten-Aggregat-Sicht, semantische Notiz-Suche (Query einbetten + suchen, kein LLM).
+Read-only-Datenzugriffsfunktionen (injizierte Session), die die Tools aufrufen — der saubere Service-Layer der Schnittstelle. Seit dem 16.06.2026 liest die MCP-Schicht über denselben geteilten Read-Core wie das Dashboard-Backend (§20.1) — die frühere MCP-eigene `mcp/reads.py` ist darin aufgegangen, damit Dashboard und Schnittstelle nie zwei Fassungen derselben Abfrage führen. Aggregierte Trends über die Minuten-Aggregat-Sicht, semantische Notiz-Suche (Query einbetten + suchen, kein LLM).
 
 **Warum existiert es / wo sitzt es?**
 Architektur-Entscheidung (Review-geklärt): die Read-Logik lag bisher inline in den HTTP-Routern, ohne wiederverwendbare Service-Methode. Statt 6 Reasoner-Router zu refactoren bekommt MCP eine eigene, testbare Read-Schicht — chirurgisch, ausschließlich SELECT (Invariante I).
@@ -856,13 +858,13 @@ EINE „lebende Maschinenkarte" als EINE FE-Komponente ersetzt die bisherigen Ma
 
 ### Sektion H — Archiv (`frontend/lib/memory/`, `frontend/components/memory/`, `frontend/app/(app)/archive/`)
 
-Die [KERN]-Sektion H ist seit **Paket 1c** ehrlich das **Archiv**: die WÖRTLICHE Suche über abgelegte Schichtberichte, Wartungsprotokolle und Alarme — sie findet, was im Wortlaut da ist (Stichwort-Maske mit Lupe). Eigener Raum (`/archive`; `/memory` redirectet dauerhaft hierher) und von überall über die Befehlsleiste (Cmd-K → H). Das intelligente „Hatten wir das schon mal" (Verknüpfung/Bedeutung) ist bewusst NICHT hier — es lebt nur noch als sichtbarer, aber DEAKTIVIERTER Nav-Eintrag und kommt mit echter Substanz in Paket 3. Voller Vertrag: GROUND_TRUTH §21.12.
+Die [KERN]-Sektion H ist seit **Paket 1c** ehrlich das **Archiv**: die Suche über abgelegte Schichtberichte, Wartungsprotokolle und Alarme im Wortlaut (Stichwort-Maske mit Lupe) — und seit dem **27.08.2026** über das **Gedächtnis als vierte Quelle**: ein semantischer Abruf gegen die Gegenstelle, der auch findet, was anders formuliert ist (freigegeben und abgenommen, C-073). Wortlaut-Suche und Gedächtnis-Abruf sind zwei Wege in derselben Trefferliste; welche Quelle einen Treffer fand, steht an ihm dran. Eigener Raum (`/archive`; `/memory` redirectet dauerhaft hierher) und von überall über die Befehlsleiste (Cmd-K → H). „Hatten wir das schon mal" ist seit dem **02.09.2026** begehbar — als zweite Betriebsart derselben Sektion (`/archive?quelle=gedaechtnis`): nur das Gedächtnis als Quelle, und vor der Trefferliste die **Verknüpfung** (Beziehungen zwischen den Fällen, Verdichtung nach Maschine, neu die Beziehung `same_component` — gleiches Bauteil an verschiedenen Maschinen). Voller Vertrag: GROUND_TRUTH §21.12.
 
 **Was ist es / wo sitzt es?**
-- Reine, transport-agnostische Logik in `lib/memory/`: `view-model.ts` (`assembleArchiveResult`) führt die Archiv-Antwort (`list[ArchiveHit]`, nach Relevanz sortiert, OHNE Score) in eine flache Trefferliste über und bewahrt die Reihenfolge als Rang; `url.ts` (`searchArchiveEndpoint`) baut `/api/v1/archive/search?q&machine_id&sources`; `use-memory-search.ts` (On-Demand-Hook, sources-Filter, geteilter Reducer + AbortController + sessionStorage-Cache, KEIN 503-Sonderpfad mehr). `source.ts` führt die drei Quell-Label/Glyphs. Die assoziative Maschinerie (`assembleSearchResult`, `cluster.ts`, `relations.ts`, `relevance.ts`) bleibt im Code, wird aber NICHT mehr aufgerufen — eingefroren für Paket 3.
+- Reine, transport-agnostische Logik in `lib/memory/`: `view-model.ts` (`assembleArchiveResult`) führt die Archiv-Antwort (`list[ArchiveHit]`, nach Relevanz sortiert, OHNE Score) in eine flache Trefferliste über und bewahrt die Reihenfolge als Rang; `url.ts` (`searchArchiveEndpoint`) baut `/api/v1/archive/search?q&machine_id&sources`; `use-memory-search.ts` (On-Demand-Hook, sources-Filter, geteilter Reducer + AbortController + sessionStorage-Cache, KEIN 503-Sonderpfad mehr). `source.ts` führt die vier Quell-Label/Glyphs (Notiz/Wartung/Alarm/Gedächtnis, `VERFUEGBARE_QUELLEN` — eine Stelle für Umschalter und Suchaufruf). Die assoziative Logik (`cluster.ts`, `relations.ts`, `relevance.ts`) wird seit dem 02.09.2026 über die Brücke `verknuepfung.ts` wieder benutzt — für die Gedächtnis-Betriebsart, nicht über die alten Bausteine `ResultCluster`/`SearchResultCard`, die auf Schichtnotizen zugeschnitten sind.
 - `components/memory/`: `MemorySearchBar` (das schmale Stichwort-Feld mit Lupe + Maschinen-Filter + vier Quellen-Toggles), `MemoryResultList` (flache Liste, keine Verdichtung/Verknüpfung), `ArchiveResultCard` (Quellen-Glyph, Wortlaut-Auszug, Zeit, Maschine, quellenspezifische PII-freie Details, Beleg „Auch im Gedächtnis" bei Einigkeit zweier Quellen — kein Score/Autor), `SourceGlyph` (Notiz/Wartung/Alarm/Gedächtnis), `MemoryView` (Archiv-Orchestrator, Rollen-Split ohne bedingte Hooks). Eingefroren (nicht gerendert): `ResultCluster`, `RelationView`, `RelevanceMark`, `SearchResultCard`(alt). Die Befehlsleiste (`components/shell/command-palette.tsx`) übergibt jede Eingabe an `/archive?q=…`; der deaktivierte Nav-Eintrag erzeugt keinen Sprung-Befehl.
-- Routen: `app/(app)/archive/page.tsx` (`requireSection("H")`, Deep-Link `?q=`); `app/(app)/memory/page.tsx` redirectet dauerhaft auf `/archive`. Nav (`lib/auth/roles.ts` + `primary-nav.tsx`): „Archiv" begehbar, „Hatten wir das schon mal" sichtbar-aber-deaktiviert (`<span aria-disabled>`, kein href).
-- **Audit-Abschluss (Paket 1c — ERLEDIGT):** die in 1a/1b vermerkte FE-Trennung ist umgesetzt. Die Sektion ist ehrlich das **Archiv** (Wortlaut-Suche über `/api/v1/archive/search` → `ArchiveHit`, vier Quellen mit Toggles), die assoziative „intelligente Verknüpfung" ist aus dem UI genommen (Code eingefroren) und „Hatten wir das schon mal" lebt als sichtbarer, aber deaktivierter Nav-Eintrag (Paket 3). Der in 1a/1b gemeldete FE-503-Befund ist erledigt: der 503-Sonderpfad wurde entfernt (das Backend degradiert graceful auf Volltext, liefert 200). Der Walkthrough hinkt damit nicht mehr.
+- Routen: `app/(app)/archive/page.tsx` (`requireSection("H")`, Deep-Links `?q=` und `?quelle=gedaechtnis`); `app/(app)/memory/page.tsx` redirectet dauerhaft auf `/archive`. Nav (`lib/auth/roles.ts` + `primary-nav.tsx`): „Archiv" und „Hatten wir das schon mal" sind beide begehbar — der zweite Eintrag stand bis zum 02.09.2026 sichtbar-aber-deaktiviert da, weil die vierte Quelle und das Bauteil an jeder Erinnerung noch fehlten.
+- **Audit-Abschluss (Paket 1c — ERLEDIGT, Nachtrag 02.09.2026):** die in 1a/1b vermerkte FE-Trennung ist umgesetzt. Die Sektion ist ehrlich das **Archiv** (Suche über `/api/v1/archive/search` → `ArchiveHit`, vier Quellen mit Toggles); die Verknüpfung ist mit der Gedächtnis-Betriebsart zurück im UI — jetzt gegen vier Quellen statt nur gegen Schichtnotizen. Der in 1a/1b gemeldete FE-503-Befund ist erledigt: der 503-Sonderpfad wurde entfernt (das Backend degradiert graceful auf Volltext, liefert 200).
 
 **Warum so?**
 - Paraphrase-Disziplin am schärfsten (Studie §0/§4H): H zeigt das Gedächtnis nach außen — darum erscheint im sichtbaren UI kein Wort aus dem Innenleben (kein Verfahrens-/Bibliotheks-/Substrat-Begriff). Ein eigener Test (`hidden-term.test.tsx`) scannt den gerenderten Text — das strengste Gate der Serie. Ehrlichkeit der Nähe: das Backend liefert keinen Score, also ist die POSITION das Signal — eine Prozentzahl wäre Scheingenauigkeit. Ehrlichkeit der Herkunft: die Suche ist Abruf echter vergangener Notizen, keine Generierung → `ProvenanceStamp` ohne KI-Kennzeichnung. Verdichtung und Verknüpfung nur so weit, wie der F-SEM-Vertrag trägt (nur Schichtnotizen, keine Auflösung/Klasse) — alles darüber graceful markiert, nichts erfunden. HITL hart: H zeigt und navigiert, keine Aktorik. Sitzt vollständig auf FE1 + dem On-Demand-Muster aus E auf und dupliziert nichts (GROUND_TRUTH §21.12).
@@ -915,6 +917,46 @@ Die Plattform sieht sich selbst — im Frontend. Teil 2 der Sektion I auf den fe
 **Warum so?**
 - **Verbindungsstatus ≠ Maschinenzustand**: der Backend-Status (`verbunden`/`gestört`/`inaktiv`/`unbekannt`) ist NICHT das NE-107-FCSM des Atoms `StatusIndicator` (das kein „unbekannt" kennt) — ein eigener mehrkanaliger Status (Farbe-Token + Form-Glyph + Wort) trägt ihn typsicher und ehrlich, `unbekannt` bleibt neutral (nie grün geraten), ein gestörter Konnektor ist klar aber ruhig (kein Alarm-Rot, ISA-101). **Topologie ehrlich**: nur was das Backend liefert; `simulation` als interne Quelle markiert; die [VISION]-Systeme (ERP/Energie/ext. Sim) in einer abgesetzten, nie verbundenen Zone — kein erfundener Knoten. **Kein WS-Live-Feed** für Sektion I (der „Live-Statuswechsel" der Studie ist [VISION] ohne Push) → HTTP-Snapshot + bewusster, manueller Refresh; die Substrat-Live-Probe schreibt einen Smoke-Marker, darum ist sie als `probe`-Toggle abschaltbar. **Audit unveränderlich-lesend**: `actor` erscheint ausschließlich pseudonym (`#hex6`), nie als Klartext, nie „aufgelöst" (Re-Identifikation lebt im QM-System, §8); keine Edit-/Quittier-Aktion (der Audit protokolliert, löst nichts aus, HITL hart). **Rollen-Split = Sichtbarkeit ≤ Server-Guard**: Manager Topologie + Audit (Tabs), Schichtleiter NUR Topologie — sein Komponentenzweig mountet den Audit-Hook nie, der FE ruft `/api/v1/audit` für ihn gar nicht auf (gäbe 403); Werker/Techniker landen am `requireSection`-Guard. **AI-Act**: die Audit-/Topologie-Sicht ist selbst kein KI-Output → keine KI-Kennzeichnung. **Hidden-Term**: das Substrat heißt außen nur „Gedächtnis-Substrat" (eigener `hidden-term.test.tsx`). Bewusste, am realen Code belegte Abweichungen vom Prompt: eigener Connection-Status statt FCSM-Zwang; generischer BFF-Catch-all statt eigener Proxy-Routen; `ACCESS_MATRIX.I` + Nav-Eintrag bereits beim Fundament angelegt; kein E2E (Vitest-Abdeckung wie §21.8). Adversariale 6-Dimensionen-Review (Workflow) bestätigte alle Haltungen; drei a11y-Befunde gefixt.
 
+### 3D-Anlagen-Synoptik (`frontend/app/(app)/synoptik/`, `frontend/components/synoptik/`, `frontend/public/synoptik/`)
+
+**Was tut es?**
+Zeigt die Montagelinie als begehbare 3D-Szene: die zwölf Maschinen des Zwilling-Parks als Modelle (Roboter, Servopresse, Servoachse, Zuführung, Sichtstation — GLB-Dateien unter `public/synoptik/models/`), mit dem Live-Status aus dem Cockpit als Farbüberlagerung und der Maschinenliste darunter als Zweitweg. Fehlt dem Gerät die 3D-Fähigkeit, sagt die Sicht das ehrlich und lässt die Liste stehen.
+
+**Warum existiert es / wo sitzt es?**
+Die räumliche Stufe der Sektion A (GROUND_TRUTH §21.6: „3D-Linie gebaut"). Die einzige Rendering-Abhängigkeit neben dem eigenen SVG ist die 3D-Bibliothek `three` — direkt genutzt, ohne Zwischenschicht (§3). Die Modelle sind komprimiert und werden mit dem mitgelieferten Dekoder entpackt; deshalb erlaubt die Inhaltsrichtlinie des Frontends ausdrücklich WebAssembly (§21.7, `next.config.ts`). Die Szene ist als Bild mit Beschriftung zugänglich („digitaler Zwilling, Simulation") — ein Zuschauer soll nie glauben, er sähe eine echte Halle.
+
+### Erkenntnisse-Hub mit zwei Platzhaltern (`frontend/components/insights/insights-hub.tsx`)
+
+**Was tut es?**
+Das Dach über den Auswertungen auf Anfrage: Ereignisketten (D) und Ausfallvorhersage (E) sind begehbar; **Wartungszyklen (F)** und **Belastung (G)** stehen als gekennzeichnete Platzhalter da — sichtbar, aber nicht anklickbar, mit dem Etikett „in Vorbereitung".
+
+**Warum existiert es / wo sitzt es?**
+Acht der zehn Bereiche der Bedienoberfläche sind gebaut (Register C-003). Die beiden fehlenden werden nicht versteckt und nicht vorgetäuscht: F braucht den vierten Reasoner (der eine echte Wartungshistorie braucht, C-001), G soll beobachtete Lastprofile **anzeigen**, ausdrücklich keinen Simulator. Ein Zuschauer sieht so, was fehlt — und dass es fehlt, statt einen toten Link.
+
+### Spiegelung ins Gedächtnis (`substrate/content.py`, `substrate/vorgang.py`, `substrate/nachtrag.py`, `substrate/aufraeumen.py`)
+
+**Was tut es?**
+Schreibt jedes Ereignis, das in FOREMAN entsteht, als einen deutschen Satz ins externe Gedächtnis — sieben Arten: Schichtnotiz, Alarm, Wartung, Produktionslauf, erkannte Abweichung, rekonstruierte Ereigniskette, Werker-Empfehlung. Jeder Satz nennt seinen Gegenstand (Anlagenkennung, Maschinennummer als *Kennung*, Zeitpunkt), trägt die Nummer seiner eigenen Datenbankzeile und den Zeitpunkt, zu dem das Ereignis **stattfand** (`occurred_at`), nicht den des Spiegelns. Dazu ein Rückweg: `forget` löscht eine einzelne gespiegelte Erinnerung — der Weg für ein Löschverlangen nach Art. 17 DSGVO —, ein Nachtrag holt nach, was beim Schreiben ausfiel, und ein Aufräumlauf entfernt Verwaistes.
+
+**Warum existiert es / wo sitzt es?**
+Ohne die Spiegelung bliebe das „Hatten wir das schon mal" leer. Die Satzform ist kein Stil, sondern Vertrag mit der Gegenstelle: Sie gewinnt aus dem Satz Fakten für ihren Wissensgraphen, und ein Satz, der zweimal byte-gleich ankommt, wird dort still verworfen — deshalb Zeilennummer und Zeit im Satz. Der Löschweg ist gebaut und am 27.08.2026 gegen die laufende Gegenstelle durchgelaufen (22 von 22, C-072); was er **nicht** leistet, steht in GROUND_TRUTH §9 und in der DSGVO-Bewertung. Der ganze Vertrag: §9, §12.4; die Messungen: Register C-104, C-121 bis C-125.
+
+### Aussagen-Register (`claims/claims.yaml`, `CLAIMS.md`, `claims/wortlisten.yaml`, `tools/pruefe_register.py`, `tools/pruefe_registerzahlen.py`)
+
+**Was tut es?**
+Führt jede Aussage, die über FOREMAN nach draussen gehen darf: mit Belegstatus (gemessen, geschätzt, geplant, konzipiert), Messbedingung, Fundstelle, Datum, Geltung und dem Adressaten, für den sie freigegeben ist. `CLAIMS.md` ist die erzeugte Ansicht davon. Eine Sperrliste hält Hausvokabular und Superlative aus Aussagen fern, die über intern hinausgehen.
+
+**Warum existiert es / wo sitzt es?**
+Damit eine Zahl, die einmal gemessen wurde, nicht als Wahrheit weiterlebt, wenn sich das System längst geändert hat. `pruefe_register.py` hält Struktur und Ansicht zusammen (läuft in der CI, seit 07.09.2026), `pruefe_registerzahlen.py` sagt vor jeder externen Unterlage, welche Kennzahl seit ihrer Messung gewandert ist — bewusst kein Gate, denn Testzahlen wandern mit jedem Commit. Was das Werkzeug **nicht** sieht: eine tragende Bedingung in Prosa. Am 07.09.2026 standen zwei Einträge zwölf Tage lang auf gültig, deren Bedingung längst gekippt war (C-056, C-057 → C-126, C-127). Der ganze Vertrag: GROUND_TRUTH §23.
+
+### Betrieb der Vorführinstanz (`DEPLOY.md`, `railway.toml`, `frontend/railway.toml`, `railway.worker.toml`)
+
+**Was tut es?**
+Beschreibt, wie die öffentliche Demo unter `www.foreman-demo.de` läuft: vier Dienste bei einem Plattformanbieter — Zeitreihen-Datenbank, Backend, Frontend und ein Live-Worker, der den Zwilling-Park fortlaufend Messwerte erzeugen lässt. Die Sprachmodell-Aufrufe der Demo gehen an einen Cloud-Anbieter mit gedrosselter Rate und Kostendeckel; das Gedächtnis ist angebunden.
+
+**Warum existiert es / wo sitzt es?**
+Damit jemand die Plattform ansehen kann, ohne sie zu installieren — mit geteiltem Vorführkonto, simulierten Daten und den fünf ehrlichen Hinweisen aus dem README. Die Demo ist bewusst nicht das Zielbild: Das ist ein Betrieb im Anlagennetz mit echten Daten und eigenen Konten (SECURITY.md, zwei Profile). Was die Konfigurationsdateien nicht können — Variablen, Geheimnisse, die eigene Domain —, steht als Anleitung in DEPLOY.md.
+
 ### Beispiel-Schablone (zum Kopieren pro neuem Modul)
 
 ```
@@ -963,6 +1005,6 @@ Es gibt heute genau zwei reale HITL-/Abruf-Spuren — keine erfundenen. Die Quit
 **Warum existiert es / wo sitzt es?**
 Die Linie quer durch FOREMAN: kein Fake. Eine Quelle ohne jüngste Daten wird `unbekannt`/`inaktiv`, nie verbunden gefärbt. ERP/Energiemanagement/externe Simulationssoftware existieren nicht als Integration → sie stehen ehrlich als Vision, nicht als grüner Knoten. Rollen-Split (Studie-Matrix): Audit nur Manager/Admin; Topologie Manager voll, Schichtleiter nur Verbindungsstatus (sein Datenqualitäts-Thema, kein Audit), Werker/Techniker kein Zugang. Schöne Kopplung: Teil A (Audit) speist Teil B (Topologie-MCP-Aktivität).
 
-### Gates (lokal grün)
+### Gates (Stand der Abnahme von Sektion I, 22.06.2026 — historischer Meilenstein)
 
-mypy strict 0, ruff clean + Format clean. Migration 0010 up/down getestet, Trigger blockt UPDATE/DELETE nachgewiesen (eigene ephemere DB je Lauf, eindeutiger Name). 607 Backend-Tests grün (ohne F-PRED, lokal Windows nativ) + 30 neue Sektion-I-Tests; Coverage ≥ 80 % auf `audit/`/`topology/` + den neuen Routern. MCP-Read-Only-Invariante nachgewiesen (Tool-Pfad mutiert keine Domänendaten; Audit-Sink committet separat). Hidden-Term-Scan über die neuen Außen-Strings sauber.
+mypy strict 0, ruff clean + Format clean. Migration 0010 up/down getestet, Trigger blockt UPDATE/DELETE nachgewiesen (eigene ephemere DB je Lauf, eindeutiger Name). Zum Abnahmezeitpunkt 607 Backend-Tests grün (ohne F-PRED, lokal Windows nativ) + 30 neue Sektion-I-Tests; Coverage ≥ 80 % auf `audit/`/`topology/` + den neuen Routern. Die heutigen Zahlen stehen im Aussagen-Register (C-018, C-019), nicht hier. MCP-Read-Only-Invariante nachgewiesen (Tool-Pfad mutiert keine Domänendaten; Audit-Sink committet separat). Hidden-Term-Scan über die neuen Außen-Strings sauber.

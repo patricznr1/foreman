@@ -59,7 +59,7 @@ export function MachineSelect({ state, value, onChange }: MachineSelectProps) {
   if (state.kind === "error") {
     return (
       <p className="text-caption text-fg-muted">
-        Maschinenliste gerade nicht abrufbar — du kannst trotzdem erfassen (ohne Maschinenbezug).
+        Maschinenliste gerade nicht abrufbar — Erfassen geht trotzdem (ohne Maschinenbezug).
       </p>
     );
   }

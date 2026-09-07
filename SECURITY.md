@@ -42,7 +42,7 @@ you are looking at*. They are deliberately different.
 | Data | Synthetic only, from the simulation adapter | Real machine and maintenance data |
 | Personal data | None in the field; shared login, notes are name-redacted before storage | Real worker data, pseudonymized at the adapter layer |
 | Credentials | One shared demo account, published in the README on purpose | Per-user accounts provisioned by the operator |
-| Language model | Cloud fallback, hard spend cap | Local model first (Ollama), cloud optional and switchable off |
+| Language model | Cloud model only, request rate throttled per backend, hard spend cap | Local model first (self-hosted), cloud optional and switchable off |
 | `/metrics` | Reachable, no authentication | Expected on the monitoring segment only |
 | Transport, WAF, network policy | Provided by the platform | Provided by the operator's infrastructure |
 | Purpose | Being looked at | Being used |

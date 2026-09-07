@@ -123,7 +123,7 @@ export function CaptureForm({ roleView, machinesState, initialMachineId }: Captu
       {/* 1) Freitext zuerst — das Wichtigste, großes Feld. */}
       <div className="flex flex-col gap-2">
         <label htmlFor={textFieldId} className="text-body-l font-semibold text-fg-primary">
-          Was hast du beobachtet?
+          Was ist aufgefallen?
         </label>
         <textarea
           id={textFieldId}
@@ -138,7 +138,7 @@ export function CaptureForm({ roleView, machinesState, initialMachineId }: Captu
           className="w-full rounded-lg border border-line-strong bg-surface-raised p-3 text-body-l text-fg-primary"
         />
         <p className="text-caption text-fg-muted">
-          Namen werden vor dem Speichern automatisch geschützt — schreib einfach, wie du sprichst.
+          Namen werden vor dem Speichern automatisch geschützt — Umgangssprache ist in Ordnung.
         </p>
         <VoiceCapturePlaceholder prominent={roleView.voiceFirst} />
       </div>

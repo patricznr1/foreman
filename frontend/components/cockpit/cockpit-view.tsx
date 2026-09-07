@@ -47,7 +47,7 @@ export interface CockpitViewProps {
 function roleSubtitle(role: CurrentUser["role"]): string {
   return role === "manager"
     ? "Flottenbild — alle Werke und Klassen"
-    : "Linienbild — Ihre Linien";
+    : "Linienbild — eigene Linien";
 }
 
 export function CockpitView({ user, scope, initialData }: CockpitViewProps) {

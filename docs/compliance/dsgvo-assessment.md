@@ -1,6 +1,6 @@
 # DSGVO-Datenschutz-Assessment: FOREMAN
 
-> Datenschutz-Selbsteinschätzung · Stand August 2026 · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage)
+> Datenschutz-Selbsteinschätzung · Stand August 2026, Nachtrag September 2026 (Spiegelung ins Gedächtnis, Löschweg) · außentauglich (öffentliches Repo, Mentor-/Kunden-Vorlage)
 > Gegenstand: Datenschutzkonformität von FOREMAN nach Verordnung (EU) 2016/679 (DSGVO), Schwerpunkt **werkerbezogene Daten** im **Default-Betrieb (alles lokal, keine Datenweitergabe)**.
 > **Abgrenzung:** Hier geht es um das rechtliche **Ob, Warum und Wieweit**. Das technische **Wie** der Anonymisierung/Pseudonymisierung (HMAC-Tokenisierung, NER, Salt/Key-Rotation, Mapping-Trennung) ist Gegenstand von [`../research/anonymisierung-werkerdaten.md`](../research/anonymisierung-werkerdaten.md) — dieses Dokument verweist darauf, statt zu doppeln.
 > **Rechtlicher Vorbehalt:** Fundierte Selbsteinschätzung zur internen Orientierung und zur Außendarstellung des methodischen Vorgehens — **keine Rechtsberatung** (siehe Abschluss).
@@ -40,7 +40,7 @@ Personenbezogen ist jede Information über eine **identifizierte oder identifizi
 | `maintenance_events.performed_by` | ja (pseudonym) | Art. 6(1)(c) (Prüf-/Wartungsnachweis, BetrSichV) + (b)/(f) | HMAC-Token; auditiert re-identifizierbar | an gesetzliche Aufbewahrungsfrist gekoppelt |
 | `worker_notes.text` (Freitext) | ja, solange Namen enthalten | Art. 6(1)(f) | **NER-Maskierung vor Speicherung**; Restrisiko, nie als anonym deklariert | definierte Freitext-Löschfrist + Zugriffsbeschränkung |
 | Sensordaten / `readings` / Maschinen-Metadaten | nein (Maschinenbezug) | — (DSGVO nicht anwendbar) | Trennung Identität/Verhalten; Aggregation/Suppression bei Exporten | regul. nach Betriebsbedarf (kein Personenbezug) |
-| `semantic_events` (externer Dienst) | ja, soweit pseudonyme Werkerbezüge enthalten | wie Quellfeld | nur Token/maskierter Inhalt verlässt FOREMAN | Personenbezug entfällt mit Crypto-Shredding; ergänzend Lösch-Request an den Dienst |
+| `semantic_events` (externer Dienst) | ja, soweit pseudonyme Werkerbezüge enthalten | wie Quellfeld | nur maskierter Inhalt verlässt FOREMAN — seit 24.08.2026 der **vollständige, namensmaskierte Notiztext** ohne Verfasser-Token (siehe Nachtrag September 2026) | Lösch-Request an den Dienst (gebaut und durchgelaufen, Nachtrag); Crypto-Shredding greift für diese Kopie **nicht**, weil sie kein Verfasser-Token trägt |
 
 ---
 
@@ -99,7 +99,7 @@ Diese Maßnahmen sind die Antwort auf Art. 25 — Datenschutz ist in die Archite
 
 ## 7. Auftragsverarbeitung & Drittland — nur Cloud-Fall (Wegweiser)
 
-**Default (lokal, Qwen3/Ollama):** Es verlässt **kein** personenbezogenes Datum die Anlage. Es entsteht **keine** Auftragsverarbeitung nach außen, **kein** Drittlandtransfer. Dies ist der datenschutzrechtlich klar vorzugswürdige Normalbetrieb.
+**Default (lokal, Qwen3/Ollama):** Über den **Sprachmodell-Pfad** verlässt kein personenbezogenes Datum die Anlage. Es entsteht insoweit **keine** Auftragsverarbeitung nach außen, **kein** Drittlandtransfer. Dies ist der datenschutzrechtlich klar vorzugswürdige Normalbetrieb. **Nicht davon erfasst** ist der Gedächtnis-Dienst: Dorthin geht seit dem 24.08.2026 der namensmaskierte Text jeder Schichtnotiz (Nachtrag September 2026, §1) — ein Empfänger im Sinne der Art. 28/44 ff., sobald er außerhalb der Anlage betrieben wird.
 
 **Falls der Cloud-LLM-Fallback aktiviert wird, gilt zusätzlich:**
 
@@ -142,10 +142,10 @@ Zwei Kriterien sind plausibel erfüllt (**schutzbedürftige Betroffene** + **inn
 1. **Rechtsgrundlagen festschreiben:** `maintenance_events.performed_by` + `alarms.acknowledged_by` → Art. 6(1)(c); `worker_notes.author` + `.text` → Art. 6(1)(f) mit dokumentierter Interessenabwägung. § 26 BDSG **nicht** mehr als Grundlage führen.
 2. **Betriebsvereinbarung** zum FOREMAN-Einsatz anstreben (Art. 88), Betriebsrat einbinden.
 3. **Löschkonzept implementieren:** Crypto-Shredding des Personenschlüssels als technischer Löschpfad (Art. 17); Löschfristen je Feld — Nachweis-Felder an gesetzliche Aufbewahrung gekoppelt, `worker_notes` kürzer, Freitext mit eigener Frist. (Technik: Research-Doc.)
-4. **Betroffenenrechte-Prozess:** Auskunft/Berichtigung/Löschung über das `users`-Mapping bedienbar machen; Lösch-Request-Schnittstelle zum externen Dienst vorsehen.
+4. **Betroffenenrechte-Prozess:** Auskunft/Berichtigung/Löschung über das `users`-Mapping bedienbar machen. Die Lösch-Request-Schnittstelle zum externen Dienst ist **gebaut** (`src/foreman/substrate/client.py`, `forget`, seit 24.08.2026) und am 27.08.2026 gegen die laufende Gegenstelle durchgelaufen — 22 von 22 Löschverlangen mit 200 OK (Register C-072); Reichweite und Grenzen im Nachtrag September 2026.
 5. **Privacy by Design dokumentieren:** Pseudonymisierung am Adapter-Layer, NER vor Speicherung, keine PII in Logs, lokaler Default — im Verarbeitungsverzeichnis festhalten.
 6. **DSFA: ja, durchführen** — schlanke Folgenabschätzung mit erwartet geringem Restrisiko; Ergebnis dokumentieren (Rechenschaftspflicht).
-7. **Verarbeitungsverzeichnis (Art. 30)** für den werkerbezogenen Teil anlegen.
+7. **Verarbeitungsverzeichnis (Art. 30)** für den werkerbezogenen Teil anlegen — **offen** (kein `compliance/ropa.yaml`; in `compliance/scope.yaml` als offener Punkt geführt, fällig vor dem ersten realen Werkerdatensatz).
 8. **Cloud-Fall nur mit Zusatzpaket:** AVV (Art. 28) + Transfergrundlage (Art. 44 ff.) + Maskierung vor Versand; sonst beim lokalen Default bleiben.
 9. **Vor Produktiveinsatz:** betrieblichen/externen Datenschutzbeauftragten und ggf. Betriebsrat einbinden.
 
@@ -208,3 +208,55 @@ betreiber- und arbeitsmittelabhängig sind und hier bewusst nicht geraten werden
 ein Test, der belegt, dass der Löschweg der Schichtberichte die Nachweis-Felder
 nicht mitreißt. Alle fünf sind in `compliance/scope.yaml` bzw.
 `compliance/retention-policy.yaml` als offen geführt.
+
+---
+
+## Nachtrag September 2026 — Spiegelung ins Gedächtnis und Löschweg
+
+**Was sich seit dem Stand dieses Dokuments geändert hat.** Die Aussage in §4 und §7,
+im lokalen Betrieb verlasse kein personenbezogenes Datum die Anlage, galt für den
+Sprachmodell-Pfad und gilt dort weiter. Seit dem **24.08.2026** spiegelt die Plattform
+jedoch jede Schichtnotiz in den externen Gedächtnis-Dienst — mit ihrem
+**vollständigen, namensmaskierten Text**, ohne Verfasser-Token (Register **C-044**:
+„Der Text einer Schichtnotiz verlässt die Anlage"; eine von sieben gespiegelten
+Ereignisarten trägt Freitext, die übrigen sechs nur Kennungen, Typen und Zeitpunkte).
+Das Dokument stuft diesen Text in §2.1 selbst als personenbezogen ein, solange Namen
+enthalten sein können, und nie als anonym. Für die Bewertung folgt daraus:
+
+- **Empfänger.** Wird der Gedächtnis-Dienst außerhalb der Anlage betrieben, ist er
+  Empfänger personenbezogener Daten — Auftragsverarbeitung (Art. 28) und, je nach
+  Standort, Transfergrundlage (Art. 44 ff.) sind dann Pflicht, nicht erst im
+  Cloud-LLM-Fall. In `compliance/scope.yaml` ist der Auftragsverarbeitungsvertrag als
+  offener Punkt geführt. Solange ausschließlich simulierte Daten verarbeitet werden,
+  ist kein Pflichtfall ausgelöst.
+- **Crypto-Shredding reicht für diese Kopie nicht.** Die Gedächtniskopie trägt kein
+  Verfasser-Token; das Vernichten des Personenschlüssels kappt dort nichts. Der
+  Personenbezug in der Kopie hängt allein an Namen im Text, die vor dem Versand
+  maskiert werden (NER, Restrisiko R4 der DSFA). Wirksam ist deshalb nur der
+  **Löschweg** zum Dienst.
+- **Der Löschweg ist gebaut und gemessen.** `forget` (`src/foreman/substrate/client.py`,
+  seit 24.08.2026) löscht eine einzelne gespiegelte Erinnerung über ihre Kennung;
+  über die Betriebskonfiguration erreichbar seit dem 25.08.2026 (**C-051**); am
+  27.08.2026 gegen die laufende Gegenstelle durchgelaufen — **22 von 22**
+  Löschverlangen mit 200 OK, ein zweiter Lauf findet nichts mehr (**C-072**).
+  **Gemessen ist der technische Durchlauf, nicht die Vollständigkeit der Wirkung:**
+  Zum Messzeitpunkt nahm die Gegenstelle abgeleitete Sachverhalte im Wissensgraphen
+  nicht zurück. Der Betreiber des Dienstes meldet seit September 2026, dass sein
+  Löschweg auch abgeleitete Sachverhalte entfernt; **von FOREMAN aus ist das nicht
+  nachgemessen** und wird hier deshalb nicht als Eigenschaft der Plattform geführt.
+  Ein `404` der Gegenstelle ist mehrdeutig (nicht gefunden oder abgewiesen) und darf
+  nicht als Erfüllung eines Löschverlangens gebucht werden (GROUND_TRUTH §9).
+- **Ein zweiter Cloud-Pfad existiert, nur für die Demo.** Neben dem Sprachmodell gibt
+  es seit dem 25.06.2026 einen optionalen Einbettungs-Pfad zu einem US-Anbieter
+  (`FOREMAN_EMBED_PRIORITY=openai_*`). Er ist ausschließlich ein Demonstrations-Pfad
+  auf simulierten Daten und nicht Teil des Zielbetriebs; für §7 gilt er wie der
+  Cloud-LLM-Fall (AVV, Transfergrundlage, Maskierung vor Versand), sobald reale
+  Daten im Spiel wären.
+
+**Was das für die Einschätzung bedeutet.** Die Gesamteinschätzung in §9 trägt weiter,
+aber mit einer Verschiebung: Der datensparsamste Betrieb ist nicht mehr „alles
+lokal", sondern „lokal, plus ein Gedächtnis-Dienst als Empfänger maskierten Texts" —
+und dieser Empfänger gehört ins Verarbeitungsverzeichnis, in die DSFA (R6/R7) und, bei
+Betrieb außerhalb der Anlage, in einen Auftragsverarbeitungsvertrag. Die Rechtsgrundlage
+des Notiztexts (Art. 6(1)(f)) ändert sich nicht; die Interessenabwägung muss den
+Empfänger jetzt mitführen.

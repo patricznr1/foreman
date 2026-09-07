@@ -41,7 +41,7 @@ describe("KpiTile — nie nackte Zahl (Prinzip 6)", () => {
 describe("ProvenanceStamp — Herkunft/Frische + AI-Act-Kennzeichnung", () => {
   it("zeigt gecachten Stand", () => {
     render(<ProvenanceStamp freshness="cached" stampedAt={new Date("2026-06-16T12:30:00Z")} />);
-    expect(screen.getByText(/Gecacht/)).toBeInTheDocument();
+    expect(screen.getByText(/Letzter Stand/)).toBeInTheDocument();
   });
 
   it("kennzeichnet KI-erzeugten Inhalt (AI-Act-Transparenz)", () => {

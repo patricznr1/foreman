@@ -107,12 +107,12 @@ export function AuditFilters({ initial, onApply }: AuditFiltersProps) {
         </label>
 
         <label className={LABEL}>
-          Akteur (Token)
+          Akteur (Kennung)
           <input
             className={FIELD}
             type="text"
             value={draft.actor}
-            placeholder="pseudonymer Token"
+            placeholder="pseudonyme Kennung"
             onChange={(e) => update("actor", e.target.value)}
           />
         </label>

@@ -12,6 +12,17 @@ Regulatorische Einordnung und Datenschutz von FOREMAN — EU AI Act und DSGVO. A
 
 - [`../research/anonymisierung-werkerdaten.md`](../research/anonymisierung-werkerdaten.md) — das **technische Wie** der Pseudonymisierung (HMAC-Tokenisierung, NER, Salt/Key-Rotation, Crypto-Shredding, Mapping-Trennung). Bleibt im Research-Ordner; das **rechtliche Ob/Warum** steht in `dsgvo-assessment.md`. Klare Arbeitsteilung: hier Recht, dort Technik.
 
+## Maschinenprüfbare Fassung (seit 26.08.2026)
+
+Die Einstufungen dieser Dokumente liegen zusätzlich als YAML unter [`../../compliance/`](../../compliance/):
+
+- `scope.yaml` — alle **vier** hausüblich geprüften Regelwerke ausdrücklich eingestuft: KI-VO greift (Anbieter, Transparenzpflicht Art. 50), DSGVO greift (Verantwortlicher ist der Betreiber), ISO/IEC 27001 und 21 CFR Part 11 greifen **nicht** — je mit Begründung, tragender Bedingung, Belegstatus und Prüftermin (2027-02-26). Register: C-126.
+- `retention-policy.yaml` — Frist je Datenklasse mal Rechtsgrundlage; `soa.yaml` — Anwendbarkeitserklärung als freiwillige Bauordnung; `traceability.yaml` — Anforderung → Nachweis.
+
+Prüfbefehl: `python scripts/check_compliance.py` (läuft in der CI). Die YAML-Dateien übertragen, sie entscheiden nicht neu — eine Abweichung zwischen ihnen und den Fließtext-Dokumenten ist ein Befund. Was offen ist, steht dort ausdrücklich als offen (Verarbeitungsverzeichnis, abschließende Folgenabschätzung, AVV und Transfergrundlage für die Cloud-Pfade, Fristen der Nachweis-Felder).
+
+Nachträge in den Dokumenten: `dsgvo-assessment.md` (August 2026: Zugriffsbegrenzung; September 2026: Spiegelung ins Gedächtnis, Löschweg), `dsfa-foreman-vorlaeufig.md` (September 2026: Review-Trigger „neue Datenarten"), `eu-ai-act-assessment.md` (September 2026: Bau-Stand, Anbieter-Rolle, Fristenvorbehalt).
+
 ## Pflege
 
-Jedes Compliance-Dokument wird neu bewertet bei: Architektur-Änderung (Aktorik, neue Datenarten, Personenbezug), Einsatz in kritischer Infrastruktur, Finalisierung der EU-Leitlinien, oder neuem Betreiber-Kontext.
+Jedes Compliance-Dokument wird neu bewertet bei: Architektur-Änderung (Aktorik, neue Datenarten, Personenbezug), Einsatz in kritischer Infrastruktur, Finalisierung der EU-Leitlinien, oder neuem Betreiber-Kontext. Kippt eine tragende Bedingung aus `compliance/scope.yaml`, ist die Datei neu zu bewerten, nicht fortzuschreiben.

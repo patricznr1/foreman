@@ -25,14 +25,16 @@ Backend braucht keine CORS-Lockerung.
 | `NEXT_PUBLIC_FOREMAN_WS_URL` | Live-WebSocket (client-seitig) | `ws://localhost:8000/api/v1/ws` empfohlen |
 
 Ohne gesetztes `NEXT_PUBLIC_FOREMAN_WS_URL` zeigt die Übersicht das HTTP-Erstbild
-(als „gecacht"); Live-Updates kommen erst mit konfiguriertem WebSocket.
+(als „Letzter Stand"); Live-Updates kommen erst mit konfiguriertem WebSocket.
+`NEXT_PUBLIC_*` wird beim Build ins Bundle eingebacken (Dockerfile-`ARG`) — eine
+Änderung braucht einen Neubau, kein Neustart genügt.
 
 ## Quality-Gates
 
 ```bash
 npm run typecheck    # tsc --noEmit (strict)
 npm run lint         # ESLint
-npm test             # Vitest (Tokens, Echtzeit-Schicht, Atome, Shell, Durchstich)
+npm test             # Vitest — alle Sektionen, Zahl der Prüfdateien im Register (C-021)
 npm run build        # Production-Build
 npm run tokens:check # CI: generierte Token-CSS == Quelle
 ```
@@ -50,7 +52,10 @@ npm run tokens:check # CI: generierte Token-CSS == Quelle
 - **Atome & Shell** `components/` — StatusIndicator, ProvenanceStamp, KpiTile,
   Fünf-Zustände-Hülle; GlobalStatusBar (live), Breadcrumb, Befehlsleiste (⌘K),
   Schnellerfassung, rollengefilterte Navigation.
-- **Durchstich** `views/overview/` — Flotten-Übersicht: HTTP-Snapshot + WS-Live.
+- **Sektionen** `components/{cockpit,synoptik,machine,alarms,event-chains,prediction,insights,memory,capture,platform}/`
+  + `lib/<sektion>/` — die Seiten unter `app/(app)/` rendern je einen Sektions-Orchestrator
+  (HTTP-Snapshot + WS-Live, wo es einen Live-Strom gibt). Stand: acht von zehn Sektionen
+  gebaut, dazu die 3D-Liniensicht der Synoptik (GROUND_TRUTH §21.6).
 
 ## Drei bleibende Haltungen (Verfassung, kein Feature)
 
@@ -60,5 +65,6 @@ npm run tokens:check # CI: generierte Token-CSS == Quelle
 
 ## Bewusst verschoben (eigene Prompts)
 
-Die zehn Sektionen (C/E zuerst), WebGL (A/G), Sprach-UI (J), Electron,
-Service-Worker-Vollausbau, Playwright-E2E, Font-Selfhosting.
+Sektionen F (Wartung) und G (Belastung) — als Platzhalter im Erkenntnisse-Hub
+gekennzeichnet —, Sprach-UI (J), Electron, Service-Worker-Vollausbau, Playwright-E2E,
+Font-Selfhosting.

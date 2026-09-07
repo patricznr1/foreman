@@ -51,13 +51,13 @@ cp .env.example .env                              # configuration contract, no s
 docker compose up -d timescaledb
 uv run alembic upgrade head
 
-# the backend gate. NOT the whole of CI: the pipeline additionally runs the two
+# the backend gate. NOT the whole of CI: the pipeline additionally runs the three
 # register checks, the dependency audit, a secret scan over the full history in
 # its own job, and the frontend gates. All of those are below.
 uv run mypy && uv run ruff check && uv run ruff format --check && uv run pytest
 
-# the two register checks CI also runs
-python scripts/check_compliance.py && python scripts/check_findings.py
+# the three register checks CI also runs (regulatory scope, findings, claims)
+python scripts/check_compliance.py && python scripts/check_findings.py && uv run python -m tools.pruefe_register
 
 # dependency audit, same invocation as CI
 uv export --no-hashes --no-emit-project --format requirements-txt > /tmp/requirements.txt

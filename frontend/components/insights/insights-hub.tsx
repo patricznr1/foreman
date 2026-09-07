@@ -51,8 +51,8 @@ export function InsightsHub() {
       <div className="flex flex-col gap-1">
         <h1 className="text-h1 text-fg-primary">Erkenntnisse</h1>
         <p className="text-body text-fg-secondary">
-          On-Demand-Reasoner — jede erzeugte Erkenntnis durchläuft denselben Dreischritt:
-          Trigger → Herkunft → Vorbehalt.
+          Auswertungen auf Anfrage — jede Erkenntnis entsteht in denselben drei Schritten:
+          Anfordern → Herkunft → Vorbehalt.
         </p>
       </div>
       <ul className="grid gap-3 sm:grid-cols-2">
@@ -61,7 +61,9 @@ export function InsightsHub() {
             <>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-body-l font-medium text-fg-primary">{entry.title}</span>
-                <span className="text-caption text-fg-muted">{entry.href ? "live" : "folgt"}</span>
+                <span className="text-caption text-fg-muted">
+                  {entry.href ? "verfügbar" : "in Vorbereitung"}
+                </span>
               </div>
               <p className="text-caption text-fg-secondary">{entry.blurb}</p>
             </>

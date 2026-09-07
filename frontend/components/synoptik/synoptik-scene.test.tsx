@@ -18,7 +18,10 @@ describe("SynoptikScene", () => {
     const placements = buildLineLayout(makeParkMachines());
     render(<SynoptikScene placements={placements} onSelectMachine={() => undefined} />);
 
-    expect(await screen.findByRole("status")).toHaveTextContent(/WebGL/);
+    const hinweis = await screen.findByRole("status");
+    expect(hinweis).toHaveTextContent(/3D-Ansicht auf diesem Gerät nicht verfügbar/);
+    // Der Bibliotheksname bleibt Innenleben — im sichtbaren Hinweis taucht er nicht auf.
+    expect(hinweis).not.toHaveTextContent(/WebGL/);
     expect(screen.getByRole("img", { name: /Montagelinie 1/ })).toBeInTheDocument();
   });
 });

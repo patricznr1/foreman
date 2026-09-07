@@ -93,7 +93,7 @@ describe("CockpitView", () => {
     expect(screen.getByText("Flottenbild — alle Werke und Klassen")).toBeInTheDocument();
     unmount();
     renderRole(LEAD);
-    expect(screen.getByText("Linienbild — Ihre Linien")).toBeInTheDocument();
+    expect(screen.getByText("Linienbild — eigene Linien")).toBeInTheDocument();
   });
 
   it("filtert die Heatmap auf den Geltungsbereich (Klasse)", () => {
@@ -138,7 +138,7 @@ describe("CockpitView", () => {
       act(() => {
         transport.setStatus("closed");
       });
-      expect(screen.getByText(/Gecacht/)).toBeInTheDocument();
+      expect(screen.getByText(/Letzter Stand/)).toBeInTheDocument();
       // Daten bleiben sichtbar (eingefroren), kein Leerlaufen
       expect(screen.getByRole("grid")).toBeInTheDocument();
     });

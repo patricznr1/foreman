@@ -155,7 +155,7 @@ export function TopologyNodeMark({ node }: TopologyNodeMarkProps) {
         <span className="text-body font-medium text-fg-primary">{node.label}</span>
         {node.isVision && (
           <span className="rounded-sm border border-line-subtle px-1.5 text-caption text-fg-muted">
-            [VISION] · nicht verbunden
+            Geplant · nicht verbunden
           </span>
         )}
         {node.internal && !node.isVision && (

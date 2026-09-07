@@ -88,7 +88,7 @@ describe("AcknowledgeAction — HITL zweistufig", () => {
         onAcknowledged={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Route für diese Alarmklasse noch nicht/)).toBeInTheDocument();
+    expect(screen.getByText(/Quittieren für diese Alarmart noch nicht möglich/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /quittieren/i })).toBeNull();
   });
 

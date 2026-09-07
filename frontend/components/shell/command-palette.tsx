@@ -123,7 +123,7 @@ export function CommandPalette() {
         className="touch-target flex items-center gap-2 rounded-md border border-line-subtle px-3 text-caption text-fg-secondary hover:bg-surface-overlay"
       >
         <span>Suchen / Sprung</span>
-        <kbd className="rounded bg-surface-overlay px-1 text-fg-muted">⌘K</kbd>
+        <kbd className="rounded bg-surface-overlay px-1 text-fg-muted">Strg+K / ⌘K</kbd>
       </button>
 
       {open ? (
