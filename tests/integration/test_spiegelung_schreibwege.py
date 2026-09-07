@@ -261,7 +261,7 @@ class _KaputtesSubstrat:
 
     async def remember(
         self, content: str, metadata: dict[str, Any] | None = None, occurred_at: str | None = None
-    ) -> dict:
+    ) -> dict[str, Any]:
         raise RuntimeError("❌ Gegenstelle nicht erreichbar (Test)")
 
 

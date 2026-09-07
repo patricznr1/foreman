@@ -149,11 +149,21 @@ def _ueberholt(kennung: str, e: dict[str, Any]) -> list[Verstoss]:
 def pruefe_eintraege(register: dict[str, Any]) -> list[Verstoss]:
     """Jeder Eintrag einzeln — und die Kennungen gegeneinander."""
     verstoesse: list[Verstoss] = []
-    eintraege: list[dict[str, Any]] = register.get("claims") or []
+    eintraege = register.get("claims") or []
+    # FORM VOR INHALT: Ist `claims` keine Liste, hat der Kopf das bereits
+    # gemeldet. Hier weiterzulaufen hiesse, ueber die Schluessel eines Mappings
+    # zu iterieren und mit einem Traceback statt einem Verstoss zu enden — und
+    # ein Verstoss, der wie ein Programmfehler aussieht, wird als Programmfehler
+    # behandelt, nicht als Register-Mangel.
+    if not isinstance(eintraege, list):
+        return verstoesse
     stand = str(register.get("stand", ""))
     gesehen: set[str] = set()
 
     for i, e in enumerate(eintraege):
+        if not isinstance(e, dict):
+            verstoesse.append(Verstoss(f"Eintrag {i + 1}", "ist kein Mapping mit Feldern"))
+            continue
         kennung = str(e.get("id") or f"Eintrag {i + 1} ohne Kennung")
 
         if not ID_MUSTER.match(str(e.get("id", ""))):
@@ -185,11 +195,21 @@ def pruefe_ansicht(register: dict[str, Any], roh_ansicht: str) -> list[Verstoss]
     # Wirkung; die Mutationsprobe vom 07.09.2026 hat genau das gezeigt: Beim
     # Entfernen blieb kein Test rot.
     verstoesse: list[Verstoss] = []
-    eintraege: list[dict[str, Any]] = register.get("claims") or []
+    roh_eintraege = register.get("claims") or []
+    if not isinstance(roh_eintraege, list):
+        return verstoesse  # die Form meldet der Kopf; hier gaebe es nur einen Traceback
+    eintraege = [e for e in roh_eintraege if isinstance(e, dict)]
     ansicht = roh_ansicht
+    zeilen = ansicht.splitlines()
 
+    # ZEILENGEBUNDEN: Gemeint ist die Kopfzeile `Stand: <datum>` — nicht ein
+    # Vorkommen des Teilstrings in einer Prosa-Zelle. Und die Aussage gehoert
+    # in die Tabellenzeile IHRER Kennung: Steht sie in einer fremden Zeile, ist
+    # die eigene veraltet, und eine Suche ueber die ganze Ansicht meldete Drift
+    # als synchron. Beide Stellen am 07.09.2026 im Review gefunden und am Code
+    # bestaetigt.
     stand = str(register.get("stand", ""))
-    if stand and f"Stand: {stand}" not in ansicht:
+    if stand and not any(z.strip() == f"Stand: {stand}" for z in zeilen):
         verstoesse.append(Verstoss("CLAIMS.md", f"Stand-Zeile fehlt oder nennt nicht {stand}"))
 
     im_register = {str(e.get("id")) for e in eintraege if e.get("id")}
@@ -205,12 +225,18 @@ def pruefe_ansicht(register: dict[str, Any], roh_ansicht: str) -> list[Verstoss]
         )
 
     for e in eintraege:
+        kennung = str(e.get("id", ""))
         aussage = str(e.get("aussage", ""))
-        if aussage and aussage not in ansicht:
+        if not aussage or kennung not in in_ansicht:
+            continue  # ohne eigene Zeile ist der Fall oben schon gemeldet
+        eigene_zeile = next(
+            (z for z in zeilen if re.match(rf"\|\s*{re.escape(kennung)}\s*\|", z)), ""
+        )
+        if aussage not in eigene_zeile:
             verstoesse.append(
                 Verstoss(
                     "CLAIMS.md",
-                    f"Aussage von {e.get('id')} steht nicht in der Ansicht — neu erzeugen",
+                    f"Aussage von {kennung} steht nicht in ihrer Zeile der Ansicht — neu erzeugen",
                 )
             )
 

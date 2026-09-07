@@ -167,18 +167,51 @@ def test_failure_anker_nur_bei_echten_komponenten_ausfaellen() -> None:
     assert with_failure == {"PR-01", "PR-02", "AX-02", "AX-03"}
 
 
+def _abschnitt(zeilen: list[str], titelwort: str) -> list[str]:
+    """Die Zeilen unter der Ueberschrift, die `titelwort` traegt, bis zur naechsten
+    gleich- oder hoeherrangigen Ueberschrift. Ein Treffer AUSSERHALB des
+    Abschnitts zaehlt damit nicht."""
+    start = next(i for i, z in enumerate(zeilen) if z.startswith("#") and titelwort in z)
+    rang = len(zeilen[start]) - len(zeilen[start].lstrip("#"))
+    ende = next(
+        (
+            i
+            for i in range(start + 1, len(zeilen))
+            if zeilen[i].startswith("#") and len(zeilen[i]) - len(zeilen[i].lstrip("#")) <= rang
+        ),
+        len(zeilen),
+    )
+    return zeilen[start:ende]
+
+
 def test_szenarien_doc_deckt_park_und_muster_ab() -> None:
     assert SZENARIEN_DOC.exists(), f"{SZENARIEN_DOC} fehlt"
     text = SZENARIEN_DOC.read_text(encoding="utf-8")
+    zeilen = text.splitlines()
+    # Ganzdatei-Ausnahme: Der Linien-Titel steht genau einmal; „die Doku nennt die Linie“ IST die Aussage.
     assert PARK_LINE_LABEL in text
-    # Alle Maschinen im Master-Ueberblick referenziert.
+    # ZEILEN- UND ABSCHNITTSGEBUNDEN (07.09.2026): Jede Maschine hat ihre
+    # Tabellenzeile im Park-Layout (7.1). FD-01 steht auch in der B7-Liste, und
+    # eine Tabellenzeile in einem ANDEREN Abschnitt waere keine Park-Belegung.
+    park = _abschnitt(zeilen, "Park-Layout")
     for external_id in EXPECTED_MACHINES:
-        assert external_id in text, f"szenarien.md erwaehnt {external_id} nicht"
-    # Degradationsfamilien B1-B7 und Kausalmuster P1-P4 dokumentiert.
+        assert any(z.startswith(f"| {external_id} |") for z in park), (
+            f"szenarien.md fuehrt {external_id} nicht als Zeile im Park-Layout"
+        )
+    # Jede Familie hat ihre Aufzaehlungszeile im Familien-Abschnitt (7.2), jedes
+    # Muster seine Tabellenzeile in der Master-Ground-Truth (7.4). "B1" steht
+    # auch in der Ueberschrift "B1-B7", "P1" in "P1-P4" und in den
+    # Maschinenzeilen - die Kennung allein belegt keine Beschreibung.
+    familien = _abschnitt(zeilen, "Degradationsfamilien")
     for family in ("B1", "B2", "B3", "B4", "B5", "B6", "B7"):
-        assert family in text, f"szenarien.md erwaehnt {family} nicht"
+        assert any(z.startswith(f"- **{family} ") for z in familien), (
+            f"szenarien.md beschreibt {family} nicht (keine Aufzaehlungszeile `- **{family} …`)"
+        )
+    muster = _abschnitt(zeilen, "Kausalmuster")
     for pattern in ("P1", "P2", "P3", "P4"):
-        assert pattern in text, f"szenarien.md erwaehnt {pattern} nicht"
+        assert any(z.startswith(f"| **{pattern} ") for z in muster), (
+            f"szenarien.md beschreibt {pattern} nicht (keine Tabellenzeile `| **{pattern} …`)"
+        )
     # P5 darf NICHT als umgesetzt behauptet werden: die Doku muss P5 ausdruecklich
     # als nicht-Teil-dieses-Schritts UND an die (offene) Engine-Erweiterung E1
     # gekoppelt fuehren — nicht nur den Token erwaehnen (sonst wuerde eine
