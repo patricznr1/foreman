@@ -111,6 +111,53 @@ async def test_wartung_ueber_http_wird_gespiegelt(
     assert "performed_at" in payload
 
 
+async def test_wartung_mit_bauteil_traegt_dessen_namen_ins_gedaechtnis(
+    auth_client: AsyncClient, test_settings: Settings
+) -> None:
+    """Der Weg vom Router bis zur Nutzlast — MIT Bauteil, und darauf kommt es an.
+
+    Jeder bestehende Fall dieser Datei legt die Wartung OHNE `component_id` an;
+    damit bleibt `component_label` überall `None`, und der Weg, auf dem ein
+    echter Bauteilname durchläuft, war nie gefahren. Gemessen (07.09.2026):
+    `component_label` in `bezugsfelder` fest auf `None` gesetzt — 1575 Tests
+    blieben grün.
+
+    Der Name ist die Brücke, auf die es ankommt: Zwei Maschinen verschiedener
+    Bauart teilen ein Bauteil, und ein Versagensmuster gehört dem Bauteil. Ohne
+    ihn kennt das Gedächtnis nur die Nummer der Komponentenzeile.
+    """
+    machine_id = await _maschine(auth_client)
+    r = await auth_client.post(
+        "/api/v1/components",
+        json={"machine_id": machine_id, "label": "Achslager", "component_type": "bearing"},
+    )
+    assert r.status_code == 201, r.text
+    bauteil_id = int(r.json()["id"])
+
+    r = await auth_client.post(
+        "/api/v1/maintenance_events",
+        json={
+            "machine_id": machine_id,
+            "component_id": bauteil_id,
+            "type": "lubrication",
+            "description": "Nachschmierung, Intervall verkürzt.",
+        },
+    )
+    assert r.status_code == 201, r.text
+
+    zeilen = await _spiegel(test_settings, "maintenance_performed")
+    assert len(zeilen) == 1, "der HTTP-Schreibweg hat nicht gespiegelt"
+    payload: dict[str, Any] = dict(zeilen[0].payload or {})
+    assert payload["component_id"] == bauteil_id
+    assert payload["component_label"] == "Achslager", (
+        "Der Bauteilname erreicht das Gedächtnis nicht. Die Gegenstelle filtert "
+        "über dieses Feld, und es kommt als detail['bauteil'] in die Trefferkarte "
+        "zurück — mit None ist der Fall 'gleiches Bauteil, andere Maschine' nicht "
+        "adressierbar."
+    )
+    assert payload["component_type"] == "bearing"
+
+
 async def test_alarm_ueber_http_wird_gespiegelt(
     auth_client: AsyncClient, test_settings: Settings
 ) -> None:
