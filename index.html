@@ -8,7 +8,12 @@
 <meta property="og:title" content="FOREMAN — Production Intelligence with Memory">
 <meta property="og:description" content="A reasoning platform with memory for the production floor. MSIT AI-Track Capstone.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="https://raw.githubusercontent.com/patricznr1/foreman/main/docs/assets/foreman-hero.svg">
+<meta property="og:url" content="https://patricznr1.github.io/foreman/">
+<meta property="og:image" content="https://patricznr1.github.io/foreman/docs/assets/foreman-og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0E14'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%232DD4BF' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%232DD4BF'/%3E%3C/svg%3E">
 <style>
   :root{
@@ -131,7 +136,7 @@
       <div class="tag">Production Intelligence with Memory</div>
       <p class="lead">An AI platform that doesn’t just monitor industrial production environments — it remembers them. Four specialized reasoners on a biologically inspired memory substrate.</p>
       <div class="cta">
-        <a class="btn primary" href="https://frontend-production-169a.up.railway.app" target="_blank" rel="noopener">▶ Try the live demo</a>
+        <a class="btn primary" href="https://foreman-demo.de" target="_blank" rel="noopener">▶ Try the live demo</a>
         <a class="btn ghost" href="https://gamma.app/docs/Copy-of-FOREMAN-8kkqcy0pbksm2ng" target="_blank" rel="noopener">Watch the deck</a>
         <a class="btn ghost" href="https://github.com/patricznr1/foreman">View on GitHub</a>
       </div>
@@ -168,7 +173,7 @@
     <div class="grid2">
       <div class="card">
         <div class="n">ACCESS</div>
-        <h3><a href="https://frontend-production-169a.up.railway.app" target="_blank" rel="noopener">frontend-production-169a.up.railway.app ↗</a></h3>
+        <h3><a href="https://foreman-demo.de" target="_blank" rel="noopener">foreman-demo.de ↗</a></h3>
         <p style="margin-top:14px">
           <span style="color:var(--faint)">E-mail</span><br>
           <code style="color:var(--teal)">chef@foreman.de</code><br>
@@ -180,7 +185,7 @@
       </div>
       <div class="card">
         <div class="n">BEFORE YOU CLICK</div>
-        <h3>Four honest notes</h3>
+        <h3>Five honest notes</h3>
         <p style="margin-top:12px"><b style="color:var(--text)">The interface is German.</b>
           FOREMAN speaks the language of the shop floor it was designed for.</p>
         <p style="margin-top:10px"><b style="color:var(--text)">The data is simulated.</b>
@@ -188,7 +193,11 @@
           a deliberate design rule, not a placeholder.</p>
         <p style="margin-top:10px"><b style="color:var(--text)">It is a shared instance.</b>
           Anything you enter is visible to everyone else and stays in the database.
-          Please do not enter real personal data.</p>
+          Please do not enter real personal data. Worker notes are run through name
+          redaction before they are stored — a safety net, not a guarantee.</p>
+        <p style="margin-top:10px"><b style="color:var(--text)">AI analyses are rate-limited.</b>
+          The reasoners call a language model on a capped budget. If an analysis is
+          temporarily unavailable, alarms, trends and the archive keep working.</p>
         <p style="margin-top:10px"><b style="color:var(--text)">Nothing here switches anything.</b>
           FOREMAN explains, it does not actuate. There is no path from this interface to a machine.</p>
       </div>
@@ -199,9 +208,9 @@
 <!-- DECK -->
 <section class="block" id="deck">
   <div class="wrap">
-    <div class="eyebrow">The pitch</div>
-    <h2>FOREMAN in ten slides</h2>
-    <p class="sub">The full project deck — problem, three-layer architecture, its reasoning layer, and how it is built. Interactive; use the arrows to navigate. <a href="https://gamma.app/docs/Copy-of-FOREMAN-8kkqcy0pbksm2ng" target="_blank" rel="noopener">Open in full screen ↗</a></p>
+    <div class="eyebrow">Concept deck · May 2026</div>
+    <h2>The concept deck</h2>
+    <p class="sub">Written in May 2026, before the first commit: the problem, the three-layer architecture, its reasoning layer, and the plan. It shows the <b>target picture</b>, not today's build state — for that, see the table under <a href="#reasoners">Reasoners</a> and the <a href="https://github.com/patricznr1/foreman/blob/main/CLAIMS.md">claims register</a>. Interactive; use the arrows to navigate. <a href="https://gamma.app/docs/Copy-of-FOREMAN-8kkqcy0pbksm2ng" target="_blank" rel="noopener">Open in full screen ↗</a></p>
     <div class="deckframe">
       <div class="bar"><i></i><i></i><i></i><span>FOREMAN · deck</span></div>
       <div class="ratio">
@@ -218,7 +227,7 @@
     <h2>Three layers, cleanly decoupled</h2>
     <p class="sub">Industry delivers the data, FOREMAN reasons, operators act. Each layer is autonomous — the platform is an open node in the industrial software stack, not a closed app.</p>
     <div class="grid3">
-      <div class="card"><div class="n">LAYER 1</div><h3>Industrial environment</h3><p>Sensor streams, PLC logic (OPC&nbsp;UA, MQTT, Modbus), log files, and maintenance history — integrated through normalizing, anonymizing adapters.</p></div>
+      <div class="card"><div class="n">LAYER 1</div><h3>Industrial environment</h3><p>Sensor streams, PLC logic (OPC&nbsp;UA, MQTT, Modbus), log files, and maintenance history — integrated through normalizing, pseudonymizing adapters. Today only the simulation adapter is built; the protocol adapters are the target picture.</p></div>
       <div class="card"><div class="n">LAYER 2</div><h3>Reasoning platform</h3><p>Four specialized reasoners work against a shared memory substrate, routed through a local + cloud model gateway.</p></div>
       <div class="card"><div class="n">LAYER 3</div><h3>Output channels</h3><p>An operator dashboard with traceable explanations — plus an MCP interface that any third-party system can consume.</p></div>
     </div>
@@ -238,6 +247,29 @@
       <div class="rrow"><div class="idx">04</div><div><h3>Maintenance-cycle analysis</h3><p>Causal deviation analysis between maintenance events and machine behavior to optimize intervals.</p></div></div>
     </div>
     <p class="sub" style="margin-top:18px"><b>Load data, not load simulation.</b> FOREMAN does not simulate load itself — that needs parameters outside its observation boundary. It exposes the observed load profiles and limits read-only over MCP, for an external simulation tool to build on.</p>
+
+    <div class="eyebrow" style="margin-top:34px">Target vs. today</div>
+    <h3 style="margin:8px 0 6px;font-size:22px">What is built, what is planned</h3>
+    <p class="sub" style="margin-bottom:18px">This page describes the target picture of a project under construction. The build state lives in the repository — every row below cites its entry in the <a href="https://github.com/patricznr1/foreman/blob/main/CLAIMS.md">claims register</a>.</p>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:15px">
+        <thead>
+          <tr style="color:var(--muted);text-align:left">
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border)">Target</th>
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border)">Today</th>
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border)">Evidence</th>
+          </tr>
+        </thead>
+        <tbody style="color:var(--text)">
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Four reasoners</td><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Three built — event-chain reconstruction, drift detection, failure prediction. Maintenance-cycle analysis waits on a real maintenance history.</td><td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted)">C-001</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Ten dashboard sections</td><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Eight built, including the platform/audit view and a 3D line view. Maintenance and load are marked placeholders.</td><td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted)">C-003</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Plant protocols (OPC&nbsp;UA, MQTT, Modbus)</td><td style="padding:10px 12px;border-bottom:1px solid var(--border)">None connected. A simulation adapter drives a twin park of twelve machines.</td><td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted)">C-005</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Open MCP node</td><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Built — eleven read-only tools. The consumers named in the deck (simulation, ERP, energy management) are the target, not connected systems.</td><td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted)">C-002</td></tr>
+          <tr><td style="padding:10px 12px;border-bottom:1px solid var(--border)">Failure prediction on real data</td><td style="padding:10px 12px;border-bottom:1px solid var(--border)">A method demonstrator trained on simulation data; every prediction carries a simulation caveat.</td><td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted)">C-012</td></tr>
+          <tr><td style="padding:10px 12px">Memory substrate</td><td style="padding:10px 12px">Connected as an external service; a memory-only search mode is live in the demo.</td><td style="padding:10px 12px;color:var(--muted)">C-033, C-073</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
@@ -253,11 +285,12 @@
       <div class="chip"><b>Linted</b> ruff / eslint</div>
       <div class="chip"><b>Secure</b> OWASP Web &amp; LLM Top 10 (2025)</div>
       <div class="chip"><b>Private by design</b> GDPR Art.&nbsp;25</div>
-      <div class="chip"><b>EU AI Act</b> classified before code</div>
+      <div class="chip"><b>EU AI Act</b> scoped: provider, Art. 50 transparency duties — no conformity claim</div>
       <div class="chip"><b>Observable</b> per-reasoner metrics (OWASP A09)</div>
       <div class="chip"><b>Human-in-the-loop</b> operator confirms safety calls (BSI)</div>
       <div class="chip"><b>Bounded</b> rate-limited + pinned models (LLM10)</div>
       <div class="chip"><b>Living docs</b> updated in the same commit</div>
+      <div class="chip"><b>Agent-governed</b> coding agents run under a rule-and-guard layer (AEOS)</div>
     </div>
     <div class="cta" style="margin-top:32px">
       <a class="btn primary" href="https://github.com/patricznr1/foreman">Explore the repository</a>
