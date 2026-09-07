@@ -90,3 +90,9 @@ PROMPT_*.md
 # Gehoert keinem Klon gemeinsam: Er wird aus dem Bestand gebaut und ist
 # nach jedem `codegraph sync` ein anderer.
 .codegraph/
+
+# Arbeitskopien, die Agentenlaeufe unter .claude/ anlegen (git worktree). Rein
+# lokal und teils mehrere hundert MB — ein pauschales `git add` zoege sie sonst
+# in ein oeffentliches Repository. Das AEOS-Protokoll daneben bleibt bewusst
+# versioniert: es soll oeffentlich sein.
+.claude/worktrees/

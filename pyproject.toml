@@ -261,6 +261,13 @@ max-complexity = 12
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Das Wurzelverzeichnis in den Suchpfad, damit die Werkzeuge unter `tools/`
+# testbar sind. Sie liegen bewusst ausserhalb von `src/foreman` (kein
+# Anwendungscode), waren dadurch aber auch nicht pruefbar — und ein Werkzeug
+# ohne Test ist genau die Sorte Pruefung, die still falsch wird.
+# Kein Namenskonflikt: `foreman.mcp.tools` wird ueberall voll qualifiziert
+# importiert, nie als blosses `tools`.
+pythonpath = ["."]
 # Neben test_*.py auch das Red-Team-Harness einsammeln (F-LLM, tests/llm/security).
 python_files = ["test_*.py", "*_harness.py"]
 # NER-Test (echtes spaCy-Modell) ist opt-in; Default-Gate bleibt schnell.

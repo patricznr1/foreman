@@ -137,7 +137,13 @@ class SubstrateClient:
         # Round-Trip-Smoke setzt einen) schriebe in den einen und löschte im
         # anderen. Die Falle ist heute gestellt, nicht ausgelöst: Der Smoke ruft
         # `forget` nicht auf.
-        if settings.substrate_token is None:
+        # WAHRHEITSWERT, nicht `is None`: Eine leer gesetzte Variable ergibt
+        # `SecretStr("")` — nicht None, aber falsch. Der Header-Bau unten und der
+        # Klartext-Zugriff prüfen beide den Wahrheitswert, ließen den Klienten also
+        # ohne Authorization-Kopf laufen; eine Prüfung auf None schwiege dabei.
+        # Das ist genau der Vorfall vom 03.09.2026, nur mit gesetzter statt
+        # fehlender Variable — und von aussen nicht zu unterscheiden.
+        if not settings.substrate_token:
             _warne_ohne_token(settings.substrate_base_url)
         ns = namespace or settings.substrate_namespace
         return cls(
