@@ -426,6 +426,8 @@ claims:
   # ──────────────────────────────────────────────────────────────────────
 
   - id: "C-018"
+    bedingung_pruefbefehl: |-
+      python -c 'import pathlib,sys; sys.exit(0 if pathlib.Path("tools/pruefe_registerzahlen.py").is_file() else 1)'
     aussage: "Die Prüfsuite des Backends läuft vollständig grün."
     status: "gemessen"
     wert: "1579 bestanden, 2 übersprungen, 9 abgewählt"
@@ -465,6 +467,8 @@ claims:
       niedriger lag, ist nicht rekonstruierbar und wird auch nicht behauptet.
 
   - id: "C-019"
+    bedingung_pruefbefehl: |-
+      python -c 'import pathlib,sys; t=pathlib.Path("pyproject.toml").read_text(encoding="utf-8"); sys.exit(0 if "--cov-fail-under=85" in t else 1)'
     aussage: "Die Prüfabdeckung des Backends liegt über der im Manifest erzwungenen Untergrenze."
     status: "gemessen"
     wert: "94,33 Prozent Zweigabdeckung, Untergrenze 85 Prozent"
@@ -2647,6 +2651,8 @@ claims:
       liegt arctic-l-v2.0 bei 52,9 bzw. 54,3 gegen 40,8 bzw. 41,3 fuer bge-m3.
       Fuer deutschsprachige Bestaende ist das kein Detail.
   - id: "C-091"
+    bedingung_pruefbefehl: |-
+      python -c 'import pathlib,sys; k=pathlib.Path("src/foreman/embeddings/kalibrierung.py").read_text(encoding="utf-8"); c=pathlib.Path("src/foreman/config.py").read_text(encoding="utf-8"); sys.exit(0 if "wert=0.75" in k and "snowflake-arctic-embed-l-v2.0" in k and "default=0.75" in c else 1)'
     aussage: "Der Aehnlichkeits-Grenzwert der Archiv-Suche ist erstmals gegen ein BENANNTES Einbettungsmodell erhoben; der uebernommene Wert war fuer Snowflake Arctic zu scharf."
     status: "gemessen"
     wert: "Grenzwert 0,60 -> 0,75 gegen Snowflake Arctic v2.0: Trefferquote 0,197 -> 0,409, Rangguete 0,245 -> 0,386, verdichtet 0,268 -> 0,466. Anfragen ohne einen einzigen zutreffenden Treffer: 6 von 10 -> 2 von 10"
