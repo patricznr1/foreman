@@ -1,0 +1,46 @@
+#!/bin/sh
+# Nimmt das Waechter-Protokoll in jeden Commit mit — und prueft es vorher.
+#
+# WARUM AUTOMATISCH: Das Protokoll (.claude/aeos-log.jsonl) belegt, unter welchen
+# Regeln an diesem Repository gearbeitet wurde. Als Beleg taugt es nur, wenn es
+# mitwaechst; bis heute floss es mit, wenn es jemand zufaellig mitcommittete.
+#
+# WARUM MIT PRUEFUNG: Dieses Repository ist oeffentlich, und das Protokoll waechst
+# ohne weiteres Zutun. Das Schema fuehrt keinen Eingabetext — `reason` traegt den
+# Regeltext, nicht den beanstandeten Befehl —, aber diese Zusicherung wird hier
+# nicht geglaubt, sondern bei jedem Commit gemessen. Ein Beleg, den niemand
+# prueft, ist genau die Stelle, an der irgendwann etwas durchrutscht.
+#
+# FAIL-CLOSED: Fehlt gitleaks, bricht der Commit ab. Ein stilles Durchwinken
+# waere schlimmer als eine Unterbrechung: Es saehe aus wie eine bestandene
+# Pruefung.
+#
+# Einrichtung (einmal je Arbeitskopie):  git config core.hooksPath .githooks
+
+set -e
+
+PROTOKOLL=".claude/aeos-log.jsonl"
+
+# Kein Protokoll (frischer Klon, andere Umgebung) — dann gibt es nichts zu tun.
+[ -f "$PROTOKOLL" ] || exit 0
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "❌ gitleaks ist nicht im PATH." >&2
+    echo "   Das Waechter-Protokoll geht in ein oeffentliches Repository und wird" >&2
+    echo "   vor jedem Commit geprueft. Ohne das Werkzeug findet die Pruefung nicht" >&2
+    echo "   statt, und der Commit wird abgebrochen." >&2
+    echo "   Installieren, oder den Hook fuer diesen Commit umgehen: git commit --no-verify" >&2
+    exit 1
+fi
+
+if ! gitleaks detect --source "$PROTOKOLL" --no-git >/dev/null 2>&1; then
+    echo "❌ gitleaks meldet einen Fund im Waechter-Protokoll." >&2
+    echo "   Der Commit ist abgebrochen. Erst den Fund ansehen:" >&2
+    echo "   gitleaks detect --source $PROTOKOLL --no-git" >&2
+    echo "   Das Protokoll darf nicht von Hand bereinigt werden (R-SCHUTZ-003) —" >&2
+    echo "   ein Fund ist ein Befund am Dispatcher, nicht an der Datei." >&2
+    exit 1
+fi
+
+git add "$PROTOKOLL"
+echo "🛡️  Waechter-Protokoll geprueft und mit aufgenommen ($(wc -l < "$PROTOKOLL" | tr -d ' ') Zeilen)."
