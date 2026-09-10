@@ -184,8 +184,14 @@ jobs:
         # Per Digest festgenagelt statt per Marke: Dieselbe Begründung wie bei den
         # Pipeline-Schritten oben — eine Marke ist verschiebbar, ein Digest nicht.
         # Die Ausnahmen stehen in .gitleaks.toml und treffen Muster, nicht Pfade.
+        #
+        # GIT_CONFIG_*: Das betterleaks-Image laeuft als NICHT-root, das
+        # gitleaks-Image lief als root. Git verweigert deshalb die Arbeit am
+        # ausgecheckten Verzeichnis (dubious ownership) — gemessen 10.09.2026,
+        # Abbruch nach 7 Sekunden. safe.directory ueber die Umgebung statt
+        # --user root: Die Rechtelage bleibt, nur die Pruefung wird bestaetigt.
         run: |
-          docker run --rm -v "$PWD:/repo" -w /repo             ghcr.io/betterleaks/betterleaks@sha256:8b9d12db5e11ca798029da44923503de5d8cfff6992cffaaa6722fbeb9fc7797             git --no-banner --redact -c .gitleaks.toml
+          docker run --rm -v "$PWD:/repo" -w /repo -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo             ghcr.io/betterleaks/betterleaks@sha256:8b9d12db5e11ca798029da44923503de5d8cfff6992cffaaa6722fbeb9fc7797             git --no-banner --redact -c .gitleaks.toml
 
   frontend-gates:
     name: frontend · tokens · tsc · eslint · vitest · build
