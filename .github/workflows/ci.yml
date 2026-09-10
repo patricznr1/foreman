@@ -163,7 +163,7 @@ jobs:
           uv run pip-audit -r /tmp/requirements.txt --progress-spinner off
 
   secret-scan:
-    name: secrets · gitleaks
+    name: secrets · betterleaks
     runs-on: ubuntu-latest
     # Derselbe Deckel wie oben, auf diesen Job bemessen: Median 11 s, längster Lauf
     # 20 s über 74 Läufe. Die drei Minuten sind bewusst das Neunfache davon — sie
@@ -180,12 +180,30 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Geheimnis-Scan — gitleaks
+      - name: Geheimnis-Scan — betterleaks
         # Per Digest festgenagelt statt per Marke: Dieselbe Begründung wie bei den
         # Pipeline-Schritten oben — eine Marke ist verschiebbar, ein Digest nicht.
         # Die Ausnahmen stehen in .gitleaks.toml und treffen Muster, nicht Pfade.
+        #
+        # GIT_CONFIG_*: Das betterleaks-Image laeuft als NICHT-root, das
+        # gitleaks-Image lief als root. Git verweigert deshalb die Arbeit am
+        # ausgecheckten Verzeichnis (dubious ownership) — gemessen 10.09.2026,
+        # Abbruch nach 7 Sekunden. safe.directory ueber die Umgebung statt
+        # --user root: Die Rechtelage bleibt, nur die Pruefung wird bestaetigt.
+        #
+        # --confidence high: betterleaks stuft jeden Fund ein. Die Regel
+        # generic-password meldete drei Stellen mit low/medium und Entropie
+        # 1,25 bis 4,35 — eine Fehlermeldung mit dem Wort Passwort, ein
+        # siebenstelliges CI-Datenbankpasswort und ein sechsstelliger Wert in
+        # .env.example. Nichts davon ist ein Geheimnis; die Laenge allein
+        # schliesst es aus. Die Schwelle statt drei Musterausnahmen, weil
+        # Ausnahmen fuer generische Kurzwerte breiter waeren als der Fund:
+        # ''''test123'''' als Muster wuerde auch einen echten Treffer verdecken.
+        # gitleaks kannte keine Stufen und fand diese drei nicht — high ist
+        # damit KEIN Rueckschritt gegenueber dem bisherigen Tor, nur eine
+        # ausgesprochene Grenze statt einer stillschweigenden.
         run: |
-          docker run --rm -v "$PWD:/repo" -w /repo             zricethezav/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f             git --no-banner --redact -c .gitleaks.toml
+          docker run --rm -v "$PWD:/repo" -w /repo -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo             ghcr.io/betterleaks/betterleaks@sha256:8b9d12db5e11ca798029da44923503de5d8cfff6992cffaaa6722fbeb9fc7797             git --no-banner --redact --confidence high -c .gitleaks.toml
 
   frontend-gates:
     name: frontend · tokens · tsc · eslint · vitest · build
