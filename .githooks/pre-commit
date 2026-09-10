@@ -11,7 +11,7 @@
 # nicht geglaubt, sondern bei jedem Commit gemessen. Ein Beleg, den niemand
 # prueft, ist genau die Stelle, an der irgendwann etwas durchrutscht.
 #
-# FAIL-CLOSED: Fehlt gitleaks, bricht der Commit ab. Ein stilles Durchwinken
+# FAIL-CLOSED: Fehlt betterleaks, bricht der Commit ab. Ein stilles Durchwinken
 # waere schlimmer als eine Unterbrechung: Es saehe aus wie eine bestandene
 # Pruefung.
 #
@@ -24,8 +24,8 @@ PROTOKOLL=".claude/aeos-log.jsonl"
 # Kein Protokoll (frischer Klon, andere Umgebung) — dann gibt es nichts zu tun.
 [ -f "$PROTOKOLL" ] || exit 0
 
-if ! command -v gitleaks >/dev/null 2>&1; then
-    echo "❌ gitleaks ist nicht im PATH." >&2
+if ! command -v betterleaks >/dev/null 2>&1; then
+    echo "❌ betterleaks ist nicht im PATH." >&2
     echo "   Das Waechter-Protokoll geht in ein oeffentliches Repository und wird" >&2
     echo "   vor jedem Commit geprueft. Ohne das Werkzeug findet die Pruefung nicht" >&2
     echo "   statt, und der Commit wird abgebrochen." >&2
@@ -33,10 +33,10 @@ if ! command -v gitleaks >/dev/null 2>&1; then
     exit 1
 fi
 
-if ! gitleaks detect --source "$PROTOKOLL" --no-git >/dev/null 2>&1; then
-    echo "❌ gitleaks meldet einen Fund im Waechter-Protokoll." >&2
+if ! betterleaks dir "$PROTOKOLL" >/dev/null 2>&1; then
+    echo "❌ betterleaks meldet einen Fund im Waechter-Protokoll." >&2
     echo "   Der Commit ist abgebrochen. Erst den Fund ansehen:" >&2
-    echo "   gitleaks detect --source $PROTOKOLL --no-git" >&2
+    echo "   betterleaks dir $PROTOKOLL" >&2
     echo "   Das Protokoll darf nicht von Hand bereinigt werden (R-SCHUTZ-003) —" >&2
     echo "   ein Fund ist ein Befund am Dispatcher, nicht an der Datei." >&2
     exit 1

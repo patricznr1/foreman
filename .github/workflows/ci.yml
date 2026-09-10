@@ -163,7 +163,7 @@ jobs:
           uv run pip-audit -r /tmp/requirements.txt --progress-spinner off
 
   secret-scan:
-    name: secrets · gitleaks
+    name: secrets · betterleaks
     runs-on: ubuntu-latest
     # Derselbe Deckel wie oben, auf diesen Job bemessen: Median 11 s, längster Lauf
     # 20 s über 74 Läufe. Die drei Minuten sind bewusst das Neunfache davon — sie
@@ -180,12 +180,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Geheimnis-Scan — gitleaks
+      - name: Geheimnis-Scan — betterleaks
         # Per Digest festgenagelt statt per Marke: Dieselbe Begründung wie bei den
         # Pipeline-Schritten oben — eine Marke ist verschiebbar, ein Digest nicht.
         # Die Ausnahmen stehen in .gitleaks.toml und treffen Muster, nicht Pfade.
         run: |
-          docker run --rm -v "$PWD:/repo" -w /repo             zricethezav/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f             git --no-banner --redact -c .gitleaks.toml
+          docker run --rm -v "$PWD:/repo" -w /repo             ghcr.io/betterleaks/betterleaks@sha256:8b9d12db5e11ca798029da44923503de5d8cfff6992cffaaa6722fbeb9fc7797             git --no-banner --redact -c .gitleaks.toml
 
   frontend-gates:
     name: frontend · tokens · tsc · eslint · vitest · build
