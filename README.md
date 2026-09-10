@@ -267,6 +267,9 @@ uv run python -m spacy download de_core_news_lg
 # 3. Configuration — copy and fill in (never commit real secrets)
 cp .env.example .env
 
+# 3b. Guard hooks — keeps the guard log current and scans it before each commit
+git config core.hooksPath .githooks
+
 # 4. Database + app
 docker compose up -d timescaledb
 uv run alembic upgrade head            # schema + TimescaleDB setup
@@ -317,6 +320,13 @@ segmentation, secrets storage and the external memory service are not in it —
   reviewers and coding agents
 - [`SECURITY-INSIGHTS.yml`](SECURITY-INSIGHTS.yml) — machine-readable posture
   ([OpenSSF Security Insights](https://security-insights.openssf.org/))
+- [`.claude/aeos-log.jsonl`](.claude/aeos-log.jsonl) — the guard log. One line per tool call
+  a coding agent made in this repository: which rule applied, whether it was allowed or
+  blocked, and how long the check took. It is committed by a pre-commit hook rather than
+  curated, so it shows the ordinary days as well as the interesting ones. The schema carries
+  no command text — `reason` holds the rule that fired, not the input that triggered it — and
+  the same hook runs gitleaks over the file before every commit and refuses the commit if
+  either that scan or the tool itself is missing.
 
 None of these ask a reviewer to omit anything. They exist so that the step between a
 finding and a verdict is written down instead of improvised — and a finding that
