@@ -2,7 +2,7 @@
 schema_version: 1
 projekt: "foreman"
 produkt: "FOREMAN"
-stand: "2026-09-07"
+stand: "2026-09-14"
 claims:
   # ──────────────────────────────────────────────────────────────────────
   # Bauzustand der Plattform
@@ -4122,3 +4122,43 @@ claims:
       nichts über die MCP-Schnittstelle, die einen eigenen Token und keine
       Rollen kennt (§17). Entstanden aus dem Text-Audit vom 07.09.2026, das C-057
       zwölf Tage nach dem Leeren der Übergangsliste noch auf gueltig fand.
+
+  - id: "C-128"
+    aussage: "Die Vorführinstanz bedient zwanzig gleichzeitige Anmeldungen mit anschliessenden Lesezugriffen ohne einen einzigen Fehler; die Anmeldung ist unter Gleichzeitigkeit der langsamste Schritt."
+    status: "gemessen"
+    wert: "20 gleichzeitige Sitzungen, 80 Aufrufe, 0 Fehler; Anmeldung p50 4,2 s / p95 4,9 s, Übersicht p50 1,6 s, Maschinen- und Alarmliste p50 unter 0,3 s; bei 1 Sitzung Anmeldung 0,39 s, bei 5 Sitzungen 1,3 s"
+    bedingung: >-
+      Erhoben am 14.09.2026 gegen https://www.foreman-demo.de (Railway, Plan pro,
+      Region europe-west4, je ein Replikat für Backend und Frontend) mit einem
+      Skript aus der Python-Standardbibliothek: N Threads, jeder meldet sich über
+      den BFF an (POST /api/session mit dem veröffentlichten Vorführkonto) und
+      ruft danach mit dem Sitzungs-Cookie nacheinander /api/v1/overview,
+      /api/v1/machines und /api/v1/alarms ab. Alle N Anmeldungen starten im
+      selben Augenblick — das ist der ungünstigste Fall, nicht der erwartete;
+      Zuschauer einer Vorführung melden sich über Minuten verteilt an. Die
+      Anmeldezeit wächst mit N annähernd linear (0,39 s → 1,3 s → 4,2 s bei
+      1 → 5 → 20), was zum bewusst teuren Passwort-Hash auf einem einzelnen
+      Replikat passt. NICHT gemessen: Reasoner-Aufrufe (kosten Modellbudget),
+      Schreibwege (Notiz, Quittierung), WebSocket-Verbindungen und Dauerlast
+      über Minuten; ebenso keine Antwortzeit-Verteilung über einen längeren
+      Zeitraum (C-038 bleibt insoweit gültig). Der Drossel-Zustand des
+      Sprachmodell-Gateways zum Messzeitpunkt: Startguthaben 60, Nachfüllrate
+      1,0 je Sekunde, cloud_only — also nicht auf die in DEPLOY.md §5 für
+      öffentliche Instanzen empfohlene Rate gesenkt.
+    datum: "2026-09-14"
+    fundstelle:
+      - "Eigener Lauf 14.09.2026, Skript lastprobe_demo.py (Standardbibliothek: urllib, threading), N = 1 / 5 / 20"
+      - "DEPLOY.md, Abschnitt 5 (Verbrauch drosseln) und 3.4a (eigene Domain)"
+      - "C-038 (keine Antwortzeit-Verteilung der Plattform erhoben — für Dauerlast weiterhin gültig)"
+    geltung: "gueltig"
+    freigabe:
+      - "intern"
+      - "fach"
+    bemerkung: >-
+      Anlass war die Frage vor einer Vorführung, ob die Instanz zehn bis
+      zwanzig Zuschauer trägt. Die Antwort aus der Messung: für Lesezugriffe ja,
+      mit deutlichem Spielraum; die Anmeldung ist der Engpass, und nur dann,
+      wenn alle im selben Augenblick klicken. Was die Zahl NICHT trägt: eine
+      Aussage über zwanzig gleichzeitig ausgelöste Analysen — dort begrenzt das
+      Modellbudget, nicht der Server. Und alle Sitzungen laufen unter einem
+      geteilten Konto: Was eine Person quittiert oder schreibt, sehen alle.

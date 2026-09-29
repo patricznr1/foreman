@@ -2,7 +2,7 @@
 
 Generiert von claims-tool 1.0.0 aus `claims/claims.yaml` — nicht von Hand bearbeiten.
 
-Stand: 2026-09-07
+Stand: 2026-09-14
 
 ## FOREMAN
 
@@ -108,6 +108,7 @@ Stand: 2026-09-07
 | C-125 | Der gespiegelte Kettensatz traegt im Betrieb Datensatznummer, Anlagenkennung und Entstehungszeit; er kommt in der Datenhaltung der Gegenstelle an, wo die alte Form verworfen wurde. | gemessen | Zurueckgeholter Wortlaut: „Ereigniskette 13 zu Alarm 20 an PR-02 (Kennung 8, 2026-09-07T09:03:03.227217+00:00): 4 Ereignisse, Konfidenz low (Hypothese).“ Rueckweg im Treffer: quelle {art: event_chain, id: 13}; Anlagenklasse servo_press; Zeitstempel 2026-09-07T09:03:03.227217Z, also die Entstehungszeit. | 2026-09-07 | gueltig | intern |
 | C-126 | Für die Plattform liegt eine Einstufung nach allen vier hausüblich geprüften Regelwerken vor — zwei greifen, zwei greifen ausdrücklich nicht. | gemessen | 4 von 4 Regelwerken eingestuft: KI-VO greift (Anbieter, Transparenzpflicht Art. 50), DSGVO greift (Verantwortlicher ist der Betreiber), ISO/IEC 27001 und 21 CFR Part 11 greifen nicht | 2026-09-07 | gueltig | intern, fach, kunde |
 | C-127 | Jede Route der Schnittstelle mit Ressourcenbezug stellt den Aufrufer fest und wendet seinen Sichtbereich an; die Übergangsliste offener Routen ist leer. | gemessen | 0 von 47 geprüften Routen ohne Aufrufer-Feststellung; 0 von 37 Routen mit Ressourcen-Kennung ohne Sichtbereich (2 begründete Ausnahmen); Übergangsliste leer | 2026-09-07 | gueltig | intern, fach |
+| C-128 | Die Vorführinstanz bedient zwanzig gleichzeitige Anmeldungen mit anschliessenden Lesezugriffen ohne einen einzigen Fehler; die Anmeldung ist unter Gleichzeitigkeit der langsamste Schritt. | gemessen | 20 gleichzeitige Sitzungen, 80 Aufrufe, 0 Fehler; Anmeldung p50 4,2 s / p95 4,9 s, Übersicht p50 1,6 s, Maschinen- und Alarmliste p50 unter 0,3 s; bei 1 Sitzung Anmeldung 0,39 s, bei 5 Sitzungen 1,3 s | 2026-09-14 | gueltig | intern, fach |
 
 ## Nicht verwendbar
 
@@ -143,17 +144,17 @@ Diese Einträge tragen heute nicht. Sie bleiben stehen und werden nie gelöscht.
 
 ## Zählung
 
-Einträge gesamt: 125
+Einträge gesamt: 126
 
 Nach Status:
 
-- gemessen: 118
+- gemessen: 119
 - geschaetzt: 1
 - geplant: 3
 - konzipiert: 3
 
 Nach Geltung:
 
-- gueltig: 100
+- gueltig: 101
 - ueberholt: 25
 - ungeprueft: 0
