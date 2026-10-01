@@ -31,7 +31,7 @@ dependencies = [
     "pydantic-settings>=2.3",
     "email-validator>=2.1",
     # --- Auth: JWT + Passwort-Hashing ---
-    "pyjwt>=2.8",
+    "pyjwt>=2.15.0",
     "bcrypt>=4.1",
     # --- HTTP-Client für das Gedächtnis-Substrat (NEXUS-Anbindung) ---
     "httpx>=0.27",
