@@ -1,0 +1,16 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-ausserhaus-probe.timer
+#  Zweck: Zeitplan der Probe von außer Haus, erster Samstag im Monat
+#         05:30 UTC. Samstag, weil die lokale Probe
+#         (foreman-sicherung-probe.timer) sonntags dieselbe Wegwerf-Datenbank
+#         braucht; eine halbe Stunde nach der Probe von NEXUS.
+# ============================================================
+[Unit]
+Description=FOREMAN: Probe von außer Haus, erster Samstag im Monat 05:30 UTC
+
+[Timer]
+OnCalendar=Sat *-*-01..07 05:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

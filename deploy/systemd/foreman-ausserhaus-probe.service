@@ -1,0 +1,19 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-ausserhaus-probe.service
+#  Zweck: Wiederherstellungsprobe von außer Haus. Holt den neuesten Snapshot
+#         von der Storage Box und spielt ihn in eine Wegwerf-Datenbank ein
+#         (deploy/sicherung/ausserhaus.sh pruefen).
+# ============================================================
+[Unit]
+Description=FOREMAN: Wiederherstellungsprobe von außer Haus
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+OnFailure=foreman-alarm@%N.service
+
+[Service]
+Type=oneshot
+# Ohne Frist bliebe ein hängender Lauf "activating" — ohne Fehlermeldung
+TimeoutStartSec=4h
+CacheDirectory=foreman-ausserhaus
+ExecStart=/bin/bash /srv/foreman/app/deploy/sicherung/ausserhaus.sh pruefen

@@ -1,0 +1,183 @@
+# ============================================================
+#  FOREMAN — deploy/docker-compose.prod.yml
+#  Zweck: Betrieb auf dem eigenen Server (netcup, siehe deploy/README.md):
+#         Backend, Live-Worker, Frontend und TimescaleDB als ein Compose-Projekt.
+#  Architektur-Einordnung: Betrieb (Schicht 0/1). TLS und Weiterleitung macht der
+#         gemeinsame Caddy des Servers (/srv/caddy), dem dieses Repo nur seine
+#         Site-Datei liefert (deploy/caddy/foreman.caddy).
+# ============================================================
+#
+# Aufbau auf dem Server:
+#   /srv/foreman/app        dieses Repository (git archive), Compose-Datei unter deploy/
+#   /srv/foreman/env        Geheimnisse, Modus 700, Dateien 600 (deploy/server/geheimnisse.py)
+#   /srv/foreman/sicherung  nächtliche Sicherungen (deploy/sicherung/sichern.sh)
+#
+# NETZ — warum kein Dienst einen Port veröffentlicht:
+#   Docker setzt seine Weiterleitung vor die Regeln von ufw. Ein `ports:` stünde
+#   also offen im Netz, egal was ufw sagt. Caddy läuft im Host-Netz und erreicht
+#   die Dienste über ihre festen Adressen im Netz `foreman`. Feste Adressen liegen
+#   unter .128, dynamische (Einmal-Läufe wie `run --rm`) darüber.
+#   Öffentlich ist nur, was foreman.caddy weiterleitet: das Frontend und vom
+#   Backend allein der WebSocket /api/v1/ws. /metrics und die übrige API
+#   erreicht nur das Frontend (BFF) im Netz `foreman`.
+
+name: foreman
+
+x-protokoll: &protokoll
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  backend:
+    <<: *protokoll
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: foreman-backend:lokal
+    # Wie auf Railway (railway.toml): erst die Migrationen, dann der Server.
+    # exec, damit uvicorn das SIGTERM von `docker compose stop` selbst bekommt.
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn foreman.main:app --host 0.0.0.0 --port 8000"]
+    # backend.env trägt die von Railway übernommenen Namen, pseudo.env den
+    # Pseudonymisierungs-Schlüssel, zugang.env die Datenbank-Adresse. Die
+    # Listen sind disjunkt zur Konfiguration (tests/unit/test_deploy_geheimnisse.py).
+    env_file:
+      - ./konfig/backend.conf.env
+      - ${FOREMAN_ENV_DIR:-../../env}/backend.env
+      - ${FOREMAN_ENV_DIR:-../../env}/pseudo.env
+      - ${FOREMAN_ENV_DIR:-../../env}/zugang.env
+    # Dieselbe Sonde wie im Dockerfile (/readyz), aber mit der Anlaufzeit von
+    # Railway (healthcheckTimeout = 300): Migrationen, spaCy und Arctic laden.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 300s
+    mem_limit: 4g
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      foreman:
+        ipv4_address: 172.31.0.10
+
+  # Erzeugt jede Minute Messwerte und schreibt sie in die Datenbank. Gleiches
+  # Abbild wie das Backend, kein HTTP-Server.
+  live-worker:
+    <<: *protokoll
+    image: foreman-backend:lokal
+    pull_policy: never
+    command: ["python", "-m", "foreman.adapters.simulation.live_worker", "--interval-seconds", "60"]
+    env_file:
+      - ./konfig/worker.conf.env
+      - ${FOREMAN_ENV_DIR:-../../env}/worker.env
+      - ${FOREMAN_ENV_DIR:-../../env}/pseudo.env
+      - ${FOREMAN_ENV_DIR:-../../env}/zugang.env
+    # Die HEALTHCHECK des Abbilds fragt /readyz — der Worker hat keinen
+    # HTTP-Server und stünde damit für immer auf "unhealthy".
+    healthcheck:
+      disable: true
+    mem_limit: 3g
+    # Erst wenn das Backend gesund ist, sind die Migrationen durch
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      foreman:
+        ipv4_address: 172.31.0.11
+
+  frontend:
+    <<: *protokoll
+    build:
+      context: ../frontend
+      args:
+        # Wird ins Browser-Bundle eingebacken (frontend/Dockerfile), eine
+        # Änderung braucht einen neuen Bau.
+        NEXT_PUBLIC_FOREMAN_WS_URL: "wss://www.foreman-demo.de/api/v1/ws"
+    image: foreman-frontend:lokal
+    env_file:
+      - ./konfig/frontend.conf.env
+    # Wie auf Railway (healthcheckPath /login). Das Abbild hat weder curl noch
+    # wget, node bringt fetch mit.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    mem_limit: 1g
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      foreman:
+        ipv4_address: 172.31.0.12
+
+  timescaledb:
+    <<: *protokoll
+    # Dasselbe Abbild wie im lokalen docker-compose.yml. Gegen diesen Digest ist
+    # die Übernahme von Railway geprobt (29.10.2026: TimescaleDB 2.28.1 und
+    # Toolkit 1.23.0 wie auf Railway, pgvector 0.8.6 liest deren 0.8.3-Daten).
+    image: timescale/timescaledb-ha:pg16@sha256:92809e70c72a5fd169aa3bb7d9c6b1974d6afdf8da786d890f12ae9e7616a67c
+    env_file:
+      - ${FOREMAN_ENV_DIR:-../../env}/timescaledb.env
+    environment:
+      POSTGRES_USER: "foreman"
+      POSTGRES_DB: "foreman"
+      # timescaledb-tune läuft nur beim allerersten Start (Init-Skript des
+      # Abbilds). Ohne diese Angaben läse es die 31 GB und 12 Kerne des Hosts.
+      TS_TUNE_MEMORY: "8GB"
+      TS_TUNE_NUM_CPUS: "4"
+    # Die -c-Schalter gelten bei jedem Start und gewinnen gegen die Datei, die
+    # timescaledb-tune geschrieben hat. postgres.conf im Repo-Wurzelverzeichnis
+    # ist für eine 64-GB-Maschine gerechnet und gilt hier nicht.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=2GB
+      - -c
+      - effective_cache_size=6GB
+      - -c
+      - work_mem=32MB
+      - -c
+      - maintenance_work_mem=512MB
+      - -c
+      - max_connections=100
+      - -c
+      - random_page_cost=1.1
+      # Keine Nutzungsstatistik an Timescale
+      - -c
+      - timescaledb.telemetry_level=off
+    shm_size: 1g
+    mem_limit: 8g
+    # PGDATA des Abbilds ist /home/postgres/pgdata/data. Das Volume hängt am
+    # Verzeichnis darüber — /var/lib/postgresql/data (lokales docker-compose.yml)
+    # läge neben PGDATA, und die Daten blieben in der Container-Schreibschicht.
+    volumes:
+      - pgdata:/home/postgres/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foreman -d foreman"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+    networks:
+      foreman:
+        ipv4_address: 172.31.0.20
+
+networks:
+  foreman:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+          ip_range: 172.31.0.128/25
+          gateway: 172.31.0.1
+
+volumes:
+  pgdata:

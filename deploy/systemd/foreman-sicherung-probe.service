@@ -1,0 +1,17 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-sicherung-probe.service
+#  Zweck: Wiederherstellungsprobe der neuesten Sicherung. Spielt sie in eine
+#         Wegwerf-Datenbank ein und verwirft sie wieder
+#         (deploy/sicherung/wiederherstellen.sh pruefen neueste).
+# ============================================================
+[Unit]
+Description=FOREMAN: Wiederherstellungsprobe der neuesten Sicherung
+Requires=docker.service
+After=docker.service
+OnFailure=foreman-alarm@%N.service
+
+[Service]
+Type=oneshot
+# Ohne Frist bliebe ein hängender Lauf "activating" — ohne Fehlermeldung
+TimeoutStartSec=2h
+ExecStart=/bin/bash /srv/foreman/app/deploy/sicherung/wiederherstellen.sh pruefen neueste

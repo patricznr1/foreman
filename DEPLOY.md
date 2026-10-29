@@ -16,6 +16,10 @@
 **Stand:** 2026-09-07 · Etappen 1–3 ausgerollt. Die Vorführinstanz läuft unter
 **https://www.foreman-demo.de** (eigene Domain, §3.4a; der nackte Name leitet per HTTP dorthin um).
 
+> **Betrieb auf dem eigenen Server:** `deploy/README.md` — Aufbau mit Docker Compose,
+> Übernahme der Datenbank von Railway, Sicherung und Wiederherstellung. Diese Anleitung
+> beschreibt den Weg über Railway.
+
 **Ziel von Etappe 1:** FOREMAN **Backend + TimescaleDB + Frontend** online und
 vorführbar. Das Gedächtnis-Substrat (NEXUS) ist seit **Etappe 2** angebunden (§7,
 gemessen am 03.09.2026); für eine Erstinstallation darf `SUBSTRATE_BASE_URL` leer
@@ -305,16 +309,18 @@ Eine Erstinstallation läuft zunächst **ohne** Gedächtnis-Substrat (Etappe 1).
 hängt es sauber dazu — für die Vorführinstanz ist das geschehen, der Betriebsablauf
 in §7.1 stammt aus der Messung vom 03.09.2026:
 
-- **Dedizierte FOREMAN-NEXUS-Instanz** (eigenes Railway-Setup, eigener Token, nur
-  Industrie-Inhalte) — **nicht** gegen die persönliche Production-NEXUS (IP-/
-  Datenschutz-Trennung).
-- **Adapter-Fassade** vor der NEXUS, die FOREMANs generische 5 Endpunkte
-  (`/remember`, `/recall`, `/reason`, `/drift_status`, `/reflect`) auf die echten
+- **Eigener Mandant `substrate-foreman`** auf der NEXUS-Instanz, mit eigenem Token und nur
+  Industrie-Inhalten. Die Trennung von anderen Klienten derselben Instanz trägt der
+  Mandant, nicht eine eigene Instanz.
+- **Adapter-Fassade** in der NEXUS (`/api/substrate/*`), die FOREMANs generische 5
+  Endpunkte (`/remember`, `/recall`, `/reason`, `/drift_status`, `/reflect`) auf die echten
   NEXUS-Operationen übersetzt (HTTP-Methoden, SPARQL-Semantik, Auth-Schema).
 - Anschließend `SUBSTRATE_BASE_URL` + `SUBSTRATE_TOKEN` setzen — **an beiden Diensten,
   die den Token tragen: `backend` und `live-worker`.** Gleiches Abbild, getrennte
   Variablensätze; config-as-code verwaltet keine Env-Vars, es gibt keinen Automatismus,
-  der den Worker mitnimmt. Die H-Sektion/Gedächtnis verlässt den Fallback.
+  der den Worker mitnimmt. Die H-Sektion/Gedächtnis verlässt den Fallback. Auf dem
+  eigenen Server stehen beide Werte getrennt: die Adresse in `deploy/konfig/`, der Token
+  in den Geheimnisdateien (`deploy/README.md` §3).
 
 ### 7.1 Token-Rotation — Ablauf (gemessen am 03.09.2026, Register C-118/C-119)
 
@@ -322,7 +328,9 @@ Der Token wird **beim Prozessstart** gelesen (`get_settings()` ist `lru_cache`-g
 `src/foreman/config.py:203`) und beim Bau des Klienten in den `Authorization`-Kopf
 eingefroren (`substrate/client.py:83`). **Die Variable zu setzen bewirkt allein nichts** —
 erst der Neustart. Bei Railway löst eine Variablenänderung das Ausrollen aus; das
-Ausrollen *ist* der Neustart.
+Ausrollen *ist* der Neustart. Auf dem eigenen Server ist es
+`docker compose up -d --force-recreate backend live-worker` (`deploy/README.md` §7) — die
+Schritte unten gelten dort ebenso, mit `fc logs backend` statt des Railway-Deploy-Logs.
 
 1. **Zuerst die Gegenstelle** (NEXUS) dreht und startet neu — von Hand. Keine Sitzung
    fasst den Wert an, und er geht über keine Leitung; eine Freigabe, die eine Sitzung
