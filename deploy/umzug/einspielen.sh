@@ -84,7 +84,9 @@ echo "📋 fertig ($(date -u +%H:%M:%SZ))"
 nachher="$(psql_in "$db" -At -F ' ' -c "select extname, extversion from pg_extension where extname in ('timescaledb', 'timescaledb_toolkit') order by 1")"
 [ "$nachher" = "$(printf '%s\n%s' "${zeilen[0]}" "${zeilen[1]}")" ] \
     || { echo "❌ Fassungen nach dem Einspielen weichen ab: $nachher" >&2; exit 1; }
-echo "📋 Alembic-Stand $(psql_in "$db" -Atc "select version_num from alembic_version")"
+# Erst in die Variable: In den Argumenten von echo verschluckte set -e den Fehlschlag
+stand="$(psql_in "$db" -Atc "select version_num from alembic_version")"
+echo "📋 Alembic-Stand $stand"
 echo "📋 Zeilen je Tabelle:"
 psql_in "$db" -At -F ' ' <<'SQL'
 select table_name,

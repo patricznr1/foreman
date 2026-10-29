@@ -133,7 +133,10 @@ DIENSTE: dict[str, Dienst] = {
         konfig="worker.conf.env",
         railway_quelle="foreman, live-worker",
         uebernehmen=_SUBSTRAT | _PSEUDO_SCHALTER,
-        nicht_uebernommen=_SERVER_ANDERS,
+        nicht_uebernommen={
+            **_SERVER_ANDERS,
+            "ENVIRONMENT": "auf dem Server in deploy/konfig (worker.conf.env)",
+        },
     ),
 }
 

@@ -52,7 +52,8 @@ if [ "$modus" = pruefen ]; then
     [ "$vorhanden" = 0 ] || { echo "❌ $PROBE_DB gibt es schon — Rest eines früheren Laufs? Nicht angefasst" >&2; exit 1; }
     # Nur die Datenbank, die einspielen.sh gleich anlegt. with (force): Nach
     # post_restore laufen dort die Hintergrund-Jobs von TimescaleDB an.
-    trap 'psql_su -q -c "drop database if exists $PROBE_DB with (force)" || echo "🔥 $PROBE_DB nicht verworfen" >&2' EXIT
+    # Bleibt sie liegen, endet die Probe rot — die nächste fände sie und bräche ab
+    trap 'psql_su -q -c "drop database if exists $PROBE_DB with (force)" || { echo "🔥 $PROBE_DB nicht verworfen" >&2; exit 1; }' EXIT
     FOREMAN_PG_EXEC="$compose_text exec -T timescaledb" FOREMAN_DB="$PROBE_DB" \
         bash "$hier/../umzug/einspielen.sh" "$lauf/foreman.dump" "$lauf/erweiterungen.txt"
     echo "✅ $lauf lässt sich einspielen — $PROBE_DB wird verworfen"

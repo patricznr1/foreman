@@ -29,8 +29,16 @@ url="$(sed -n 's/^FOREMAN_PING_URL=//p' "$datei" | tail -n 1)"
 # Unter Windows geschriebene Datei: das CR gehörte sonst zur URL
 url="${url%$'\r'}"
 [[ "$url" == https://?* ]] || { echo "❌ $datei: FOREMAN_PING_URL fehlt oder ist kein https" >&2; exit 1; }
+# Anführungszeichen, Backslash oder Leerraum zerbrächen die curl-Konfiguration unten
+[[ "$url" != *[[:space:]\"\\]* ]] || { echo "❌ $datei: FOREMAN_PING_URL enthält unzulässige Zeichen" >&2; exit 1; }
 
-ping_() { curl -fsS -m 10 --retry 5 -o /dev/null "$@"; }
+# Die URL geht über stdin an curl (-K -), nicht in die Argumentliste: die steht
+# für jeden Benutzer des Servers in /proc/<pid>/cmdline
+ping_() {  # <url> [weitere curl-Optionen]
+    local ziel="$1"
+    shift
+    printf 'url = "%s"\n' "$ziel" | curl -fsS -m 10 --retry 5 -o /dev/null -K - "$@"
+}
 
 case "${1:-}" in
     ok)
@@ -40,7 +48,7 @@ case "${1:-}" in
     fehler)
         unit="${2:-}"
         [[ "$unit" =~ ^[A-Za-z0-9@._-]+$ ]] || { echo "❌ Aufruf: melden.sh fehler <unit>" >&2; exit 2; }
-        ping_ --data-raw "$unit ist fehlgeschlagen — journalctl -u $unit" "$url/fail"
+        ping_ "$url/fail" --data-raw "$unit ist fehlgeschlagen — journalctl -u $unit"
         echo "🔥 Alarm gesendet: $unit"
         ;;
     *)

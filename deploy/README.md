@@ -157,7 +157,8 @@ dem Server, mit dem Abbild-Digest aus der Compose-Datei:
 
 **Umschalten**, in dieser Reihenfolge:
 
-1. Auf dem Server laufen alle Dienste bis auf `timescaledb`, die Datenbank ist leer.
+1. Auf dem Server läuft höchstens `timescaledb`, und die Datenbank ist leer. Backend, Worker
+   und Frontend bleiben aus, bis die Daten eingespielt sind.
 2. Railway: `live-worker` und `backend` anhalten, damit nichts mehr schreibt. Ab hier ist die
    Vorführung aus.
 3. Sofort die Sicherung ziehen, die Zeilen je Tabelle zählen und `erweiterungen.txt` per Abfrage
@@ -216,6 +217,7 @@ Einrichten (einmalig, als root auf dem Server):
 5. Einmal durchlaufen lassen und beide Proben fahren:
    ```bash
    sudo -n systemctl start foreman-sicherung.service       # löst außer Haus und Lebenszeichen aus
+   sudo -n journalctl -u foreman-ausserhaus -n 3           # weiter erst nach „✅ außer Haus: …“
    sudo -n systemctl start foreman-sicherung-probe.service
    sudo -n systemctl start foreman-ausserhaus-probe.service
    systemctl --failed
@@ -242,11 +244,15 @@ Ohne grüne Probe gilt eine Sicherung nicht als vorhanden.
 
 Von außer Haus (Server neu aufgesetzt, §2 Schritte 1 und 2 durch, der SSH-Schlüssel für die Box
 neu hinterlegt): Adresse und Passwort aus dem Passwortmanager nach
-`/srv/foreman/env/restic.repo` und `restic.passwort`, dann `restic restore latest --host
-foreman-netcup --tag foreman-taeglich --target /` mit `-o sftp.args="-F
-/srv/foreman/app/deploy/sicherung/ssh_ausserhaus.conf"`. Das bringt die Läufe und die
-Geheimnisdateien zurück. `pseudo.env` fehlt darin mit Absicht und kommt aus dem
-Passwortmanager.
+`/srv/foreman/env/restic.repo` und `restic.passwort`, dann:
+```bash
+sudo -n restic --repository-file /srv/foreman/env/restic.repo \
+    --password-file /srv/foreman/env/restic.passwort \
+    -o "sftp.args=-F /srv/foreman/app/deploy/sicherung/ssh_ausserhaus.conf" \
+    restore latest --host foreman-netcup --tag foreman-taeglich --target /
+```
+Das bringt die Läufe und die Geheimnisdateien zurück. `pseudo.env` fehlt darin mit Absicht und
+kommt aus dem Passwortmanager.
 
 ## 7. Betrieb
 
