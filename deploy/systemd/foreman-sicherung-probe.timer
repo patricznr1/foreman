@@ -1,0 +1,14 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-sicherung-probe.timer
+#  Zweck: Zeitplan der Wiederherstellungsprobe, sonntags 04:30 UTC — nach
+#         der Sicherung (03:15) und nach der Probe von NEXUS (04:00).
+# ============================================================
+[Unit]
+Description=FOREMAN: Wiederherstellungsprobe sonntags 04:30 UTC
+
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

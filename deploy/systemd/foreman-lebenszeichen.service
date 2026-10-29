@@ -1,0 +1,15 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-lebenszeichen.service
+#  Zweck: Lebenszeichen der täglichen Kette (deploy/sicherung/melden.sh).
+#         Ausgelöst von foreman-ausserhaus.service (OnSuccess=), kein eigener
+#         Timer; Protokoll: journalctl -u foreman-lebenszeichen
+# ============================================================
+[Unit]
+Description=FOREMAN: Lebenszeichen an healthchecks.io
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=5min
+ExecStart=/bin/bash /srv/foreman/app/deploy/sicherung/melden.sh ok

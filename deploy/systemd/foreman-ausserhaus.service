@@ -1,0 +1,22 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-ausserhaus.service
+#  Zweck: Neueste Sicherung außer Haus (deploy/sicherung/ausserhaus.sh).
+#         Ausgelöst von foreman-sicherung.service (OnSuccess=), kein eigener
+#         Timer; Protokoll: journalctl -u foreman-ausserhaus
+# ============================================================
+[Unit]
+Description=FOREMAN: Sicherung außer Haus (restic, Storage Box)
+Wants=network-online.target
+After=network-online.target
+# Das Lebenszeichen sagt: lokal gesichert, außer Haus angekommen, geprüft
+OnSuccess=foreman-lebenszeichen.service
+OnFailure=foreman-alarm@%N.service
+
+[Service]
+Type=oneshot
+# Der erste Lauf lädt alles, danach nur Neues; die Frist fängt eine
+# hängende Verbindung, die sonst ohne Fehler "activating" bliebe
+TimeoutStartSec=4h
+# restic-Cache (RESTIC_CACHE_DIR in ausserhaus.sh), systemd legt ihn an
+CacheDirectory=foreman-ausserhaus
+ExecStart=/bin/bash /srv/foreman/app/deploy/sicherung/ausserhaus.sh sichern

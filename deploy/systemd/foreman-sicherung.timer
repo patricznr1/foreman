@@ -1,0 +1,15 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-sicherung.timer
+#  Zweck: Zeitplan der nächtlichen Sicherung, 03:15 UTC — nach der von
+#         NEXUS (02:30 UTC), damit beide Läufe nicht gleichzeitig auf die
+#         Platte und zur Storage Box gehen.
+# ============================================================
+[Unit]
+Description=FOREMAN: Sicherung täglich 03:15 UTC
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

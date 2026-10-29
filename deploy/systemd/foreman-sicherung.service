@@ -1,0 +1,20 @@
+# ============================================================
+#  FOREMAN — deploy/systemd/foreman-sicherung.service
+#  Zweck: Nächtliche Sicherung der TimescaleDB (deploy/sicherung/sichern.sh).
+#         Ausgelöst von foreman-sicherung.timer; Protokoll:
+#         journalctl -u foreman-sicherung
+# ============================================================
+[Unit]
+Description=FOREMAN: Sicherung der TimescaleDB
+Requires=docker.service
+After=docker.service
+# Nur ein vollständiger Lauf geht außer Haus (deploy/sicherung/ausserhaus.sh)
+OnSuccess=foreman-ausserhaus.service
+OnFailure=foreman-alarm@%N.service
+
+[Service]
+Type=oneshot
+# Ohne Frist bliebe ein hängender Lauf (pg_dump wartet auf eine Sperre)
+# "activating": kein Fehler in systemctl --failed, und der Timer startet nicht neu
+TimeoutStartSec=2h
+ExecStart=/bin/bash /srv/foreman/app/deploy/sicherung/sichern.sh

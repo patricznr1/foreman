@@ -1,0 +1,23 @@
+# ============================================================
+#  FOREMAN — deploy/sicherung/storagebox_known_hosts
+#  Zweck: Host-Schlüssel der Storage Box (außer Haus). Einzige Quelle, der
+#         ausserhaus.sh beim Verbinden traut (ssh_ausserhaus.conf).
+#  Übernommen aus deploy/sicherung/ im NEXUS-Repo — dieselbe Box.
+# ============================================================
+#
+# Erhoben 29.10.2026 mit `ssh-keyscan -p 23` vom Server aus und abgeglichen mit
+# den Fingerprints, die Hetzner veroeffentlicht
+# (https://docs.hetzner.com/storage/storage-box/general, "SSH host keys"):
+#   ED25519 SHA256:XqONwb1S0zuj5A1CDxpOSuD2hnAArV1A3wKY7Z3sdgM
+#   RSA     SHA256:EMlfI8GsRIfpVkoW1H2u0zYVpFGKkIMKHFZIRkf2ioI
+#   ECDSA   SHA256:oDHZqKXnoMtgvPBjjC57pcuFez28roaEuFcfwyg8O5c
+# Nachpruefen: ssh-keygen -lf deploy/sicherung/storagebox_known_hosts
+# Die Zeilen stehen unter dem Alias hetzner-storagebox (HostKeyAlias in
+# ssh_ausserhaus.conf), nicht unter dem Namen der Box: Hetzner nennt dieselben
+# Schlüssel für alle Boxen, und das Konto bleibt so außerhalb des öffentlichen
+# Repositorys (restic.repo, deploy/README.md §5).
+# Wechselt Hetzner die Schluessel, scheitert die Verbindung mit "REMOTE HOST
+# IDENTIFICATION HAS CHANGED" — dann neu abgleichen, nie blind uebernehmen.
+hetzner-storagebox ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA5EB5p/5Hp3hGW1oHok+PIOH9Pbn7cnUiGmUEBrCVjnAw+HrKyN8bYVV0dIGllswYXwkG/+bgiBlE6IVIBAq+JwVWu1Sss3KarHY3OvFJUXZoZyRRg/Gc/+LRCE7lyKpwWQ70dbelGRyyJFH36eNv6ySXoUYtGkwlU5IVaHPApOxe4LHPZa/qhSRbPo2hwoh0orCtgejRebNtW5nlx00DNFgsvn8Svz2cIYLxsPVzKgUxs8Zxsxgn+Q/UvR7uq4AbAhyBMLxv7DjJ1pc7PJocuTno2Rw9uMZi1gkjbnmiOh6TTXIEWbnroyIhwc8555uto9melEUmWNQ+C+PwAK+MPw==
+hetzner-storagebox ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAGK0po6usux4Qv2d8zKZN1dDvbWjxKkGsx7XwFdSUCnF19Q8psHEUWR7C/LtSQ5crU/g+tQVRBtSgoUcE8T+FWp5wBxKvWG2X9gD+s9/4zRmDeSJR77W6gSA/+hpOZoSE+4KgNdnbYSNtbZH/dN74EG7GLb/gcIpbUUzPNXpfKl7mQitw==
+hetzner-storagebox ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICf9svRenC/PLKIL9nk6K/pxQgoiFC41wTNvoIncOxs

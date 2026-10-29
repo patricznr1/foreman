@@ -1,0 +1,28 @@
+# ============================================================
+#  FOREMAN — deploy/caddy/foreman.caddy
+#  Zweck: Site-Datei für den gemeinsamen Caddy des Servers (/srv/caddy, lädt
+#         sie per `import`). TLS holt Caddy selbst.
+#  Architektur-Einordnung: Betrieb. Die festen Adressen stehen in
+#         deploy/docker-compose.prod.yml (Netz `foreman`).
+# ============================================================
+#
+# Öffentlich ist das Frontend und vom Backend nur der WebSocket. Die übrige
+# API (auch /metrics, das ohne Anmeldung antwortet) erreicht nur das Frontend
+# als BFF im Netz `foreman`. FOREMAN wertet keine Client-Adresse aus, darum
+# hier kein trusted_proxies.
+
+www.foreman-demo.de {
+	handle /api/v1/ws {
+		reverse_proxy 172.31.0.10:8000
+	}
+
+	handle {
+		reverse_proxy 172.31.0.12:3000
+	}
+}
+
+# Die nackte Domain führt auf www: eine Adresse für Seite, Anmeldung und den
+# WebSocket, dessen Adresse ins Bundle eingebacken ist
+foreman-demo.de {
+	redir https://www.foreman-demo.de{uri} permanent
+}
