@@ -28,7 +28,7 @@ alias fc='sudo docker compose -f /srv/foreman/app/deploy/docker-compose.prod.yml
 | `backend` | `172.31.0.10:8000` | FastAPI; führt beim Start `alembic upgrade head` aus |
 | `live-worker` | `172.31.0.11` | schreibt jede Minute Messwerte, kein HTTP-Server |
 | `frontend` | `172.31.0.12:3000` | Next.js, spricht das Backend als BFF über `http://backend:8000` |
-| `timescaledb` | `172.31.0.20:5432` | `timescale/timescaledb-ha:pg16`, per Digest festgeschrieben |
+| `timescaledb` | `172.31.0.20:5432` | `timescale/timescaledb-ha:pg16`, Patches über die Server-Wartung (NEXUS-Repo, `deploy/wartung`) |
 
 - **Kein Dienst veröffentlicht einen Port.** Docker setzt seine Weiterleitung vor die Regeln
   von ufw, ein `ports:` stünde offen im Netz. Erreichbar ist nur, was Caddy weiterleitet.
@@ -144,7 +144,7 @@ Das Skript gibt am Ende den Alembic-Stand und die Zeilen je Tabelle aus, für de
 denselben Zählungen auf Railway.
 
 **Geprobt am 29.10.2026** mit einer Vorab-Sicherung von Railway gegen eine Wegwerf-Datenbank auf
-dem Server, mit dem Abbild-Digest aus der Compose-Datei:
+dem Server, mit dem Abbild `timescale/timescaledb-ha:pg16@sha256:92809e70c72a…`:
 
 - `pg_restore` endete ohne Meldung nach 49 Sekunden.
 - Fassungen wie auf Railway: TimescaleDB 2.28.1 und Toolkit 1.23.0. Das Abbild bringt von sich
