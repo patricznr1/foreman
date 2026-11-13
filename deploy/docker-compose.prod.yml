@@ -120,10 +120,13 @@ services:
 
   timescaledb:
     <<: *protokoll
-    # Dasselbe Abbild wie im lokalen docker-compose.yml. Gegen diesen Digest ist
-    # die Übernahme von Railway geprobt (29.10.2026: TimescaleDB 2.28.1 und
-    # Toolkit 1.23.0 wie auf Railway, pgvector 0.8.6 liest deren 0.8.3-Daten).
-    image: timescale/timescaledb-ha:pg16@sha256:92809e70c72a5fd169aa3bb7d9c6b1974d6afdf8da786d890f12ae9e7616a67c
+    # Dasselbe Abbild wie im lokalen docker-compose.yml, das fuer gleiche
+    # Fassungen beim Entwickeln auf den Digest festgelegt bleibt. Hier haelt
+    # der Tag die Hauptversion PostgreSQL 16 fest; Patches innerhalb davon spielt die
+    # Server-Wartung woechentlich ein (Sicherung vorher, Rueckfall bei krankem
+    # Abbild — deploy/wartung im NEXUS-Repo). Die Uebernahme von Railway ist
+    # gegen sha256:92809e70c72a geprobt (deploy/README.md, Abschnitt Umzug).
+    image: timescale/timescaledb-ha:pg16
     env_file:
       - ${FOREMAN_ENV_DIR:-../../env}/timescaledb.env
     environment:
